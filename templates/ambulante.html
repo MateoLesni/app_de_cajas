@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="last-updated" content="2025-05-30 19:12:33">
+    <meta name="current-user" content="pomenuk">
+    <title>Zona Ambulante</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ambulante.css') }}">
+    
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <span class="navbar-brand">Zona Ambulante</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('zonas') }}">Zonas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('transferencias') }}">Cargar Ventas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('casos_pendientes') }}">Casos Pendientes</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="main-content">
+        <div class="container mt-4">
+            <!-- Sección de Fecha de Control -->
+            <div class="card mb-4 control-date-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h5 class="card-title mb-0">FECHA DE CONTROL</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" id="controlDate" class="form-control flatpickr" placeholder="Seleccione fecha">
+                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <button id="fixDateBtn" class="btn btn-outline-primary" 
+                                    data-bs-toggle="tooltip" data-bs-placement="top" 
+                                    title="Fijar esta fecha para que no cambie al recargar la página">
+                                <i class="fas fa-thumbtack"></i> Fijar Fecha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Sección de Validación (ocupa media pantalla) -->
+                <div class="col-md-6">
+                    <div class="card mb-4 validation-card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Validación de Carga</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover validation-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ETIQUETA</th>
+                                            <th>TURNO</th>
+                                            <th>FECHA</th>
+                                            <th>ESTADO</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="validationTableBody">
+                                        <!-- El contenido será generado dinámicamente por JavaScript -->
+                                        <tr>
+                                            <td colspan="4" class="text-center">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Cargando...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección de Filtros (al lado de validación) -->
+                <div class="col-md-6">
+                    <div class="card mb-4 filters-card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Filtros</h5>
+                            <form id="filtersForm" class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Usuario</label>
+                                    <select class="form-select select2" id="userFilter" name="usuario">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Fecha</label>
+                                    <input type="text" class="form-control flatpickr" id="dateFilter" name="fecha">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Etiqueta</label>
+                                    <select class="form-select select2" id="etiquetaFilter" name="etiqueta">
+                                        <option value="">Todas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Búsqueda en texto</label>
+                                    <input type="text" class="form-control" id="textSearchFilter" name="textsearch" 
+                                        placeholder="Buscar en FC, PL, Transferencias...">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                </div>
+                                <div class="col-12">
+                                    <button type="button" id="resetFilters" class="btn btn-outline-secondary w-100">
+                                        <i class="fas fa-times"></i> Limpiar filtros
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección de Datos -->
+            <div class="card data-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Registros Ambulante</h5>
+                        <div>
+                            <button class="btn btn-outline-success btn-sm me-2" id="exportExcel">
+                                <i class="fas fa-file-excel"></i> Exportar Excel
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" id="exportPDF">
+                                <i class="fas fa-file-pdf"></i> Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm data-table">
+                            <thead>
+                                <tr>
+                                    <th class="id-column">ID</th>
+                                    <th>Fecha</th>
+                                    <th>Usuario</th>
+                                    <th>Etiqueta</th>
+                                    <th>Turno</th>
+                                    <th>Comisión</th>
+                                    <th>FC</th>
+                                    <th>PL</th>
+                                    <th>Transferencia</th>
+                                    <th>Boleta Rosa</th>
+                                    <th>Observaciones</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- Los datos se cargarán dinámicamente aquí -->
+                                <tr class="placeholder-row">
+                                    <td colspan="13" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <p class="mt-2">Cargando datos...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar registros -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Editar Registro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha</label>
+                                <input type="text" class="form-control flatpickr" id="editFecha" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Usuario</label>
+                                <input type="text" class="form-control" id="editUsuario" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Etiqueta</label>
+                                <input type="text" class="form-control" id="editEtiqueta" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Turno</label>
+                                <select class="form-select" id="editTurno" disabled>
+                                    <option value="DIA">DIA</option>
+                                    <option value="NOCHE">NOCHE</option>
+                                    <option value="UNI">UNI</option>
+                                    <option value="TGT">TGT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Comisión</label>
+                                <input type="number" class="form-control" id="editComision" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">FC</label>
+                                <input type="number" class="form-control" id="editFc" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">PL</label>
+                                <input type="number" class="form-control" id="editPl" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Transferencia</label>
+                                <input type="text" class="form-control" id="editTransferencia" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Boleta Rosa</label>
+                                <input type="text" class="form-control" id="editBoletaRosa" readonly>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="editObservaciones" rows="3" readonly></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" id="editEstado" required>
+                                    <option value="PENDIENTE">Pendiente</option>
+                                    <option value="OK">OK</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Color de fila</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color" id="editRowColor" title="Elija un color para la fila">
+                                    <button class="btn btn-outline-secondary" type="button" id="removeColorBtn" title="Quitar color">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Opcional: Seleccione un color para destacar esta fila</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveEdit">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ url_for('static', filename='js/ambulante.js') }}"></script>
+</body>
+</html>

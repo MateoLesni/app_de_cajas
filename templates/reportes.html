@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - {{ session['username'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reportes.css') }}">
+    <!-- jQuery primero -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Moment.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/es.js"></script>
+    <!-- DateRangePicker -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SheetJS -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>Reportes</h1>
+                <div class="user-info">
+                    <span class="username">Usuario: {{ session['username'] }}</span>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <a href="{{ url_for('index') }}" class="btn-dashboard">Inicio</a>
+                <a href="{{ url_for('nuevo_registro') }}" class="btn-nuevo">Nueva Solicitud</a>
+                <a href="{{ url_for('registros') }}" class="btn-registros">Facturas Pendientes</a>
+                <a href="{{ url_for('registros_cerrados') }}" class="btn-registros">Facturas Cerradas</a>
+                <button id="btnAgregarPago" class="btn-agregar-pago">Agregar Pago</button>
+            </div>
+        </div>
+
+        <!-- Cards de resumen -->
+        <div class="cards-container">
+            <div class="card">
+                <div class="card-title">Total Facturación</div>
+                <div class="card-value" id="total-facturacion">$0,00</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Total Pagos</div>
+                <div class="card-value" id="total-pagos">$0,00</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Saldo Pendiente Total</div>
+                <div class="card-value" id="saldo-total">$0,00</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-section">
+            <h2>Filtros de Búsqueda</h2>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="dateRange">Rango de Fechas:</label>
+                    <input type="text" id="dateRange" name="dateRange" class="form-control" readonly>
+                </div>
+                <div class="filter-group">
+                    <label for="cliente">Cliente:</label>
+                    <select id="cliente" name="cliente" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="ALVAROD">ALVAROD - ALVARO DISTR.</option>
+                        <option value="APOROLLI">APOROLLI - ALBERTO POROLLI DISTR</option>
+                        <option value="BAGULLA">BAGULLA - BELISARIO AGULLA DISTR</option>
+                        <option value="DPADILLA">DPADILLA - DIEGO PADILLA DISTR.</option>
+                        <option value="FRUTILLO">FRUTILLO - FRANCISCO RUTILLO DISTR</option>
+                        <option value="JVITELLI">JVITELLI - JUAN FRANCISCO VITELLI</option>
+                        <option value="MANUEL">MANUEL - MANUEL DISTR.</option>
+                        <option value="MARTIN">MARTIN - MARTIN DISTR.</option>
+                        <option value="NICOLASD">NICOLASD - NICOLAS MATURANO DISTR.</option>
+                        <option value="SEBASTIAND">SEBASTIAND - SEBASTIAN DISTR.</option>
+                        <option value="TBARTOLI">TBARTOLI - TOMAS BARTOLI DISTR.</option>
+                        <option value="OTROS">OTROS - EVENTUALES</option>
+                        <option value="EDARTE">EDARTE - Emiliano Darte Distr</option>
+                        <option value="GZAPANA">GZAPANA - Gaston Zapana Distr</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="origen">Origen d/I Mercadería:</label>
+                    <select id="origen" name="origen" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="RABBLE">RABBLE</option>
+                        <option value="PIBE DORREGO">PIBE DORREGO</option>
+                        <option value="TRENES">TRENES</option>
+                        <option value="OTROS">OTROS</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="medioPago">Medio de Pago:</label>
+                    <select id="medioPago" name="medioPago" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="EFECTIVO">EFECTIVO</option>
+                        <option value="DEPOSITO">DEPÓSITO</option>
+                        <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="saldoRango">Saldo:</label>
+                    <div class="saldo-range">
+                        <input type="number" id="saldoMin" name="saldoMin" placeholder="Mínimo" class="form-control">
+                        <span>hasta</span>
+                        <input type="number" id="saldoMax" name="saldoMax" placeholder="Máximo" class="form-control">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="tipoPago">Tipo de Pago:</label>
+                    <select id="tipoPago" name="tipoPago" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="vinculados">Solo Vinculados</option>
+                        <option value="no_vinculados">Solo No Vinculados</option>
+                    </select>
+                </div>
+            </div>
+            <div class="buttons-container">
+                <button id="btnFiltrar" class="btn-primary">Generar Reporte</button>
+                <button id="btnExportar" class="btn-secondary">Exportar a Excel</button>
+            </div>
+        </div>
+
+        <!-- Tabla de resultados -->
+        <div class="results-section">
+            <div class="table-container">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>N° Pedido</th>
+                            <th>Cliente</th>
+                            <th>Origen</th>
+                            <th>Neto Vta</th>
+                            <th>NG</th>
+                            <th>TRENES</th>
+                            <th>Total Part.</th>
+                            <th>Saldo Pend.</th>
+                            <th>Estado</th>
+                            <th>Medio Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los resultados se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+                
+                <!-- Sección de resumen de resultados -->
+                <div id="resultsSummary" class="results-summary" style="display: none;">
+                    <div class="summary-row">
+                        <span class="summary-label">Total de registros:</span>
+                        <span id="totalRegistros" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Total saldo pendiente:</span>
+                        <span id="totalSaldoPendiente" class="summary-value">$0,00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para nuevo pago no vinculado -->
+    <div id="pagoModal" class="modal">
+        <div class="modal-content modern">
+            <div class="modal-header">
+                <h2>Nuevo Pago No Vinculado</h2>
+                <span class="close">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <form id="pagoForm" class="form-modern">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numeroComprobante">N° de Comprobante <span class="required">*</span></label>
+                            <input type="text" id="numeroComprobante" name="numeroComprobante" required placeholder="Ingrese número">
+                        </div>
+    
+                        <div class="form-group">
+                            <label for="clientePago">Cliente <span class="required">*</span></label>
+                            <select id="clientePago" name="cliente" required>
+                                <option value="">Seleccione cliente</option>
+                                <option value="ALVAROD">ALVAROD - ALVARO DISTR.</option>
+                                <option value="APOROLLI">APOROLLI - ALBERTO POROLLI</option>
+                                <option value="BAGULLA">BAGULLA - BELISARIO AGULLA</option>
+                                <option value="DPADILLA">DPADILLA - DIEGO PADILLA</option>
+                                <option value="FRUTILLO">FRUTILLO - FRANCISCO RUTILLO</option>
+                                <option value="JVITELLI">JVITELLI - JUAN FRANCISCO</option>
+                                <option value="MANUEL">MANUEL - MANUEL DISTR.</option>
+                                <option value="MARTIN">MARTIN - MARTIN DISTR.</option>
+                                <option value="NICOLASD">NICOLASD - NICOLAS MATURANO</option>
+                                <option value="SEBASTIAND">SEBASTIAND - SEBASTIAN</option>
+                                <option value="TBARTOLI">TBARTOLI - TOMAS BARTOLI</option>
+                                <option value="EDARTE">EDARTE - Emiliano Darte Distr</option>
+                                <option value="GZAPANA">GZAPANA - Gaston Zapana Distr</option>
+                                <option value="SANTIAGOD">SANTIAGOD - SANTIAGO DISTR.</option>
+                                <option value="OTROS">OTROS - EVENTUALES</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="medioPagoPago">Medio de Pago <span class="required">*</span></label>
+                            <select id="medioPagoPago" name="medioPago" required>
+                                <option value="">Seleccione medio de pago</option>
+                                <option value="EFECTIVO">EFECTIVO</option>
+                                <option value="DEPOSITO">DEPÓSITO</option>
+                                <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                            </select>
+                        </div>
+    
+                        <div class="form-group">
+                            <label for="bancoSociedad">Banco Sociedad</label>
+                            <input type="text" id="bancoSociedad" name="bancoSociedad" placeholder="Banco de la sociedad">
+                        </div>
+                    </div>
+                    
+                    <div class="section-divider">
+                        <span>Participación</span>
+                    </div>
+                    
+                    <div class="participacion-container modern">
+                        <div class="input-group">
+                            <label for="ng">NG <span class="required">*</span></label>
+                            <div class="input-money modern">
+                                <span>$</span>
+                                <input type="text" id="ng" name="ng" class="currency-input" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="trenes">TRENES <span class="required">*</span></label>
+                            <div class="input-money modern">
+                                <span>$</span>
+                                <input type="text" id="trenes" name="trenes" class="currency-input" required>
+                            </div>
+                        </div>
+                        <div class="input-group total">
+                            <label for="totalParticipacion">Total</label>
+                            <div class="input-money modern">
+                                <span>$</span>
+                                <input type="text" id="totalParticipacion" class="currency-input" readonly>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div class="section-divider">
+                        <span>Observaciones</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <textarea id="observacionesPago" name="observaciones" rows="2" placeholder="Información adicional..."></textarea>
+                    </div>
+    
+                    <div class="section-divider">
+                        <span>Archivos <span class="required">*</span></span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div id="dropzone" class="dropzone modern">
+                            <div class="dz-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#6c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 18V12" stroke="#6c757d" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M9 15L12 12L15 15" stroke="#6c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="dz-message">
+                                Arrastre archivos aquí o <span class="dz-click">seleccione</span>
+                            </div>
+                            <input type="file" id="fileInput" multiple required>
+                            <div id="fileList" class="file-list-modern"></div>
+                        </div>
+                    </div>
+    
+                    <div class="form-actions modern">
+                        <button type="button" class="btn-cancel" id="btnCancelarPago">Cancelar</button>
+                        <button type="submit" class="btn-submit">Guardar Pago</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script con los datos de registros y pagos no vinculados -->
+    <script type="text/javascript">
+        const registros = JSON.parse('{{ registros|tojson|safe }}');
+        const pagosNoVinculados = JSON.parse('{{ pagos_no_vinculados|tojson|safe }}');
+        const currentDateTime = "{{ current_time }}";
+        const currentUser = "{{ session['username'] }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/reportes.js') }}"></script>
+</body>
+</html>

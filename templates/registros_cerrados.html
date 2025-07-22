@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registros Cerrados - {{ session['username'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/registros.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anticipos.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/registros_table_minimal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/filtros_profesionales.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/archivos.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>Facturas Cerradas</h1>
+                <div class="user-info">
+                    <span class="username">Usuario: {{ session['username'] }}</span>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <a href="{{ url_for('nuevo_registro') }}" class="btn-nuevo">
+                    <i class="fas fa-plus-circle"></i> Nueva Solicitud
+                </a>
+                <a href="{{ url_for('reportes') }}" class="btn-ctacte">
+                    <i class="fas fa-file-invoice-dollar"></i> CTACTE
+                </a>
+                <a href="{{ url_for('registros') }}" class="btn-pendientes">
+                    <i class="fas fa-tasks"></i> Facturas Pendientes
+                </a>
+                <a href="{{ url_for('index') }}" class="btn-dashboard">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+            </div>
+        </div>
+
+        <!-- Panel de filtros -->
+        <div class="filtros-panel">
+            <div class="filtros-header">
+                <h2><i class="fas fa-filter"></i> Filtrar Registros</h2>
+                <button id="toggleFiltros" class="btn-toggle-filtros">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div class="filtros-body">
+                <div class="filtros-grid">
+                    <div class="filtro-item">
+                        <label for="filtroCliente"><i class="fas fa-user"></i> Cliente:</label>
+                        <select id="filtroCliente" class="filtro-select">
+                            <option value="">Todos los clientes</option>
+                            <!-- Las opciones se cargarán desde JavaScript -->
+                        </select>
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroFechaDesde"><i class="fas fa-calendar"></i> Fecha desde:</label>
+                        <input type="date" id="filtroFechaDesde" class="filtro-input">
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroFechaHasta"><i class="fas fa-calendar"></i> Fecha hasta:</label>
+                        <input type="date" id="filtroFechaHasta" class="filtro-input">
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroOrigen"><i class="fas fa-tag"></i> Origen:</label>
+                        <select id="filtroOrigen" class="filtro-select">
+                            <option value="">Todos los orígenes</option>
+                            <!-- Las opciones se cargarán desde JavaScript -->
+                        </select>
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroTexto"><i class="fas fa-search"></i> Buscar:</label>
+                        <input type="text" id="filtroTexto" class="filtro-input" placeholder="Texto en observaciones...">
+                    </div>
+                    <div class="filtro-actions">
+                        <button id="btnAplicarFiltros" class="btn-filtrar">
+                            <i class="fas fa-search"></i> Aplicar
+                        </button>
+                        <button id="btnLimpiarFiltros" class="btn-limpiar">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de registros cerrados -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">
+                    <i class="fas fa-check-circle"></i> Listado de Facturas Cerradas
+                </div>
+                <div class="table-actions">
+                    <button class="btn-export" id="btnExportExcel">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                </div>
+            </div>
+            <table id="registrosTable" class="registros-table">
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Neto Vta</th>
+                        <th>NG</th>
+                        <th>TRENES</th>
+                        <th>Total</th>
+                        <th>Observaciones</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if registros %}
+                        {% for registro in registros %}
+                        <tr data-id="{{ registro.id }}" class="registro-row">
+                            <td>{{ registro.id }}</td>
+                            <td>{{ registro.datetime }}</td>
+                            <td>{{ registro.cliente }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.netoVta|float) }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.ng|float) }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.trenes|float) }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.totalParticipacion|float) }}</td>
+                            <td title="{{ registro.observaciones|default('') }}">{{ registro.observaciones|default('') }}</td>
+                            <td class="estado">
+                                <span class="badge badge-closed">CERRADO</span>
+                            </td>
+                            <td class="acciones">
+                                <button class="btn-ver-mas" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr class="no-records">
+                            <td colspan="10">
+                                <div class="no-registros">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>No hay facturas cerradas</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal para ver detalles -->
+        <div id="detalleModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2>Detalles de la Factura</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="detalles-section">
+                        <div id="detalleContent" class="detalle-grid"></div>
+                    </div>
+
+                    <div class="pagos-section">
+                        <h3><i class="fas fa-money-bill-wave"></i> Historial de Pagos</h3>
+                        <div id="pagosHistorial"></div>
+                    </div>
+
+                    <div class="archivos-section">
+                        <h3><i class="fas fa-paperclip"></i> Archivos Adjuntos</h3>
+                        <div id="archivosList"></div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button id="btnReopenRegistro" class="btn-reopen">
+                            <i class="fas fa-unlock"></i> Reabrir Factura
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de confirmación para eliminar pago -->
+        <div id="eliminarPagoModal" class="modal">
+            <div class="modal-content modal-small">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2>Confirmar Eliminación</h2>
+                </div>
+                <div class="confirm-content">
+                    <p><i class="fas fa-exclamation-triangle"></i> ¿Está seguro que desea eliminar este pago?</p>
+                    <p>El pago será convertido en un anticipo disponible.</p>
+                    <div id="pagoDetalles" class="pago-detalle"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btnCancelarEliminar">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn-danger" id="btnConfirmarEliminar">
+                        <i class="fas fa-trash"></i> Eliminar Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script con los datos de registros -->
+    <script type="text/javascript">
+        const registros = JSON.parse('{{ registros|tojson|safe }}');
+        const currentDateTime = "{{ current_time }}";
+        const currentUser = "{{ session['username'] }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/registros_cerrados.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/filtros.js') }}"></script>
+</body>
+</html>

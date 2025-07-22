@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registros Pendientes - {{ session['username'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/registros.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anticipos.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/registros_table_minimal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/filtros_profesionales.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/balance_pagos.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/archivos.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>Facturas Pendientes</h1>
+                <div class="user-info">
+                    <span class="username">Usuario: {{ session['username'] }}</span>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <a href="{{ url_for('nuevo_registro') }}" class="btn-nuevo">
+                    <i class="fas fa-plus-circle"></i> Nueva Solicitud
+                </a>
+                <a href="{{ url_for('ver_registros_cerrados') }}" class="btn-cerrados">
+                    <i class="fas fa-check-circle"></i> Facturas Cerradas
+                </a>
+                <a href="{{ url_for('reportes') }}" class="btn-ctacte">
+                    <i class="fas fa-file-invoice-dollar"></i> CTACTE
+                </a>
+                <a href="{{ url_for('index') }}" class="btn-dashboard">
+                    <i class="fas fa-home"></i> Inicio
+                </a>
+            </div>
+        </div>
+
+        <!-- Panel de filtros mejorado -->
+        <div class="filtros-panel">
+            <div class="filtros-header">
+                <h2><i class="fas fa-filter"></i> Filtrar Registros</h2>
+                <button id="toggleFiltros" class="btn-toggle-filtros">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="filtros-body">
+                <div class="filtros-grid">
+                    <div class="filtro-item">
+                        <label for="filtroCliente"><i class="fas fa-user"></i> Cliente:</label>
+                        <select id="filtroCliente" class="filtro-select">
+                            <option value="">Todos los clientes</option>
+                            <!-- Las opciones se cargarán desde JavaScript -->
+                        </select>
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroFechaDesde"><i class="fas fa-calendar"></i> Fecha desde:</label>
+                        <input type="date" id="filtroFechaDesde" class="filtro-input">
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroFechaHasta"><i class="fas fa-calendar"></i> Fecha hasta:</label>
+                        <input type="date" id="filtroFechaHasta" class="filtro-input">
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroOrigen"><i class="fas fa-tag"></i> Origen:</label>
+                        <select id="filtroOrigen" class="filtro-select">
+                            <option value="">Todos los orígenes</option>
+                            <!-- Las opciones se cargarán desde JavaScript -->
+                        </select>
+                    </div>
+                    <div class="filtro-item">
+                        <label for="filtroTexto"><i class="fas fa-search"></i> Buscar:</label>
+                        <input type="text" id="filtroTexto" class="filtro-input" placeholder="Texto en observaciones...">
+                    </div>
+                    <div class="filtro-actions">
+                        <button id="btnAplicarFiltros" class="btn-filtrar">
+                            <i class="fas fa-search"></i> Aplicar
+                        </button>
+                        <button id="btnLimpiarFiltros" class="btn-limpiar">
+                            <i class="fas fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de registros con estilo mejorado -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">
+                    <i class="fas fa-list-alt"></i> Listado de Facturas Pendientes
+                </div>
+                <div class="table-actions">
+                    <button class="btn-export" id="btnExportExcel">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                </div>
+            </div>
+            <table id="registrosTable" class="registros-table">
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Neto Vta</th>
+                        <th>NG</th>
+                        <th>TRENES</th>
+                        <th>Total</th>
+                        <th>Observaciones</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if registros %}
+                        {% for registro in registros %}
+                        <tr data-id="{{ registro.id }}" data-origen="{{ registro.origen }}" class="registro-row">
+                            <td>{{ registro.id }}</td>
+                            <td>{{ registro.datetime }}</td>
+                            <td>{{ registro.cliente }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.netoVta|float) }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.ng|float) }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.trenes|float) }}</td>
+                            <td>${{ '{:,.2f}'.format(registro.totalParticipacion|float) }}</td>
+                            <td title="{{ registro.observaciones|default('') }}">{{ registro.observaciones|default('') }}</td>
+                            <td class="estado">
+                                {% if registro.pagos %}
+                                    <span class="badge badge-partial">Pago Parcial</span>
+                                {% else %}
+                                    <span class="badge badge-pending">SIN PAGOS</span>
+                                {% endif %}
+                            </td>
+                            <td class="acciones">
+                                <button class="btn-ver-mas" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr class="no-records">
+                            <td colspan="10">
+                                <div class="no-registros">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>No hay registros pendientes</p>
+                                    <a href="{{ url_for('nuevo_registro') }}" class="btn-nuevo-registro">Crear Nuevo Registro</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal para ver detalles con diseño mejorado -->
+        <div id="detalleModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2><i class="fas fa-clipboard-list"></i> Detalles de la Solicitud</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="detalles-section">
+                        <div id="detalleContent" class="detalle-grid"></div>
+                    </div>
+
+                    <div class="pagos-section">
+                        <h3><i class="fas fa-money-bill-wave"></i> Historial de Pagos</h3>
+                        <div id="pagosHistorial"></div>
+                    </div>
+
+                    <div class="archivos-section">
+                        <h3><i class="fas fa-paperclip"></i> Archivos Adjuntos</h3>
+                        <div id="archivosList"></div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button id="btnNuevoPago" class="btn-nuevo-pago">
+                            <i class="fas fa-plus"></i> Agregar Pago
+                        </button>
+                        <button id="btnNuevoAdjunto" class="btn-nuevo-adjunto">
+                            <i class="fas fa-paperclip"></i> Agregar Adjunto
+                        </button>
+                        <button id="btnAgregarAnticipo" class="btn-agregar-anticipo">
+                            <i class="fas fa-wallet"></i> Agregar Anticipo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para nuevo pago -->
+        <div id="pagoModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2><i class="fas fa-money-check"></i> Nuevo Pago</h2>
+                </div>
+                <form id="pagoForm" class="form-pago">
+                    <div class="form-group">
+                        <label for="numeroComprobante">Número de Comprobante: <span class="required">*</span></label>
+                        <input type="text" id="numeroComprobante" name="numeroComprobante" required placeholder="Ingrese el número de comprobante">
+                    </div>
+
+                    <div class="form-group">
+                        <h3 class="section-title"><i class="fas fa-coins"></i> Participación</h3>
+                        <div class="participacion-container">
+                            <div class="input-group">
+                                <label for="ng">NG:</label>
+                                <div class="input-money">
+                                    <span>$</span>
+                                    <input type="text" id="ng" name="ng" class="currency-input" required>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="trenes">TRENES:</label>
+                                <div class="input-money">
+                                    <span>$</span>
+                                    <input type="text" id="trenes" name="trenes" class="currency-input" required>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="totalParticipacion">Total Participación:</label>
+                                <div class="input-money">
+                                    <span>$</span>
+                                    <input type="text" id="totalParticipacion" class="currency-input" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="medioPago"><i class="fas fa-credit-card"></i> Medio de Pago:</label>
+                        <select id="medioPago" name="medioPago" required>
+                            <option value="">Seleccione medio de pago</option>
+                            <option value="EFECTIVO">EFECTIVO</option>
+                            <option value="DEPOSITO">DEPOSITO</option>
+                            <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                            <option value="NOTA DE CREDITO">NOTA DE CREDITO</option>
+                        </select>
+                    </div>
+
+                    <!-- Campo Banco Sociedad -->
+                    <div class="form-group">
+                        <label for="bancoSociedad"><i class="fas fa-university"></i> Banco Sociedad:</label>
+                        <input type="text" id="bancoSociedad" name="bancoSociedad" placeholder="Ingrese el banco de la sociedad">
+                    </div>
+
+                    <!-- Zona de archivos -->
+                    <div class="form-group">
+                        <label><i class="fas fa-file-upload"></i> Adjuntar Archivos: <span class="required">*</span></label>
+                        <div id="dropzone" class="dropzone">
+                            <div class="dz-message">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Arrastre archivos aquí o haga clic para seleccionar</p>
+                            </div>
+                            <input type="file" id="fileInput" multiple required>
+                            <div id="fileList"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save"></i> Guardar Pago
+                        </button>
+                        <button type="button" class="btn-cancel" id="btnCancelarPago">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para nuevo adjunto -->
+        <div id="adjuntoModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2><i class="fas fa-file-alt"></i> Agregar Archivos Adjuntos</h2>
+                </div>
+                <form id="adjuntoForm" class="form-adjunto">
+                    <!-- Zona de archivos -->
+                    <div class="form-group">
+                        <label><i class="fas fa-file-upload"></i> Adjuntar Archivos: <span class="required">*</span></label>
+                        <div id="dropzoneAdjunto" class="dropzone">
+                            <div class="dz-message">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Arrastre archivos aquí o haga clic para seleccionar</p>
+                            </div>
+                            <input type="file" id="fileInputAdjunto" multiple required>
+                            <div id="fileListAdjunto"></div>
+                        </div>
+                    </div>
+
+                    <!-- Campo Observaciones -->
+                    <div class="form-group">
+                        <label for="observacionesAdjunto"><i class="fas fa-comment"></i> Observaciones:</label>
+                        <textarea id="observacionesAdjunto" name="observaciones" rows="3" placeholder="Agregue información relevante sobre los archivos adjuntos..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save"></i> Guardar Adjuntos
+                        </button>
+                        <button type="button" class="btn-cancel" id="btnCancelarAdjunto">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para seleccionar anticipo -->
+        <div id="anticipoModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2><i class="fas fa-wallet"></i> Seleccionar Anticipo</h2>
+                </div>
+                <div class="anticipos-container">
+                    <div class="loader">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando anticipos disponibles...
+                    </div>
+                    <div id="anticiposList" class="anticipos-list"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btnCancelarAnticipo">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de confirmación para eliminar pago -->
+        <div id="eliminarPagoModal" class="modal">
+            <div class="modal-content modal-small">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2><i class="fas fa-trash-alt"></i> Confirmar Eliminación</h2>
+                </div>
+                <div class="confirm-content">
+                    <p><i class="fas fa-exclamation-triangle"></i> ¿Está seguro que desea eliminar este pago?</p>
+                    <p>El pago será convertido en un anticipo disponible.</p>
+                    <div id="pagoDetalles" class="pago-detalle"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btnCancelarEliminar">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn-danger" id="btnConfirmarEliminar">
+                        <i class="fas fa-trash"></i> Eliminar Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal de confirmación para aplicar anticipo -->
+        <div id="confirmarAnticipoModal" class="modal">
+            <div class="modal-content modal-small">
+                <span class="close">&times;</span>
+                <div class="modal-header">
+                    <h2><i class="fas fa-check-circle"></i> Confirmar Anticipo</h2>
+                </div>
+                <div class="anticipo-details">
+                    <p><i class="fas fa-question-circle"></i> ¿Está seguro que desea aplicar el siguiente anticipo?</p>
+                    <div id="anticipoDetalles" class="anticipo-detalle"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="btnCancelarConfirmacion">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn-confirm" id="btnConfirmarAnticipo">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script con los datos de registros -->
+    <script type="text/javascript">
+        const registros = JSON.parse('{{ registros|tojson|safe }}');
+        const pagosNoVinculados = JSON.parse('{{ pagos_no_vinculados|default("[]")|tojson|safe }}');
+        const currentDateTime = "{{ current_time }}";
+        const currentUser = "{{ session['username'] }}";
+    </script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="{{ url_for('static', filename='js/registros.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/anticipos.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/filtros.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/balance_pagos.js') }}"></script>
+</body>
+</html>

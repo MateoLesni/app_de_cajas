@@ -1,0 +1,1003 @@
+/* Estilos para el nuevo diseño de tabla y filtros */
+
+/* Panel de filtros */
+.filtros-panel {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.filtros-panel h2 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #444;
+}
+
+.filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.filtro-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtro-item label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.filtro-select,
+.filtro-input {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.filtro-select:focus,
+.filtro-input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.filtro-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.btn-filtrar,
+.btn-limpiar {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-filtrar {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-filtrar:hover {
+    background-color: #0069d9;
+}
+
+.btn-limpiar {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-limpiar:hover {
+    background-color: #5a6268;
+}
+
+/* Tabla de registros */
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 5px;
+}
+
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.registros-table th,
+.registros-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.registros-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.registros-table tbody tr {
+    background-color: white;
+    transition: background-color 0.2s ease;
+}
+
+.registros-table tbody tr:hover {
+    background-color: #f5f9ff;
+}
+
+.registros-table .monto {
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+.registros-table .observacion {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-ver-mas {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.btn-ver-mas:hover {
+    background-color: #218838;
+}
+
+/* Estado de pagos */
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.badge-pending {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-partial {
+    background-color: #ffc107;
+    color: #343a40;
+}
+
+/* Mensaje de no registros */
+.no-records td {
+    padding: 30px 15px;
+}
+
+.no-registros p {
+    text-align: center;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.btn-nuevo-registro {
+    display: block;
+    width: max-content;
+    margin: 0 auto;
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-nuevo-registro:hover {
+    background-color: #0069d9;
+}
+
+/* Estilos responsivos */
+@media (max-width: 1200px) {
+    .filtros-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .filtros-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .registros-table th,
+    .registros-table td {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+}
+/* Estilos para la tabla de registros mejorada */
+.table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 5px;
+    background: #fff;
+}
+
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+}
+
+.registros-table thead {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.registros-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.registros-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.registros-table tbody tr:hover {
+    background-color: #f7f9fc;
+}
+
+.registros-table td {
+    padding: 10px 15px;
+    vertical-align: middle;
+}
+
+/* Estilos para cada tipo de celda */
+.registros-table td.pedido {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.registros-table td.fecha {
+    white-space: nowrap;
+}
+
+.registros-table td.cliente {
+    font-weight: 500;
+}
+
+.registros-table td.monto {
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+.registros-table td.observacion {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.registros-table td.estado {
+    text-align: center;
+}
+
+.registros-table td.acciones {
+    text-align: center;
+    width: 100px;
+}
+
+/* Estilos para los badges de estado */
+.badge {
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.badge-pending {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-partial {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Estilos para el botón Ver más */
+.btn-ver-mas {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.btn-ver-mas:hover {
+    background-color: #218838;
+}
+
+/* Estilos para filas alternadas (cebra) */
+.registros-table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+/* Responsive para la tabla */
+@media screen and (max-width: 992px) {
+    .registros-table th,
+    .registros-table td {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+}
+/* Corrección específica para el formato horizontal de la tabla */
+
+/* Asegurarse de que la tabla tenga el layout adecuado */
+.registros-table {
+    width: 100%;
+    table-layout: fixed; /* Importante para mantener el ancho de columnas consistente */
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+/* Forzar que las celdas mantengan su contenido en una sola línea */
+.registros-table td, 
+.registros-table th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 10px;
+    vertical-align: middle;
+    border: 1px solid #dee2e6;
+}
+
+/* Estilos para cabeceras */
+.registros-table thead {
+    background-color: #f8f9fa;
+}
+
+.registros-table th {
+    font-weight: 600;
+    color: #495057;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #adb5bd;
+}
+
+/* Estilos específicos para cada tipo de celda */
+.registros-table td.monto {
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    width: 120px; /* Ancho fijo para las columnas de moneda */
+}
+
+.registros-table td.observacion {
+    max-width: 200px;
+}
+
+.registros-table td.estado {
+    text-align: center;
+    width: 100px;
+}
+
+.registros-table td.acciones {
+    text-align: center;
+    width: 100px;
+}
+
+/* Estilos para el contenedor de la tabla */
+.table-container {
+    overflow-x: auto; /* Permite scroll horizontal en pantallas pequeñas */
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* Estilos para filas alternas */
+.registros-table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.registros-table tbody tr:hover {
+    background-color: #e6f7ff;
+}
+
+/* Estilos para badge de estado */
+.badge {
+    display: inline-block;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.badge-pending {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-partial {
+    background-color: #ffc107;
+    color: #343a40;
+}
+
+/* Botón de ver más */
+.btn-ver-mas {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-ver-mas:hover {
+    background-color: #218838;
+}
+/* Estilos para asegurar la alineación exacta de la tabla */
+
+/* Estilos básicos de la tabla */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;  /* Esto es clave para mantener anchos fijos */
+    border: 1px solid #dee2e6;
+}
+
+/* Estilos para cabeceras */
+.registros-table thead {
+    background-color: #f8f9fa;
+}
+
+.registros-table th {
+    padding: 12px 8px;
+    font-weight: 600;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Estilos para celdas de datos */
+.registros-table td {
+    padding: 12px 8px;
+    border: 1px solid #dee2e6;
+    vertical-align: middle;
+    text-align: left;
+}
+
+/* Forzar ancho específico para cada columna */
+.col-pedido {
+    width: 130px;
+}
+
+.col-fecha {
+    width: 150px;
+}
+
+.col-cliente {
+    width: 100px;
+}
+
+.col-neto, .col-ng, .col-trenes, .col-total {
+    width: 130px;
+}
+
+.col-observaciones {
+    width: 200px;
+}
+
+.col-estado {
+    width: 120px;
+    text-align: center;
+}
+
+.col-acciones {
+    width: 100px;
+    text-align: center;
+}
+
+/* Estilos para montos */
+.monto {
+    text-align: right !important;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+/* Estilos para filas alternas */
+.registros-table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.registros-table tbody tr:hover {
+    background-color: #f2f8ff;
+}
+
+/* Estilos para la insignia de estado */
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+}
+
+.badge-pending {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-partial {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Estilos para el botón Ver más */
+.btn-ver-mas {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-ver-mas:hover {
+    background-color: #218838;
+}
+
+/* Mensaje cuando no hay registros */
+.no-records td {
+    padding: 30px;
+    text-align: center;
+}
+
+/* Estilos responsivos */
+@media (max-width: 1200px) {
+    .table-container {
+        overflow-x: scroll;
+    }
+}
+/* Estilos para la tabla de registros - Versión limpia y unificada */
+
+/* Contenedor de la tabla */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 20px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* Tabla básica */
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+    border: 1px solid #dee2e6;
+}
+
+/* Encabezados de tabla */
+.registros-table thead {
+    background-color: #f8f9fa;
+}
+
+.registros-table th {
+    border: 1px solid #dee2e6;
+    border-bottom: 2px solid #adb5bd;
+    padding: 10px 8px;
+    text-align: center;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Filas y celdas */
+.registros-table tr {
+    background-color: #ffffff;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.registros-table tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.registros-table tr:hover {
+    background-color: #f0f7ff;
+}
+
+.registros-table td {
+    border: 1px solid #dee2e6;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+/* Ancho específico de columnas */
+.registros-table th:nth-child(1), .registros-table td:nth-child(1) { /* Pedido */
+    width: 130px;
+}
+
+.registros-table th:nth-child(2), .registros-table td:nth-child(2) { /* Fecha */
+    width: 150px;
+}
+
+.registros-table th:nth-child(3), .registros-table td:nth-child(3) { /* Cliente */
+    width: 120px;
+}
+
+.registros-table th:nth-child(4), 
+.registros-table th:nth-child(5), 
+.registros-table th:nth-child(6), 
+.registros-table th:nth-child(7), 
+.registros-table td:nth-child(4), 
+.registros-table td:nth-child(5), 
+.registros-table td:nth-child(6), 
+.registros-table td:nth-child(7) { /* Montos */
+    width: 140px;
+}
+
+.registros-table th:nth-child(8), .registros-table td:nth-child(8) { /* Observaciones */
+    width: 180px;
+}
+
+.registros-table th:nth-child(9), .registros-table td:nth-child(9) { /* Estado */
+    width: 100px;
+}
+
+.registros-table th:nth-child(10), .registros-table td:nth-child(10) { /* Acciones */
+    width: 100px;
+}
+
+/* Alineación específica de celdas */
+.registros-table td:nth-child(1) { /* ID pedido */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.registros-table td:nth-child(2) { /* Fecha */
+    white-space: nowrap;
+}
+
+.registros-table td.monto,
+.registros-table td:nth-child(4),
+.registros-table td:nth-child(5),
+.registros-table td:nth-child(6),
+.registros-table td:nth-child(7) {
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+.registros-table td.observacion,
+.registros-table td:nth-child(8) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.registros-table td.estado,
+.registros-table td:nth-child(9) {
+    text-align: center;
+}
+
+.registros-table td.acciones,
+.registros-table td:nth-child(10) {
+    text-align: center;
+}
+
+/* Estilos para badge */
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.badge-pending {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-partial {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Botón ver más */
+.btn-ver-mas {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-mas:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+/* Mensaje sin registros */
+.no-records td {
+    padding: 20px;
+    text-align: center;
+}
+
+.no-registros p {
+    margin-bottom: 15px;
+    color: #6c757d;
+}
+/* Estilos para la tabla de registros - Versión minimalista y compacta */
+
+/* Contenedor de la tabla */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 15px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+/* Tabla básica */
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+/* Encabezados de tabla */
+.registros-table thead {
+    background-color: #f8f9fa;
+}
+
+.registros-table th {
+    padding: 8px 6px;
+    text-align: left;
+    font-weight: 500;
+    color: #495057;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 12px;
+}
+
+/* Filas y celdas */
+.registros-table tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.registros-table tr:hover {
+    background-color: #f9fbfd;
+}
+
+.registros-table td {
+    padding: 6px;
+    vertical-align: middle;
+}
+
+/* Ancho específico de columnas */
+.registros-table th:nth-child(1), .registros-table td:nth-child(1) { /* Pedido */
+    width: 130px;
+}
+
+.registros-table th:nth-child(2), .registros-table td:nth-child(2) { /* Fecha */
+    width: 135px;
+}
+
+.registros-table th:nth-child(3), .registros-table td:nth-child(3) { /* Cliente */
+    width: 120px;
+}
+
+.registros-table th:nth-child(4), 
+.registros-table th:nth-child(5), 
+.registros-table th:nth-child(6), 
+.registros-table th:nth-child(7), 
+.registros-table td:nth-child(4), 
+.registros-table td:nth-child(5), 
+.registros-table td:nth-child(6), 
+.registros-table td:nth-child(7) { /* Montos */
+    width: 120px;
+}
+
+.registros-table th:nth-child(8), .registros-table td:nth-child(8) { /* Observaciones */
+    width: 180px;
+}
+
+.registros-table th:nth-child(9), .registros-table td:nth-child(9) { /* Estado */
+    width: 90px;
+}
+
+.registros-table th:nth-child(10), .registros-table td:nth-child(10) { /* Acciones */
+    width: 85px;
+}
+
+/* Alineación específica de celdas */
+.registros-table td:nth-child(1) { /* ID pedido */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #555;
+}
+
+.registros-table td:nth-child(2) { /* Fecha */
+    white-space: nowrap;
+    color: #666;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(3) { /* Cliente */
+    font-weight: 500;
+}
+
+.registros-table td:nth-child(4),
+.registros-table td:nth-child(5),
+.registros-table td:nth-child(6),
+.registros-table td:nth-child(7) {
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(8) { /* Observaciones */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #666;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(9) { /* Estado */
+    text-align: center;
+}
+
+.registros-table td:nth-child(10) { /* Acciones */
+    text-align: center;
+}
+
+/* Estilos para badge */
+.badge {
+    display: inline-block;
+    padding: 3px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 3px;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.badge-pending {
+    background-color: #ffebee;
+    color: #e53935;
+    border: 1px solid #ffcdd2;
+}
+
+.badge-partial {
+    background-color: #fff8e1;
+    color: #ff8f00;
+    border: 1px solid #ffe082;
+}
+
+/* Botón ver más */
+.btn-ver-mas {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-mas:hover {
+    background-color: #c8e6c9;
+}
+
+/* Mensaje sin registros */
+.no-records td {
+    padding: 15px;
+    text-align: center;
+}
+
+.no-registros p {
+    margin-bottom: 10px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* Filas alternadas más sutiles */
+.registros-table tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Panel de filtros más compacto */
+.filtros-panel {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.filtros-panel h2 {
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #444;
+}
+
+.filtro-select,
+.filtro-input {
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.btn-filtrar,
+.btn-limpiar {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: normal;
+}

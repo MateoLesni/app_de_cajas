@@ -1,0 +1,57 @@
+[
+  {
+    "id": "1",
+    "username": "admin",
+    "password": "$2b$12$wRAtJk5zkQ2FGpW8j0KZOemmvXPE2RvjIbrMMNDFs7Sr/z/y/jqZO",
+    "role": "admin",
+    "permissions": [
+      "dashboard",
+      "users",
+      "reports",
+      "transfers"
+    ],
+    "status": "active",
+    "lastAccess": "2025-03-28T13:06:45.837187-03:00",
+    "created_at": "2025-03-27T02:08:20.226992-03:00"
+  },
+  {
+    "id": "3",
+    "username": "MLUNA",
+    "password": "$2b$12$xPHfZzeZsBvaACE9gbfLQOINJLI4x0Ku35AyfWjsFNgW04W9/upnW",
+    "role": "user",
+    "permissions": [],
+    "status": "active",
+    "lastAccess": "2025-04-03T02:18:46.784774-03:00",
+    "created_at": "2025-03-27T02:12:53.317857",
+    "pages": [
+      "dashboard",
+      "transferencias",
+      "reportes2",
+      "zonas"
+    ],
+    "updated_at": "2025-03-30T15:38:04.339986-03:00",
+    "avatar_url": "/static/avatars/MLUNA_20250329010422.png"
+  },
+  {
+    "id": "4",
+    "username": "pomenuk",
+    "password": "$2b$12$tGiDBDSpMPnYmic4rDgG3O/HevkpYXqELw18GfgaRqk6N7Xa2NHPW",
+    "role": "admin",
+    "pages": [
+      "dashboard",
+      "registros",
+      "index",
+      "registros_cerrados",
+      "reportes",
+      "transferencias",
+      "reportes2",
+      "usuarios",
+      "zonas"
+    ],
+    "permissions": [],
+    "status": "active",
+    "lastAccess": "2025-04-03T01:49:43.602670-03:00",
+    "created_at": "2025-03-28T02:06:15.262674-03:00",
+    "updated_at": "2025-03-30T15:41:36.384686-03:00"
+  }
+]

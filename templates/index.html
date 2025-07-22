@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Ventas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado con información del usuario -->
+        <div class="header">
+            <div class="header-info">
+                <div class="info-item">
+                    <span class="label">Fecha:</span>
+                    <span id="currentDate" class="value"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Usuario:</span>
+                    <span id="currentUser" class="value">{{ session['username'] }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Local:</span>
+                    <span id="userLocal" class="value">{{ session['local'] }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Sociedad:</span>
+                    <span id="userSociedad" class="value">{{ session['society']}}</span>
+                </div>
+            </div>
+            <div class="header-buttons">
+                <a href="{{ url_for('index') }}" class="btn-header">Inicio</a>
+                <a href="{{ url_for('registros') }}" class="btn-header">Pendientes</a>
+                <a href="{{ url_for('logout') }}" class="btn-header">Cerrar Sesión</a>
+            </div>
+        </div>
+
+        <!-- Sección de resumen -->
+        <div class="summary-section">
+            <div class="summary-container">
+                <!-- Tabla de Resumen de Venta -->
+                <div class="summary-table venta-table">
+                    <h2 class="table-title">Resumen de Venta</h2>
+                    <table>
+                        <tr>
+                            <td>Vta Z</td>
+                            <td id="totalVtaZ" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Discovery</td>
+                            <td id="discovery" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Total Venta Vinson</td>
+                            <td id="totalVentaVinson" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Total vta PIXEL</td>
+                            <td id="totalVtaPixel" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Total cobrado</td>
+                            <td id="totalCobrado" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Diferencia</td>
+                            <td id="diferencia" class="amount">0,00</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Tabla de Medios de Pago -->
+                <div class="summary-table medios-table">
+                    <h2 class="table-title">Medios de Pago</h2>
+                    <table>
+                        <tr>
+                            <td>Efectivo</td>
+                            <td id="efectivo" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Tarjeta</td>
+                            <td id="tarjeta" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Pedidos Ya</td>
+                            <td id="pedidosYa" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Rappi</td>
+                            <td id="rappi" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Pagos</td>
+                            <td id="pagos" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Mercado Pago</td>
+                            <td id="mercadoPago" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>Club Ahumado</td>
+                            <td id="clubAhumado" class="amount">0,00</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Tabla de Resumen de Tarjetas (ahora a la derecha) -->
+                <div class="summary-table tarjetas-table">
+                    <h2 class="table-title">Resumen de Tarjetas</h2>
+                    <table>
+                        <tr>
+                            <td>VISA</td>
+                            <td id="visa" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>VISA DEBITO</td>
+                            <td id="visaDebito" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>MASTERCARD</td>
+                            <td id="mastercard" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>MASTERCARD DEBITO</td>
+                            <td id="mastercardDebito" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>CABAL</td>
+                            <td id="cabal" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>CABAL DEBITO</td>
+                            <td id="cabalDebito" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>AMEX</td>
+                            <td id="amex" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>MAESTRO</td>
+                            <td id="maestro" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>PAGOS INMEDIATOS</td>
+                            <td id="pagosInmediatos" class="amount">0,00</td>
+                        </tr>
+                        <tr>
+                            <td>OTROS</td>
+                            <td id="otros" class="amount">0,00</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>TOTAL</td>
+                            <td id="totalTarjetas" class="amount">0,00</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- index.html -->
+        <label for="cajaSelect">Seleccioná una caja:</label>
+        <select id="cajaSelect" name="caja">
+            {% for i in range(1, cantidad_cajas + 1) %}
+                <option value="Caja {{ i }}">Caja {{ i }}</option>
+            {% endfor %}
+        </select>
+
+
+  <!-- Aquí se agregará dinámicamente cada formulario de Caja 1, 2, 3, etc. -->
+        </div>
+
+
+
+
+        <!-- Pestañas para diferentes secciones -->
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="ventas">Ventas</button>
+                <button class="tab-btn" data-tab="mercadopago">MercadoPago</button>
+                <button class="tab-btn" data-tab="rappi">Rappi</button>
+                <button class="tab-btn" data-tab="peya">PedidosYa</button>
+                <button class="tab-btn" data-tab="tarjetas">Tarjetas</button>
+                <button class="tab-btn" data-tab="remesas">Remesas</button>
+                <button class="tab-btn" data-tab="gastos">Gastos</button>
+            </div>
+
+            <!-- Contenido de pestañas -->
+            <div class="tab-content">
+                <!-- Pestaña de Ventas -->
+                <div id="ventas" class="tab-pane active">
+                    <h2>Registro de Ventas</h2>
+                    <form id="ventasForm" class="form-container">
+                        <div class="form-group">
+                            <label for="ventaZ">Venta Z:</label>
+                            <div class="input-money">
+                                <span>$</span>
+                                <input type="text" id="ventaZ" name="ventaZ" class="currency-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ventaVinson">Total Venta Vinson:</label>
+                            <div class="input-money">
+                                <span>$</span>
+                                <input type="text" id="ventaVinson" name="ventaVinson" class="currency-input">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ventaPixel">Venta PIXEL:</label>
+                            <div class="input-money">
+                                <span>$</span>
+                                <input type="text" id="ventaPixel" name="ventaPixel" class="currency-input">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit">Guardar</button>
+                    </form>
+                </div>
+
+                <!-- Resto del contenido de las pestañas permanece igual -->
+                <!-- Pestaña de MercadoPago -->
+                <div id="mercadopago" class="tab-pane">
+                    <h2>Registro de MercadoPago</h2>
+
+                    <!-- Tabla de registros temporales -->
+                    <table id="tablaRegistrosMP" class="form-table" style="margin-bottom: 15px; display: none; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Comprobante</th>
+                                <th>Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+
+                    <div class="form-container">
+                        <div class="form-group">
+                            <label for="mpComprobante">Comprobante:</label>
+                            <input type="text" id="mpComprobante" name="mpComprobante" placeholder="Ej: #12345 o Descripción">
+                        </div>
+                        <div class="form-group">
+                            <label for="mpMonto">Monto:</label>
+                            <div class="input-money">
+                                <span>$</span>
+                                <input type="text" id="mpMonto" name="mpMonto" class="currency-input" placeholder="0,00">
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="form-buttons">
+                            <button type="button" onclick="agregarRegistroMP()" class="btn-submit">Añadir</button>
+                            <button type="button" onclick="finalizarRegistroMP()" class="btn-submit">Finalizar</button>
+                        </div>
+                    </div>
+</div>
+
+
+                <!-- Pestañas adicionales (contenido de placeholder) -->
+                <div id="rappi" class="tab-pane">
+                    <h2>Registro de Rappi</h2>
+                    <div class="placeholder-content">
+                        <p>El formulario para Rappi estará disponible próximamente.</p>
+                    </div>
+                </div>
+                
+                <div id="peya" class="tab-pane">
+                    <h2>Registro de PedidosYa</h2>
+                    <div class="placeholder-content">
+                        <p>El formulario para PedidosYa estará disponible próximamente.</p>
+                    </div>
+                </div>
+                
+                <div id="tarjetas" class="tab-pane">
+                    <h2>Registro de Tarjetas</h2>
+                    <form id="tarjetasForm" class="form-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; padding: 8px;">Tarjeta</th>
+                                    <th style="text-align: left; padding: 8px;">Lote</th>
+                                    <th style="text-align: left; padding: 8px;">Monto</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <!-- Tarjetas -->
+                                <tr><td style="padding: 8px;">VISA</td>
+                                    <td><input type="text" name="lote_visa" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_visa" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">VISA DEBITO</td>
+                                    <td><input type="text" name="lote_visa_debito" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_visa_debito" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">VISA PREPAGO</td>
+                                    <td><input type="text" name="lote_visa_prepago" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_visa_prepago" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">MASTERCARD</td>
+                                    <td><input type="text" name="lote_mastercard" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_mastercard" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">MASTER DEBITO</td>
+                                    <td><input type="text" name="lote_master_debito" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_master_debito" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">MASTER PREPAGO</td>
+                                    <td><input type="text" name="lote_master_prepago" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_master_prepago" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">CABAL</td>
+                                    <td><input type="text" name="lote_cabal" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_cabal" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">CABAL DEBITO</td>
+                                    <td><input type="text" name="lote_cabal_debito" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_cabal_debito" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">AMEX</td>
+                                    <td><input type="text" name="lote_amex" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_amex" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">MAESTRO</td>
+                                    <td><input type="text" name="lote_maestro" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_maestro" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">PAGOS INMEDIATOS</td>
+                                    <td><input type="text" name="lote_pagos_inmediatos" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_pagos_inmediatos" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">DISCOVER</td>
+                                    <td><input type="text" name="lote_discover" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_discover" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+
+                                <tr><td style="padding: 8px;">NARANJA</td>
+                                    <td><input type="text" name="lote_naranja" placeholder="N° lote"></td>
+                                    <td><div class="input-money"><span>$</span><input type="text" name="monto_naranja" class="currency-input tarjeta-monto" placeholder="0,00"></div></td></tr>
+                            </tbody>
+
+                            <tfoot>
+                                <tr class="fila-total">
+                                    <td style="padding: 10px; font-weight: bold; border-top: 2px solid #333;">TOTAL</td>
+                                    <td style="border-top: 2px solid #333;"></td>
+                                    <td style="padding: 10px; font-weight: bold; border-top: 2px solid #333;" id="totalTarjetasMonto">$0,00</td>
+                                </tr>
+                            </tfoot>
+
+                        </table>
+
+                        <div style="margin-top: 15px;">
+                            <button type="submit" class="btn-submit">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+
+
+                
+                <div id="remesas" class="tab-pane">
+                    <h2>Registro de Remesas</h2>
+                    <form id="remesaForm" class="form-container">
+                        <div class="form-group">
+                            <label for="fecha">Fecha:</label>
+                            <input type="date" id="fecha" name="fecha" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="caja">Caja:</label>
+                            <select id="caja" name="caja" required></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nro_remesa">N° Remesa:</label>
+                            <input type="text" id="nro_remesa" name="nro_remesa" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="precinto">N° Precinto:</label>
+                            <input type="text" id="precinto" name="precinto" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="monto">Monto:</label>
+                            <div class="input-money">
+                                <span>$</span>
+                                <input type="text" id="monto" name="monto" class="currency-input" placeholder="0,00" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="retirada">¿Retirada?</label>
+                            <select id="retirada" name="retirada" required>
+                                <option value="Sí">Sí</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="retirada_por">Retirada por:</label>
+                            <input type="text" id="retirada_por" name="retirada_por">
+                        </div>
+
+                        <button type="submit" class="btn-submit">Guardar Remesa</button>
+                    </form>
+                    <div id="respuestaRemesa" style="margin-top: 10px;"></div>
+                </div>
+
+                
+                <div id="gastos" class="tab-pane">
+                    <h2>Registro de Gastos</h2>
+                    <div class="placeholder-content">
+                        <p>El formulario para Gastos estará disponible próximamente.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h2>Confirmación</h2>
+            <p id="modalMessage"></p>
+            <div class="modal-buttons">
+                <button id="btnConfirm" class="btn-confirm">Confirmar</button>
+                <button id="btnCancel" class="btn-cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html>

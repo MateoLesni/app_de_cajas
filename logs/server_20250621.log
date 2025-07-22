@@ -1,0 +1,274 @@
+2025-06-21 01:20:16,829 - waitress - INFO - Usando 8 threads para 4 CPUs
+2025-06-21 01:20:16,838 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:21:38,584 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-06-21 01:21:59,172 - waitress - INFO - Usando 8 threads para 4 CPUs
+2025-06-21 01:21:59,179 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:22:45,592 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-06-21 01:25:42,773 - waitress - INFO - Usando 8 threads para 4 CPUs
+2025-06-21 01:25:42,781 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:26:50,362 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-06-21 01:27:13,620 - waitress - INFO - Usando 8 threads para 4 CPUs
+2025-06-21 01:27:13,628 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:29:44,824 - app - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\Downloads\01.Proyectos\app.py", line 169, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\Downloads\01.Proyectos\app.py", line 868, in index
+    return render_template('dashboard.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 768, in compile
+    self.handle_exception(source=source_hint)
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\PROPIETARIO\Downloads\01.Proyectos\templates\dashboard.html", line 294, in template
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.TemplateSyntaxError: Unexpected end of template. Jinja was looking for the following tags: 'elif' or 'else' or 'endif'. The innermost block that needs to be closed is 'if'.
+2025-06-21 01:29:45,749 - app - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\Downloads\01.Proyectos\app.py", line 169, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\Downloads\01.Proyectos\app.py", line 868, in index
+    return render_template('dashboard.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 768, in compile
+    self.handle_exception(source=source_hint)
+  File "C:\Users\PROPIETARIO\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\PROPIETARIO\Downloads\01.Proyectos\templates\dashboard.html", line 294, in template
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.TemplateSyntaxError: Unexpected end of template. Jinja was looking for the following tags: 'elif' or 'else' or 'endif'. The innermost block that needs to be closed is 'if'.
+2025-06-21 01:34:43,825 - waitress - INFO - Usando 8 threads para 4 CPUs
+2025-06-21 01:34:43,832 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:35:01,700 - waitress - INFO - Usando 8 threads para 4 CPUs
+2025-06-21 01:35:01,708 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:45:45,264 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-06-21 01:45:45,266 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-06-21 01:45:45,266 - apscheduler.scheduler - INFO - Scheduler started
+2025-06-21 01:45:45,267 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-06-21 01:45:45,269 - app - INFO - Backup creado: ambulante.json.backup
+2025-06-21 01:45:45,272 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\ambulante.json.backup
+2025-06-21 01:45:45,275 - app - INFO - Backup creado: bimbo.json.backup
+2025-06-21 01:45:45,277 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\bimbo.json.backup
+2025-06-21 01:45:45,278 - app - INFO - Backup creado: constitucion.json.backup
+2025-06-21 01:45:45,280 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\constitucion.json.backup
+2025-06-21 01:45:45,281 - app - INFO - Backup creado: gastronomia.json.backup
+2025-06-21 01:45:45,283 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\gastronomia.json.backup
+2025-06-21 01:45:45,285 - app - INFO - Backup creado: kioscos.json.backup
+2025-06-21 01:45:45,286 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\kioscos.json.backup
+2025-06-21 01:45:45,288 - app - INFO - Backup creado: once.json.backup
+2025-06-21 01:45:45,290 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\once.json.backup
+2025-06-21 01:45:45,293 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-06-21 01:45:45,295 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pagos_no_vinculados.json.backup
+2025-06-21 01:45:45,297 - app - INFO - Backup creado: pendientes.json.backup
+2025-06-21 01:45:45,300 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pendientes.json.backup
+2025-06-21 01:45:45,302 - app - INFO - Backup creado: registros.json.backup
+2025-06-21 01:45:45,304 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\registros.json.backup
+2025-06-21 01:45:45,307 - app - INFO - Backup creado: retiro.json.backup
+2025-06-21 01:45:45,309 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\retiro.json.backup
+2025-06-21 01:45:45,312 - app - INFO - Backup creado: tba.json.backup
+2025-06-21 01:45:45,313 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\tba.json.backup
+2025-06-21 01:45:45,315 - app - INFO - Backup creado: users.json.backup
+2025-06-21 01:45:45,317 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\users.json.backup
+2025-06-21 01:45:45,320 - app - INFO - Backup creado: zona_sur.json.backup
+2025-06-21 01:45:45,323 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\zona_sur.json.backup
+2025-06-21 01:45:45,323 - app - INFO - Backup automático completado. 13 archivos respaldados.
+2025-06-21 01:45:45,324 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-06-21 01:45:45,358 - waitress - INFO - Serving on http://0.0.0.0:70
+2025-06-21 01:47:56,144 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-06-21 01:48:02,847 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-06-21 01:48:02,848 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-06-21 01:48:02,849 - apscheduler.scheduler - INFO - Scheduler started
+2025-06-21 01:48:02,849 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-06-21 01:48:02,853 - app - INFO - Backup creado: ambulante.json.backup
+2025-06-21 01:48:02,854 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\ambulante.json.backup
+2025-06-21 01:48:02,856 - app - INFO - Backup creado: bimbo.json.backup
+2025-06-21 01:48:02,858 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\bimbo.json.backup
+2025-06-21 01:48:02,860 - app - INFO - Backup creado: constitucion.json.backup
+2025-06-21 01:48:02,861 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\constitucion.json.backup
+2025-06-21 01:48:02,864 - app - INFO - Backup creado: gastronomia.json.backup
+2025-06-21 01:48:02,865 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\gastronomia.json.backup
+2025-06-21 01:48:02,867 - app - INFO - Backup creado: kioscos.json.backup
+2025-06-21 01:48:02,869 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\kioscos.json.backup
+2025-06-21 01:48:02,871 - app - INFO - Backup creado: once.json.backup
+2025-06-21 01:48:02,872 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\once.json.backup
+2025-06-21 01:48:02,874 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-06-21 01:48:02,876 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pagos_no_vinculados.json.backup
+2025-06-21 01:48:02,878 - app - INFO - Backup creado: pendientes.json.backup
+2025-06-21 01:48:02,880 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pendientes.json.backup
+2025-06-21 01:48:02,882 - app - INFO - Backup creado: registros.json.backup
+2025-06-21 01:48:02,884 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\registros.json.backup
+2025-06-21 01:48:02,888 - app - INFO - Backup creado: retiro.json.backup
+2025-06-21 01:48:02,890 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\retiro.json.backup
+2025-06-21 01:48:02,893 - app - INFO - Backup creado: tba.json.backup
+2025-06-21 01:48:02,895 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\tba.json.backup
+2025-06-21 01:48:02,897 - app - INFO - Backup creado: users.json.backup
+2025-06-21 01:48:02,899 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\users.json.backup
+2025-06-21 01:48:02,904 - app - INFO - Backup creado: zona_sur.json.backup
+2025-06-21 01:48:02,906 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\zona_sur.json.backup
+2025-06-21 01:48:02,906 - app - INFO - Backup automático completado. 13 archivos respaldados.
+2025-06-21 01:48:02,907 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-06-21 01:48:02,946 - waitress - INFO - Serving on http://[::1]:443
+2025-06-21 01:48:02,946 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-06-21 03:01:04,204 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-06-21 03:01:04,207 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-06-21 03:01:04,207 - apscheduler.scheduler - INFO - Scheduler started
+2025-06-21 03:01:04,208 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-06-21 03:01:04,211 - app - INFO - Backup creado: ambulante.json.backup
+2025-06-21 03:01:04,217 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\ambulante.json.backup
+2025-06-21 03:01:04,220 - app - INFO - Backup creado: bimbo.json.backup
+2025-06-21 03:01:04,224 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\bimbo.json.backup
+2025-06-21 03:01:04,227 - app - INFO - Backup creado: constitucion.json.backup
+2025-06-21 03:01:04,232 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\constitucion.json.backup
+2025-06-21 03:01:04,237 - app - INFO - Backup creado: gastronomia.json.backup
+2025-06-21 03:01:04,241 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\gastronomia.json.backup
+2025-06-21 03:01:04,245 - app - INFO - Backup creado: kioscos.json.backup
+2025-06-21 03:01:04,253 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\kioscos.json.backup
+2025-06-21 03:01:04,256 - app - INFO - Backup creado: once.json.backup
+2025-06-21 03:01:04,263 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\once.json.backup
+2025-06-21 03:01:04,266 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-06-21 03:01:04,267 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pagos_no_vinculados.json.backup
+2025-06-21 03:01:04,272 - app - INFO - Backup creado: pendientes.json.backup
+2025-06-21 03:01:04,274 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pendientes.json.backup
+2025-06-21 03:01:04,274 - app - INFO - Backup creado: registros.json.backup
+2025-06-21 03:01:04,274 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\registros.json.backup
+2025-06-21 03:01:04,274 - app - INFO - Backup creado: retiro.json.backup
+2025-06-21 03:01:04,290 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\retiro.json.backup
+2025-06-21 03:01:04,294 - app - INFO - Backup creado: tba.json.backup
+2025-06-21 03:01:04,297 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\tba.json.backup
+2025-06-21 03:01:04,297 - app - INFO - Backup creado: users.json.backup
+2025-06-21 03:01:04,306 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\users.json.backup
+2025-06-21 03:01:04,310 - app - INFO - Backup creado: zona_sur.json.backup
+2025-06-21 03:01:04,310 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\zona_sur.json.backup
+2025-06-21 03:01:04,310 - app - INFO - Backup automático completado. 13 archivos respaldados.
+2025-06-21 03:01:04,310 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-06-21 03:01:04,355 - waitress - INFO - Serving on http://[::1]:443
+2025-06-21 03:01:04,356 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-06-21 03:02:42,924 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-06-21 03:02:51,337 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-06-21 03:02:51,344 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-06-21 03:02:51,344 - apscheduler.scheduler - INFO - Scheduler started
+2025-06-21 03:02:51,346 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-06-21 03:02:51,348 - app - INFO - Backup creado: ambulante.json.backup
+2025-06-21 03:02:51,350 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\ambulante.json.backup
+2025-06-21 03:02:51,352 - app - INFO - Backup creado: bimbo.json.backup
+2025-06-21 03:02:51,354 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\bimbo.json.backup
+2025-06-21 03:02:51,356 - app - INFO - Backup creado: constitucion.json.backup
+2025-06-21 03:02:51,358 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\constitucion.json.backup
+2025-06-21 03:02:51,360 - app - INFO - Backup creado: gastronomia.json.backup
+2025-06-21 03:02:51,363 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\gastronomia.json.backup
+2025-06-21 03:02:51,365 - app - INFO - Backup creado: kioscos.json.backup
+2025-06-21 03:02:51,368 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\kioscos.json.backup
+2025-06-21 03:02:51,371 - app - INFO - Backup creado: once.json.backup
+2025-06-21 03:02:51,373 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\once.json.backup
+2025-06-21 03:02:51,375 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-06-21 03:02:51,377 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pagos_no_vinculados.json.backup
+2025-06-21 03:02:51,379 - app - INFO - Backup creado: pendientes.json.backup
+2025-06-21 03:02:51,380 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pendientes.json.backup
+2025-06-21 03:02:51,383 - app - INFO - Backup creado: registros.json.backup
+2025-06-21 03:02:51,385 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\registros.json.backup
+2025-06-21 03:02:51,389 - app - INFO - Backup creado: retiro.json.backup
+2025-06-21 03:02:51,392 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\retiro.json.backup
+2025-06-21 03:02:51,394 - app - INFO - Backup creado: tba.json.backup
+2025-06-21 03:02:51,396 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\tba.json.backup
+2025-06-21 03:02:51,398 - app - INFO - Backup creado: users.json.backup
+2025-06-21 03:02:51,399 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\users.json.backup
+2025-06-21 03:02:51,401 - app - INFO - Backup creado: zona_sur.json.backup
+2025-06-21 03:02:51,404 - app - INFO - Eliminando backup antiguo: c:\Users\PROPIETARIO\Downloads\01.Proyectos\data\zona_sur.json.backup
+2025-06-21 03:02:51,404 - app - INFO - Backup automático completado. 13 archivos respaldados.
+2025-06-21 03:02:51,404 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-06-21 03:02:51,424 - waitress - INFO - Serving on http://[::1]:443
+2025-06-21 03:02:51,424 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-06-21 03:08:30,662 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-06-21 13:16:53,035 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-06-21 13:16:53,039 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-06-21 13:16:53,039 - apscheduler.scheduler - INFO - Scheduler started
+2025-06-21 13:16:53,040 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-06-21 13:16:53,057 - app - INFO - Backup creado: ambulante.json.backup
+2025-06-21 13:16:53,059 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\ambulante.json.backup
+2025-06-21 13:16:53,071 - app - INFO - Backup creado: bimbo.json.backup
+2025-06-21 13:16:53,073 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\bimbo.json.backup
+2025-06-21 13:16:53,086 - app - INFO - Backup creado: constitucion.json.backup
+2025-06-21 13:16:53,090 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\constitucion.json.backup
+2025-06-21 13:16:53,094 - app - INFO - Backup creado: gastronomia.json.backup
+2025-06-21 13:16:53,098 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\gastronomia.json.backup
+2025-06-21 13:16:53,102 - app - INFO - Backup creado: kioscos.json.backup
+2025-06-21 13:16:53,107 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\kioscos.json.backup
+2025-06-21 13:16:53,112 - app - INFO - Backup creado: once.json.backup
+2025-06-21 13:16:53,116 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\once.json.backup
+2025-06-21 13:16:53,129 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-06-21 13:16:53,132 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pagos_no_vinculados.json.backup
+2025-06-21 13:16:53,137 - app - INFO - Backup creado: pendientes.json.backup
+2025-06-21 13:16:53,140 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\pendientes.json.backup
+2025-06-21 13:16:53,154 - app - INFO - Backup creado: registros.json.backup
+2025-06-21 13:16:53,156 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\registros.json.backup
+2025-06-21 13:16:53,168 - app - INFO - Backup creado: retiro.json.backup
+2025-06-21 13:16:53,174 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\retiro.json.backup
+2025-06-21 13:16:53,186 - app - INFO - Backup creado: tba.json.backup
+2025-06-21 13:16:53,190 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\tba.json.backup
+2025-06-21 13:16:53,193 - app - INFO - Backup creado: users.json.backup
+2025-06-21 13:16:53,198 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\users.json.backup
+2025-06-21 13:16:53,215 - app - INFO - Backup creado: zona_sur.json.backup
+2025-06-21 13:16:53,220 - app - INFO - Eliminando backup antiguo: C:\Users\PROPIETARIO\Downloads\01.Proyectos\data\zona_sur.json.backup
+2025-06-21 13:16:53,221 - app - INFO - Backup automático completado. 13 archivos respaldados.
+2025-06-21 13:16:53,221 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-06-21 13:16:53,263 - waitress - INFO - Serving on http://[::1]:443
+2025-06-21 13:16:53,264 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-06-21 13:32:53,824 - apscheduler.scheduler - INFO - Scheduler has been shut down

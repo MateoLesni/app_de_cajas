@@ -1,0 +1,212 @@
+/* Estilos específicos para facturas cerradas */
+
+/* Badge de CERRADO */
+.badge-closed {
+    background-color: #e0f2f1;
+    color: #00796b;
+    border: 1px solid #b2dfdb;
+}
+
+/* Estilos para el botón de reabrir */
+.btn-reopen {
+    background-color: #ffecb3;
+    color: #ff8f00;
+    border: 1px solid #ffe082;
+    border-radius: 3px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-reopen:hover {
+    background-color: #ffe082;
+}
+
+/* Estilos para el botón de eliminar pago */
+.btn-eliminar-pago {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 2px;
+    transition: all 0.2s;
+}
+
+.btn-eliminar-pago:hover {
+    color: #c82333;
+    transform: scale(1.1);
+}
+
+/* Estilos para el botón de confirmación de eliminación */
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Pago item con acciones */
+.pago-item {
+    position: relative;
+}
+
+.pago-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pago-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Detalles del pago en modal de confirmación */
+.pago-detalle {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.pago-detalle p {
+    margin: 8px 0;
+}
+
+.confirm-content {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.confirm-content p:first-child {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.confirm-content p:nth-child(2) {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+/* Estado cerrado en detalles */
+.estado-cerrado .badge {
+    font-size: 14px;
+    padding: 5px 10px;
+}
+/* Estilos específicos para facturas cerradas */
+
+/* Badge de CERRADO */
+.badge-closed {
+    background-color: #e0f2f1;
+    color: #00796b;
+    border: 1px solid #b2dfdb;
+}
+
+/* Estilos para el botón de reabrir */
+.btn-reopen {
+    background-color: #ffecb3;
+    color: #ff8f00;
+    border: 1px solid #ffe082;
+    border-radius: 3px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-reopen:hover {
+    background-color: #ffe082;
+}
+
+/* Estilos para el botón de eliminar pago */
+.btn-eliminar-pago {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 2px;
+    transition: all 0.2s;
+}
+
+.btn-eliminar-pago:hover {
+    color: #c82333;
+    transform: scale(1.1);
+}
+
+/* Estilos para el botón de confirmación de eliminación */
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Pago item con acciones */
+.pago-item {
+    position: relative;
+}
+
+.pago-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pago-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Detalles del pago en modal de confirmación */
+.pago-detalle {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.pago-detalle p {
+    margin: 8px 0;
+}
+
+.confirm-content {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.confirm-content p:first-child {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.confirm-content p:nth-child(2) {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+/* Estado cerrado en detalles */
+.estado-cerrado .badge {
+    font-size: 14px;
+    padding: 5px 10px;
+}

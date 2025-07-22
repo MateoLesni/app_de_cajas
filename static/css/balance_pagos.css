@@ -1,0 +1,32 @@
+/* Estilos para la alerta de excedente */
+.alerta-excedente {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.alerta-excedente p {
+    margin: 0;
+}
+
+/* Estilos para el botón de balanceo */
+.btn-balancear {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-left: 10px;
+}
+
+.btn-balancear:hover {
+    background-color: #138496;
+    transform: translateY(-1px);
+}

@@ -1,0 +1,1064 @@
+/* Variables globales - Colores verdes para Bimbo */
+:root {
+    --primary-color: #2E7D32;    /* Verde oscuro */
+    --secondary-color: #388E3C;  /* Verde medio */
+    --accent-color: #4CAF50;     /* Verde claro */
+    --success-color: #66BB6A;    /* Verde pastel */
+    --warning-color: #FFA000;    /* Ámbar */
+    --danger-color: #E53935;     /* Rojo */
+    --text-color: #1B5E20;       /* Texto verde oscuro */
+    --text-light: #81C784;       /* Texto verde claro */
+    --light-bg: #f5f5f5;
+    --white: #ffffff;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+}
+
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
+    background-color: #1B5E20;  /* Fondo verde oscuro */
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* Navbar con Glassmorphism mejorado */
+.navbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: #1B5E20;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: linear-gradient(45deg, #2E7D32, #66BB6A);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: var(--transition);
+}
+
+.navbar-brand:hover {
+    transform: translateY(-2px);
+    text-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+}
+
+/* Contenedor de navegación con efecto glassmorphism */
+.navbar-nav {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 0.5rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    gap: 0.3rem;
+}
+
+/* Botones de navegación con Glassmorphism */
+.nav-item .nav-link {
+    padding: 0.6rem 1.2rem;
+    margin: 0 0.25rem;
+    color: #1B5E20;
+    border-radius: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Efecto hover para los botones */
+.nav-item .nav-link:hover {
+    background: linear-gradient(45deg, #388E3C, #66BB6A);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(76, 175, 80, 0.3);
+    animation: pulse 2s infinite;
+}
+
+/* Efecto de pulso */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+/* Efecto activo para los botones */
+.nav-item .nav-link.active {
+    background: linear-gradient(45deg, #388E3C, #66BB6A);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    animation: pulse 2s infinite;
+}
+
+/* Efecto de brillo en hover */
+.nav-item .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transition: 0.5s;
+}
+
+.nav-item .nav-link:hover::before {
+    left: 100%;
+}
+
+/* Contenido principal */
+.main-content {
+    margin-top: 90px;
+    padding: 20px;
+    min-height: calc(100vh - 90px);
+}
+
+/* Estilo de tarjetas */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    background: var(--white);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    color: var(--text-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    position: relative;
+    display: inline-block;
+}
+
+.card-title::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(45deg, #2E7D32, #66BB6A);
+    border-radius: 3px;
+}
+
+/* Tarjeta de fecha de control */
+.control-date-card .input-group {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.control-date-card .input-group-text {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+}
+
+.control-date-card .form-control {
+    border: none;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    box-shadow: none;
+}
+
+/* Botones */
+.btn-primary {
+    background: linear-gradient(45deg, #388E3C, #66BB6A);
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 0.6rem 1.5rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-outline-success {
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-outline-success:hover {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-outline-danger {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Tablas */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--text-color);
+    font-weight: 600;
+    border-bottom: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.table td, .table th {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-color: #f0f0f0;
+}
+
+/* Validación tabla */
+.validation-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.validation-table thead th {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.validation-table tbody tr {
+    transition: var(--transition);
+}
+
+.validation-table .form-check-input:checked {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+/* Badges */
+.badge {
+    padding: 0.5em 0.75em;
+    border-radius: 30px;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.bg-warning {
+    background-color: var(--warning-color) !important;
+    color: #000;
+}
+
+/* Formulario */
+.form-label {
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius);
+    padding: 0.6rem 1rem;
+    transition: var(--transition);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+}
+
+/* Select2 */
+.select2-container--default .select2-selection--single {
+    border: 1px solid #e0e0e0;
+    border-radius: var(--border-radius);
+    height: 40px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 40px;
+    padding-left: 12px;
+    color: var(--text-color);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 38px;
+}
+
+.select2-dropdown {
+    border-color: #e0e0e0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--accent-color);
+}
+
+/* Flatpickr */
+.flatpickr-calendar {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.flatpickr-day.selected, .flatpickr-day.selected:hover {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+/* Loader de la tabla */
+.placeholder-row {
+    height: 200px;
+    background-color: #f9f9f9;
+    animation: pulse-bg 2s infinite;
+}
+
+@keyframes pulse-bg {
+    0% {
+        background-color: #f9f9f9;
+    }
+    50% {
+        background-color: #f2f2f2;
+    }
+    100% {
+        background-color: #f9f9f9;
+    }
+}
+
+/* Modal */
+.modal-content {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.modal-title {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.control-date-card {
+    animation-delay: 0.1s;
+}
+
+.validation-card {
+    animation-delay: 0.2s;
+}
+
+.filters-card {
+    animation-delay: 0.3s;
+}
+
+.data-card {
+    animation-delay: 0.4s;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .navbar-nav {
+        flex-direction: column;
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .nav-item .nav-link {
+        width: 100%;
+        text-align: center;
+        margin: 0.25rem 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+    
+    .control-date-card .row {
+        flex-direction: column;
+    }
+    
+    .control-date-card .col-md-3,
+    .control-date-card .col-md-6 {
+        width: 100%;
+        margin-bottom: 1rem;
+        text-align: left !important;
+    }
+    
+    .table td, .table th {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Estados en la tabla de validación */
+.status-icon-success {
+    color: var(--success-color);
+    font-size: 1.2rem;
+}
+
+.status-icon-error {
+    color: var(--danger-color);
+    font-size: 1.2rem;
+}
+
+/* Mejoras visuales para estados en la tabla de validación */
+.validation-table .status-cell {
+    text-align: center;
+}
+
+.validation-table .checkmark {
+    color: var(--success-color);
+    font-size: 1.2rem;
+    animation: scaleIn 0.3s ease;
+}
+
+.validation-table .cross {
+    color: var(--danger-color);
+    font-size: 1.2rem;
+    animation: scaleIn 0.3s ease;
+}
+
+.validation-table .pending-status {
+    color: var(--warning-color);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.validation-table .missing-status {
+    color: var(--danger-color);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Mejorar hover en tabla de validación */
+.validation-table tbody tr:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+/* Mejoras visuales para tarjetas */
+.control-date-card {
+    border-left: 5px solid #2E7D32;
+}
+
+.validation-card {
+    border-left: 5px solid #388E3C;
+}
+
+.filters-card {
+    border-left: 5px solid #4CAF50;
+}
+
+.data-card {
+    border-left: 5px solid #66BB6A;
+}
+
+/* Reducir tamaño de texto en tabla de datos */
+.data-table {
+    font-size: 0.775rem;
+}
+
+.data-table th, .data-table td {
+    padding: 0.4rem 0.5rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Ocultar columna ID */
+.data-table .id-column {
+    display: none;
+}
+
+/* Badges más compactos */
+.badge {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+}
+
+/* Botones de acción más pequeños */
+.data-table .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+/* Estilos para el botón de fijar fecha */
+#fixDateBtn {
+    transition: all 0.3s ease;
+}
+
+#fixDateBtn .fas {
+    transition: transform 0.3s ease;
+}
+
+#fixDateBtn.btn-primary .fas {
+    transform: rotate(-45deg);
+}
+
+#fixDateBtn:hover .fas {
+    transform: rotate(15deg);
+}
+
+#fixDateBtn.btn-primary:hover .fas {
+    transform: rotate(-30deg);
+}
+
+/* Añadir un estilo visual para indicar cuando el campo está bloqueado */
+#controlDate:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+}
+
+/* Estilo para el scroll de la tabla de validación */
+.validation-scroll {
+    max-height: 350px; /* Altura fija para la tabla */
+    overflow-y: auto; /* Añadir barra de desplazamiento vertical */
+    scrollbar-width: thin; /* Para Firefox */
+    scrollbar-color: rgba(76, 175, 80, 0.5) rgba(255, 255, 255, 0.1); /* Color para Firefox */
+}
+
+/* Estilizar la barra de desplazamiento para Webkit (Chrome, Safari, Edge) */
+.validation-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.validation-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.validation-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(76, 175, 80, 0.5);
+    border-radius: 4px;
+}
+
+.validation-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(76, 175, 80, 0.8);
+}
+
+/* Fijar el encabezado de la tabla para mejor experiencia */
+.validation-scroll .validation-table thead {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 1;
+}
+
+/* Asegurar que la tabla ocupe todo el espacio disponible */
+.validation-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.validation-card .table-responsive {
+    flex-grow: 1;
+}
+
+/* Notificación de actualización */
+.update-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    animation: slideIn 0.5s forwards;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.update-notification.fade-out {
+    animation: fadeOut 0.5s forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Estilos para actualización en tiempo real */
+.update-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(76, 175, 80, 0.9);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1050;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.update-indicator i {
+    margin-right: 5px;
+}
+
+/* Botón para forzar actualización */
+.refresh-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(76, 175, 80, 0.9);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1050;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    transform: scale(1.1);
+    background-color: rgba(76, 175, 80, 1);
+}
+
+.refresh-btn:active {
+    transform: scale(0.95);
+}
+
+/* Notificación de actualización */
+.update-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    animation: slideIn 0.5s forwards;
+}
+
+.update-notification i {
+    margin-right: 8px;
+}
+
+.update-notification .close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.update-notification .close-btn:hover {
+    opacity: 1;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.update-notification.show {
+    animation: slideIn 0.5s forwards;
+}
+
+.update-notification:not(.show) {
+    animation: slideOut 0.3s forwards;
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+/* Estilo para el texto de observaciones */
+.observaciones-text {
+    display: inline-block;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+}
+
+/* Estilo para la tabla de datos con mejor distribución de columnas */
+.data-table th, .data-table td {
+    white-space: nowrap;
+}
+
+.data-table th:nth-child(10), .data-table td:nth-child(10) {
+    min-width: 150px;
+    max-width: 200px;
+}
+
+/* Agregar a bimbo.css */
+.file-status {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-left: 3px solid var(--success-color);
+}
+
+.file-status.warning {
+    border-left-color: var(--warning-color);
+}
+
+.file-status.error {
+    border-left-color: var(--danger-color);
+}
+
+/* Optimización del ancho de tabla para evitar scroll horizontal */
+.data-card .table-responsive {
+    overflow-x: visible;  /* Eliminar scroll horizontal */
+    max-width: 100%;
+}
+
+/* Hacer que el contenedor principal sea más ancho */
+.container {
+    max-width: 95%;  /* Aumentar el ancho del contenedor */
+}
+
+/* Optimizar espacio en celdas de la tabla */
+.data-table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.data-table th, .data-table td {
+    padding: 0.4rem 0.3rem;
+    vertical-align: middle;
+    white-space: normal;  /* Permitir saltos de línea si es necesario */
+}
+
+/* Ajustar anchos de columnas para optimizar espacio */
+.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 0%; }  /* ID oculto */
+.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 9%; }  /* Fecha */
+.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 9%; }  /* Usuario */
+.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 10%; } /* Etiqueta */
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 6%; }  /* Turno */
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 7%; }  /* Comisión */
+.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 5%; }  /* FC */
+.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 5%; }  /* PL */
+.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 9%; }  /* Boleta Rosa */
+.data-table th:nth-child(10), .data-table td:nth-child(10) { 
+    width: 15%; 
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}  /* Observaciones */
+.data-table th:nth-child(11), .data-table td:nth-child(11) { width: 7%; }  /* Estado */
+.data-table th:nth-child(12), .data-table td:nth-child(12) { width: 8%; }  /* Acciones */
+
+/* Mejorar manejo de texto en celdas */
+.data-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Para pantallas grandes, aumentar aún más el contenedor */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 95%;
+    }
+}
+
+/* Estilo para el tooltip de las observaciones */
+.tooltip-inner {
+    max-width: 300px;
+    text-align: left;
+}
+
+/* Ajustar campos de texto largos */
+.observaciones-text {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+/* Estilos para el selector de color */
+.form-control-color {
+    width: 100%;
+    padding: 0.375rem;
+}
+
+.form-control-color.has-color {
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+
+/* Estilo para resaltar el icono de color en filas coloreadas */
+tr[style*="background-color"] .edit-btn {
+    position: relative;
+}
+
+tr[style*="background-color"] .edit-btn::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff5722;
+}
+
+/* Estilos para mejorar la apariencia del picker de color */
+#editRowColor {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#editRowColor:hover {
+    transform: scale(1.05);
+}
+
+#removeColorBtn {
+    background-color: #f8f9fa;
+    transition: all 0.3s;
+}
+
+#removeColorBtn:hover {
+    background-color: #e2e6ea;
+    color: #dc3545;
+}
+
+/* Estilos adicionales para filas coloreadas */
+tr[style*="background-color"] {
+    transition: all 0.2s;
+}
+
+tr[style*="background-color"]:hover {
+    filter: brightness(0.95);
+}
+
+/* Mejora visual para el selector de color */
+.form-control-color {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+/* Estilo para resaltar términos de búsqueda */
+.highlight {
+    background-color: #ffeb3b; /* Amarillo claro */
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: bold;
+    color: #000;
+}
+
+/* Ajustes para los filtros */
+.filters-card {
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+#resetFilters {
+    margin-top: 8px;
+    border-color: #ddd;
+    color: #666;
+}
+
+#resetFilters:hover {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Mejorar la visualización para búsquedas */
+.observaciones-text {
+    cursor: help;
+}
+
+/* Estilos responsivos para los filtros */
+@media (max-width: 768px) {
+    #filtersForm .col-md-6 {
+        margin-bottom: 10px;
+    }
+}
+
+/* Estilos para las notificaciones de actualización */
+.update-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    transform: translateX(110%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 1050;
+}
+
+.update-notification.show {
+    transform: translateX(0);
+}
+
+.update-notification i {
+    margin-right: 8px;
+}
+
+.update-notification .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    margin-left: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* Estilos para el botón de actualización */
+.refresh-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.refresh-btn:hover {
+    background-color: #2980b9;
+    transform: scale(1.1);
+}
+
+.refresh-btn:active {
+    transform: scale(0.95);
+}
+
+/* Indicador de estado del archivo */
+.file-status {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background-color: #333;
+    color: white;
+    font-size: 0.85rem;
+    z-index: 1000;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.file-status.error {
+    background-color: #e74c3c;
+}
+
+.file-status.warning {
+    background-color: #f39c12;
+}

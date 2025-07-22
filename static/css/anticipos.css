@@ -1,0 +1,134 @@
+/* Estilos para el botón de agregar anticipo */
+.btn-agregar-anticipo {
+    background-color: #8e44ad;
+    color: white;
+    padding: 10px 20px;
+    margin-top: 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.btn-agregar-anticipo:hover {
+    background-color: #732d91;
+}
+
+/* Estilos para la lista de anticipos */
+.anticipos-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.anticipos-list {
+    margin-bottom: 15px;
+}
+
+.anticipo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.anticipo-item:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    transform: translateY(-2px);
+}
+
+.anticipo-item.selected {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.anticipo-details {
+    flex-grow: 1;
+}
+
+.anticipo-cliente {
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.anticipo-fecha {
+    color: #6c757d;
+    font-size: 0.85em;
+    margin-bottom: 5px;
+}
+
+.anticipo-monto {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.anticipo-medio {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.anticipo-seleccionar {
+    margin-left: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.anticipo-seleccionar:hover {
+    background-color: #0069d9;
+}
+
+.no-anticipos {
+    text-align: center;
+    padding: 20px 0;
+    color: #6c757d;
+}
+
+/* Estilos para el modal de confirmación */
+.modal-small {
+    max-width: 500px;
+}
+
+.anticipo-detalle {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.anticipo-detalle p {
+    margin: 8px 0;
+}
+
+.btn-confirm {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-confirm:hover {
+    background-color: #218838;
+}
+
+.loader {
+    text-align: center;
+    padding: 20px 0;
+    color: #6c757d;
+}

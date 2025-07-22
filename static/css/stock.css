@@ -1,0 +1,169 @@
+/* static/css/stock.css */
+/* Last updated: 2025-06-26 20:36:34 */
+/* Current user: pomenuk */
+
+/* Estilos generales */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    padding: 20px;
+    min-height: calc(100vh - 70px);
+}
+
+.content-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 20px;
+}
+
+.content-container {
+    width: 100%;
+    max-width: 600px;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 30px;
+}
+
+/* Estilos del formulario */
+.form-container {
+    display: grid;
+    grid-gap: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group select {
+    appearance: none;
+    background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+    background-color: #fff;
+    padding-right: 30px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+    background-color: #f9f9f9;
+    cursor: not-allowed;
+}
+
+.btn-submit {
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.btn-submit:hover {
+    background-color: #2980b9;
+}
+
+.btn-submit:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* Estilos de validación */
+.is-invalid {
+    border-color: #e74c3c !important;
+}
+
+.required {
+    color: #e74c3c;
+}
+
+/* Estilos para Select2 */
+.select2-container .select2-selection--single {
+    height: 38px;
+    line-height: 38px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 38px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+
+/* Estilo para mensajes de alerta */
+.duplicate-warning,
+.error-message {
+    text-align: left;
+}
+
+.duplicate-details,
+.error-details {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #e74c3c;
+}
+
+.duplicate-details ul,
+.error-details ul {
+    margin: 5px 0 0 0;
+    padding-left: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .content-container {
+        padding: 20px;
+        margin: 0 10px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px; /* Evita zoom en iOS */
+    }
+    
+    .btn-submit {
+        width: 100%;
+    }
+}

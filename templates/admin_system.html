@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel del Sistema - Administración</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_system.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Reutilizar la sidebar del dashboard principal -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('mi_perfil') }}" class="user-info" style="text-decoration: none; cursor: pointer;">
+                    {% if user_info and user_info.avatar_url %}
+                        <img src="{{ user_info.avatar_url }}?t={{ now }}" alt="Perfil" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <i class="fas fa-user-circle"></i>
+                    {% endif %}
+                    <span>{{ session['username'] }}</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-menu">
+                <a href="{{ url_for('index') }}" class="menu-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                
+                <a href="{{ url_for('admin_system_dashboard') }}" class="menu-item">
+                    <i class="fas fa-server"></i>
+                    <span>Sistema</span>
+                </a>
+                
+                <a href="{{ url_for('usuarios') }}" class="menu-item">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                
+                <a href="{{ url_for('zonas') }}" class="menu-item">
+                    <i class="fas fa-th-large"></i>
+                    <span>Zonas</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+            </div>
+        </nav>
+        
+        <main class="main-content">
+            <header class="top-header">
+                <h1><i class="fas fa-server"></i> Monitor del Sistema</h1>
+                <div>
+                    <div class="date-time">
+                        <i class="fas fa-clock"></i>
+                        <span id="current-date">{{ current_time }}</span>
+                    </div>
+                    <button id="refresh-btn" class="refresh-btn">
+                        <i class="fas fa-sync"></i> Actualizar
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Sección 1: Recursos del Sistema -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-microchip"></i> Recursos del Sistema</h2>
+                </div>
+                
+                <div class="cards-grid">
+                    <!-- CPU Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Procesador (CPU)</h3>
+                            <div class="card-icon cpu">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value {{ system_stats.cpu.status }}" id="cpu-value">{{ system_stats.cpu.percent }}%</div>
+                        <div class="stat-label">{{ system_stats.cpu.cores }} núcleos disponibles</div>
+                        
+                        <!-- Indicador visual estilo ecualizador -->
+                        <div class="meter-container" id="cpu-meter">
+                            {% for i in range(20) %}
+                                {% if i < (system_stats.cpu.percent / 5)|int %}
+                                    {% if i < 12 %}
+                                        <div class="meter-bar active success"></div>
+                                    {% elif i < 16 %}
+                                        <div class="meter-bar active warning"></div>
+                                    {% else %}
+                                        <div class="meter-bar active danger"></div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="meter-bar"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="cpuChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Memory Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Memoria RAM</h3>
+                            <div class="card-icon memory">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value {{ system_stats.memory.status }}" id="memory-value">{{ system_stats.memory.percent }}%</div>
+                        <div class="stat-label" id="memory-detail">{{ system_stats.memory.used }} de {{ system_stats.memory.total }} usado</div>
+                        
+                        <!-- Indicador visual estilo ecualizador -->
+                        <div class="meter-container" id="memory-meter">
+                            {% for i in range(20) %}
+                                {% if i < (system_stats.memory.percent / 5)|int %}
+                                    {% if i < 12 %}
+                                        <div class="meter-bar active success"></div>
+                                    {% elif i < 16 %}
+                                        <div class="meter-bar active warning"></div>
+                                    {% else %}
+                                        <div class="meter-bar active danger"></div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="meter-bar"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="memoryChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Disk Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Disco</h3>
+                            <div class="card-icon disk">
+                                <i class="fas fa-hdd"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value {{ system_stats.disk.status }}" id="disk-value">{{ system_stats.disk.percent }}%</div>
+                        <div class="stat-label" id="disk-detail">{{ system_stats.disk.used }} de {{ system_stats.disk.total }} usado</div>
+                        
+                        <div class="progress-bar">
+                            <div class="progress {{ system_stats.disk.status }}" id="disk-progress" style="width: {% if system_stats.disk.percent is defined %}{{ system_stats.disk.percent }}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Server Info Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Información del Servidor</h3>
+                            <div class="card-icon server">
+                                <i class="fas fa-server"></i>
+                            </div>
+                        </div>
+                        <div class="stat-label">Tiempo en funcionamiento</div>
+                        <div class="stat-value" id="server-uptime" style="font-size: 1.5rem;">{{ system_stats.uptime }}</div>
+                        
+                        <div class="stat-label">Sistema Operativo</div>
+                        <div class="stat-value" style="font-size: 1rem;">{{ system_stats.platform }}</div>
+                        
+                        <div class="stat-label">Versión de Python</div>
+                        <div class="stat-value" style="font-size: 1rem;">{{ system_stats.python_version }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección 2: Estadísticas de Solicitudes -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-exchange-alt"></i> Tráfico de Solicitudes</h2>
+                </div>
+                
+                <div class="cards-grid">
+                    <!-- Requests Per Second Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Solicitudes por Segundo</h3>
+                            <div class="card-icon requests">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value {{ request_stats.load_status }}" id="rps-value">{{ request_stats.requests_per_second }}</div>
+                        <div class="stat-label" id="rpm-detail">{{ request_stats.requests_per_minute }} solicitudes por minuto</div>
+                        
+                        <!-- Indicador visual estilo ecualizador -->
+                        <div class="meter-container" id="rps-meter">
+                            {% for i in range(20) %}
+                                {% if i < (request_stats.requests_per_second * 2)|int %}
+                                    {% if i < 12 %}
+                                        <div class="meter-bar active success"></div>
+                                    {% elif i < 16 %}
+                                        <div class="meter-bar active warning"></div>
+                                    {% else %}
+                                        <div class="meter-bar active danger"></div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="meter-bar"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="requestsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Response Time Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Tiempo de Respuesta</h3>
+                            <div class="card-icon response">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value {{ request_stats.response_status }}" id="response-value">{{ request_stats.avg_response_time }} ms</div>
+                        <div class="stat-label">Tiempo promedio de respuesta</div>
+                        
+                        <!-- Indicador visual estilo ecualizador -->
+                        <div class="meter-container" id="response-meter">
+                            {% set response_percent = (request_stats.avg_response_time / 10) %}
+                            {% for i in range(20) %}
+                                {% if i < response_percent|int %}
+                                    {% if i < 12 %}
+                                        <div class="meter-bar active success"></div>
+                                    {% elif i < 16 %}
+                                        <div class="meter-bar active warning"></div>
+                                    {% else %}
+                                        <div class="meter-bar active danger"></div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="meter-bar"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="responseTimeChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Requests Today Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Solicitudes de Hoy</h3>
+                            <div class="card-icon requests">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="total-today">{{ request_stats.total_today }}</div>
+                        <div class="stat-label">Total de solicitudes procesadas hoy</div>
+                        
+                        <div class="stat-label" style="margin-top: 1rem;">Tasa de éxito</div>
+                        <div class="progress-bar">
+                            <div class="progress success" id="success-rate" style="width: {{ request_stats.success_rate }}%"></div>
+                        </div>
+                        <div class="stat-label" id="success-rate-detail">{{ request_stats.success_rate }}% exitosas ({{ request_stats.errors_today }} errores)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección 3: Rate Limiting -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-shield-alt"></i> Limitación de Tasas (Rate Limiting)</h2>
+                </div>
+                
+                <div class="card">
+                    <div class="rate-limit-container">
+                        {% for route in rate_limits.routes %}
+                            <div class="rate-limit-item">
+                                <div class="rate-limit-route" data-tooltip="{{ route.route }}">
+                                    {{ route.route|truncate(30) }}
+                                </div>
+                                <div class="rate-limit-meter">
+                                    <div class="rate-limit-progress {{ route.status }}" style="width: {{ route.percent }}%"></div>
+                                </div>
+                                <div class="rate-limit-info">
+                                    {{ route.current }}/{{ route.limit }} ({{ route.percent|round(1) }}%)
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección 4: Estadísticas de Archivos -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-database"></i> Archivos de Datos</h2>
+                    <div class="section-actions">
+                        <button onclick="location.href='{{ url_for('admin_backup') }}'">
+                            <i class="fas fa-save"></i> Backup Manual
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="file-stats-container">
+                    <!-- Registros -->
+                    <div class="file-stat-card">
+                        <div class="file-stat-header">
+                            <div class="file-stat-name">Registros</div>
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="file-stat-details">
+                            <div class="file-stat-detail">
+                                <span>Registros:</span>
+                                <span>{{ file_stats.registros.count }}</span>
+                            </div>
+                            <div class="file-stat-detail">
+                                <span>Tamaño:</span>
+                                <span>{{ file_stats.registros.formatted_size }}</span>
+                            </div>
+                            <div class="file-stat-detail">
+                                <span>Última modificación:</span>
+                                <span>{{ file_stats.registros.last_modified_str }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Usuarios -->
+                    <div class="file-stat-card">
+                        <div class="file-stat-header">
+                            <div class="file-stat-name">Usuarios</div>
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="file-stat-details">
+                            <div class="file-stat-detail">
+                                <span>Usuarios:</span>
+                                <span>{{ file_stats.users.count }}</span>
+                            </div>
+                            <div class="file-stat-detail">
+                                <span>Tamaño:</span>
+                                <span>{{ file_stats.users.formatted_size }}</span>
+                            </div>
+                            <div class="file-stat-detail">
+                                <span>Última modificación:</span>
+                                <span>{{ file_stats.users.last_modified_str }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pendientes -->
+                    <div class="file-stat-card">
+                        <div class="file-stat-header">
+                            <div class="file-stat-name">Pendientes</div>
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="file-stat-details">
+                            <div class="file-stat-detail">
+                                <span>Pendientes:</span>
+                                <span>{{ file_stats.pendientes.count }}</span>
+                            </div>
+                            <div class="file-stat-detail">
+                                <span>Tamaño:</span>
+                                <span>{{ file_stats.pendientes.formatted_size }}</span>
+                            </div>
+                            <div class="file-stat-detail">
+                                <span>Última modificación:</span>
+                                <span>{{ file_stats.pendientes.last_modified_str }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Zonas (mejor mostrado) -->
+                    {% for zone_name, zone_stat in file_stats.zones.items() %}
+                        <div class="file-stat-card">
+                            <div class="file-stat-header">
+                                <div class="file-stat-name">{{ zone_name }}</div>
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="file-stat-details">
+                                <div class="file-stat-detail">
+                                    <span>Registros:</span>
+                                    <span>{{ zone_stat.count }}</span>
+                                </div>
+                                <div class="file-stat-detail">
+                                    <span>Tamaño:</span>
+                                    <span>{{ zone_stat.formatted_size }}</span>
+                                </div>
+                                <div class="file-stat-detail">
+                                    <span>Backup:</span>
+                                    <span>{{ "Si" if zone_stat.exists else "No" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Sección 5: Estadísticas de Zonas -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-map"></i> Estado de Zonas</h2>
+                </div>
+                
+                {% for zone in zone_stats.zones %}
+                    <div class="zone-card">
+                        <div class="zone-header">
+                            <div class="zone-name">{{ zone.name }}</div>
+                            <div class="status-pill {{ zone.status }}">
+                                {{ zone.processed_percent }}% procesado
+                            </div>
+                        </div>
+                        
+                        <div class="zone-stats">
+                            <div class="zone-stat">
+                                <div class="zone-stat-value">{{ zone.ok_count }}</div>
+                                <div class="zone-stat-label">Procesados</div>
+                            </div>
+                            <div class="zone-stat">
+                                <div class="zone-stat-value">{{ zone.pendientes_count }}</div>
+                                <div class="zone-stat-label">Pendientes</div>
+                            </div>
+                            <div class="zone-stat">
+                                <div class="zone-stat-value">{{ zone.total }}</div>
+                                <div class="zone-stat-label">Total</div>
+                            </div>
+                        </div>
+                        
+                        <div class="zone-progress">
+                            <div class="progress {{ zone.status }}" style="width: {{ zone.processed_percent }}%"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <!-- Sección 6: Monitoreo de Conexiones y Sesiones -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-network-wired"></i> Monitoreo de Conexiones</h2>
+                    <div class="section-actions">
+                        <button id="closeAllConnections" class="refresh-btn">
+                            <i class="fas fa-times-circle"></i> Cerrar Conexiones
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Usamos cards-grid como las otras secciones para mantener consistencia -->
+                <div class="cards-grid">
+                    <!-- Card de Conexiones ngrok -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Conexiones ngrok</h3>
+                            <div class="card-icon requests">
+                                <i class="fas fa-plug"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="connections-value">{{ connection_stats.total }}</div>
+                        <div class="stat-label">Conexiones activas totales</div>
+                        
+                        <div class="meter-container" id="connections-meter">
+                            {% for i in range(20) %}
+                                {% if i < (connection_stats.total)|int %}
+                                    {% if i < 5 %}
+                                        <div class="meter-bar active success"></div>
+                                    {% elif i < 10 %}
+                                        <div class="meter-bar active warning"></div>
+                                    {% else %}
+                                        <div class="meter-bar active danger"></div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="meter-bar"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Tabla de conexiones activas -->
+                        <div class="stat-label" style="margin-top: 15px;">Detalles de conexiones</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="connection-table">
+                                <thead>
+                                    <tr>
+                                        <th>IP</th>
+                                        <th>Ruta</th>
+                                        <th>Tipo</th>
+                                        <th>Edad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for conn in connection_stats.connection_details[:5] %}
+                                    <tr>
+                                        <td>{{ conn.ip }}</td>
+                                        <td>{{ conn.path|truncate(20) }}</td>
+                                        <td><span class="badge {{ 'bg-info' if conn.is_api else 'bg-success' }}">{{ 'API' if conn.is_api else 'Web' }}</span></td>
+                                        <td>{{ conn.age_seconds }}s</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Card de Tipos de Conexiones -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Distribución de Conexiones</h3>
+                            <div class="card-icon disk">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-block">
+                                <div class="stat-label">API</div>
+                                <div class="stat-value success">{{ connection_stats.api_connections }}</div>
+                            </div>
+                            <div class="stat-block">
+                                <div class="stat-label">Web</div>
+                                <div class="stat-value info">{{ connection_stats.web_connections }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-label" style="margin-top: 15px;">IPs con más conexiones</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>IP</th>
+                                        <th>Conexiones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ip, count in connection_stats.top_ips %}
+                                    <tr>
+                                        <td>{{ ip }}</td>
+                                        <td>{{ count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Card de Sesiones Activas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Sesiones Activas</h3>
+                            <div class="card-icon cpu">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="sessions-value">{{ session_stats.total }}</div>
+                        <div class="stat-label">Usuarios con sesión activa</div>
+                        
+                        <div class="stat-label" style="margin-top: 15px;">Detalle de sesiones</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="session-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Tiempo activo</th>
+                                        <th>Expira en</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for session in session_stats.session_details %}
+                                    <tr>
+                                        <td>{{ session.username }}</td>
+                                        <td>{{ session.active_minutes }} min</td>
+                                        <td>{{ session.expires_in_minutes }} min</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger terminate-session" 
+                                                data-username="{{ session.username }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    
+<script>
+    // Variables para almacenar las instancias de gráficos
+    let cpuChart, memoryChart, requestsChart, responseTimeChart;
+    
+    // Colores para los gráficos
+    const chartColors = {
+        success: 'rgba(40, 167, 69, 0.6)',
+        successBorder: 'rgba(40, 167, 69, 1)',
+        warning: 'rgba(255, 193, 7, 0.6)',
+        warningBorder: 'rgba(255, 193, 7, 1)',
+        danger: 'rgba(220, 53, 69, 0.6)',
+        dangerBorder: 'rgba(220, 53, 69, 1)',
+        blue: 'rgba(0, 123, 255, 0.6)',
+        blueBorder: 'rgba(0, 123, 255, 1)'
+    };
+    
+    // Función para inicializar los gráficos
+    function initCharts() {
+        // Configuración común para los gráficos
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 750,
+                easing: 'easeOutQuad'
+            },
+            elements: {
+                line: {
+                    tension: 0.3
+                },
+                point: {
+                    radius: 2
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 10,
+                    displayColors: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        display: false
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                }
+            }
+        };
+        
+        // Graficar CPU
+        const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+        cpuChart = new Chart(cpuCtx, {
+            type: 'line',
+            data: {
+                labels: {{ system_stats.history.cpu|map(attribute='time')|list|tojson }},
+                datasets: [{
+                    label: 'CPU (%)',
+                    data: {{ system_stats.history.cpu|map(attribute='value')|list|tojson }},
+                    backgroundColor: chartColors.blue,
+                    borderColor: chartColors.blueBorder,
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 750,
+                    easing: 'easeOutQuad'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    },
+                    point: {
+                        radius: 2
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Graficar Memoria
+        const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+        memoryChart = new Chart(memoryCtx, {
+            type: 'line',
+            data: {
+                labels: {{ system_stats.history.memory|map(attribute='time')|list|tojson }},
+                datasets: [{
+                    label: 'Memoria (%)',
+                    data: {{ system_stats.history.memory|map(attribute='value')|list|tojson }},
+                    backgroundColor: chartColors.warning,
+                    borderColor: chartColors.warningBorder,
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 750,
+                    easing: 'easeOutQuad'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    },
+                    point: {
+                        radius: 2
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Graficar Solicitudes por minuto
+        const requestsCtx = document.getElementById('requestsChart').getContext('2d');
+        requestsChart = new Chart(requestsCtx, {
+            type: 'line',
+            data: {
+                labels: {{ system_stats.history.requests|map(attribute='time')|list|tojson }},
+                datasets: [{
+                    label: 'Solicitudes/min',
+                    data: {{ system_stats.history.requests|map(attribute='value')|list|tojson }},
+                    backgroundColor: chartColors.success,
+                    borderColor: chartColors.successBorder,
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 750,
+                    easing: 'easeOutQuad'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    },
+                    point: {
+                        radius: 2
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Graficar Tiempo de respuesta
+        const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
+        responseTimeChart = new Chart(responseTimeCtx, {
+            type: 'line',
+            data: {
+                labels: {{ system_stats.history.response_time|map(attribute='time')|list|tojson }},
+                datasets: [{
+                    label: 'Tiempo (ms)',
+                    data: {{ system_stats.history.response_time|map(attribute='value')|list|tojson }},
+                    backgroundColor: chartColors.danger,
+                    borderColor: chartColors.dangerBorder,
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 750,
+                    easing: 'easeOutQuad'
+                },
+                elements: {
+                    line: {
+                        tension: 0.3
+                    },
+                    point: {
+                        radius: 2
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Función para actualizar los medidores visuales
+    function updateMeters(selector, value, maxValue = 100) {
+        const meterContainer = document.querySelector(selector);
+        if (!meterContainer) return;
+        
+        const segments = meterContainer.querySelectorAll('.meter-bar');
+        const segmentCount = segments.length;
+        const activeSegments = Math.floor((value / maxValue) * segmentCount);
+        
+        segments.forEach((segment, index) => {
+            segment.classList.remove('active', 'success', 'warning', 'danger');
+            
+            if (index < activeSegments) {
+                segment.classList.add('active');
+                
+                // Estilo según el nivel
+                const segmentPercent = (index / segmentCount) * 100;
+                if (segmentPercent < 60) {
+                    segment.classList.add('success');
+                } else if (segmentPercent < 80) {
+                    segment.classList.add('warning');
+                } else {
+                    segment.classList.add('danger');
+                }
+            }
+        });
+    }
+    
+    // Función para actualizar los datos en tiempo real
+    async function updateSystemStats() {
+        try {
+            const response = await fetch('/api/admin/system/stats');
+            const data = await response.json();
+            
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+            
+            // Actualizar CPU
+            const cpuValue = data.system.cpu.percent;
+            document.getElementById('cpu-value').textContent = `${cpuValue}%`;
+            document.getElementById('cpu-value').className = `stat-value ${data.system.cpu.status}`;
+            updateMeters('#cpu-meter', cpuValue);
+            
+            // Actualizar datos del gráfico de CPU
+            cpuChart.data.labels = data.system.history.cpu.map(item => item.time);
+            cpuChart.data.datasets[0].data = data.system.history.cpu.map(item => item.value);
+            cpuChart.update();
+            
+            // Actualizar Memoria
+            const memoryValue = data.system.memory.percent;
+            document.getElementById('memory-value').textContent = `${memoryValue}%`;
+            document.getElementById('memory-value').className = `stat-value ${data.system.memory.status}`;
+            document.getElementById('memory-detail').textContent = `${data.system.memory.used} de ${data.system.memory.total} usado`;
+            updateMeters('#memory-meter', memoryValue);
+            
+            // Actualizar datos del gráfico de Memoria
+            memoryChart.data.labels = data.system.history.memory.map(item => item.time);
+            memoryChart.data.datasets[0].data = data.system.history.memory.map(item => item.value);
+            memoryChart.update();
+            
+            // Actualizar Disco
+            document.getElementById('disk-value').textContent = `${data.system.disk.percent}%`;
+            document.getElementById('disk-value').className = `stat-value ${data.system.disk.status}`;
+            document.getElementById('disk-detail').textContent = `${data.system.disk.used} de ${data.system.disk.total} usado`;
+            document.getElementById('disk-progress').style.width = `${data.system.disk.percent}%`;
+            document.getElementById('disk-progress').className = `progress ${data.system.disk.status}`;
+            
+            // Actualizar tiempo de actividad
+            document.getElementById('server-uptime').textContent = data.system.uptime;
+            
+            // Actualizar solicitudes por segundo
+            const requestsPerSecond = data.requests.requests_per_second;
+            document.getElementById('rps-value').textContent = requestsPerSecond;
+            document.getElementById('rps-value').className = `stat-value ${data.requests.load_status}`;
+            document.getElementById('rpm-detail').textContent = `${data.requests.requests_per_minute} solicitudes por minuto`;
+            updateMeters('#rps-meter', requestsPerSecond * 5); // Multiplicar por 5 para visualización
+            
+            // Actualizar datos del gráfico de solicitudes
+            requestsChart.data.labels = data.system.history.requests.map(item => item.time);
+            requestsChart.data.datasets[0].data = data.system.history.requests.map(item => item.value);
+            requestsChart.update();
+            
+            // Actualizar tiempo de respuesta
+            const responseTime = data.requests.avg_response_time;
+            document.getElementById('response-value').textContent = `${responseTime} ms`;
+            document.getElementById('response-value').className = `stat-value ${data.requests.response_status}`;
+            updateMeters('#response-meter', responseTime / 10); // Dividir por 10 para visualización
+            
+            // Actualizar datos del gráfico de tiempo de respuesta
+            responseTimeChart.data.labels = data.system.history.response_time.map(item => item.time);
+            responseTimeChart.data.datasets[0].data = data.system.history.response_time.map(item => item.value);
+            responseTimeChart.update();
+            
+            // Actualizar solicitudes totales
+            document.getElementById('total-today').textContent = data.requests.total_today;
+            document.getElementById('success-rate').style.width = `${data.requests.success_rate}%`;
+            document.getElementById('success-rate-detail').textContent = `${data.requests.success_rate}% exitosas (${data.requests.errors_today} errores)`;
+            
+            // Actualizar fecha actual
+            document.getElementById('current-date').textContent = new Date().toLocaleString();
+            
+            // NUEVO: Actualizar estadísticas de conexiones si están disponibles
+            if (data.connections && document.getElementById('connections-value')) {
+                document.getElementById('connections-value').textContent = data.connections.total;
+                updateMeters('#connections-meter', data.connections.total);
+                
+                // Actualizar tabla de conexiones activas
+                const connectionTableBody = document.querySelector('#connection-table tbody');
+                if (connectionTableBody && data.connections.connection_details) {
+                    connectionTableBody.innerHTML = '';
+                    data.connections.connection_details.slice(0, 5).forEach(conn => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${conn.ip}</td>
+                            <td>${conn.path.length > 20 ? conn.path.substring(0, 17) + '...' : conn.path}</td>
+                            <td><span class="badge ${conn.is_api ? 'bg-info' : 'bg-success'}">${conn.is_api ? 'API' : 'Web'}</span></td>
+                            <td>${conn.age_seconds}s</td>
+                        `;
+                        connectionTableBody.appendChild(row);
+                    });
+                }
+            }
+            
+            // NUEVO: Actualizar estadísticas de sesiones si están disponibles
+            if (data.sessions && document.getElementById('sessions-value')) {
+                document.getElementById('sessions-value').textContent = data.sessions.total;
+                
+                // Actualizar tabla de sesiones
+                const sessionTableBody = document.querySelector('#session-table tbody');
+                if (sessionTableBody && data.sessions.session_details) {
+                    sessionTableBody.innerHTML = '';
+                    data.sessions.session_details.forEach(session => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${session.username}</td>
+                            <td>${session.active_minutes} min</td>
+                            <td>${session.expires_in_minutes} min</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger terminate-session" 
+                                       data-username="${session.username}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </td>
+                        `;
+                        sessionTableBody.appendChild(row);
+                        
+                        // Agregar evento para el nuevo botón
+                        row.querySelector('.terminate-session').addEventListener('click', function() {
+                            terminateUserSession(session.username);
+                        });
+                    });
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error actualizando estadísticas:', error);
+        }
+    }
+    
+    // NUEVO: Función para terminar sesión de usuario
+    // CORREGIDO: Función para terminar sesión de usuario
+    function terminateUserSession(username) {
+        if (confirm(`¿Estás seguro de que quieres terminar todas las sesiones de ${username}?`)) {
+            fetch(`/api/admin/sessions/terminate/${username}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Sesiones terminadas: ' + data.terminated);
+                    
+                    // Si estamos terminando nuestra propia sesión, redirigir al login
+                    if (data.is_current_user) {
+                        alert('Has terminado tu propia sesión. Serás redirigido a la página de login.');
+                        window.location.href = '{{ url_for("login") }}';
+                    } else {
+                        // Solo actualizar estadísticas si no es nuestra sesión
+                        updateSystemStats();
+                    }
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al procesar la solicitud');
+            });
+        }
+    }
+    
+    // NUEVO: Función para cerrar todas las conexiones
+    function closeAllConnections() {
+        if (confirm('¿Estás seguro de que quieres cerrar todas las conexiones activas? Si cierras tu propia conexión serás desconectado del sistema.')) {
+            const button = document.getElementById('closeAllConnections');
+            if (button) {
+                // Añadir animación de giro
+                button.querySelector('i').classList.add('fa-spin');
+            }
+            
+            fetch('/api/admin/connections/close', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`Se cerraron ${data.closed} conexiones y ${data.sessions_closed} sesiones`);
+                    
+                    if (data.closed_own) {
+                        alert('Tu sesión ha sido cerrada. Serás redirigido a la página de login.');
+                        forceLogout(); // Usar la nueva función
+                    } else {
+                        updateSystemStats();
+                    }
+                } else {
+                    alert('Error: ' + data.message);
+                    if (button) {
+                        button.querySelector('i').classList.remove('fa-spin');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al procesar la solicitud');
+                
+                if (button) {
+                    button.querySelector('i').classList.remove('fa-spin');
+                }
+            });
+        }
+    }
+    
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar gráficos
+        initCharts();
+        
+        // Actualizar datos cada 10 segundos
+        setInterval(updateSystemStats, 10000);
+        
+        // Evento para el botón de actualizar
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            // Añadir animación de giro
+            this.querySelector('i').classList.add('fa-spin');
+            
+            // Actualizar datos
+            updateSystemStats().then(() => {
+                // Eliminar animación después de 1 segundo
+                setTimeout(() => {
+                    this.querySelector('i').classList.remove('fa-spin');
+                }, 1000);
+            });
+        });
+        
+        // NUEVO: Evento para el botón de cerrar conexiones
+        if (document.getElementById('closeAllConnections')) {
+            document.getElementById('closeAllConnections').addEventListener('click', closeAllConnections);
+        }
+        
+        // NUEVO: Eventos para los botones de terminar sesión
+        document.querySelectorAll('.terminate-session').forEach(button => {
+            button.addEventListener('click', function() {
+                const username = this.getAttribute('data-username');
+                terminateUserSession(username);
+            });
+        });
+    });
+    // Añadir al final de tu script
+// Verificación periódica del estado de la sesión
+// Verificación periódica del estado de la sesión
+setInterval(function() {
+    fetch('/check-session')
+        .then(response => {
+            if (response.status === 401) {
+                // La sesión ha expirado, redirigir al login
+                alert('Su sesión ha sido cerrada por un administrador. Será redirigido a la página de login.');
+                window.location.href = '{{ url_for("login") }}';
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'session_expired') {
+                alert(data.message);
+                window.location.href = data.redirect;
+            }
+        })
+        .catch(error => console.error('Error verificando sesión:', error));
+}, 30000); // Verificar cada 30 segundos
+</script>
+</body>
+</html>

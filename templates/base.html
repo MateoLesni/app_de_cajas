@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}{% endblock %}</title>
+        
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        
+        <!-- Base CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+        
+        <!-- Page specific CSS -->
+        {% block extra_css %}{% endblock %}
+    </head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>{{ session['username'] }}</span>
+                </div>
+            </div>
+            <div class="sidebar-menu">
+                {% if session.role == 'admin' or 'index' in session.pages %}
+                <a href="{{ url_for('index') }}" class="menu-item">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                {% endif %}
+
+                {% if session.role == 'admin' or 'registros' in session.pages %}
+                <a href="{{ url_for('registros') }}" class="menu-item">
+                    <i class="fas fa-list"></i>
+                    <span>Formularios Pendientes</span>
+                </a>
+                {% endif %}
+
+                {% if session.role == 'admin' or 'registros_cerrados' in session.pages %}
+                <a href="{{ url_for('registros_cerrados') }}" class="menu-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Formularios Cerrados</span>
+                </a>
+                {% endif %}
+
+                {% if session.role == 'admin' or 'reportes' in session.pages %}
+                <a href="{{ url_for('reportes') }}" class="menu-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reportes</span>
+                </a>
+                {% endif %}
+
+                {% if session.role == 'admin' or 'transferencias' in session.pages %}
+                <a href="{{ url_for('transferencias') }}" class="menu-item">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Carga de Ventas</span>
+                </a>
+                {% endif %}
+
+                {% if session.role == 'admin' or 'reportes2' in session.pages %}
+                <a href="{{ url_for('casos_pendientes') }}" class="menu-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Casos Pendientes</span>
+                </a>
+                {% endif %}
+
+                {% if session.role == 'admin' or 'usuarios' in session.pages %}
+                <a href="{{ url_for('usuarios') }}" class="menu-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Administración de Usuarios</span>
+                </a>
+                {% endif %}
+                {% if session.role == 'admin' or 'zonas' in session.pages %}
+                <a href="{{ url_for('zonas') }}" class="menu-item">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Panel de Zonas</span>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Scripts comunes -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

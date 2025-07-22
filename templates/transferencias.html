@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="last-updated" content="2025-06-06 15:00:32">
+        <meta name="current-user" content="pomenuk">
+        <title>Formulario de Carga de Ventas</title>
+        
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        
+        <!-- Select2 CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        
+        <!-- Flatpickr CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        
+        <!-- Custom CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/transferencias.css') }}">
+    </head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+        <div class="container">
+            <span class="navbar-brand">Carga de Ventas</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('casos_pendientes') }}">Casos Pendientes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('zonas') }}" id="zonasBtn">Zonas</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="main-content">
+        <!-- Contenedor del formulario -->
+        <div class="content-wrapper">
+            <div class="content-container">
+                <form id="transferForm" class="form-container">
+                    <!-- Usuario (readonly) -->
+                    <div class="form-group">
+                        <label for="usuario">Usuario:</label>
+                        <input type="text" id="usuario" name="usuario" value="{{ session['username'] }}" readonly>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="form-group">
+                        <label for="fecha">Fecha:</label>
+                        <input type="text" id="fecha" name="fecha" class="form-control" required placeholder="Seleccione fecha" readonly>
+                    </div>
+
+                    <!-- Primero Zona -->
+                    <div class="form-group">
+                        <label for="zona">Zona:</label>
+                        <select id="zona" name="zona" class="select2" required>
+                            <option value="">Seleccione una zona</option>
+                            <option value="CONSTITUCION">CONSTITUCIÓN</option>
+                            <option value="ZONA SUR">ZONA SUR</option>
+                            <option value="GASTRONOMIA">GASTRONOMÍA</option>
+                            <option value="KIOSCOS">KIOSCOS</option>
+                            <option value="BIMBO">BIMBO</option>
+                            <option value="RETIRO">RETIRO</option>
+                            <option value="TBA">TBA</option>
+                            <option value="AMBULANTE">AMBULANTE</option>
+                            <option value="ONCE">ONCE</option>
+                        </select>
+                    </div>
+
+                    <!-- Luego Etiqueta -->
+                    <div class="form-group">
+                        <label for="etiqueta">Etiqueta:</label>
+                        <select id="etiqueta" name="etiqueta" class="select2" required disabled>
+                            <option value="">Seleccione una etiqueta</option>
+                        </select>
+                    </div>
+
+                    <!-- Comisión -->
+                    <div class="form-group">
+                        <label for="comision">Comisión:</label>
+                        <select id="comision" name="comision" required>
+                            <option value="">Seleccione comisión</option>
+                            <option value="0">0%</option>
+                            <option value="7">7%</option>
+                            <option value="8">8%</option>
+                            <option value="9">9%</option>
+                            <option value="10">10%</option>
+                            <option value="11">11%</option>
+                            <option value="12">12%</option>
+                            <option value="12.5">12,5%</option>
+                            <option value="13">13%</option>
+                            <option value="15">15%</option>
+                            <option value="20">20%</option>
+                            <option value="25">25%</option>
+                        </select>
+                    </div>
+
+                    <!-- Turno -->
+                    <div class="form-group">
+                        <label for="turno">Turno:</label>
+                        <select id="turno" name="turno" required>
+                            <option value="">Seleccione turno</option>
+                            <option value="DIA">DIA</option>
+                            <option value="NOCHE">NOCHE</option>
+                            <option value="UNI">UNI</option>
+                            <option value="TGT">TGT</option>
+                        </select>
+                    </div>
+
+                    <!-- FC -->
+                    <div class="form-group">
+                        <label for="fc">FC:</label>
+                        <input type="number" id="fc" name="fc" required>
+                    </div>
+
+                    <!-- PL -->
+                    <div class="form-group">
+                        <label for="pl">PL:</label>
+                        <input type="number" id="pl" name="pl" required>
+                    </div>
+
+                    <!-- Transferencia -->
+                    <div class="form-group">
+                        <label for="transferencia">Transferencia:</label>
+                        <input type="text" id="transferencia" name="transferencia">
+                    </div>
+
+                    <!-- Boleta Rosa -->
+                    <div class="form-group">
+                        <label for="boletaRosa">Boleta Rosa:</label>
+                        <input type="text" id="boletaRosa" name="boletaRosa">
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="form-group">
+                        <label for="observaciones">Observaciones:</label>
+                        <textarea id="observaciones" name="observaciones" rows="3"></textarea>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="form-group">
+                        <label for="estado">Estado:</label>
+                        <select id="estado" name="estado" required>
+                            <option value="">Seleccione estado</option>
+                            <option value="OK">OK</option>
+                            <option value="PENDIENTE">PENDIENTE</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts al final del body -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ url_for('static', filename='js/etiquetas-zonas.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            // Inicializar Flatpickr para el campo de fecha
+            flatpickr("#fecha", {
+                locale: "es",
+                dateFormat: "Y-m-d",
+                defaultDate: "today",
+                allowInput: true,
+                maxDate: "today",
+                disableMobile: "true"
+            });
+
+            // Inicializar Select2 para las listas desplegables
+            $('.select2').select2({
+                width: '100%',
+                language: 'es',
+                placeholder: 'Seleccionar...',
+                allowClear: true,
+                minimumInputLength: 0,
+                theme: 'default'
+            });
+
+            // Manejar el cambio de zona
+            $('#zona').on('change', function() {
+                const zona = $(this).val();
+                const $etiqueta = $('#etiqueta');
+                
+                // Limpiar etiquetas
+                $etiqueta.empty().append('<option value="">Seleccione una etiqueta</option>');
+                
+                if (zona && ETIQUETAS_POR_ZONA[zona]) {
+                    // Habilitar el select de etiquetas
+                    $etiqueta.prop('disabled', false);
+                    
+                    // Agregar las etiquetas correspondientes a la zona
+                    ETIQUETAS_POR_ZONA[zona].forEach(etiqueta => {
+                        $etiqueta.append(`<option value="${etiqueta}">${etiqueta}</option>`);
+                    });
+                } else {
+                    // Si no hay zona seleccionada, deshabilitar el select de etiquetas
+                    $etiqueta.prop('disabled', true);
+                }
+                
+                // Actualizar Select2
+                $etiqueta.trigger('change');
+            });
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/transferencias.js') }}"></script>
+</body>
+</html>

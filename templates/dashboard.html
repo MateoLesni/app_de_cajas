@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="last-updated" content="2025-06-27 19:15:03">
+    <meta name="current-user" content="pomenuk">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts para estilo de notas -->
+    <link href="https://fonts.googleapis.com/css2?family=Handlee&display=swap" rel="stylesheet">
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    
+    <style>
+        /* Estilos específicos para las celdas del calendario */
+        .fc-daygrid-day[data-date] {
+            cursor: pointer;
+        }
+
+        /* Ocultar todos los eventos de fondo para evitar las leyendas dentro de celdas */
+        .fc-daygrid-day-events, .fc-daygrid-day-bottom {
+            display: none !important;
+        }
+
+        /* Estilos para los días con estados específicos */
+        .fc-day-ok {
+            background-color: rgba(46, 204, 113, 0.3) !important;
+            border: 2px solid #2ecc71 !important;
+        }
+
+        .fc-day-pending {
+            background-color: rgba(241, 196, 15, 0.3) !important;
+            border: 2px solid #f1c40f !important;
+        }
+
+        .fc-day-missing {
+            background-color: rgba(231, 76, 60, 0.3) !important;
+            border: 2px solid #e74c3c !important;
+        }
+
+        .fc-day-mixed {
+            background-color: rgba(155, 89, 182, 0.3) !important;
+            border: 2px solid #9b59b6 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <nav class="sidebar">
+            <!-- Header con información del usuario -->
+            <div class="sidebar-header">
+                <a href="{{ url_for('mi_perfil') }}" class="user-info" style="text-decoration: none; cursor: pointer;">
+                    {% if user_info and user_info.avatar_url %}
+                        <img src="{{ user_info.avatar_url }}?t={{ now }}" alt="Perfil" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <i class="fas fa-user-circle"></i>
+                    {% endif %}
+                    <span>{{ session['username'] }}</span>
+                </a>
+            </div>
+
+            <div class="sidebar-menu">
+                <!-- Añadir este enlace al inicio del menú -->
+                <a href="{{ url_for('mi_perfil') }}" class="menu-item">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Mi Perfil</span>
+                </a>
+                
+                {% if user_has_page_access('index') %}
+                <a href="{{ url_for('nuevo_registro') }}" class="menu-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Nueva Solicitud</span>
+                </a>
+                {% endif %}
+                
+                {% if user_has_page_access('registros') %}
+                <a href="{{ url_for('registros') }}" class="menu-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Facturas Pendientes</span>
+                </a>
+                {% endif %}
+                
+                {% if user_has_page_access('registros_cerrados') %}
+                <a href="{{ url_for('registros_cerrados') }}" class="menu-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Facturas Cerradas</span>
+                </a>
+                {% endif %}
+                
+                {% if user_has_page_access('reportes') %}
+                <a href="{{ url_for('reportes') }}" class="menu-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>CtaCte</span>
+                </a>
+                {% endif %}
+                
+                {% if user_has_page_access('transferencias') %}
+                <a href="{{ url_for('transferencias') }}" class="menu-item">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Carga de Ventas</span>
+                </a>
+                {% endif %}
+
+                {% if user_has_page_access('stock') %}
+                <a href="{{ url_for('stock') }}" class="menu-item">
+                    <i class="fas fa-boxes"></i>
+                    <span>Carga de Stock</span>
+                </a>
+                {% endif %}
+                
+                {% if user_has_page_access('reportes2') %}
+                <a href="{{ url_for('casos_pendientes') }}" class="menu-item">
+                    <i class="fas fa-list"></i>
+                    <span>Casos Pendientes</span>
+                </a>
+                {% endif %}
+                
+                {% if user_has_page_access('usuarios') %}
+                <a href="{{ url_for('usuarios') }}" class="menu-item">
+                    <i class="fas fa-users"></i>
+                    <span>Usuarios</span>
+                </a>
+                {% endif %}
+
+                {% if user_has_page_access('zonas') %}
+                <a href="{{ url_for('zonas') }}" class="menu-item">
+                    <i class="fas fa-th-large"></i>
+                    <span>Panel de Zonas</span>
+                </a>
+                {% endif %}
+                
+                {% if 'system_monitor' in session.get('pages', []) or session.get('role') == 'admin' %}
+                <a href="{{ url_for('admin_system_dashboard') }}" class="menu-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Monitor del Sistema</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Footer con botón de cerrar sesión -->
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+            </div>
+        </nav>
+        <main class="main-content">
+            <header class="top-header">
+                <h1>Panel de Control</h1>
+                <div class="date-time">
+                    <i class="far fa-calendar-alt"></i>
+                    <span id="current-date"></span>
+                </div>
+            </header>
+            
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-icon today-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>Registros de Hoy</h3>
+                        <p class="number" id="todayCount">0</p>
+                        <span class="card-subtitle">
+                            <span class="status-counts">
+                                <span class="pending">Pendientes: <span id="todayPending">0</span></span>
+                                <span class="completed">OK: <span id="todayCompleted">0</span></span>
+                            </span>
+                            <span class="timestamp">Última actualización: <span id="lastUpdate"></span></span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon week-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>Mis Casos Pendientes</h3>
+                        <p class="number" id="pendingCount">0</p>
+                        <span class="card-subtitle">
+                            Por zona:
+                            <div class="zone-counts" id="zonePendingCounts"></div>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon stats-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>Estadísticas del Día</h3>
+                        <p class="number" id="totalToday">0</p>
+                        <span class="card-subtitle">
+                            Total registros procesados hoy
+                            <div class="progress-bar">
+                                <div class="progress" id="completionProgress"></div>
+                            </div>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección del calendario - AHORA PRIMERO -->
+            <div class="calendar-section">
+                <h2>Estado de Cargas por Fecha</h2>
+                <div id="calendar"></div>
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-ok"></div>
+                        <span class="legend-label">Todo OK</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-pending"></div>
+                        <span class="legend-label">Pendientes</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-missing"></div>
+                        <span class="legend-label">Faltan por cargar</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-mixed"></div>
+                        <span class="legend-label">Pendientes + Faltan</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Stock - AHORA SEGUNDO -->
+            {% if session.get('role') == 'admin' %}
+            <div class="stock-overview-section">
+                <h2>Estado de Stock por Zonas</h2>
+                
+                <div class="month-selector">
+                    <!-- Se reemplazará dinámicamente por JavaScript -->
+                </div>
+                
+                <div class="stock-overview-grid" id="stockOverviewGrid">
+                    <div class="stock-grid-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando datos de stock...</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Modal para detalles del día -->
+            <div id="dayDetailModal" class="day-detail-modal">
+                <div class="day-detail-content">
+                    <div class="day-detail-header">
+                        <h3 id="dayDetailTitle">Detalles del día</h3>
+                        <span class="close-detail-modal">&times;</span>
+                    </div>
+                    <div class="day-detail-body" id="dayDetailBody">
+                        <!-- El contenido se generará dinámicamente -->
+                    </div>
+                    <div class="day-detail-footer">
+                        <button class="btn-detail-close">Cerrar</button>
+                    </div>
+                </div>
+                <button class="mobile-close-btn" id="mobileCloseBtn"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Sección de Notas -->
+            <div class="notes-section">
+                <div class="section-header">
+                    <h2>Mis Notas</h2>
+                    <button id="newNoteBtn" class="btn-new-note">
+                        <i class="fas fa-plus"></i> Nueva Nota
+                    </button>
+                </div>
+                
+                <div class="notes-container" id="notesContainer">
+                    <!-- Las notas se cargarán dinámicamente aquí -->
+                    <div class="empty-notes">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando notas...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para crear/editar notas -->
+    <div class="note-modal" id="noteModal">
+        <div class="note-modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Nueva Nota</h3>
+            <form id="noteForm">
+                <div class="form-group">
+                    <label for="noteTitle">Título</label>
+                    <input type="text" id="noteTitle" maxlength="50" placeholder="Título de la nota">
+                </div>
+                <div class="form-group">
+                    <label for="noteContent">Contenido</label>
+                    <textarea id="noteContent" rows="4" placeholder="Escribe tu nota aquí..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="noteColor">Color</label>
+                    <select id="noteColor">
+                        <option value="#feff9c">Amarillo</option>
+                        <option value="#7afcff">Azul</option>
+                        <option value="#ff7eb9">Rosa</option>
+                        <option value="#7affa4">Verde</option>
+                        <option value="#ff9e7a">Naranja</option>
+                    </select>
+                </div>
+                <button type="submit" id="saveNoteBtn" class="btn-save-note">Guardar</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.min.js"></script>
+    <!-- Agregar el plugin monthSelectPlugin para flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+    <!-- Agregar flatpickr principal -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Last updated: 2025-05-30 19:32:57 -->
+    <!-- Current user: pomenuk -->
+    <title>Casos Pendientes</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/reportes2.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Preload Scripts -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script">
+    <link rel="preload" href="https://code.jquery.com/jquery-3.6.0.min.js" as="script">
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+        <div class="container">
+            <span class="navbar-brand">Casos Pendientes</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('transferencias') }}">Cargar Ventas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('zonas') }}" id="zonasBtn">Zonas</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Casos Pendientes</h5>
+                        <h2 class="card-text" id="totalPendientes">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Distribución por Zonas</h5>
+                        <div style="height: 80px; width: auto;">
+                            <canvas id="zonasBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Filtros de Búsqueda</h5>
+                <form id="searchForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Usuario</label>
+                            <select class="form-select select2" name="usuario">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha</label>
+                            <input type="text" class="form-control flatpickr" name="fecha">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Zona</label>
+                            <select class="form-select select2" name="zona">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="estado">
+                                <option value="">Todos</option>
+                                <option value="PENDIENTE" selected>Pendiente</option>
+                                <option value="OK">OK</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                Generar Reporte
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2" id="clearFiltersBtn">
+                                <i class="fas fa-eraser"></i> Limpiar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Resultados</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Usuario</th>
+                                <th>Etiqueta</th>
+                                <th>Zona</th>
+                                <th>Comisión</th>
+                                <th>Turno</th>
+                                <th>FC</th>
+                                <th>PL</th>
+                                <th>Transferencia</th>
+                                <th>Boleta Rosa</th>
+                                <th>Observaciones</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Los resultados se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Edición -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Editar Registro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId" name="id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha</label>
+                                <input type="text" class="form-control flatpickr" id="editFecha" name="fecha" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Usuario</label>
+                                <input type="text" class="form-control" id="editUsuario" name="usuario" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Zona</label>
+                                <select class="form-select select2-modal" id="editZona" name="zona" required>
+                                    <option value="">Seleccione una zona</option>
+                                    <option value="CONSTITUCION">CONSTITUCIÓN</option>
+                                    <option value="ZONA SUR">ZONA SUR</option>
+                                    <option value="GASTRONOMIA">GASTRONOMÍA</option>
+                                    <option value="KIOSCOS">KIOSCOS</option>
+                                    <option value="BIMBO">BIMBO</option>
+                                    <option value="RETIRO">RETIRO</option>
+                                    <option value="TBA">TBA</option>
+                                    <option value="AMBULANTE">AMBULANTE</option>
+                                    <option value="ONCE">ONCE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Etiqueta</label>
+                                <select class="form-select select2-modal" id="editEtiqueta" name="etiqueta" required>
+                                    <option value="">Seleccione una etiqueta</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Comisión</label>
+                                <select class="form-select" id="editComision" name="comision" required>
+                                    <option value="">Seleccione comisión</option>
+                                    <option value="0">0%</option>
+                                    <option value="7">7%</option>
+                                    <option value="8">8%</option>
+                                    <option value="9">9%</option>
+                                    <option value="10">10%</option>
+                                    <option value="11">11%</option>
+                                    <option value="12">12%</option>
+                                    <option value="12.5">12,5%</option>
+                                    <option value="13">13%</option>
+                                    <option value="15">15%</option>
+                                    <option value="20">20%</option>
+                                    <option value="25">25%</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Turno</label>
+                                <select class="form-select" id="editTurno" name="turno" required>
+                                    <option value="">Seleccione turno</option>
+                                    <option value="DIA">DIA</option>
+                                    <option value="NOCHE">NOCHE</option>
+                                    <option value="UNI">UNI</option>
+                                    <option value="TGT">TGT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">FC</label>
+                                <input type="number" class="form-control" id="editFc" name="fc" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">PL</label>
+                                <input type="number" class="form-control" id="editPl" name="pl">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Transferencia</label>
+                                <input type="text" class="form-control" id="editTransferencia" name="transferencia">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Boleta Rosa</label>
+                                <input type="text" class="form-control" id="editBoletaRosa" name="boletaRosa">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="editObservaciones" name="observaciones" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" id="editEstado" name="estado" required>
+                                    <option value="PENDIENTE">Pendiente</option>
+                                    <option value="OK">OK</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveEdit">Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/etiquetas-zonas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reportes2.js') }}"></script>
+</body>
+</html>

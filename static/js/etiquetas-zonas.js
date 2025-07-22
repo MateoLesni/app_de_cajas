@@ -1,0 +1,11 @@
+const ETIQUETAS_POR_ZONA = {
+    "GASTRONOMIA": ["TH09", "TH10", "TH16", "TH18", "HO05", "HO24", "HO26", "HO39", "JM61", "JM62", "ZT56", "HOOD"],
+    "KIOSCOS": ["KO01", "KO02", "KO04", "KO05", "KO11", "KO10", "KF01", "KM00", "KM04", "KZ02", "KC01", "KR01"],
+    "TBA": ["MJ15", "MJ16", "MJ22", "MJ23", "MJ24", "MJ35", "BR03", "CR08", "CR05", "LI00", "LI01", "LI05", "LI07", "LI09", "LI11"],
+    "ZONA SUR": ["ZT03", "ZT18", "ZT19", "ZT20", "ZI27", "ZI28", "ZI29", "ZI31", "ZI32", "ZI33", "BR04", "ZJ04", "ZJ05", "ZJ06", "ZJ10", "ZJ11", "ZJ14", "ZJ17", "ZI04", "ZI06", "ZI30", "ZT33", "ZT34", "ZI01", "ZI02", "ZI03", "ZI10", "ZI11", "ZI14", "ZI18", "ZI23", "ZF05", "ZF08", "ZF18", "ZF19", "ZF20","ZF22", "CL02"],
+    "CONSTITUCION": ["JM12", "JM13", "JM21", "JM22", "JM25", "JM28", "JM32", "JM33", "JM39", "JM42", "TH07", "TH13", "TH54", "PF00", "PF02", "PF03", "PF04", "PF05", "PF06", "CR33", "SH04", "SH11", "BA04", "BA05", "BA06", "BA07", "JM23"],
+    "ONCE": ["HO03", "HO04", "HO07", "HO13", "HO19", "HO21", "HO22", "HO33", "HO43", "HO44", "HO46", "HO47", "HO48", "HO50", "HO54", "HO55"],
+    "BIMBO": ["UFB07", "UFB09", "UFB11", "UFB53", "UFB61", "UFB69", "UFB86", "UFB92", "UFB106", "UFB123", "UFB124", "UFB130", "UFB132", "HL01", "SH18", "UFB31", "UFB32", "UFB33", "UFB50", "UFB55", "UFB60", "UFB82", "UFB110", "UFB127", "ZJ02", "ZT60", "UFB12", "UFB13", "UFB89", "UFB01", "UFB03", "UFB52", "UFB93", "UFB128", "UFB129", "HO25", "UFB133", "UFB134"],
+    "RETIRO": ["JM07", "JM43", "JM45", "JM60", "CC11", "CC12", "ZT51", "CR13", "CR14"],
+    "AMBULANTE": ["VA02", "VA03", "VA04", "VA05"],
+};

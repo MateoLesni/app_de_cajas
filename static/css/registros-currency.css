@@ -1,0 +1,34 @@
+/* Estilos para los campos de moneda */
+.input-money {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-money span {
+    position: absolute;
+    left: 10px;
+    color: #555;
+    font-weight: 500;
+}
+
+.input-money .currency-input {
+    text-align: right;
+    padding-left: 25px;
+    font-weight: 500;
+}
+
+/* Estilo cuando el campo recibe el foco */
+.currency-input:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    background-color: #f8f9fa;
+}
+
+/* Mejora visual para el campo read-only */
+.currency-input[readonly] {
+    background-color: #f9f9f9;
+    cursor: default;
+    font-weight: 600;
+}

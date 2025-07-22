@@ -1,0 +1,57 @@
+/* Estilos para la lista de archivos y botones */
+.archivo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.archivo-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+}
+
+.archivo-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-download {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-size: 12px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.btn-download:hover {
+    background-color: #0069d9;
+    text-decoration: none;
+    color: white;
+}
+
+.btn-view {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-size: 12px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.btn-view:hover {
+    background-color: #5a6268;
+    text-decoration: none;
+    color: white;
+}

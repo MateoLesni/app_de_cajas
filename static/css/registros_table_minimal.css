@@ -1,0 +1,625 @@
+/* Estilos para la tabla de registros - Versión minimalista y compacta */
+
+/* Contenedor de la tabla */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 15px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+/* Tabla básica */
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+/* Encabezados de tabla */
+.registros-table thead {
+    background-color: #f8f9fa;
+}
+
+.registros-table th {
+    padding: 8px 6px;
+    text-align: left;
+    font-weight: 500;
+    color: #495057;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 12px;
+}
+
+/* Filas y celdas */
+.registros-table tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.registros-table tr:hover {
+    background-color: #f9fbfd;
+}
+
+.registros-table td {
+    padding: 6px;
+    vertical-align: middle;
+}
+
+/* Ancho específico de columnas */
+.registros-table th:nth-child(1), .registros-table td:nth-child(1) { /* Pedido */
+    width: 130px;
+}
+
+.registros-table th:nth-child(2), .registros-table td:nth-child(2) { /* Fecha */
+    width: 135px;
+}
+
+.registros-table th:nth-child(3), .registros-table td:nth-child(3) { /* Cliente */
+    width: 120px;
+}
+
+.registros-table th:nth-child(4), 
+.registros-table th:nth-child(5), 
+.registros-table th:nth-child(6), 
+.registros-table th:nth-child(7), 
+.registros-table td:nth-child(4), 
+.registros-table td:nth-child(5), 
+.registros-table td:nth-child(6), 
+.registros-table td:nth-child(7) { /* Montos */
+    width: 120px;
+}
+
+.registros-table th:nth-child(8), .registros-table td:nth-child(8) { /* Observaciones */
+    width: 180px;
+}
+
+.registros-table th:nth-child(9), .registros-table td:nth-child(9) { /* Estado */
+    width: 90px;
+}
+
+.registros-table th:nth-child(10), .registros-table td:nth-child(10) { /* Acciones */
+    width: 85px;
+}
+
+/* Alineación específica de celdas */
+.registros-table td:nth-child(1) { /* ID pedido */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #555;
+}
+
+.registros-table td:nth-child(2) { /* Fecha */
+    white-space: nowrap;
+    color: #666;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(3) { /* Cliente */
+    font-weight: 500;
+}
+
+.registros-table td:nth-child(4),
+.registros-table td:nth-child(5),
+.registros-table td:nth-child(6),
+.registros-table td:nth-child(7) {
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(8) { /* Observaciones */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #666;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(9) { /* Estado */
+    text-align: center;
+}
+
+.registros-table td:nth-child(10) { /* Acciones */
+    text-align: center;
+}
+
+/* Estilos para badge */
+.badge {
+    display: inline-block;
+    padding: 3px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 3px;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.badge-pending {
+    background-color: #ffebee;
+    color: #e53935;
+    border: 1px solid #ffcdd2;
+}
+
+.badge-partial {
+    background-color: #fff8e1;
+    color: #ff8f00;
+    border: 1px solid #ffe082;
+}
+
+.badge-closed {
+    background-color: #e0f2f1;
+    color: #00796b;
+    border: 1px solid #b2dfdb;
+}
+
+/* Botón ver más */
+.btn-ver-mas {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-mas:hover {
+    background-color: #c8e6c9;
+}
+
+/* Mensaje sin registros */
+.no-records td {
+    padding: 15px;
+    text-align: center;
+}
+
+.no-registros p {
+    margin-bottom: 10px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* Filas alternadas más sutiles */
+.registros-table tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Panel de filtros más compacto */
+.filtros-panel {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.filtros-panel h2 {
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #444;
+}
+
+.filtro-select,
+.filtro-input {
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.btn-filtrar,
+.btn-limpiar {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: normal;
+}
+/* Estilos para la tabla de registros - Versión minimalista y compacta */
+
+/* Contenedor de la tabla */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    background-color: #fff;
+    border: 1px solid #e0e4e8;
+}
+
+/* Tabla básica */
+.registros-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 13px;
+    color: #344767;
+}
+
+/* Encabezados de tabla */
+.registros-table thead {
+    background-color: #f8f9fa;
+}
+
+.registros-table th {
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #344767;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Filas y celdas */
+.registros-table tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.registros-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.registros-table td {
+    padding: 8px;
+    vertical-align: middle;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Ancho específico de columnas */
+.registros-table th:nth-child(1), .registros-table td:nth-child(1) { /* Pedido */
+    max-width: 100px;
+}
+
+.registros-table th:nth-child(2), .registros-table td:nth-child(2) { /* Fecha */
+    max-width: 120px;
+}
+
+.registros-table th:nth-child(3), .registros-table td:nth-child(3) { /* Cliente */
+    max-width: 150px;
+}
+
+.registros-table th:nth-child(4), 
+.registros-table th:nth-child(5), 
+.registros-table th:nth-child(6), 
+.registros-table th:nth-child(7), 
+.registros-table td:nth-child(4), 
+.registros-table td:nth-child(5), 
+.registros-table td:nth-child(6), 
+.registros-table td:nth-child(7) { /* Montos */
+    max-width: 100px;
+}
+
+.registros-table th:nth-child(8), .registros-table td:nth-child(8) { /* Observaciones */
+    max-width: 200px;
+}
+
+/* Alineación específica de celdas */
+.registros-table td:nth-child(1) { /* ID pedido */
+    white-space: nowrap;
+    color: #5e72e4;
+    font-weight: 500;
+}
+
+.registros-table td:nth-child(2) { /* Fecha */
+    white-space: nowrap;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(3) { /* Cliente */
+    font-weight: 500;
+}
+
+.registros-table td:nth-child(4),
+.registros-table td:nth-child(5),
+.registros-table td:nth-child(6),
+.registros-table td:nth-child(7) {
+    text-align: right;
+    font-family: 'Roboto Mono', 'Consolas', monospace;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.registros-table td:nth-child(8) { /* Observaciones */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #6c757d;
+    font-style: italic;
+    font-size: 12px;
+    max-width: 200px;
+}
+
+/* Estado y acciones */
+.registros-table td.estado {
+    text-align: center;
+}
+
+.registros-table td.acciones {
+    text-align: center;
+}
+
+/* Estilos para badge */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 4px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+.badge-pending {
+    background-color: #fff8e1;
+    color: #f59e0b;
+    border: 1px solid #fef3c7;
+}
+
+.badge-partial {
+    background-color: #e0f2f1;
+    color: #0d9488;
+    border: 1px solid #ccfbf1;
+}
+
+.badge-closed {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+/* Botón ver más */
+.btn-ver-mas {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-mas:hover {
+    background-color: #e2e8f0;
+    color: #475569;
+}
+
+/* Mensaje sin registros */
+.no-records td {
+    padding: 40px 15px;
+    text-align: center;
+}
+
+.no-registros {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #94a3b8;
+}
+
+.no-registros i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #cbd5e1;
+}
+
+.no-registros p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Filas alternadas */
+.registros-table tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Reabrir botón */
+.btn-reopen {
+    background-color: #f97316;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-reopen:hover {
+    background-color: #ea580c;
+}
+
+/* Estilos para modales */
+.modal-header {
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    color: #111827;
+    margin: 0;
+}
+
+/* Ajustes para modal */
+.modal-content {
+    border-radius: 8px;
+}
+
+.modal h3 {
+    font-size: 16px;
+    color: #111827;
+    margin: 20px 0 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detalles-section {
+    margin-bottom: 20px;
+}
+
+.detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 15px;
+    background-color: #f9fafb;
+    border-radius: 6px;
+}
+
+/* Estilos para formulario y botones */
+.detalle-formulario {
+    font-size: 13px;
+}
+
+.form-row label {
+    font-weight: 500;
+    color: #374151;
+}
+
+.form-row .monto {
+    font-weight: 500;
+    color: #059669;
+}
+
+/* Estilo para confirmación de eliminar pago */
+.confirm-content {
+    padding: 15px;
+    margin: 15px 0;
+    background-color: #fef2f2;
+    border-radius: 6px;
+    color: #991b1b;
+    border: 1px solid #fee2e2;
+}
+
+.confirm-content p:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.confirm-content i {
+    color: #ef4444;
+}
+
+.pago-detalle {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #fee2e2;
+}
+
+/* Botones para confirmar/cancelar */
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.btn-cancel {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background-color: #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .detalle-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .filtros-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .registros-table th, 
+    .registros-table td {
+        white-space: nowrap;
+    }
+}
+
+/* Añadir botón de nuevo estilo */
+.btn-ctacte {
+    background-color: #7c3aed;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-ctacte:hover {
+    background-color: #6d28d9;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
