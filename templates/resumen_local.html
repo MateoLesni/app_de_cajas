@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resumen Local - Sistema de Gestión de Flujo de Cajas</title>
+
+  <!-- CSS global -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <!-- CSS específico de esta vista -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/resumen_local.css') }}">
+
+  <style>
+    /* Botón de acción crítica (bien visible) */
+    .btn-danger-strong{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:14px 20px; font-weight:800; border-radius:12px;
+      border:2px solid #ef4444; background:#fee2e2; color:#991b1b;
+      box-shadow:0 2px 12px rgba(239,68,68,.25);
+      transition: transform .04s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .btn-danger-strong:hover{ background:#fecaca; box-shadow:0 6px 18px rgba(239,68,68,.35); }
+    .btn-danger-strong:active{ transform: translateY(1px) scale(.99); }
+    .btn-danger-strong[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none; }
+    .sl-danger-wrap{ margin-top:18px; display:flex; justify-content:flex-end; }
+
+    .sl-badge{
+      display:inline-block; font-size:.8rem; font-weight:700; border-radius:999px; padding:4px 10px; margin-left:10px;
+    }
+    .sl-badge-open{ background:#e0f2fe; color:#075985; border:1px solid #7dd3fc; }
+    .sl-badge-closed{ background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- ===== Sidebar izquierda ===== -->
+    <aside class="sidebar" role="navigation" aria-label="Barra lateral">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">NG</div>
+        <div class="brand-meta">
+          <strong>Sistema</strong>
+          <span>Gestión de Flujo de Cajas</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="nav-item is-active" href="{{ url_for('resumen_local') }}">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Resumen Local
+        </a>
+        <a class="nav-item" href="{{ url_for('index') }}">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Carga de Datos
+        </a>
+
+        <!-- Grupo: Reportería (desplegable) -->
+        <div class="nav-group {% if request.path.startswith('/reporteria') %}is-open{% endif %}">
+          <a href="javascript:void(0)"
+            id="navReportes"
+            class="nav-item nav-toggle {% if request.path.startswith('/reporteria') %}is-active{% endif %}"
+            aria-expanded="{% if request.path.startswith('/reporteria') %}true{% else %}false{% endif %}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            <span>Reportería</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true" focusable="false" style="margin-left:auto;">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </a>
+
+          <div class="nav-sub">
+            <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
+               href="{{ url_for('ui_reporteria_remesas') }}">
+              <span class="nav-dot" aria-hidden="true"></span>
+              Remesas
+            </a>
+            <a class="nav-item nav-sub-item {% if request.path == url_for('index') %}is-active{% endif %}"
+               href="{{ url_for('index') if false else '#' }}">
+              <span class="nav-dot" aria-hidden="true"></span>
+              Cuentas Corrientes
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+      </div>
+
+      <button class="sidebar__toggle" id="toggleSidebar" aria-label="Abrir/cerrar menú">☰</button>
+    </aside>
+    <!-- /Sidebar -->
+
+    <!-- ===== Main ===== -->
+    <main class="main">
+      <div class="container">
+        <!-- Encabezado superior -->
+        <div class="header">
+          <div class="header-info">
+            <div class="info-item"><span class="label">Fecha:</span> <span id="currentDate" class="value"></span></div>
+            <div class="info-item"><span class="label">Usuario:</span> <span class="value">{{ session['username'] }}</span></div>
+            <div class="info-item"><span class="label">Local:</span> <span id="rl-local-display" class="value">{{ session['local'] }}</span></div>
+            <div class="info-item"><span class="label">Sociedad:</span> <span class="value">{{ session['society'] }}</span></div>
+          </div>
+          <div class="header-buttons">
+            <a href="{{ url_for('index') }}" class="btn-header">Carga de Datos</a>
+            <a href="{{ url_for('logout') }}" class="btn-header">Cerrar Sesión</a>
+          </div>
+        </div>
+
+        <!-- Filtros + Panel -->
+        <div class="sl-wrap">
+          <div class="sl-filtros">
+            <div class="form-group">
+              <label for="rl-fecha">Fecha</label>
+              <input type="date" id="rl-fecha" />
+            </div>
+            <div class="sl-actions">
+              <button id="rl-actualizar" class="btn-submit">Actualizar</button>
+              <button id="rl-imprimir" class="btn-ghost">Imprimir</button>
+            </div>
+          </div>
+
+          <section class="sl-panel" aria-labelledby="sl-title">
+            <header class="sl-head">
+              <h1 id="sl-title">
+                Cierre Global del Día
+                <!-- Badge de estado del LOCAL -->
+                <span id="rl-badge-estado" class="sl-badge" style="display:none;"></span>
+              </h1>
+              <div class="sl-meta">
+                <div><strong>Fecha:</strong> <span id="rl-fecha-display">—</span></div>
+                <div><strong>Hora:</strong> <span id="rl-hora-display">—</span></div>
+                <div><strong>Local:</strong> <span>{{ session['local'] }}</span></div>
+              </div>
+            </header>
+
+            <div class="sl-body">
+              <!-- RESUMEN -->
+              <section class="sl-section acc" aria-expanded="true" data-acc="general">
+                <div class="sl-title">Resumen</div>
+                <div class="acc-body">
+                  <table class="sl-table">
+                    <tr><td>Venta Total</td><td class="r" id="rl-venta-total">0,00</td></tr>
+                    <tr><td>Total Cobrado</td><td class="r" id="rl-total-cobrado">0,00</td></tr>
+                    <tr class="sl-total"><td>Diferencia</td><td class="r" id="rl-diferencia">0,00</td></tr>
+                  </table>
+                </div>
+              </section>
+
+              <!-- VENTAS -->
+              <section class="sl-section acc" aria-expanded="true" data-acc="general">
+                <div class="sl-title">Ventas</div>
+                <div class="acc-body">
+                  <table class="sl-table">
+                    <tr><td>Vta Z</td><td class="r" id="rl-vta-z">0,00</td></tr>
+                    <tr><td>Discovery</td><td class="r" id="rl-discovery">0,00</td></tr>
+                  </table>
+                </div>
+              </section>
+
+              <!-- INFORMACIÓN: ventas por medio -->
+              <section class="sl-section acc" aria-expanded="true" data-acc="general">
+                <div class="sl-title">Ventas por medio</div>
+                <div class="acc-body">
+
+                  <!-- Efectivo -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Efectivo</span>
+                      <span class="amount r" id="rl-cash">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Remesas</td><td class="r" id="rl-remesas">0,00</td></tr>
+                        <tr class="sl-total"><td>Neto efectivo</td><td class="r" id="rl-cash-neto">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Tarjeta -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Tarjeta</span>
+                      <span class="amount r" id="rl-card">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>VISA</td><td class="r" id="rl-tj-visa">0,00</td></tr>
+                        <tr><td>VISA DÉBITO</td><td class="r" id="rl-tj-visa-deb">0,00</td></tr>
+                        <tr><td>VISA PREPAGO</td><td class="r" id="rl-tj-visa-pre">0,00</td></tr>
+
+                        <tr><td>MASTERCARD</td><td class="r" id="rl-tj-mc">0,00</td></tr>
+                        <tr><td>MASTERCARD DÉBITO</td><td class="r" id="rl-tj-mc-deb">0,00</td></tr>
+                        <tr><td>MASTERCARD PREPAGO</td><td class="r" id="rl-tj-mc-pre">0,00</td></tr>
+
+                        <tr><td>CABAL</td><td class="r" id="rl-tj-cabal">0,00</td></tr>
+                        <tr><td>CABAL DÉBITO</td><td class="r" id="rl-tj-cabal-deb">0,00</td></tr>
+
+                        <tr><td>AMEX</td><td class="r" id="rl-tj-amex">0,00</td></tr>
+                        <tr><td>MAESTRO</td><td class="r" id="rl-tj-maestro">0,00</td></tr>
+
+                        <tr><td>NARANJA</td><td class="r" id="rl-tj-naranja">0,00</td></tr>
+                        <tr><td>DECIDIR</td><td class="r" id="rl-tj-decidir">0,00</td></tr>
+                        <tr><td>DINERS</td><td class="r" id="rl-tj-diners">0,00</td></tr>
+
+                        <tr><td>PAGOS INMEDIATOS</td><td class="r" id="rl-tj-pagos-inm">0,00</td></tr>
+
+                        <tr class="sl-total"><td>Total tarjetas</td><td class="r" id="rl-card-total">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Mercado Pago -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Mercado Pago</span>
+                      <span class="amount r" id="rl-mp">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Propinas MP</td><td class="r" id="rl-mp-tips">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Rappi -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Rappi</span>
+                      <span class="amount r" id="rl-rappi">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Total Rappi</td><td class="r" id="rl-rappi-det">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- PedidosYa -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">PedidosYa</span>
+                      <span class="amount r" id="rl-pedidosya">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Total PedidosYa</td><td class="r" id="rl-pedidosya-det">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Gastos -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Gastos</span>
+                      <span class="amount r" id="rl-gastos">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Caja chica</td><td class="r" id="rl-g-caja">0,00</td></tr>
+                        <tr><td>Otros</td><td class="r" id="rl-g-otros">0,00</td></tr>
+                        <tr class="sl-total"><td>Total gastos</td><td class="r" id="rl-g-total">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Cuenta Cte. -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Cuenta Cte.</span>
+                      <span class="amount r" id="rl-cta-cte">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Total Cuenta Corriente</td><td class="r" id="rl-cta-cte-det">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- TIPs -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">TIPs</span>
+                      <span class="amount r" id="rl-tips">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <tr><td>Total propinas</td><td class="r" id="rl-tips-det">0,00</td></tr>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+              </section>
+
+            </div>
+
+            <footer class="sl-foot">
+              <span>Generado por: <strong id="rl-user">{{ session['username'] }}</strong></span>
+              <span>Última actualización: <strong id="rl-updated-at">—</strong></span>
+            </footer>
+          </section>
+
+          <!-- Acción crítica (visible solo para L2+) -->
+          {% if session.get('role_level', 1) >= 2 %}
+            <div class="sl-danger-wrap">
+              <button id="rl-cerrar-local" class="btn-danger-strong" title="Cerrar el Local del día y congelar snapshot">
+                🔒 Cerrar Local (Cierre Global del Día)
+              </button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+    <!-- /Main -->
+  </div>
+
+  <!-- Marca activo en la sidebar según la URL actual -->
+  <script>
+  (function () {
+    var cur = location.pathname.replace(/\/+$/,'') || '/';
+    document.querySelectorAll('.sidebar__nav .nav-item').forEach(function(a){
+      try{
+        var href = a.getAttribute('href'); if(!href) return;
+        var path = new URL(href, location.origin).pathname.replace(/\/+$/,'') || '/';
+        if (cur === path || (path !== '/' && cur.startsWith(path))) {
+          a.classList.add('is-active');
+        } else {
+          a.classList.remove('is-active');
+        }
+      }catch(e){}
+    });
+  })();
+  </script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const grp = document.querySelector('.nav-group');
+    const tgl = document.getElementById('navReportes');
+    if (grp && tgl) {
+      tgl.addEventListener('click', (e) => {
+        e.preventDefault();
+        const open = grp.classList.toggle('is-open');
+        tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+  });
+  </script>
+
+  <!-- Inyección de nivel para uso opcional en JS -->
+  <script>window.ROLE_LEVEL = {{ session.get('role_level', 1) | int }};</script>
+
+  <!-- JS de esta vista -->
+  <script src="{{ url_for('static', filename='js/resumen_local.js') }}"></script>
+</body>
+</html>

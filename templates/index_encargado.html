@@ -731,6 +731,10 @@
     document.getElementById('turnoSelect')?.addEventListener('change', refrescarBadge);
   })();
   </script>
+  <script>
+  // 1=cajero, 2=encargado/adm, 3=auditor
+  window.ROLE_LEVEL = {{ session['role_level']|int }};
+</script>
 
   <!-- Módulos existentes -->
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>

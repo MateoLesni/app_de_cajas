@@ -1,0 +1,227 @@
+/* =========================================================
+   Resumen Local – panel blanco + acordeones neutros
+   ========================================================= */
+
+/* ---------- Tokens / variables ---------- */
+:root {
+  --panel-bg: #ffffff;              /* Fondo del panel/ticket */
+  --panel-text: #1f2937;            /* Texto principal */
+  --border: #e5e7eb;                /* Bordes suaves */
+  --shadow: 0 10px 24px rgba(0,0,0,.06);
+
+  /* Acordeón general (encabezado) */
+  --acc-general-bg: #6f7682;        /* Gris medio / serio */
+  --acc-general-text: #ffffff;
+
+  /* Sub-acordeón */
+  --acc-sub-closed-bg: #ffffff;     /* Cerrado: blanco */
+  --acc-sub-open-bg: #eef1f5;       /* Abierto: gris claro (más claro que el general) */
+  --acc-sub-open-border: #d9dde3;   /* Bordes cuando está abierto */
+
+  /* Tipografía uniforme (acordeones y contenido) */
+  --font-size-base: 14px;
+  --font-weight-base: 500;
+
+  --muted: #6b7280;                 /* Texto secundario */
+  --caret-dark: #616872;            /* Caret en sub-acordeones */
+  --caret-light: rgba(255,255,255,.9); /* Caret en encabezado general */
+}
+
+/* ---------- Layout interno ---------- */
+.sl-wrap{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:18px;
+  max-width:900px;
+  margin:0 auto;
+}
+
+/* ---------- Filtros ---------- */
+.sl-filtros{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:end;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+}
+.sl-filtros .form-group{ margin:0; }
+.sl-actions{ margin-left:auto; display:flex; gap:8px; }
+.btn-ghost{
+  background:#fff; border:1px solid #d9dee6; color:#333;
+  padding:8px 12px; border-radius:8px; cursor:pointer;
+}
+.btn-ghost:hover{ background:#f4f6f8; }
+
+/* ---------- Panel tipo ticket (blanco) ---------- */
+.sl-panel{
+  position:relative;
+  background:var(--panel-bg);
+  color:var(--panel-text);
+  border-radius:10px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.sl-panel::after{
+  content:"";
+  position:absolute;
+  bottom:-10px; left:60px;
+  width:24px; height:24px;
+  background:var(--panel-bg);
+  transform:rotate(45deg);
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+
+/* ---------- Cabecera del panel ---------- */
+.sl-head{
+  padding:14px 18px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+}
+.sl-head h1{
+  margin:0 0 4px;
+  letter-spacing:.2px;
+  color:var(--panel-text);
+  font-size:var(--font-size-base);
+  font-weight:var(--font-weight-base);
+}
+.sl-meta{
+  display:flex; gap:16px; flex-wrap:wrap;
+  color:var(--muted); font-size:13px;
+}
+
+.sl-body{ padding:8px 0 6px; }
+.sl-section{ margin:8px 0; }
+
+/* ---------- Acordeón general (encabezado) ---------- */
+.sl-title{
+  background:var(--acc-general-bg);
+  color:var(--acc-general-text);
+  padding:10px 14px;
+  border-top:1px solid rgba(0,0,0,.04);
+  border-bottom:1px solid rgba(0,0,0,.12);
+  cursor:pointer;
+  user-select:none;
+  position:relative;
+
+  /* Tipografía uniforme */
+  font-size:var(--font-size-base);
+  font-weight:var(--font-weight-base);
+  letter-spacing:0;
+}
+.sl-title::after{
+  content:"▾";
+  position:absolute;
+  right:12px; top:50%;
+  transform:translateY(-50%);
+  color:var(--caret-light);
+  opacity:.95;
+}
+.acc[aria-expanded="true"] .sl-title::after{
+  transform:translateY(-50%) rotate(180deg);
+}
+
+/* ---------- Contenido plegable ---------- */
+.acc[aria-expanded="false"] .acc-body{ display:none; }
+
+/* ---------- Filas / tablas informativas ---------- */
+.sl-table{
+  width:100%;
+  border-collapse:collapse;
+  color:var(--panel-text);
+  background:#fff;
+}
+.sl-table td{
+  padding:11px 14px;
+  border-bottom:1px solid var(--border);
+
+  /* Tipografía uniforme */
+  font-size:var(--font-size-base);
+  font-weight:var(--font-weight-base);
+}
+.sl-table td:first-child{ color:#374151; width:60%; }
+.sl-table .r{ text-align:right; font-variant-numeric:tabular-nums; }
+.sl-total{ background:#f8fafc; font-weight:600; }
+
+/* ---------- Sub-acordeones ---------- */
+/* Encabezado del sub-acordeón */
+.sub-acc .sl-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  background:var(--acc-sub-closed-bg);
+  color:var(--panel-text);
+
+  /* Tipografía uniforme */
+  font-size:var(--font-size-base);
+  font-weight:var(--font-weight-base);
+}
+.sl-row .label{ color:#374151; }
+.sl-row .amount{ font-variant-numeric:tabular-nums; color:#111827; }
+
+/* Caret en sub-acordeones */
+.sub-acc .sl-row{ position:relative; }
+.sub-acc .sl-row::after{
+  content:"▾";
+  position:absolute;
+  right:12px; top:50%;
+  transform:translateY(-50%);
+  color:var(--caret-dark);
+  opacity:.9;
+}
+.sub-acc[aria-expanded="true"] .sl-row::after{
+  transform:translateY(-50%) rotate(180deg);
+}
+
+/* === NUEVO: Estado ABIERTO del sub-acordeón colorea TODO el bloque === */
+.sub-acc[aria-expanded="true"] .sl-row{
+  background:var(--acc-sub-open-bg);
+  border-bottom:1px solid var(--acc-sub-open-border);
+}
+
+/* Cuerpo del sub-acordeón cuando está abierto */
+.sub-acc[aria-expanded="true"] .acc-body{
+  background:var(--acc-sub-open-bg);
+}
+
+/* La tabla y sus celdas heredan el gris claro cuando está abierto */
+.sub-acc[aria-expanded="true"] .acc-body .sl-table{
+  background:var(--acc-sub-open-bg);
+}
+.sub-acc[aria-expanded="true"] .acc-body .sl-table td{
+  background:var(--acc-sub-open-bg);
+  border-bottom:1px solid var(--acc-sub-open-border);
+}
+
+/* Cuando está cerrado: contenido vuelve a blanco (cobertura explícita) */
+.sub-acc[aria-expanded="false"] .acc-body{
+  background:#fff;
+}
+.sub-acc[aria-expanded="false"] .acc-body .sl-table{
+  background:#fff;
+}
+.sub-acc[aria-expanded="false"] .acc-body .sl-table td{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+}
+
+/* ---------- Pie del panel ---------- */
+.sl-foot{
+  padding:10px 14px 14px;
+  display:flex; justify-content:space-between; align-items:center;
+  color:#4b5563; font-size:13px;
+  background:#fff;
+  border-top:1px solid var(--border);
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 520px){
+  .sl-row{ padding:10px 12px; }
+  .sl-table td{ padding:9px 12px; }
+}
+

@@ -1,0 +1,1003 @@
+2025-09-26 10:37:13,619 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 10:37:13,625 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 10:37:13,626 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 10:37:13,629 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 10:37:13,643 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 10:37:13,648 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 10:37:13,654 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 10:37:13,662 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 10:37:13,670 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 10:37:13,675 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 10:37:13,682 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 10:37:13,688 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 10:37:13,694 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 10:37:13,698 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 10:37:13,707 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 10:37:13,711 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 10:37:13,719 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 10:37:13,724 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 10:37:13,729 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 10:37:13,734 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 10:37:13,742 - app - INFO - Backup creado: once.json.backup
+2025-09-26 10:37:13,746 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 10:37:13,754 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 10:37:13,759 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 10:37:13,766 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 10:37:13,772 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 10:37:13,779 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 10:37:13,785 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 10:37:13,790 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 10:37:13,795 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 10:37:13,800 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 10:37:13,809 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 10:37:13,817 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 10:37:13,822 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 10:37:13,829 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 10:37:13,835 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 10:37:13,843 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 10:37:13,847 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 10:37:13,855 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 10:37:13,859 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 10:37:13,863 - app - INFO - Backup creado: users.json.backup
+2025-09-26 10:37:13,871 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 10:37:13,877 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 10:37:13,885 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 10:37:13,893 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 10:37:13,898 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 10:37:13,898 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 10:37:13,899 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 10:37:14,025 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 10:37:14,026 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 10:37:20,885 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 10:37:20,886 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 10:37:20,891 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 11:15:59,681 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 11:16:06,384 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 11:16:06,388 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 11:16:06,389 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 11:16:06,391 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 11:16:06,404 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 11:16:06,409 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 11:16:06,414 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 11:16:06,423 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 11:16:06,431 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 11:16:06,438 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 11:16:06,446 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 11:16:06,450 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 11:16:06,457 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 11:16:06,462 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 11:16:06,469 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 11:16:06,475 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 11:16:06,482 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 11:16:06,487 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 11:16:06,494 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 11:16:06,498 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 11:16:06,506 - app - INFO - Backup creado: once.json.backup
+2025-09-26 11:16:06,511 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 11:16:06,519 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 11:16:06,524 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 11:16:06,531 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 11:16:06,536 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 11:16:06,545 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 11:16:06,549 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 11:16:06,558 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 11:16:06,563 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 11:16:06,567 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 11:16:06,575 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 11:16:06,585 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 11:16:06,590 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 11:16:06,600 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 11:16:06,606 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 11:16:06,613 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 11:16:06,617 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 11:16:06,625 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 11:16:06,630 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 11:16:06,633 - app - INFO - Backup creado: users.json.backup
+2025-09-26 11:16:06,641 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 11:16:06,646 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 11:16:06,655 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 11:16:06,663 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 11:16:06,670 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 11:16:06,670 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 11:16:06,671 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 11:16:06,819 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 11:16:06,820 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 11:16:13,478 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 11:16:13,479 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 11:16:13,484 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 11:30:09,772 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 11:30:20,457 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 11:30:20,461 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 11:30:20,462 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 11:30:20,465 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 11:30:20,476 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 11:30:20,481 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 11:30:20,486 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 11:30:20,494 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 11:30:20,501 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 11:30:20,505 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 11:30:20,513 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 11:30:20,517 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 11:30:20,522 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 11:30:20,526 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 11:30:20,534 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 11:30:20,539 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 11:30:20,547 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 11:30:20,551 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 11:30:20,556 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 11:30:20,562 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 11:30:20,569 - app - INFO - Backup creado: once.json.backup
+2025-09-26 11:30:20,573 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 11:30:20,581 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 11:30:20,586 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 11:30:20,592 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 11:30:20,597 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 11:30:20,603 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 11:30:20,607 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 11:30:20,613 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 11:30:20,617 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 11:30:20,621 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 11:30:20,629 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 11:30:20,636 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 11:30:20,641 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 11:30:20,649 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 11:30:20,653 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 11:30:20,660 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 11:30:20,666 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 11:30:20,673 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 11:30:20,678 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 11:30:20,682 - app - INFO - Backup creado: users.json.backup
+2025-09-26 11:30:20,689 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 11:30:20,693 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 11:30:20,701 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 11:30:20,710 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 11:30:20,715 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 11:30:20,715 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 11:30:20,716 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 11:30:20,830 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 11:30:20,830 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 11:30:23,753 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 11:30:23,753 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 11:30:23,758 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 11:39:22,046 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 11:39:22,050 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 11:39:22,051 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 11:39:22,053 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 11:39:22,064 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 11:39:22,069 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 11:39:22,074 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 11:39:22,083 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 11:39:22,090 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 11:39:22,095 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 11:39:22,103 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 11:39:22,108 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 11:39:22,113 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 11:39:22,119 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 11:39:22,126 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 11:39:22,131 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 11:39:22,138 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 11:39:22,143 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 11:39:22,150 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 11:39:22,154 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 11:39:22,161 - app - INFO - Backup creado: once.json.backup
+2025-09-26 11:39:22,167 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 11:39:22,175 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 11:39:22,180 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 11:39:22,188 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 11:39:22,192 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 11:39:22,200 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 11:39:22,205 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 11:39:22,210 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 11:39:22,215 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 11:39:22,219 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 11:39:22,226 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 11:39:22,234 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 11:39:22,238 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 11:39:22,245 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 11:39:22,250 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 11:39:22,257 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 11:39:22,261 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 11:39:22,269 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 11:39:22,274 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 11:39:22,277 - app - INFO - Backup creado: users.json.backup
+2025-09-26 11:39:22,286 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 11:39:22,290 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 11:39:22,299 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 11:39:22,305 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 11:39:22,310 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 11:39:22,310 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 11:39:22,310 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 11:39:22,434 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 11:39:22,434 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 11:39:27,125 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 11:39:27,160 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 11:39:27,268 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 11:56:46,585 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 11:56:54,476 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 11:56:54,481 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 11:56:54,484 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 11:56:54,486 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 11:56:54,499 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 11:56:54,506 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 11:56:54,510 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 11:56:54,520 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 11:56:54,529 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 11:56:54,535 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 11:56:54,543 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 11:56:54,548 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 11:56:54,555 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 11:56:54,560 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 11:56:54,567 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 11:56:54,572 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 11:56:54,581 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 11:56:54,587 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 11:56:54,593 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 11:56:54,598 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 11:56:54,607 - app - INFO - Backup creado: once.json.backup
+2025-09-26 11:56:54,613 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 11:56:54,621 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 11:56:54,626 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 11:56:54,634 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 11:56:54,640 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 11:56:54,647 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 11:56:54,652 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 11:56:54,659 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 11:56:54,665 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 11:56:54,671 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 11:56:54,680 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 11:56:54,689 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 11:56:54,695 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 11:56:54,703 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 11:56:54,708 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 11:56:54,717 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 11:56:54,723 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 11:56:54,731 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 11:56:54,737 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 11:56:54,741 - app - INFO - Backup creado: users.json.backup
+2025-09-26 11:56:54,749 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 11:56:54,755 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 11:56:54,763 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 11:56:54,773 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 11:56:54,779 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 11:56:54,779 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 11:56:54,780 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 11:56:54,897 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 11:56:54,897 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 11:56:57,711 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 11:56:57,711 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 11:56:57,716 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 12:04:34,794 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 12:04:45,894 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 12:04:45,898 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 12:04:45,899 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 12:04:45,901 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 12:04:45,911 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 12:04:45,918 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 12:04:45,923 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 12:04:45,931 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 12:04:45,941 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 12:04:45,946 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 12:04:45,955 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 12:04:45,959 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 12:04:45,965 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 12:04:45,969 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 12:04:45,976 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 12:04:45,981 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 12:04:45,988 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 12:04:45,993 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 12:04:45,999 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 12:04:46,005 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 12:04:46,013 - app - INFO - Backup creado: once.json.backup
+2025-09-26 12:04:46,017 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 12:04:46,025 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 12:04:46,029 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 12:04:46,036 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 12:04:46,041 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 12:04:46,049 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 12:04:46,053 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 12:04:46,060 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 12:04:46,065 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 12:04:46,069 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 12:04:46,077 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 12:04:46,085 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 12:04:46,091 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 12:04:46,098 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 12:04:46,103 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 12:04:46,111 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 12:04:46,116 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 12:04:46,124 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 12:04:46,129 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 12:04:46,132 - app - INFO - Backup creado: users.json.backup
+2025-09-26 12:04:46,140 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 12:04:46,144 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 12:04:46,151 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 12:04:46,160 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 12:04:46,166 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 12:04:46,167 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 12:04:46,167 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 12:04:46,280 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 12:04:46,280 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 12:04:49,272 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 12:04:49,273 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 12:04:49,277 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 12:05:48,054 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 12:05:53,828 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 12:05:53,832 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 12:05:53,833 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 12:05:53,835 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 12:05:53,846 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 12:05:53,852 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 12:05:53,857 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 12:05:53,863 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 12:05:53,871 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 12:05:53,875 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 12:05:53,883 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 12:05:53,888 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 12:05:53,894 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 12:05:53,899 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 12:05:53,907 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 12:05:53,912 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 12:05:53,919 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 12:05:53,925 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 12:05:53,930 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 12:05:53,935 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 12:05:53,942 - app - INFO - Backup creado: once.json.backup
+2025-09-26 12:05:53,947 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 12:05:53,954 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 12:05:53,958 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 12:05:53,965 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 12:05:53,970 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 12:05:53,977 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 12:05:53,981 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 12:05:53,988 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 12:05:53,993 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 12:05:53,997 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 12:05:54,004 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 12:05:54,012 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 12:05:54,017 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 12:05:54,024 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 12:05:54,029 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 12:05:54,035 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 12:05:54,041 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 12:05:54,048 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 12:05:54,052 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 12:05:54,056 - app - INFO - Backup creado: users.json.backup
+2025-09-26 12:05:54,061 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 12:05:54,064 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 12:05:54,070 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 12:05:54,079 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 12:05:54,083 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 12:05:54,083 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 12:05:54,084 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 12:05:54,184 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 12:05:54,184 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 12:06:01,244 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 12:06:01,245 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 12:06:01,249 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 12:50:57,399 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 12:51:07,626 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 12:51:07,632 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 12:51:07,633 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 12:51:07,636 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 12:51:07,653 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 12:51:07,662 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 12:51:07,669 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 12:51:07,681 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 12:51:07,693 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 12:51:07,700 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 12:51:07,710 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 12:51:07,717 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 12:51:07,725 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 12:51:07,732 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 12:51:07,747 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 12:51:07,755 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 12:51:07,768 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 12:51:07,775 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 12:51:07,784 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 12:51:07,791 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 12:51:07,802 - app - INFO - Backup creado: once.json.backup
+2025-09-26 12:51:07,808 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 12:51:07,819 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 12:51:07,826 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 12:51:07,837 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 12:51:07,844 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 12:51:07,853 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 12:51:07,859 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 12:51:07,867 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 12:51:07,873 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 12:51:07,878 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 12:51:07,888 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 12:51:07,898 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 12:51:07,904 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 12:51:07,914 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 12:51:07,921 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 12:51:07,931 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 12:51:07,938 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 12:51:07,950 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 12:51:07,957 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 12:51:07,962 - app - INFO - Backup creado: users.json.backup
+2025-09-26 12:51:07,972 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 12:51:07,979 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 12:51:07,988 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 12:51:07,998 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 12:51:08,004 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 12:51:08,004 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 12:51:08,005 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 12:51:08,160 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 12:51:08,161 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 12:51:11,538 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 12:51:11,539 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 12:51:11,546 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 13:13:46,369 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 13:14:27,598 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 13:14:27,605 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 13:14:27,606 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 13:14:27,611 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 13:14:27,630 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 13:14:27,638 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 13:14:27,643 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 13:14:27,655 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 13:14:27,670 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 13:14:27,678 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 13:14:27,688 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 13:14:27,694 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 13:14:27,702 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 13:14:27,710 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 13:14:27,723 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 13:14:27,731 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 13:14:27,742 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 13:14:27,748 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 13:14:27,757 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 13:14:27,763 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 13:14:27,775 - app - INFO - Backup creado: once.json.backup
+2025-09-26 13:14:27,782 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 13:14:27,794 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 13:14:27,801 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 13:14:27,812 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 13:14:27,818 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 13:14:27,829 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 13:14:27,836 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 13:14:27,845 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 13:14:27,850 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 13:14:27,855 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 13:14:27,865 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 13:14:27,876 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 13:14:27,882 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 13:14:27,892 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 13:14:27,898 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 13:14:27,909 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 13:14:27,915 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 13:14:27,924 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 13:14:27,931 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 13:14:27,936 - app - INFO - Backup creado: users.json.backup
+2025-09-26 13:14:27,945 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 13:14:27,951 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 13:14:27,960 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 13:14:27,972 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 13:14:27,978 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 13:14:27,979 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 13:14:27,979 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 13:14:28,155 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 13:14:28,156 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 13:14:38,702 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 13:14:38,703 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 13:14:38,710 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 13:19:22,111 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 13:19:30,069 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 13:19:30,074 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 13:19:30,075 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 13:19:30,078 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 13:19:30,099 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 13:19:30,110 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 13:19:30,117 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 13:19:30,130 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 13:19:30,143 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 13:19:30,154 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 13:19:30,165 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 13:19:30,174 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 13:19:30,185 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 13:19:30,194 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 13:19:30,206 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 13:19:30,215 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 13:19:30,226 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 13:19:30,235 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 13:19:30,243 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 13:19:30,253 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 13:19:30,265 - app - INFO - Backup creado: once.json.backup
+2025-09-26 13:19:30,273 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 13:19:30,284 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 13:19:30,292 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 13:19:30,304 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 13:19:30,314 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 13:19:30,326 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 13:19:30,334 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 13:19:30,343 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 13:19:30,351 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 13:19:30,357 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 13:19:30,368 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 13:19:30,378 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 13:19:30,386 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 13:19:30,397 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 13:19:30,406 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 13:19:30,417 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 13:19:30,424 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 13:19:30,434 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 13:19:30,442 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 13:19:30,447 - app - INFO - Backup creado: users.json.backup
+2025-09-26 13:19:30,458 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 13:19:30,465 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 13:19:30,475 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 13:19:30,486 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 13:19:30,493 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 13:19:30,494 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 13:19:30,495 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 13:19:30,668 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 13:19:30,669 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 13:19:33,799 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 13:19:33,800 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 13:19:33,811 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 13:19:34,043 - app - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 350, in wrapped
+    return view(*args, **kwargs)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 360, in wrapped
+    return view(*args, **kwargs)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 8669, in nuevo_registro
+    return render_template('index.html', cantidad_cajas=cantidad_cajas, turnos=turnos)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\templates\index.html", line 721, in top-level template code
+    <script>window.ROLE_LEVEL = {{ role_level|int }};</script>
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\jinja2\filters.py", line 998, in do_int
+    return int(value)
+jinja2.exceptions.UndefinedError: 'role_level' is undefined
+2025-09-26 13:21:07,799 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 13:21:14,796 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 13:21:14,802 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 13:21:14,803 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 13:21:14,807 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 13:21:14,830 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 13:21:14,841 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 13:21:14,852 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 13:21:14,866 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 13:21:14,877 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 13:21:14,886 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 13:21:14,897 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 13:21:14,905 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 13:21:14,916 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 13:21:14,923 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 13:21:14,934 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 13:21:14,943 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 13:21:14,954 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 13:21:14,961 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 13:21:14,970 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 13:21:14,977 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 13:21:14,987 - app - INFO - Backup creado: once.json.backup
+2025-09-26 13:21:14,995 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 13:21:15,005 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 13:21:15,014 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 13:21:15,024 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 13:21:15,031 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 13:21:15,040 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 13:21:15,047 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 13:21:15,054 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 13:21:15,061 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 13:21:15,066 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 13:21:15,076 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 13:21:15,085 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 13:21:15,091 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 13:21:15,101 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 13:21:15,107 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 13:21:15,117 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 13:21:15,122 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 13:21:15,132 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 13:21:15,138 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 13:21:15,142 - app - INFO - Backup creado: users.json.backup
+2025-09-26 13:21:15,152 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 13:21:15,157 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 13:21:15,167 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 13:21:15,177 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 13:21:15,184 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 13:21:15,184 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 13:21:15,185 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 13:21:15,352 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 13:21:15,353 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 13:21:18,562 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 13:21:18,562 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 13:21:18,568 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 13:36:41,689 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 13:36:51,656 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 13:36:51,663 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 13:36:51,664 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 13:36:51,669 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 13:36:51,692 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 13:36:51,701 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 13:36:51,710 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 13:36:51,728 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 13:36:51,743 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 13:36:51,751 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 13:36:51,761 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 13:36:51,769 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 13:36:51,776 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 13:36:51,784 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 13:36:51,798 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 13:36:51,809 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 13:36:51,820 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 13:36:51,827 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 13:36:51,836 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 13:36:51,843 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 13:36:51,855 - app - INFO - Backup creado: once.json.backup
+2025-09-26 13:36:51,863 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 13:36:51,874 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 13:36:51,881 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 13:36:51,892 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 13:36:51,898 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 13:36:51,908 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 13:36:51,916 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 13:36:51,924 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 13:36:51,930 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 13:36:51,936 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 13:36:51,946 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 13:36:51,957 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 13:36:51,964 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 13:36:51,974 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 13:36:51,980 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 13:36:51,998 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 13:36:52,006 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 13:36:52,015 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 13:36:52,022 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 13:36:52,026 - app - INFO - Backup creado: users.json.backup
+2025-09-26 13:36:52,036 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 13:36:52,042 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 13:36:52,053 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 13:36:52,062 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 13:36:52,069 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 13:36:52,070 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 13:36:52,071 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 13:36:52,259 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 13:36:52,260 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 13:36:55,924 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 13:36:55,925 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 13:36:55,933 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 13:51:58,451 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 13:52:07,790 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 13:52:07,798 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 13:52:07,799 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 13:52:07,803 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 13:52:07,821 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 13:52:07,831 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 13:52:07,837 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 13:52:07,849 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 13:52:07,861 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 13:52:07,868 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 13:52:07,881 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 13:52:07,889 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 13:52:07,897 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 13:52:07,905 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 13:52:07,916 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 13:52:07,923 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 13:52:07,933 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 13:52:07,941 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 13:52:07,951 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 13:52:07,959 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 13:52:07,971 - app - INFO - Backup creado: once.json.backup
+2025-09-26 13:52:07,979 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 13:52:07,991 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 13:52:07,999 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 13:52:08,010 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 13:52:08,019 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 13:52:08,031 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 13:52:08,038 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 13:52:08,048 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 13:52:08,054 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 13:52:08,061 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 13:52:08,071 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 13:52:08,082 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 13:52:08,088 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 13:52:08,099 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 13:52:08,106 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 13:52:08,116 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 13:52:08,124 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 13:52:08,135 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 13:52:08,143 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 13:52:08,147 - app - INFO - Backup creado: users.json.backup
+2025-09-26 13:52:08,157 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 13:52:08,165 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 13:52:08,177 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 13:52:08,192 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 13:52:08,203 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 13:52:08,204 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 13:52:08,205 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 13:52:08,399 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 13:52:08,400 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 13:52:11,983 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 13:52:11,984 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 13:52:12,001 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 15:42:39,364 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 15:42:49,428 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 15:42:49,435 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 15:42:49,436 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 15:42:49,440 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 15:42:49,460 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 15:42:49,468 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 15:42:49,476 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 15:42:49,490 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 15:42:49,502 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 15:42:49,510 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 15:42:49,524 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 15:42:49,540 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 15:42:49,549 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 15:42:49,559 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 15:42:49,574 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 15:42:49,584 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 15:42:49,602 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 15:42:49,612 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 15:42:49,620 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 15:42:49,628 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 15:42:49,639 - app - INFO - Backup creado: once.json.backup
+2025-09-26 15:42:49,647 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 15:42:49,660 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 15:42:49,667 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 15:42:49,680 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 15:42:49,688 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 15:42:49,708 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 15:42:49,717 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 15:42:49,728 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 15:42:49,740 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 15:42:49,746 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 15:42:49,759 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 15:42:49,770 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 15:42:49,778 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 15:42:49,791 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 15:42:49,799 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 15:42:49,811 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 15:42:49,817 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 15:42:49,828 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 15:42:49,835 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 15:42:49,840 - app - INFO - Backup creado: users.json.backup
+2025-09-26 15:42:49,851 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 15:42:49,857 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 15:42:49,868 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 15:42:49,880 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 15:42:49,885 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 15:42:49,886 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 15:42:49,887 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 15:42:50,064 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 15:42:50,064 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 15:42:55,882 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 15:42:55,883 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 15:42:55,889 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 16:15:29,834 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 16:15:39,366 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 16:15:39,371 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 16:15:39,373 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 16:15:39,377 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 16:15:39,401 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 16:15:39,417 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 16:15:39,427 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 16:15:39,441 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 16:15:39,453 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 16:15:39,462 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 16:15:39,479 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 16:15:39,488 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 16:15:39,499 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 16:15:39,509 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 16:15:39,524 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 16:15:39,532 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 16:15:39,544 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 16:15:39,553 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 16:15:39,563 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 16:15:39,573 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 16:15:39,582 - app - INFO - Backup creado: once.json.backup
+2025-09-26 16:15:39,590 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 16:15:39,601 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 16:15:39,608 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 16:15:39,619 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 16:15:39,627 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 16:15:39,637 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 16:15:39,644 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 16:15:39,652 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 16:15:39,659 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 16:15:39,665 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 16:15:39,674 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 16:15:39,685 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 16:15:39,693 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 16:15:39,704 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 16:15:39,711 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 16:15:39,721 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 16:15:39,727 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 16:15:39,737 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 16:15:39,743 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 16:15:39,747 - app - INFO - Backup creado: users.json.backup
+2025-09-26 16:15:39,757 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 16:15:39,763 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 16:15:39,772 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 16:15:39,782 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 16:15:39,788 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 16:15:39,789 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 16:15:39,789 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 16:15:39,945 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 16:15:39,946 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 16:15:46,418 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 16:15:46,419 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 16:15:46,426 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 16:18:48,129 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 16:18:56,236 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 16:18:56,243 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 16:18:56,247 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 16:18:56,250 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 16:18:56,269 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 16:18:56,280 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 16:18:56,288 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 16:18:56,300 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 16:18:56,312 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 16:18:56,321 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 16:18:56,334 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 16:18:56,341 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 16:18:56,352 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 16:18:56,360 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 16:18:56,370 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 16:18:56,376 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 16:18:56,387 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 16:18:56,394 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 16:18:56,402 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 16:18:56,408 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 16:18:56,420 - app - INFO - Backup creado: once.json.backup
+2025-09-26 16:18:56,428 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 16:18:56,438 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 16:18:56,445 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 16:18:56,455 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 16:18:56,463 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 16:18:56,475 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 16:18:56,483 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 16:18:56,491 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 16:18:56,500 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 16:18:56,505 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 16:18:56,517 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 16:18:56,529 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 16:18:56,540 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 16:18:56,554 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 16:18:56,562 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 16:18:56,573 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 16:18:56,581 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 16:18:56,592 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 16:18:56,600 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 16:18:56,605 - app - INFO - Backup creado: users.json.backup
+2025-09-26 16:18:56,618 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 16:18:56,624 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 16:18:56,636 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 16:18:56,648 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 16:18:56,655 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 16:18:56,656 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 16:18:56,656 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 16:18:56,859 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 16:18:56,860 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 16:19:03,821 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 16:19:03,822 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 16:19:03,828 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 16:20:06,627 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 16:20:19,084 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 16:20:19,090 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 16:20:19,092 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 16:20:19,095 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 16:20:19,117 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 16:20:19,129 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 16:20:19,135 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 16:20:19,148 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 16:20:19,160 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 16:20:19,170 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 16:20:19,182 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 16:20:19,191 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 16:20:19,202 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 16:20:19,211 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 16:20:19,223 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 16:20:19,232 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 16:20:19,242 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 16:20:19,251 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 16:20:19,259 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 16:20:19,267 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 16:20:19,280 - app - INFO - Backup creado: once.json.backup
+2025-09-26 16:20:19,288 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 16:20:19,299 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 16:20:19,310 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 16:20:19,322 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 16:20:19,331 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 16:20:19,342 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 16:20:19,351 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 16:20:19,361 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 16:20:19,373 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 16:20:19,379 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 16:20:19,389 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 16:20:19,400 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 16:20:19,409 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 16:20:19,420 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 16:20:19,429 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 16:20:19,441 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 16:20:19,449 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 16:20:19,462 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 16:20:19,471 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 16:20:19,477 - app - INFO - Backup creado: users.json.backup
+2025-09-26 16:20:19,486 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 16:20:19,493 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 16:20:19,503 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 16:20:19,514 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 16:20:19,522 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 16:20:19,523 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 16:20:19,524 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 16:20:19,710 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 16:20:19,711 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 16:20:25,175 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 16:20:25,175 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 16:20:25,182 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-26 16:24:11,453 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-09-26 16:24:20,692 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-09-26 16:24:20,696 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-09-26 16:24:20,698 - apscheduler.scheduler - INFO - Scheduler started
+2025-09-26 16:24:20,700 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-09-26 16:24:20,715 - app - INFO - Backup creado: ambulante.json.backup
+2025-09-26 16:24:20,724 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ambulante.json.backup
+2025-09-26 16:24:20,729 - app - INFO - Backup creado: bimbo.json.backup
+2025-09-26 16:24:20,740 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\bimbo.json.backup
+2025-09-26 16:24:20,750 - app - INFO - Backup creado: constitucion.json.backup
+2025-09-26 16:24:20,760 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\constitucion.json.backup
+2025-09-26 16:24:20,770 - app - INFO - Backup creado: gastronomia.json.backup
+2025-09-26 16:24:20,779 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\gastronomia.json.backup
+2025-09-26 16:24:20,786 - app - INFO - Backup creado: info_locales.json.backup
+2025-09-26 16:24:20,794 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\info_locales.json.backup
+2025-09-26 16:24:20,805 - app - INFO - Backup creado: kioscos.json.backup
+2025-09-26 16:24:20,812 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\kioscos.json.backup
+2025-09-26 16:24:20,822 - app - INFO - Backup creado: medios_pago.json.backup
+2025-09-26 16:24:20,828 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\medios_pago.json.backup
+2025-09-26 16:24:20,837 - app - INFO - Backup creado: mercadopago.json.backup
+2025-09-26 16:24:20,845 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\mercadopago.json.backup
+2025-09-26 16:24:20,854 - app - INFO - Backup creado: once.json.backup
+2025-09-26 16:24:20,862 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\once.json.backup
+2025-09-26 16:24:20,873 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-09-26 16:24:20,880 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pagos_no_vinculados.json.backup
+2025-09-26 16:24:20,889 - app - INFO - Backup creado: pendientes.json.backup
+2025-09-26 16:24:20,895 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\pendientes.json.backup
+2025-09-26 16:24:20,905 - app - INFO - Backup creado: registros.json.backup
+2025-09-26 16:24:20,911 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\registros.json.backup
+2025-09-26 16:24:20,919 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-09-26 16:24:20,926 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\remesas_cajas.json.backup
+2025-09-26 16:24:20,931 - app - INFO - Backup creado: resumenes.json.backup
+2025-09-26 16:24:20,941 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\resumenes.json.backup
+2025-09-26 16:24:20,950 - app - INFO - Backup creado: retiro.json.backup
+2025-09-26 16:24:20,957 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\retiro.json.backup
+2025-09-26 16:24:20,969 - app - INFO - Backup creado: stock.json.backup
+2025-09-26 16:24:20,976 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\stock.json.backup
+2025-09-26 16:24:20,987 - app - INFO - Backup creado: system_config.json.backup
+2025-09-26 16:24:20,994 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\system_config.json.backup
+2025-09-26 16:24:21,006 - app - INFO - Backup creado: tba.json.backup
+2025-09-26 16:24:21,014 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\tba.json.backup
+2025-09-26 16:24:21,018 - app - INFO - Backup creado: users.json.backup
+2025-09-26 16:24:21,028 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\users.json.backup
+2025-09-26 16:24:21,033 - app - INFO - Backup creado: ventas.json.backup
+2025-09-26 16:24:21,043 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\ventas.json.backup
+2025-09-26 16:24:21,054 - app - INFO - Backup creado: zona_sur.json.backup
+2025-09-26 16:24:21,061 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\data\zona_sur.json.backup
+2025-09-26 16:24:21,062 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-09-26 16:24:21,062 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-09-26 16:24:21,221 - waitress - INFO - Serving on http://[::1]:443
+2025-09-26 16:24:21,221 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-09-26 16:24:24,891 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-09-26 16:24:24,892 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-09-26 16:24:24,900 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-09-27 11:52:42,614 - apscheduler.scheduler - INFO - Scheduler has been shut down

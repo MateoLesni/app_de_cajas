@@ -1,489 +1,565 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // ===== Inicialización de fecha =====
-    function actualizarFecha() {
-        const now = new Date();
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-        const fechaFormateada = now.toLocaleDateString('es-AR', options);
-        document.getElementById('currentDate').textContent = fechaFormateada;
-    }
-    actualizarFecha();
+// ===== Sistema de Pestañas =====
+const tabButtons = document.querySelectorAll('.tab-btn');
+const tabPanes = document.querySelectorAll('.tab-pane');
 
-    // ===== Funciones para manejar valores monetarios =====
-    function formatMoneda(valor) {
-        // Si es vacío o null, devolver 0,00
-        if (valor === null || valor === undefined || valor === '') {
-            return '0,00';
-        }
+tabButtons.forEach(button => {
+  button.addEventListener('click', function() {
+    // Remover clase active de todos los botones y panes
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    tabPanes.forEach(pane => pane.classList.remove('active'));
 
-        // Convertir a número si es string
-        let number = typeof valor === 'number' ? valor : parseFloat(
-            valor.toString()
-                .replace(/\./g, '')  // Eliminar puntos de miles
-                .replace(/,/g, '.') // Convertir comas a puntos para cálculos
-        ) || 0;
+    // Agregar clase active al botón seleccionado
+    this.classList.add('active');
 
-        // Formatear según locale argentino
-        return number.toLocaleString('es-AR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    }
+    // Activar el panel correspondiente
+    const tabId = this.getAttribute('data-tab');
+    const pane = document.getElementById(tabId);
+    if (pane) pane.classList.add('active');
 
-    function parseMoneda(valor) {
-        if (!valor) return 0;
-        
-        // Eliminar puntos de miles y convertir comas a puntos para cálculos
-        const cleaned = valor.toString()
-            .replace(/\./g, '')
-            .replace(/,/g, '.');
-        
-        return parseFloat(cleaned) || 0;
-    }
-
-    // ===== Cálculos automáticos =====
-    // Nueva función para calcular Discovery (Total Venta Vinson - Vta Z)
-    function calcularDiscovery() {
-        const ventaZ = parseMoneda(document.getElementById('ventaZ').value || document.getElementById('totalVtaZ').textContent);
-        const ventaVinson = parseMoneda(document.getElementById('ventaVinson').value || document.getElementById('totalVentaVinson').textContent);
-        
-        // Discovery = Total Venta Vinson - Venta Z
-        const discovery = Math.max(0, ventaVinson - ventaZ);
-        
-        // Actualizar en el resumen si existe el elemento
-        const discoveryElement = document.getElementById('discovery');
-        if (discoveryElement) {
-            discoveryElement.textContent = formatMoneda(discovery);
-        }
-        
-        return discovery;
-    }
-    
-    // Actualizar el total cobrado sumando todos los medios de pago
-    function actualizarTotalCobrado() {
-        // Sumar todos los medios de pago
-        const efectivo = parseMoneda(document.getElementById('efectivo').textContent);
-        const tarjeta = parseMoneda(document.getElementById('tarjeta').textContent);
-        const pedidosYa = parseMoneda(document.getElementById('pedidosYa').textContent);
-        const rappi = parseMoneda(document.getElementById('rappi').textContent);
-        const pagos = parseMoneda(document.getElementById('pagos').textContent);
-        const mercadoPago = parseMoneda(document.getElementById('mercadoPago').textContent);
-        const clubAhumado = parseMoneda(document.getElementById('clubAhumado').textContent);
-        
-        const total = efectivo + tarjeta + pedidosYa + rappi + pagos + mercadoPago + clubAhumado;
-        
-        // Actualizar el elemento en pantalla
-        const totalCobradoElement = document.getElementById('totalCobrado');
-        if (totalCobradoElement) {
-            totalCobradoElement.textContent = formatMoneda(total);
-        }
-        
-        // Actualizar también la diferencia
-        actualizarDiferencia();
-        
-        return total;
-    }
-    
-    // Función para actualizar la diferencia y aplicar estilos
-    function actualizarDiferencia() {
-        // Obtener valores actuales
-        const totalVentaVinson = parseMoneda(document.getElementById('totalVentaVinson').textContent);
-        const totalCobrado = parseMoneda(document.getElementById('totalCobrado').textContent);
-        
-        // Calcular diferencia
-        const diferencia = totalVentaVinson - totalCobrado;
-        
-        // Actualizar elemento en pantalla
-        const diferenciaElement = document.getElementById('diferencia');
-        if (diferenciaElement) {
-            diferenciaElement.textContent = formatMoneda(diferencia);
-            
-            // Aplicar estilo según si es negativo o positivo
-            if (diferencia < 0) {
-                diferenciaElement.classList.add('negative-amount');
-            } else {
-                diferenciaElement.classList.remove('negative-amount');
-            }
-        }
-        
-        return diferencia;
-    }
-    
-    function calcularMercadoPagoNeto() {
-        const importe = parseMoneda(document.getElementById('mpImporte').value);
-        const comision = parseFloat(document.getElementById('mpComision').value) || 0;
-        
-        const descuento = importe * (comision / 100);
-        const neto = importe - descuento;
-        
-        document.getElementById('mpNeto').value = formatMoneda(neto);
-    }
-
-    // Inicializar campos de moneda
-    document.querySelectorAll('.currency-input').forEach(input => {
-        // Manejar foco
-        input.addEventListener('focus', function() {
-            const numericValue = parseMoneda(this.value);
-            if (numericValue === 0 && this.value === formatMoneda(0)) {
-                this.value = '';
-            }
-        });
-        
-        // Manejar entrada
-        input.addEventListener('input', function() {
-            // Permitir solo dígitos y una coma
-            let value = this.value.replace(/[^\d,]/g, '');
-            
-            // Asegurar solo una coma
-            const commaCount = (value.match(/,/g) || []).length;
-            if (commaCount > 1) {
-                const firstCommaPos = value.indexOf(',');
-                value = value.substring(0, firstCommaPos + 1) + 
-                        value.substring(firstCommaPos + 1).replace(/,/g, '');
-            }
-            
-            this.value = value;
-            
-            // Si es un campo específico, realizar cálculos automáticos
-            if (this.id === 'ventaZ' || this.id === 'ventaVinson') {
-                calcularDiscovery();
-                actualizarDiferencia();
-            }
-            
-            if (this.id === 'mpImporte' || document.getElementById('mpComision')) {
-                calcularMercadoPagoNeto();
-            }
-        });
-        
-        // Al perder foco, formatear correctamente
-        input.addEventListener('blur', function() {
-            const numericValue = parseMoneda(this.value);
-            this.value = formatMoneda(numericValue);
-        });
-        
-        // Inicializar con formato
-        if (input.value) {
-            input.value = formatMoneda(input.value);
-        } else {
-            input.value = formatMoneda(0);
-        }
-    });
-
-    // ===== Sistema de Pestañas =====
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remover clase active de todos los botones y panes
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabPanes.forEach(pane => pane.classList.remove('active'));
-            
-            // Agregar clase active al botón seleccionado
-            this.classList.add('active');
-            
-            // Activar el panel correspondiente
-            const tabId = this.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
-        });
-    });
-
-    // ===== Modal de Confirmación =====
-    const modal = document.getElementById('confirmationModal');
-    const btnConfirm = document.getElementById('btnConfirm');
-    const btnCancel = document.getElementById('btnCancel');
-    const modalMessage = document.getElementById('modalMessage');
-    
-    function mostrarModal(mensaje, onConfirm) {
-        modalMessage.textContent = mensaje;
-        modal.style.display = 'flex';
-        
-        // Configurar el botón de confirmar
-        btnConfirm.onclick = function() {
-            if (typeof onConfirm === 'function') {
-                onConfirm();
-            }
-            cerrarModal();
-        };
-    }
-    
-    function cerrarModal() {
-        modal.style.display = 'none';
-    }
-    
-    btnCancel.addEventListener('click', cerrarModal);
-    
-    // Cerrar modal haciendo click fuera de él
-    window.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            cerrarModal();
-        }
-    });
-
-    // ===== Manejo de Formularios =====
-    
-    // Formulario de Ventas
-    const ventasForm = document.getElementById('ventasForm');
-    if (ventasForm) {
-        ventasForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Obtener datos del formulario con los nuevos campos
-            const formData = {
-                ventaZ: parseMoneda(document.getElementById('ventaZ').value),
-                ventaVinson: parseMoneda(document.getElementById('ventaVinson').value),
-                ventaPixel: parseMoneda(document.getElementById('ventaPixel').value)
-            };
-            
-            // Mostrar modal de confirmación
-            mostrarModal('¿Confirma el registro de ventas?', function() {
-                // Enviar datos al servidor
-                fetch('/api/ventas/registrar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Actualizar resumen con los nuevos campos
-                        document.getElementById('totalVtaZ').textContent = formatMoneda(formData.ventaZ);
-                        document.getElementById('totalVentaVinson').textContent = formatMoneda(formData.ventaVinson);
-                        document.getElementById('totalVtaPixel').textContent = formatMoneda(formData.ventaPixel);
-                        
-                        // Calcular y actualizar discovery
-                        calcularDiscovery();
-                        
-                        // Actualizar total cobrado y diferencia
-                        actualizarTotalCobrado();
-                        
-                        // Mostrar mensaje de éxito
-                        alert('Registro guardado correctamente');
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
-                });
-            });
-        });
-    }
-
-    // Formulario de MercadoPago
-    const mercadoPagoForm = document.getElementById('mercadoPagoForm');
-    if (mercadoPagoForm) {
-        // Inicializar cálculo
-        calcularMercadoPagoNeto();
-        
-        mercadoPagoForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Obtener datos del formulario
-            const formData = {
-                importe: parseMoneda(document.getElementById('mpImporte').value),
-                comision: parseFloat(document.getElementById('mpComision').value) || 0,
-                neto: parseMoneda(document.getElementById('mpNeto').value)
-            };
-            
-            // Mostrar modal de confirmación
-            mostrarModal('¿Confirma el registro de MercadoPago?', function() {
-                // Enviar datos al servidor
-                fetch('/api/mercadopago/registrar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Actualizar resumen
-                        document.getElementById('mercadoPago').textContent = formatMoneda(formData.importe);
-                        
-                        // Recalcular total cobrado
-                        actualizarTotalCobrado();
-                        
-                        // Mostrar mensaje de éxito
-                        alert('Registro guardado correctamente');
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
-                });
-            });
-        });
-        
-        // Actualizar cálculo al cambiar comisión
-        document.getElementById('mpComision').addEventListener('change', calcularMercadoPagoNeto);
-    }
-
-    // ===== API para cargar datos iniciales =====
-    function cargarDatosIniciales() {
-        // Cargar datos resumidos desde el servidor
-        fetch('/api/resumenes/obtener')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Actualizar tablas de resumen
-                    const resumen = data.data;
-                    
-                    // Resumen de ventas con los nuevos campos
-                    if (resumen.ventas) {
-                        document.getElementById('totalVtaZ').textContent = formatMoneda(resumen.ventas.ventaZ || 0);
-                        document.getElementById('totalVentaVinson').textContent = formatMoneda(resumen.ventas.ventaVinson || 0);
-                        document.getElementById('totalVtaPixel').textContent = formatMoneda(resumen.ventas.ventaPixel || 0);
-                        
-                        // Calcular Discovery después de cargar los otros valores
-                        calcularDiscovery();
-                        
-                        // Actualizar total cobrado
-                        if (resumen.ventas.totalCobrado) {
-                            document.getElementById('totalCobrado').textContent = formatMoneda(resumen.ventas.totalCobrado);
-                        } else {
-                            actualizarTotalCobrado();
-                        }
-                        
-                        // Actualizar y aplicar estilo a diferencia
-                        actualizarDiferencia();
-                    }
-                    
-                    // Resumen de tarjetas
-                    if (resumen.tarjetas) {
-                        document.getElementById('visa').textContent = formatMoneda(resumen.tarjetas.visa || 0);
-                        document.getElementById('visaDebito').textContent = formatMoneda(resumen.tarjetas.visaDebito || 0);
-                        document.getElementById('mastercard').textContent = formatMoneda(resumen.tarjetas.mastercard || 0);
-                        document.getElementById('mastercardDebito').textContent = formatMoneda(resumen.tarjetas.mastercardDebito || 0);
-                        document.getElementById('cabal').textContent = formatMoneda(resumen.tarjetas.cabal || 0);
-                        document.getElementById('cabalDebito').textContent = formatMoneda(resumen.tarjetas.cabalDebito || 0);
-                        document.getElementById('amex').textContent = formatMoneda(resumen.tarjetas.amex || 0);
-                        document.getElementById('maestro').textContent = formatMoneda(resumen.tarjetas.maestro || 0);
-                        document.getElementById('pagosInmediatos').textContent = formatMoneda(resumen.tarjetas.pagosInmediatos || 0);
-                        document.getElementById('otros').textContent = formatMoneda(resumen.tarjetas.otros || 0);
-                        document.getElementById('totalTarjetas').textContent = formatMoneda(resumen.tarjetas.total || 0);
-                    }
-                    
-                    // Medios de pago
-                    if (resumen.mediosPago) {
-                        document.getElementById('efectivo').textContent = formatMoneda(resumen.mediosPago.efectivo || 0);
-                        document.getElementById('tarjeta').textContent = formatMoneda(resumen.mediosPago.tarjeta || 0);
-                        document.getElementById('pedidosYa').textContent = formatMoneda(resumen.mediosPago.pedidosYa || 0);
-                        document.getElementById('rappi').textContent = formatMoneda(resumen.mediosPago.rappi || 0);
-                        document.getElementById('pagos').textContent = formatMoneda(resumen.mediosPago.pagos || 0);
-                        document.getElementById('mercadoPago').textContent = formatMoneda(resumen.mediosPago.mercadoPago || 0);
-                        document.getElementById('clubAhumado').textContent = formatMoneda(resumen.mediosPago.clubAhumado || 0);
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error cargando datos iniciales:', error);
-            });
-    }
-    
-    // Cargar datos al iniciar
-    cargarDatosIniciales();
+    // Importante: emitir evento tipo Bootstrap para que el orquestador lo capte
+    const ev = new CustomEvent('shown.bs.tab', { bubbles: true, detail: { tabKey: tabId } });
+    this.dispatchEvent(ev);
+    // (Opcional) emitir un evento descriptivo por si tenés otros listeners
+    document.dispatchEvent(new CustomEvent('orq:tab-shown', { detail: { tabKey: tabId } }));
+  });
 });
 
-let registrosMP = [];
+// ===== Modal de Confirmación =====
+const modal = document.getElementById('confirmationModal');
+const btnConfirm = document.getElementById('btnConfirm');
+const btnCancel = document.getElementById('btnCancel');
+const modalMessage = document.getElementById('modalMessage');
 
-function agregarRegistroMP() {
-    const comprobante = document.getElementById("mpComprobante").value.trim();
-    const monto = document.getElementById("mpMonto").value.trim();
-
-    if (!comprobante || !monto) {
-        alert("Por favor, completá ambos campos.");
-        return;
-    }
-
-    registrosMP.push({ comprobante, monto });
-
-    const tbody = document.querySelector("#tablaRegistrosMP tbody");
-    const row = document.createElement("tr");
-
-    const tdComprobante = document.createElement("td");
-    tdComprobante.textContent = comprobante;
-
-    const tdMonto = document.createElement("td");
-    tdMonto.textContent = `$${monto}`;
-
-    row.appendChild(tdComprobante);
-    row.appendChild(tdMonto);
-    tbody.appendChild(row);
-
-    // Mostrar la tabla si estaba oculta
-    document.getElementById("tablaRegistrosMP").style.display = "table";
-
-    // Limpiar campos del formulario
-    document.getElementById("mpComprobante").value = "";
-    document.getElementById("mpMonto").value = "";
+function mostrarModal(mensaje, onConfirm) {
+  modalMessage.textContent = mensaje;
+  modal.style.display = 'flex';
+  btnConfirm.onclick = function() {
+    if (typeof onConfirm === 'function') onConfirm();
+    cerrarModal();
+  };
 }
+function cerrarModal() { modal.style.display = 'none'; }
+btnCancel?.addEventListener('click', cerrarModal);
+window.addEventListener('click', function(event) {
+  if (event.target === modal) cerrarModal();
+});
 
-function finalizarRegistroMP() {
-    if (registrosMP.length === 0) {
-        alert("No hay registros para guardar.");
-        return;
-    }
-
-    // Aquí podrías hacer un fetch o enviar registrosMP al backend vía POST
-    console.log("✅ Enviando registros de MercadoPago:", registrosMP);
-
-    alert("Registros de MercadoPago guardados exitosamente.");
-
-    // Limpiar todo
-    registrosMP = [];
-    document.querySelector("#tablaRegistrosMP tbody").innerHTML = "";
-    document.getElementById("tablaRegistrosMP").style.display = "none";
-
-
-
-
-
-
-    
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ===== Pequeño helper (ajeno a Remesas) =====
 document.addEventListener("DOMContentLoaded", () => {
-    function actualizarTotalTarjetas() {
-        const inputs = document.querySelectorAll(".tarjeta-monto");
-        let total = 0;
+  function actualizarTotalTarjetas() {
+    const inputs = document.querySelectorAll(".tarjeta-monto");
+    let total = 0;
+    inputs.forEach(input => {
+      const valor = parseFloat((input.value || '').replace(",", "."));
+      if (!isNaN(valor)) total += valor;
+    });
+    const formatter = new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2
+    });
+    const totalEl = document.getElementById("totalTarjetasMonto");
+    if (totalEl) totalEl.textContent = formatter.format(total);
+  }
+  document.querySelectorAll(".tarjeta-monto").forEach(input => {
+    input.addEventListener("input", actualizarTotalTarjetas);
+  });
+});
 
-        inputs.forEach(input => {
-            const valor = parseFloat(input.value.replace(",", "."));
-            if (!isNaN(valor)) total += valor;
-        });
+// ======================================================================
+// Remesas (integrado con OrqTabs)
+// ======================================================================
 
-        const formatter = new Intl.NumberFormat('es-AR', {
-            style: 'currency',
-            currency: 'ARS',
-            minimumFractionDigits: 2
-        });
+document.addEventListener("DOMContentLoaded", function () {
+  const fechaGlobal   = document.getElementById("fechaGlobal");
+  const cajaSelect    = document.getElementById("cajaSelect");
+  const turnoSelect   = document.getElementById("turnoSelect");
+  const cajaHidden    = document.getElementById("cajaActual");
+  const btnGuardar    = document.getElementById("btnGuardarRemesas");
+  const btnAnadir     = document.getElementById("btnAnadirRemesa");
+  const btnActualizar = document.getElementById("btnActualizarRemesa");
+  const remesaForm    = document.getElementById("remesaForm");
+  const tablaPreview  = document.getElementById("tablaPreviewRemesas");
+  const respuestaDiv  = document.getElementById("respuestaRemesa");
 
-        document.getElementById("totalTarjetasMonto").textContent = formatter.format(total);
+  // === NUEVO: rol y flags de estado
+  const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
+  window.cajaCerrada = window.cajaCerrada ?? false;
+  let localCerrado = false; // (reservado p/uso L2)
+
+  // Estado en memoria
+  const remesasPorCaja       = {}; // nuevas en memoria
+  const remesasNoRetiradas   = {}; // BD (sin fecha)
+  const remesasHoy           = {}; // BD (de la fecha)
+  let idxEdicionActual = null;
+  let cancelandoEdicion = false;
+  let editBDId = null;
+
+  function getLocalActual() {
+    return (document.getElementById("userLocal")?.innerText || "").trim();
+  }
+  function getCtx() {
+    return {
+      local: getLocalActual(),
+      caja:  cajaSelect?.value || "",
+      fecha: fechaGlobal?.value || "",
+      turno: (turnoSelect?.value || "").trim()
+    };
+  }
+  function syncCajaHidden() { if (cajaHidden) cajaHidden.value = cajaSelect?.value || ""; }
+
+  // === NUEVO: centraliza si el usuario puede actuar en UI
+  function canActUI() {
+    if (ROLE >= 3) return true;           // auditor: siempre
+    if (ROLE >= 2) return !localCerrado;  // encargado: mientras el local NO esté cerrado
+    return !window.cajaCerrada;           // cajero: sólo con caja abierta
+  }
+
+  // === NUEVO: muestra/oculta botones de acción del formulario
+  function toggleAccionesVisibles(on) {
+    const disp = on ? 'inline-block' : 'none';
+    if (btnAnadir)     btnAnadir.style.display     = disp;
+    if (btnActualizar) btnActualizar.style.display = on && editBDId ? 'inline-block' : 'none';
+    if (btnGuardar)    btnGuardar.style.display    = disp;
+    // si querés bloquear inputs cuando no puede actuar:
+    Array.from(remesaForm?.querySelectorAll('input,select,button') || []).forEach(el => {
+      if (el === btnAnadir || el === btnActualizar || el === btnGuardar) return;
+      el.disabled = !on;
+    });
+  }
+
+  async function refrescarEstadoCaja({reRender=true} = {}) {
+    const { local, caja, fecha, turno } = getCtx();
+    if (!caja || !fecha || !turno) { window.cajaCerrada = false; toggleAccionesVisibles(canActUI()); return; }
+    try {
+      const r = await fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`);
+      const d = await r.json();
+      window.cajaCerrada = ((d.estado ?? 1) === 0);
+    } catch {
+      window.cajaCerrada = false; // backend valida igual
+    }
+    toggleAccionesVisibles(canActUI());
+    if (reRender) mostrarVistaPrevia(cajaSelect.value);
+  }
+
+  document.getElementById('btnCerrarCaja')?.addEventListener('click', () => {
+    setTimeout(() => refrescarEstadoCaja({reRender:true}), 800);
+  });
+
+  function formatearFecha(fecha) {
+    if (!fecha) return "";
+    try {
+      const date = new Date(fecha);
+      const dia = String(date.getUTCDate()).padStart(2, '0');
+      const mes = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const anio = date.getUTCFullYear();
+      return `${dia}/${mes}/${anio}`;
+    } catch { return fecha; }
+  }
+
+  function mostrarVistaPrevia(caja) {
+    if (!tablaPreview) return;
+    tablaPreview.innerHTML = "";
+
+    const remesasLocales = remesasPorCaja[caja] || [];
+    const todas = [
+      ...(remesasNoRetiradas[caja] || []).map(r => ({ ...r, tipo: "no_retirada" })), // siempre visibles
+      ...(remesasHoy[caja] || []).map(r => ({ ...r, tipo: "bd" })),                  // BD del día
+      ...remesasLocales.map((r, idx) => ({ ...r, tipo: "local", idx }))              // en memoria
+    ];
+
+    const puedeActuar = canActUI();
+
+    todas.forEach(r => {
+      const fila = document.createElement("tr");
+      if (r.tipo === "no_retirada") fila.style.backgroundColor = "#f8d7da"; // rojo claro
+      else if (r.tipo === "bd") fila.classList.add("fila-hoy");
+
+      const retiradaPor = r.retirada_por || "";
+      let acciones = "";
+
+      // === NUEVO: sólo pintamos acciones si puede actuar
+      if (puedeActuar) {
+        if (r.tipo === "no_retirada") {
+          acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar enviada / editar retirador">✏️</button>`;
+        } else if (r.tipo === "local") {
+          acciones = `
+            <button class="btn-editar-local" data-idx="${r.idx}" data-tipo="local" title="Editar">✏️</button>
+            <button class="btn-borrar-local" data-idx="${r.idx}" data-tipo="local" title="Borrar">🗑️</button>
+          `;
+        } else if (r.tipo === "bd") {
+          acciones = `
+            <button class="btn-editar-bd" data-id="${r.id}" title="Editar (BD)">✏️</button>
+            <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar (BD)">🗑️</button>
+          `;
+        }
+      }
+
+      fila.innerHTML = `
+        <td>${formatearFecha(r.fecha)}</td>
+        <td>${r.nro_remesa ?? ""}</td>
+        <td>${r.precinto ?? ""}</td>
+        <td>$${parseFloat(r.monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+        <td>${r.retirada || ""}</td>
+        <td class="celda-retirador" data-id="${r.id || ""}">${retiradaPor}</td>
+        <td>${acciones}</td>
+      `;
+      tablaPreview.appendChild(fila);
+    });
+
+    // refuerza visibilidad de botones del formulario
+    toggleAccionesVisibles(puedeActuar);
+  }
+
+  // === Listeners de la tabla ===
+  tablaPreview?.addEventListener("click", async (e) => {
+    const caja = cajaSelect.value;
+
+    // === NUEVO: si no puede actuar, ignora cualquier botón
+    if (!canActUI() && e.target.closest("button")) {
+      alert("No tenés permisos para editar/borrar en esta caja.");
+      return;
     }
 
-    document.querySelectorAll(".tarjeta-monto").forEach(input => {
-        input.addEventListener("input", actualizarTotalTarjetas);
+    // NO RETIRADA: editar "retirada_por" y marcar retirada="Sí" (con fecha elegible)
+    if (e.target.classList.contains("btn-editar-retirador")) {
+      const id = e.target.dataset.id;
+      const valorAnterior = e.target.dataset.valor;
+      const celda = tablaPreview.querySelector(`.celda-retirador[data-id="${id}"]`);
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = valorAnterior;
+      input.placeholder = "Retirada por...";
+      input.classList.add("input-retirador");
+
+      const dateInput = document.createElement("input");
+      dateInput.type = "date";
+      const hoyISO = new Date().toISOString().slice(0,10);
+      const defaultDate = (document.getElementById("fechaGlobal")?.value || hoyISO);
+      dateInput.value = defaultDate;
+      dateInput.classList.add("input-fecha-retirada");
+      dateInput.title = "Fecha en la que se retiró";
+
+      const cancelar = document.createElement("button");
+      cancelar.innerText = "❌";
+      cancelar.classList.add("btn-cancelar-retirador");
+
+      celda.innerHTML = "";
+      const wrap = document.createElement("div");
+      wrap.style.display = "flex";
+      wrap.style.gap = "6px";
+      wrap.style.alignItems = "center";
+      wrap.appendChild(input);
+      wrap.appendChild(dateInput);
+      wrap.appendChild(cancelar);
+      celda.appendChild(wrap);
+      input.focus();
+
+      cancelandoEdicion = false;
+      cancelar.addEventListener("mousedown", () => cancelandoEdicion = true);
+      cancelar.addEventListener("click", () => {
+        celda.textContent = valorAnterior;
+        cancelandoEdicion = false;
+      });
+
+      const confirmarCambio = () => {
+        if (cancelandoEdicion) return;
+
+        const nuevoValor = (input.value || "").trim();
+        if (!nuevoValor) { celda.textContent = valorAnterior; return; }
+
+        const fechaRet = (dateInput.value || "").trim();
+        if (!fechaRet) { alert("Seleccioná una fecha de retirada"); return; }
+
+        fetch("/actualizar_retirada", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            retirada: "Sí",
+            retirada_por: nuevoValor,
+            fecha_retirada: fechaRet
+          })
+        })
+        .then(res => res.json())
+        .then(async data => {
+          if (data.success) {
+            await refrescarEstadoCaja({ reRender: false });
+            if (window.OrqTabs) OrqTabs.reload('remesas');
+            else legacyReload();
+          } else {
+            alert("Error al actualizar.");
+            celda.textContent = valorAnterior;
+          }
+        })
+        .catch(() => {
+          alert("Error de red.");
+          celda.textContent = valorAnterior;
+        });
+      };
+
+      input.addEventListener("keydown", ev => { if (ev.key === "Enter") confirmarCambio(); });
+      dateInput.addEventListener("keydown", ev => { if (ev.key === "Enter") confirmarCambio(); });
+
+      const maybeConfirmOnBlur = () => {
+        setTimeout(() => {
+          const act = document.activeElement;
+          const stillEditing = (act === input || act === dateInput || act === cancelar);
+          if (!stillEditing && !cancelandoEdicion) confirmarCambio();
+          cancelandoEdicion = false;
+        }, 100);
+      };
+      input.addEventListener("blur", maybeConfirmOnBlur);
+      dateInput.addEventListener("blur", maybeConfirmOnBlur);
+      return;
+    }
+
+    // LOCAL (en memoria) editar/borrar
+    if (e.target.classList.contains("btn-editar-local")) {
+      const idx = parseInt(e.target.dataset.idx);
+      const remesa = (remesasPorCaja[caja] || [])[idx];
+      if (!remesa) return;
+      idxEdicionActual = idx;
+      document.getElementById("nro_remesa").value   = remesa.nro_remesa;
+      document.getElementById("precinto").value     = remesa.precinto;
+      document.getElementById("monto").value        = remesa.monto;
+      document.getElementById("retirada").value     = remesa.retirada;
+      document.getElementById("retirada_por").value = remesa.retirada_por;
+      toggleAccionesVisibles(canActUI());
+      return;
+    }
+    if (e.target.classList.contains("btn-borrar-local")) {
+      const idx = parseInt(e.target.dataset.idx);
+      (remesasPorCaja[caja] ||= []).splice(idx, 1);
+      mostrarVistaPrevia(caja);
+      return;
+    }
+
+    // BD: EDITAR
+    if (e.target.classList.contains("btn-editar-bd")) {
+      const id = e.target.dataset.id;
+      const filaBD = (remesasHoy[caja] || []).find(x => String(x.id) === String(id));
+      if (!filaBD) { alert("No se encontró el registro en BD."); return; }
+      document.getElementById("nro_remesa").value   = filaBD.nro_remesa || "";
+      document.getElementById("precinto").value     = filaBD.precinto   || "";
+      document.getElementById("monto").value        = (filaBD.monto != null ? filaBD.monto : "");
+      document.getElementById("retirada").value     = filaBD.retirada || "No";
+      document.getElementById("retirada_por").value = filaBD.retirada_por || "";
+      editBDId = id;
+      idxEdicionActual = null;
+      btnAnadir.style.display = "none";
+      btnActualizar.style.display = canActUI() ? "inline-block" : "none";
+      return;
+    }
+
+    // BD: BORRAR
+    if (e.target.classList.contains("btn-borrar-bd")) {
+      const id = e.target.dataset.id;
+      if (!confirm("¿Seguro que querés borrar esta remesa?")) return;
+      fetch(`/remesas/${id}`, { method: "DELETE" })
+      .then(async r => {
+        if (!r.ok) {
+          const txt = await r.text();
+          if (r.status === 409) alert("Caja/Local cerrados para tu rol: no se puede borrar.");
+          else alert("Error al borrar: " + (txt || r.status));
+          return null;
+        }
+        return r.json();
+      })
+      .then(async data => {
+        if (!data) return;
+        if (data.success) {
+          alert("✅ Remesa borrada");
+          await refrescarEstadoCaja({ reRender: false });
+          if (window.OrqTabs) OrqTabs.reload('remesas');
+          else legacyReload();
+        } else {
+          alert("❌ " + (data.msg || "Error al borrar"));
+        }
+      })
+      .catch(() => alert("❌ Error de red"));
+      return;
+    }
+  });
+
+  // Actualizar remesa en BD (botón "Actualizar Remesa")
+  btnActualizar?.addEventListener("click", async () => {
+    if (!editBDId) { alert("No hay una remesa de BD seleccionada para actualizar."); return; }
+    if (!canActUI()) { alert("No tenés permisos para actualizar en esta caja."); return; }
+
+    const payload = {
+      nro_remesa:   document.getElementById("nro_remesa").value.trim(),
+      precinto:     document.getElementById("precinto").value.trim(),
+      monto:        document.getElementById("monto").value.trim(), // backend normaliza
+      retirada:     document.getElementById("retirada").value,
+      retirada_por: document.getElementById("retirada_por").value.trim()
+    };
+
+    fetch(`/remesas/${editBDId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(async r => {
+      if (!r.ok) {
+        const txt = await r.text();
+        if (r.status === 409) alert("Caja/Local cerrados para tu rol: no se puede actualizar.");
+        else alert("Error al actualizar: " + (txt || r.status));
+        return null;
+      }
+      return r.json();
+    })
+    .then(async data => {
+      if (!data) return;
+      if (data.success) {
+        alert("✅ Remesa actualizada");
+        editBDId = null;
+        remesaForm.reset();
+        btnActualizar.style.display = "none";
+        btnAnadir.style.display = canActUI() ? "inline-block" : "none";
+        await refrescarEstadoCaja({ reRender: false });
+        if (window.OrqTabs) OrqTabs.reload('remesas');
+        else legacyReload();
+      } else {
+        alert("❌ " + (data.msg || "No se pudo actualizar"));
+      }
+    })
+    .catch(() => alert("❌ Error de red"));
+  });
+
+  // Añadir remesa (memoria)
+  btnAnadir?.addEventListener("click", async () => {
+    if (!canActUI()) { alert("No tenés permisos para añadir en esta caja."); return; }
+    if (!fechaGlobal.value) {
+      alert("⚠️ Debe seleccionar una fecha antes de añadir una remesa.");
+      return;
+    }
+    await refrescarEstadoCaja({ reRender: false });
+    if (!canActUI()) { alert("No tenés permisos para añadir en esta caja."); return; }
+
+    const caja = cajaSelect.value;
+    const nuevaRemesa = {
+      fecha: fechaGlobal.value,
+      nro_remesa: document.getElementById("nro_remesa").value,
+      precinto: document.getElementById("precinto").value,
+      monto: document.getElementById("monto").value,
+      retirada: document.getElementById("retirada").value,
+      retirada_por: document.getElementById("retirada_por").value,
+      tipo: "local"
+    };
+    (remesasPorCaja[caja] ||= []);
+    if (idxEdicionActual !== null) {
+      remesasPorCaja[caja][idxEdicionActual] = nuevaRemesa;
+      idxEdicionActual = null;
+    } else {
+      remesasPorCaja[caja].push(nuevaRemesa);
+    }
+    remesaForm.reset();
+    mostrarVistaPrevia(caja);
+  });
+
+  // Guardar en BD
+  btnGuardar?.addEventListener("click", async () => {
+    if (!canActUI()) { alert("No tenés permisos para guardar en esta caja."); return; }
+    if (!fechaGlobal.value) {
+      alert("⚠️ Debe seleccionar una fecha antes de guardar remesas.");
+      return;
+    }
+    await refrescarEstadoCaja({ reRender: false });
+    if (!canActUI()) { alert("No tenés permisos para guardar en esta caja."); return; }
+
+    const { caja, fecha, turno } = getCtx();
+    const nuevas = remesasPorCaja[caja] || [];
+    if (nuevas.length === 0) { respuestaDiv.innerText = "No hay remesas nuevas para guardar."; return; }
+
+    fetch("/guardar_remesas_lote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caja, remesas: nuevas, fecha, turno })
+    })
+    .then(res => res.json())
+    .then(async data => {
+      if (data.success) {
+        respuestaDiv.innerText = data.msg || "Remesas guardadas correctamente.";
+        remesasPorCaja[caja] = [];
+        await refrescarEstadoCaja({ reRender: false });
+        if (window.OrqTabs) OrqTabs.reload('remesas');
+        else legacyReload();
+      } else {
+        respuestaDiv.innerText = "❌ Error: " + (data.msg || "");
+      }
+    })
+    .catch(err => {
+      console.error("Error:", err);
+      respuestaDiv.innerText = "❌ Error de red.";
     });
+  });
+
+  // ===================== Render que llama el Orquestador =====================
+  // opts.datasets = { "/remesas_no_retiradas": [...], "/remesas_hoy": [...], "/estado_caja": {...} }
+  window.renderRemesas = function (_data, opts = {}) {
+    const caja = cajaSelect.value;
+    syncCajaHidden();
+
+    const map = opts.datasets || {};
+    const epNR  = Object.keys(map).find(k => k.includes('remesas_no_retiradas'));
+    const epHoy = Object.keys(map).find(k => k.includes('remesas_hoy'));
+    const epEC  = Object.keys(map).find(k => k.includes('estado_caja')); // ← NUEVO
+
+    const arrNoRet = epNR
+      ? (Array.isArray(map[epNR]) ? map[epNR] : (map[epNR]?.items || []))
+      : [];
+    const arrHoy   = epHoy
+      ? (Array.isArray(map[epHoy]) ? map[epHoy] : (map[epHoy]?.items || []))
+      : [];
+
+    // === NUEVO: sincronizar estado de caja si vino en el payload del orquestador
+    if (epEC && map[epEC] && typeof map[epEC] === 'object') {
+      const d = map[epEC];
+      window.cajaCerrada = ((d.estado ?? 1) === 0);
+    }
+    toggleAccionesVisibles(canActUI());
+
+    // Actualizar estructuras locales y render
+    remesasNoRetiradas[caja] = arrNoRet || [];
+    remesasHoy[caja]         = arrHoy   || [];
+    mostrarVistaPrevia(caja);
+  };
+
+  // ===================== Fallback sin orquestador =====================
+  function legacyReload() {
+    const { local, caja, fecha, turno } = getCtx();
+    const u1 = `/remesas_no_retiradas?caja=${encodeURIComponent(caja)}&local=${encodeURIComponent(local)}&turno=${encodeURIComponent(turno)}`; // sin fecha
+    const u2 = `/remesas_hoy?caja=${encodeURIComponent(caja)}${fecha ? `&fecha=${encodeURIComponent(fecha)}` : ''}&local=${encodeURIComponent(local)}&turno=${encodeURIComponent(turno)}`;
+    Promise.all([
+      fetch(u1).then(r => r.ok ? r.json() : []).catch(()=>[]),
+      fetch(u2).then(r => r.ok ? r.json() : []).catch(()=>[]),
+      fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
+        .then(r => r.ok ? r.json() : {estado:1}).catch(()=>({estado:1}))
+    ]).then(([noRet, hoy, est]) => {
+      window.cajaCerrada = ((est.estado ?? 1) === 0);
+      toggleAccionesVisibles(canActUI());
+      remesasNoRetiradas[caja] = noRet || [];
+      remesasHoy[caja]         = hoy   || [];
+      mostrarVistaPrevia(caja);
+    });
+  }
+
+  // ===================== Init mínimo =====================
+  const cajaInicial = cajaSelect.value;
+  syncCajaHidden();
+  remesasPorCaja[cajaInicial]     = remesasPorCaja[cajaInicial] || [];
+  remesasNoRetiradas[cajaInicial] = remesasNoRetiradas[cajaInicial] || [];
+  remesasHoy[cajaInicial]         = remesasHoy[cajaInicial] || [];
+
+  if (!window.OrqTabs) {
+    (async () => {
+      await refrescarEstadoCaja({ reRender: false });
+      legacyReload();
+    })();
+  } else {
+    // aseguramos estado inicial de botones
+    toggleAccionesVisibles(canActUI());
+  }
 });
