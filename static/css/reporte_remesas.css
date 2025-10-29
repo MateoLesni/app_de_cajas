@@ -1,0 +1,133 @@
+/* =========================================================
+   Reportería > Remesas (compacto + totales más oscuros)
+   Centrados globales
+   ========================================================= */
+
+:root{
+  /* Tamaños compactos */
+  --rep-font-size: 14px;
+  --rep-cell-py: 7px;
+  --rep-cell-px: 11px;
+
+  /* Colores */
+  --rep-head-bg: #f3f4f6;   /* encabezado (claro) */
+  --rep-total-bg: #bec1c4;  /* totales: un poco más oscuro que el head */
+  --rep-total-text: #111827;
+  --rep-ap-bg: #e2e4e7;     /* columna AP proyectada */
+}
+
+/* Card del reporte */
+.rep-card{
+  font-size: var(--rep-font-size) !important;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+/* Header del card (centrado) */
+.rep-card > div:first-child{
+  display: flex !important;
+  justify-content: center !important;   /* centra título + badge */
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 8px 10px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+/* Body del card */
+.rep-card > div:last-child{
+  padding: 8px 10px 12px !important;
+}
+
+/* Tabla */
+#rep-table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Encabezado */
+#rep-table thead th{
+  background: var(--rep-head-bg) !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: var(--rep-cell-py) var(--rep-cell-px) !important;
+  text-align: center !important;
+  font-weight: 700 !important;
+  font-size: var(--rep-font-size) !important;
+  vertical-align: middle !important;
+}
+
+/* Cuerpo (centrado) */
+#rep-table tbody td{
+  border-bottom: 1px solid #eef1f5 !important;
+  padding: var(--rep-cell-py) var(--rep-cell-px) !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: var(--rep-font-size) !important;
+  text-align: center !important;         /* <— centrado */
+  vertical-align: middle !important;
+}
+
+/* Columna AP proyectada */
+#rep-table .ap-col{
+  background: var(--rep-ap-bg) !important;
+  font-weight: 700 !important;
+}
+
+/* Anula cualquier “derecha” residual */
+#rep-table .td-right{
+  text-align: center !important;
+}
+
+/* TOTALES (también centrados) */
+#rep-table tfoot td{
+  background: var(--rep-total-bg) !important;
+  color: var(--rep-total-text) !important;
+  font-weight: 800 !important;
+  padding: var(--rep-cell-py) var(--rep-cell-px) !important;
+  border-top: 1px solid #d1d5db !important;
+  text-align: center !important;         /* <— centrado */
+  vertical-align: middle !important;
+}
+#rep-table tfoot tr.tot-row td{
+  background: var(--rep-total-bg) !important;
+  color: var(--rep-total-text) !important;
+  text-align: center !important;
+}
+
+/* Bloque de filtros (centrado) */
+.rep-filtros{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:center !important;     /* <— centrado del bloque */
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  padding:10px;
+}
+.rep-actions{
+  margin-left:0 !important;              /* quita el “pegarse a la derecha” */
+  display:flex; gap:8px;
+}
+
+.btn-ghost{
+  background:#fff; border:1px solid #d1d5db; padding:8px 12px; border-radius:8px; cursor:pointer;
+}
+.btn-ghost:hover{ background:#f5f7fa; }
+
+/* Submenú de reportería */
+.nav-group > a{ display:flex; align-items:center; justify-content:space-between; }
+.nav-group .nav-sub{ display:none; padding-left: 10px; }
+.nav-group.is-open .nav-sub{ display:block; }
+.nav-sub a{ padding-left: 26px; }
+.nav-item.is-current{ background:#e8f0fe; }
+
+/* Responsive */
+@media (max-width: 640px){
+  :root{
+    --rep-font-size: 12.5px;
+    --rep-cell-py: 5px;
+    --rep-cell-px: 8px;
+  }
+}

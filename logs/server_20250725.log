@@ -1,0 +1,377 @@
+2025-07-25 08:28:36,006 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 08:28:36,009 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 08:28:36,012 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 08:28:36,013 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 08:28:36,021 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 08:28:36,025 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 08:28:36,030 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 08:28:36,033 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 08:28:36,038 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 08:28:36,042 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 08:28:36,047 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 08:28:36,050 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 08:28:36,053 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 08:28:36,059 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 08:28:36,063 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 08:28:36,067 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 08:28:36,071 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 08:28:36,075 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 08:28:36,080 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 08:28:36,085 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 08:28:36,090 - app - INFO - Backup creado: once.json.backup
+2025-07-25 08:28:36,093 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 08:28:36,097 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 08:28:36,100 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 08:28:36,104 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 08:28:36,108 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 08:28:36,113 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 08:28:36,116 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 08:28:36,119 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 08:28:36,124 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 08:28:36,126 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 08:28:36,131 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 08:28:36,134 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 08:28:36,138 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 08:28:36,142 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 08:28:36,145 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 08:28:36,149 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 08:28:36,152 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 08:28:36,155 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 08:28:36,159 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 08:28:36,162 - app - INFO - Backup creado: users.json.backup
+2025-07-25 08:28:36,165 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 08:28:36,168 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 08:28:36,173 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 08:28:36,177 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 08:28:36,180 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 08:28:36,181 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 08:28:36,181 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 08:28:36,275 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 08:28:36,275 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 08:28:38,959 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 08:28:38,960 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 08:28:38,962 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-07-25 08:57:06,182 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-07-25 08:57:09,863 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 08:57:09,866 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 08:57:09,866 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 08:57:09,867 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 08:57:09,875 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 08:57:09,878 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 08:57:09,883 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 08:57:09,886 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 08:57:09,891 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 08:57:09,894 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 08:57:09,899 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 08:57:09,903 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 08:57:09,906 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 08:57:09,908 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 08:57:09,912 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 08:57:09,915 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 08:57:09,919 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 08:57:09,922 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 08:57:09,924 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 08:57:09,927 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 08:57:09,932 - app - INFO - Backup creado: once.json.backup
+2025-07-25 08:57:09,934 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 08:57:09,938 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 08:57:09,941 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 08:57:09,945 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 08:57:09,948 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 08:57:09,952 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 08:57:09,955 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 08:57:09,957 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 08:57:09,960 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 08:57:09,962 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 08:57:09,965 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 08:57:09,969 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 08:57:09,972 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 08:57:09,976 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 08:57:09,979 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 08:57:09,983 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 08:57:09,985 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 08:57:09,990 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 08:57:09,993 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 08:57:09,995 - app - INFO - Backup creado: users.json.backup
+2025-07-25 08:57:09,997 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 08:57:10,000 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 08:57:10,003 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 08:57:10,008 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 08:57:10,011 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 08:57:10,012 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 08:57:10,012 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 08:57:10,113 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 08:57:10,113 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 08:57:12,123 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 08:57:12,124 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 08:57:12,127 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-07-25 08:59:14,398 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-07-25 08:59:17,124 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 08:59:17,127 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 08:59:17,127 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 08:59:17,128 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 08:59:17,135 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 08:59:17,138 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 08:59:17,141 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 08:59:17,144 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 08:59:17,147 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 08:59:17,149 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 08:59:17,153 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 08:59:17,155 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 08:59:17,158 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 08:59:17,161 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 08:59:17,164 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 08:59:17,166 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 08:59:17,169 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 08:59:17,172 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 08:59:17,174 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 08:59:17,177 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 08:59:17,180 - app - INFO - Backup creado: once.json.backup
+2025-07-25 08:59:17,183 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 08:59:17,186 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 08:59:17,189 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 08:59:17,192 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 08:59:17,194 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 08:59:17,197 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 08:59:17,200 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 08:59:17,202 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 08:59:17,205 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 08:59:17,207 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 08:59:17,209 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 08:59:17,212 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 08:59:17,215 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 08:59:17,218 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 08:59:17,221 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 08:59:17,224 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 08:59:17,227 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 08:59:17,230 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 08:59:17,233 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 08:59:17,235 - app - INFO - Backup creado: users.json.backup
+2025-07-25 08:59:17,238 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 08:59:17,240 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 08:59:17,243 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 08:59:17,246 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 08:59:17,248 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 08:59:17,249 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 08:59:17,249 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 08:59:17,345 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 08:59:17,345 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 08:59:19,780 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 08:59:19,781 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 08:59:19,783 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-07-25 09:09:44,577 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-07-25 09:09:47,584 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 09:09:47,588 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 09:09:47,588 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 09:09:47,590 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 09:09:47,597 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 09:09:47,600 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 09:09:47,605 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 09:09:47,608 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 09:09:47,613 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 09:09:47,616 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 09:09:47,620 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 09:09:47,623 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 09:09:47,625 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 09:09:47,628 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 09:09:47,632 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 09:09:47,635 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 09:09:47,639 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 09:09:47,641 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 09:09:47,644 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 09:09:47,647 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 09:09:47,651 - app - INFO - Backup creado: once.json.backup
+2025-07-25 09:09:47,654 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 09:09:47,658 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 09:09:47,660 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 09:09:47,665 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 09:09:47,668 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 09:09:47,672 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 09:09:47,675 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 09:09:47,677 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 09:09:47,680 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 09:09:47,682 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 09:09:47,685 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 09:09:47,689 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 09:09:47,693 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 09:09:47,699 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 09:09:47,704 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 09:09:47,709 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 09:09:47,713 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 09:09:47,718 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 09:09:47,721 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 09:09:47,724 - app - INFO - Backup creado: users.json.backup
+2025-07-25 09:09:47,728 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 09:09:47,732 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 09:09:47,736 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 09:09:47,740 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 09:09:47,743 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 09:09:47,744 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 09:09:47,744 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 09:09:47,842 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 09:09:47,843 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 09:09:50,292 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 09:09:50,293 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 09:09:50,296 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-07-25 09:12:27,645 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-07-25 09:12:30,176 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 09:12:30,179 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 09:12:30,179 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 09:12:30,181 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 09:12:30,186 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 09:12:30,189 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 09:12:30,192 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 09:12:30,195 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 09:12:30,199 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 09:12:30,201 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 09:12:30,205 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 09:12:30,209 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 09:12:30,211 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 09:12:30,214 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 09:12:30,217 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 09:12:30,220 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 09:12:30,224 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 09:12:30,226 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 09:12:30,229 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 09:12:30,231 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 09:12:30,235 - app - INFO - Backup creado: once.json.backup
+2025-07-25 09:12:30,238 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 09:12:30,242 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 09:12:30,244 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 09:12:30,248 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 09:12:30,251 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 09:12:30,255 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 09:12:30,257 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 09:12:30,260 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 09:12:30,262 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 09:12:30,265 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 09:12:30,268 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 09:12:30,271 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 09:12:30,274 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 09:12:30,277 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 09:12:30,280 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 09:12:30,284 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 09:12:30,287 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 09:12:30,290 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 09:12:30,292 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 09:12:30,295 - app - INFO - Backup creado: users.json.backup
+2025-07-25 09:12:30,297 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 09:12:30,300 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 09:12:30,302 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 09:12:30,306 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 09:12:30,309 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 09:12:30,309 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 09:12:30,309 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 09:12:30,406 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 09:12:30,406 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 09:12:32,260 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 09:12:32,261 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 09:12:32,263 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-07-25 09:16:08,407 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-07-25 09:16:11,083 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 09:16:11,086 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 09:16:11,087 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 09:16:11,088 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 09:16:11,094 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 09:16:11,098 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 09:16:11,102 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 09:16:11,105 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 09:16:11,109 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 09:16:11,111 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 09:16:11,115 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 09:16:11,117 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 09:16:11,120 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 09:16:11,122 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 09:16:11,126 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 09:16:11,129 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 09:16:11,132 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 09:16:11,134 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 09:16:11,136 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 09:16:11,139 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 09:16:11,142 - app - INFO - Backup creado: once.json.backup
+2025-07-25 09:16:11,145 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 09:16:11,148 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 09:16:11,151 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 09:16:11,154 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 09:16:11,156 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 09:16:11,160 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 09:16:11,162 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 09:16:11,165 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 09:16:11,167 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 09:16:11,169 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 09:16:11,172 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 09:16:11,176 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 09:16:11,178 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 09:16:11,181 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 09:16:11,184 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 09:16:11,187 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 09:16:11,190 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 09:16:11,193 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 09:16:11,196 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 09:16:11,198 - app - INFO - Backup creado: users.json.backup
+2025-07-25 09:16:11,201 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 09:16:11,203 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 09:16:11,206 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 09:16:11,209 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 09:16:11,212 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 09:16:11,212 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 09:16:11,213 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 09:16:11,311 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 09:16:11,311 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 09:16:13,194 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 09:16:13,195 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 09:16:13,197 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-07-25 09:38:58,832 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-07-25 09:39:01,694 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-07-25 09:39:01,697 - apscheduler.scheduler - INFO - Added job "Backup automático de archivos JSON" to job store "default"
+2025-07-25 09:39:01,697 - apscheduler.scheduler - INFO - Scheduler started
+2025-07-25 09:39:01,698 - app - INFO - Iniciando backup automático de archivos JSON...
+2025-07-25 09:39:01,706 - app - INFO - Backup creado: ambulante.json.backup
+2025-07-25 09:39:01,709 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ambulante.json.backup
+2025-07-25 09:39:01,713 - app - INFO - Backup creado: bimbo.json.backup
+2025-07-25 09:39:01,716 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\bimbo.json.backup
+2025-07-25 09:39:01,721 - app - INFO - Backup creado: constitucion.json.backup
+2025-07-25 09:39:01,724 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\constitucion.json.backup
+2025-07-25 09:39:01,728 - app - INFO - Backup creado: gastronomia.json.backup
+2025-07-25 09:39:01,732 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\gastronomia.json.backup
+2025-07-25 09:39:01,735 - app - INFO - Backup creado: info_locales.json.backup
+2025-07-25 09:39:01,740 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\info_locales.json.backup
+2025-07-25 09:39:01,744 - app - INFO - Backup creado: kioscos.json.backup
+2025-07-25 09:39:01,748 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\kioscos.json.backup
+2025-07-25 09:39:01,752 - app - INFO - Backup creado: medios_pago.json.backup
+2025-07-25 09:39:01,755 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\medios_pago.json.backup
+2025-07-25 09:39:01,758 - app - INFO - Backup creado: mercadopago.json.backup
+2025-07-25 09:39:01,762 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\mercadopago.json.backup
+2025-07-25 09:39:01,767 - app - INFO - Backup creado: once.json.backup
+2025-07-25 09:39:01,770 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\once.json.backup
+2025-07-25 09:39:01,775 - app - INFO - Backup creado: pagos_no_vinculados.json.backup
+2025-07-25 09:39:01,778 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pagos_no_vinculados.json.backup
+2025-07-25 09:39:01,782 - app - INFO - Backup creado: pendientes.json.backup
+2025-07-25 09:39:01,786 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\pendientes.json.backup
+2025-07-25 09:39:01,790 - app - INFO - Backup creado: registros.json.backup
+2025-07-25 09:39:01,792 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\registros.json.backup
+2025-07-25 09:39:01,795 - app - INFO - Backup creado: remesas_cajas.json.backup
+2025-07-25 09:39:01,798 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\remesas_cajas.json.backup
+2025-07-25 09:39:01,801 - app - INFO - Backup creado: resumenes.json.backup
+2025-07-25 09:39:01,804 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\resumenes.json.backup
+2025-07-25 09:39:01,808 - app - INFO - Backup creado: retiro.json.backup
+2025-07-25 09:39:01,810 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\retiro.json.backup
+2025-07-25 09:39:01,814 - app - INFO - Backup creado: stock.json.backup
+2025-07-25 09:39:01,818 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\stock.json.backup
+2025-07-25 09:39:01,822 - app - INFO - Backup creado: system_config.json.backup
+2025-07-25 09:39:01,825 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\system_config.json.backup
+2025-07-25 09:39:01,828 - app - INFO - Backup creado: tba.json.backup
+2025-07-25 09:39:01,831 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\tba.json.backup
+2025-07-25 09:39:01,835 - app - INFO - Backup creado: users.json.backup
+2025-07-25 09:39:01,840 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\users.json.backup
+2025-07-25 09:39:01,843 - app - INFO - Backup creado: ventas.json.backup
+2025-07-25 09:39:01,846 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\ventas.json.backup
+2025-07-25 09:39:01,851 - app - INFO - Backup creado: zona_sur.json.backup
+2025-07-25 09:39:01,854 - app - INFO - Eliminando backup antiguo: C:\Users\gesti\Downloads\app cajas\data\zona_sur.json.backup
+2025-07-25 09:39:01,854 - app - INFO - Backup automático completado. 21 archivos respaldados.
+2025-07-25 09:39:01,855 - app - INFO - Sistema de backup automático iniciado. Próximo backup en 6 horas.
+2025-07-25 09:39:01,955 - waitress - INFO - Serving on http://[::1]:443
+2025-07-25 09:39:01,955 - waitress - INFO - Serving on http://127.0.0.1:443
+2025-07-25 09:39:05,046 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-07-25 09:39:05,046 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-07-25 09:39:05,050 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
