@@ -297,34 +297,7 @@ db = SQLAlchemy(app)
 from dotenv import load_dotenv
 load_dotenv()
 
-def init_app():
-    """Inicialización de la aplicación"""
-    try:
-        os.makedirs(DATA_DIR, exist_ok=True)
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        
-        # Asegurar que el archivo users.json exista
-        if not os.path.exists(USERS_FILE):
-            save_json_file(USERS_FILE, [])
-        
-        init_admin_user()  # Crear usuarios iniciales
-        create_demo_user() # Crear usuario demo
-        migrar_registros()
-        
-        if not os.path.exists(REGISTROS_FILE):
-            with open(REGISTROS_FILE, 'w', encoding='utf-8') as f:
-                json.dump([], f)
-            print(f"Creado nuevo archivo de registros en {REGISTROS_FILE}")
-        
-        init_transferencias()
-        init_stock_file()  # Inicializar archivo de stock
-        
-        # Iniciar el sistema de backup automático
-        init_backup_scheduler()
-        
-        print("Inicialización completada exitosamente")
-    except Exception as e:
-        print(f"Error en la inicialización: {str(e)}")
+
 
 # ________________
 # 

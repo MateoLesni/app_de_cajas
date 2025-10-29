@@ -39,11 +39,10 @@ def get_server_info():
 if __name__ == '__main__':
     # Importar la app Flask y la función init_app desde app.py
     # Importante: hacerlo aquí dentro del bloque if para evitar problemas de importación circular
-    from app import app, init_app
+    from app import app
     
     # Inicializar la aplicación
-    init_app()
-    
+
     # Obtener información del servidor
     info = get_server_info()
     
