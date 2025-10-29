@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, session, current_app
 from google.cloud import storage
 from google.auth.exceptions import DefaultCredentialsError, GoogleAuthError
 from google.api_core import exceptions as gapi_exc
+from google.oauth2 import service_account
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 load_dotenv()
@@ -15,6 +16,7 @@ bp_files = Blueprint("files", __name__)
 BUCKET_NAME  = os.environ.get("GCS_BUCKET", "")
 SIGNED_TTL   = int(os.environ.get("GCS_SIGNED_URL_TTL", "600"))  # segundos
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}         # ampliá si querés
+GCP_PROJECT  = os.environ.get("GCP_PROJECT")  # opcional
 
 # ===================== Dependencias inyectadas =====================
 _login_required     = None
@@ -64,7 +66,31 @@ def _wrap_endpoint_with_login(endpoint_name: str):
 
 # ===================== Helpers =====================
 def _client():
-    return storage.Client()
+    """
+    Crea un cliente de GCS con este orden de preferencia:
+    1) GCP_SA_KEY_JSON (contenido JSON embebido)
+    2) GCP_SA_KEY_FILE o GOOGLE_APPLICATION_CREDENTIALS (ruta a archivo .json)
+    3) ADC (Application Default Credentials) -> recomendado en Cloud Run asignando la SA al servicio
+    """
+    try:
+        key_json = os.environ.get("GCP_SA_KEY_JSON")
+        key_file = os.environ.get("GCP_SA_KEY_FILE") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+
+        if key_json:
+            creds = service_account.Credentials.from_service_account_info(
+                __import__("json").loads(key_json)
+            )
+            return storage.Client(project=GCP_PROJECT, credentials=creds)
+
+        if key_file and os.path.exists(key_file):
+            creds = service_account.Credentials.from_service_account_file(key_file)
+            return storage.Client(project=GCP_PROJECT, credentials=creds)
+
+        # Fallback: ADC (Cloud Run usa la service account asignada al servicio)
+        return storage.Client(project=GCP_PROJECT)
+    except Exception as e:
+        current_app.logger.exception("No se pudo inicializar el cliente de GCS")
+        raise
 
 def _slug(texto: str) -> str:
     s = (texto or "").strip().lower()
@@ -163,7 +189,6 @@ def upload():
     uploaded = []
     created_blobs = []
 
-    # usar dependencia inyectada
     if _get_db_connection is None:
         return jsonify(success=False, msg="Dependencias no inicializadas"), 500
     conn = _get_db_connection()
