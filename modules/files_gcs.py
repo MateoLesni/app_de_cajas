@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 import os, re, uuid, mimetypes, unicodedata, logging
 import datetime as dt
+from urllib.parse import quote
+
 from flask import Blueprint, request, jsonify, session, current_app
 from werkzeug.utils import secure_filename
 
 from google.cloud import storage
 from google.api_core import exceptions as gapi_exc
 
-# Si usás .env en local, esto no afecta a Cloud Run (que usa env vars del servicio)
+# .env solo afecta ambientes locales; en Cloud Run no impacta
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -21,8 +23,9 @@ logger = logging.getLogger("files_gcs")
 # ===================== Config =====================
 BUCKET_NAME  = os.environ.get("GCS_BUCKET", "")
 SIGNED_TTL   = int(os.environ.get("GCS_SIGNED_URL_TTL", "600"))  # segundos
-ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}         # ampliá si querés
-GCP_PROJECT  = os.environ.get("GCP_PROJECT")  # opcional
+# Ampliá si necesitás (PDF, HEIC, etc.)
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
+GCP_PROJECT  = os.environ.get("GCP_PROJECT")  # opcional/no requerido
 
 # ===================== Dependencias inyectadas =====================
 _login_required     = None
@@ -71,19 +74,14 @@ def _wrap_endpoint_with_login(endpoint_name: str):
     bp_files.view_functions[endpoint_name] = _login_required(vf)
 
 # ===================== Helpers =====================
-# files_gcs.py — reemplazar _client() por esto
 def _client():
     """
-    Usa exclusivamente ADC (Application Default Credentials)
-    que provee Cloud Run con la service account asignada.
-    Ignora por completo cualquier variable de credencial local.
+    Usa exclusivamente ADC (Application Default Credentials) provistas por Cloud Run.
+    Ignora por completo cualquier variable de credenciales local.
     """
-    # Blindaje por si alguien dejó estas envs seteadas
     for k in ("GOOGLE_APPLICATION_CREDENTIALS", "GCP_SA_KEY_FILE", "GCP_SA_KEY_JSON"):
         os.environ.pop(k, None)
-
-    # Client sin project/credentials explícitos → ADC
-    return storage.Client()
+    return storage.Client()  # ADC (no pasar project ni credentials)
 
 def _slug(texto: str) -> str:
     s = (texto or "").strip().lower()
@@ -124,14 +122,36 @@ def _prefix(ctx: dict, scope: str = "day") -> str:
         base += "/"
     return base
 
+def _sanitize_ascii_filename(name: str) -> str:
+    # Evita caracteres que rompen Content-Disposition
+    base = (name or "archivo").replace('"', "").replace("\r", "").replace("\n", "")
+    base = re.sub(r"[^A-Za-z0-9._ -]+", "_", base).strip()
+    return base[:120] or "archivo"
+
 def _signed_get(blob, filename):
-    # Requiere que la service account del servicio tenga roles/iam.serviceAccountTokenCreator
-    return blob.generate_signed_url(
-        version="v4",
-        expiration=dt.timedelta(seconds=SIGNED_TTL),
-        method="GET",
-        response_disposition=f'inline; filename="{filename}"',
-    )
+    """
+    Genera URL firmada V4 con filename unicode seguro.
+    Fallback sin Content-Disposition si la librería protesta.
+    """
+    ascii_name = _sanitize_ascii_filename(filename)
+    utf8_name  = quote((filename or "archivo").encode("utf-8"))
+    try:
+        return blob.generate_signed_url(
+            version="v4",
+            expiration=dt.timedelta(seconds=SIGNED_TTL),
+            method="GET",
+            response_disposition=f'inline; filename="{ascii_name}"; filename*=UTF-8\'\'{utf8_name}',
+        )
+    except Exception as e:
+        current_app.logger.warning(
+            "Retry signed_url sin response_disposition para %s (%s)",
+            getattr(blob, "name", ""), e
+        )
+        return blob.generate_signed_url(
+            version="v4",
+            expiration=dt.timedelta(seconds=SIGNED_TTL),
+            method="GET",
+        )
 
 def _infer_ctx_from_blobname(name: str):
     parts = (name or "").split("/")
@@ -195,8 +215,8 @@ def upload():
             if mime not in ALLOWED_MIME:
                 raise ValueError(f"MIME no permitido: {mime}")
 
-            name = _safe_file(original)
-            blob_name = pref + f"{uuid.uuid4().hex}__{name}"
+            safe_name = _safe_file(original)
+            blob_name = pref + f"{uuid.uuid4().hex}__{safe_name}"
             blob = bucket.blob(blob_name)
             blob.metadata = {
                 **ctx,
@@ -204,41 +224,69 @@ def upload():
                 "entity_type": entity_type or "",
                 "entity_id": str(entity_id or "")
             }
-            blob.upload_from_file(f.stream, content_type=mime)
+
+            # Subida robusta
+            try:
+                blob.upload_from_file(f.stream, content_type=mime)
+            except Exception as up_e:
+                current_app.logger.exception("Error subiendo %s: %s", original, up_e)
+                # No integramos a DB ni a la respuesta si no subió
+                continue
+
             created_blobs.append(blob)
 
+            # Tamaño (si falla reload, lo toleramos)
             try:
                 blob.reload()
                 size_bytes = int(blob.size or 0)
             except Exception:
                 size_bytes = None
 
-            cur.execute(
-                """
-                INSERT INTO imagenes_adjuntos
-                (tab, local, caja, turno, fecha,
-                 entity_type, entity_id,
-                 gcs_path, original_name, mime, size_bytes,
-                 checksum_sha256, subido_por, estado)
-                VALUES
-                (%s,%s,%s,%s,%s,
-                 %s,%s,
-                 %s,%s,%s,%s,
-                 %s,%s,'active')
-                """,
-                (
-                    ctx["tab"], ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
-                    entity_type, entity_id,
-                    blob_name, original, mime, size_bytes,
-                    None,
-                    session.get("username") or "sistema",
-                ),
-            )
+            # Insert DB (si falla DB, intentamos borrar el blob)
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO imagenes_adjuntos
+                    (tab, local, caja, turno, fecha,
+                     entity_type, entity_id,
+                     gcs_path, original_name, mime, size_bytes,
+                     checksum_sha256, subido_por, estado)
+                    VALUES
+                    (%s,%s,%s,%s,%s,
+                     %s,%s,
+                     %s,%s,%s,%s,
+                     %s,%s,'active')
+                    """,
+                    (
+                        ctx["tab"], ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
+                        entity_type, entity_id,
+                        blob_name, original, mime, size_bytes,
+                        None,
+                        session.get("username") or "sistema",
+                    ),
+                )
+            except Exception as db_e:
+                current_app.logger.exception("DB insert falló para %s, borrando blob. Error: %s", blob_name, db_e)
+                try:
+                    blob.delete()
+                except Exception as de:
+                    current_app.logger.warning("No se pudo borrar blob huérfano %s: %s", blob_name, de)
+                # No cortamos todo el upload por un item con error
+                continue
 
-            view_url = _signed_get(blob, name)
+            # Firmar URL (tolerante)
+            view_url = None
+            try:
+                view_url = _signed_get(blob, safe_name)
+            except Exception as sig_e:
+                current_app.logger.warning("No se pudo firmar URL para %s: %s", blob_name, sig_e)
+                # Devolvemos item sin view_url; la UI podrá refrescar con /list
+
             uploaded.append({"name": original, "path": blob_name, "view_url": view_url})
 
         conn.commit()
+        if not uploaded:
+            return jsonify(success=False, msg="No se pudo subir ningún archivo"), 500
         return jsonify(success=True, items=uploaded)
 
     except Exception as e:
@@ -246,6 +294,7 @@ def upload():
             conn.rollback()
         except Exception:
             pass
+        # Intentamos limpiar solo lo que subimos y aún no insertamos correctamente
         for b in created_blobs:
             try:
                 b.delete()
@@ -303,9 +352,10 @@ def list_files():
             orig = (b.metadata or {}).get("original_name") or b.name.rsplit("__", 1)[-1]
             try:
                 url = _signed_get(b, orig)
-            except Exception:
-                current_app.logger.exception("No se pudo firmar URL para %s", b.name)
-                return jsonify(success=False, msg="No se pudo firmar URL"), 500
+            except Exception as e:
+                # No rompemos todo por un solo objeto con nombre conflictivo
+                current_app.logger.warning("No se pudo firmar URL para %s (%s). Se omite el item.", b.name, e)
+                continue
 
             out.append({
                 "id": b.name,
