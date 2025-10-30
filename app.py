@@ -7,7 +7,6 @@ from flask_limiter.util import get_remote_address
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from waitress import serve
 import glob
 import atexit
 import json
@@ -3653,7 +3652,9 @@ def api_cierre_local():
         try: conn.close()
         except: ...
 
-
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}, 200
 
 def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
     """
