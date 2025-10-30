@@ -71,16 +71,19 @@ def _wrap_endpoint_with_login(endpoint_name: str):
     bp_files.view_functions[endpoint_name] = _login_required(vf)
 
 # ===================== Helpers =====================
+# files_gcs.py — reemplazar _client() por esto
 def _client():
     """
-    Cliente de GCS usando únicamente ADC (Application Default Credentials).
-    En Cloud Run, esto usa la service account asignada al servicio.
+    Usa exclusivamente ADC (Application Default Credentials)
+    que provee Cloud Run con la service account asignada.
+    Ignora por completo cualquier variable de credencial local.
     """
-    try:
-        return storage.Client(project=GCP_PROJECT)
-    except Exception:
-        current_app.logger.exception("No se pudo inicializar el cliente de GCS (ADC)")
-        raise
+    # Blindaje por si alguien dejó estas envs seteadas
+    for k in ("GOOGLE_APPLICATION_CREDENTIALS", "GCP_SA_KEY_FILE", "GCP_SA_KEY_JSON"):
+        os.environ.pop(k, None)
+
+    # Client sin project/credentials explícitos → ADC
+    return storage.Client()
 
 def _slug(texto: str) -> str:
     s = (texto or "").strip().lower()
