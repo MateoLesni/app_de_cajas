@@ -1,15 +1,12 @@
 # modules/files_gcs.py
 # -*- coding: utf-8 -*-
-import os, re, uuid, mimetypes, unicodedata, json, logging
+import os, re, uuid, mimetypes, unicodedata, logging
 import datetime as dt
 from flask import Blueprint, request, jsonify, session, current_app
 from werkzeug.utils import secure_filename
 
-import google.auth
 from google.cloud import storage
-from google.auth.exceptions import DefaultCredentialsError, GoogleAuthError
 from google.api_core import exceptions as gapi_exc
-from google.oauth2 import service_account
 
 # Si usás .env en local, esto no afecta a Cloud Run (que usa env vars del servicio)
 try:
@@ -76,38 +73,13 @@ def _wrap_endpoint_with_login(endpoint_name: str):
 # ===================== Helpers =====================
 def _client():
     """
-    Crea un cliente de GCS con este orden de preferencia:
-    1) GCP_SA_KEY_JSON (contenido JSON embebido)
-    2) GCP_SA_KEY_FILE o GOOGLE_APPLICATION_CREDENTIALS (ruta a archivo .json)
-    3) ADC (Application Default Credentials) -> recomendado en Cloud Run asignando la SA al servicio
-    Además, si GOOGLE_APPLICATION_CREDENTIALS apunta a un path inexistente, se ignora.
+    Cliente de GCS usando únicamente ADC (Application Default Credentials).
+    En Cloud Run, esto usa la service account asignada al servicio.
     """
     try:
-        key_json = os.environ.get("GCP_SA_KEY_JSON")
-        key_file = os.environ.get("GCP_SA_KEY_FILE") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-
-        # 1) JSON embebido
-        if key_json:
-            creds = service_account.Credentials.from_service_account_info(json.loads(key_json))
-            return storage.Client(project=GCP_PROJECT, credentials=creds)
-
-        # 2) Archivo en disco (solo en local o si lo montaste)
-        if key_file:
-            if os.path.exists(key_file):
-                creds = service_account.Credentials.from_service_account_file(key_file)
-                return storage.Client(project=GCP_PROJECT, credentials=creds)
-            else:
-                # Evitar que google.auth.default() intente usar un path inválido
-                logger.warning("Ignorando GOOGLE_APPLICATION_CREDENTIALS/GCP_SA_KEY_FILE=%s (no existe)", key_file)
-                os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
-
-        # 3) ADC (Cloud Run usa la service account asignada al servicio)
-        creds, proj = google.auth.default()
-        project = GCP_PROJECT or proj
-        return storage.Client(project=project, credentials=creds)
-
+        return storage.Client(project=GCP_PROJECT)
     except Exception:
-        current_app.logger.exception("No se pudo inicializar el cliente de GCS")
+        current_app.logger.exception("No se pudo inicializar el cliente de GCS (ADC)")
         raise
 
 def _slug(texto: str) -> str:
@@ -328,7 +300,7 @@ def list_files():
             orig = (b.metadata or {}).get("original_name") or b.name.rsplit("__", 1)[-1]
             try:
                 url = _signed_get(b, orig)
-            except (DefaultCredentialsError, GoogleAuthError, gapi_exc.GoogleAPICallError):
+            except Exception:
                 current_app.logger.exception("No se pudo firmar URL para %s", b.name)
                 return jsonify(success=False, msg="No se pudo firmar URL"), 500
 
