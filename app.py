@@ -55,12 +55,49 @@ def inject_role_level():
 import mysql.connector
 
 def get_db_connection():
-    return mysql.connector.connect(
-        host="127.0.0.1",
-        user="root",
-        password="asd123",
-        database="remesas"
+    db_name    = os.getenv("DB_NAME", "cajasdb")
+    db_user    = os.getenv("DB_USER", "app_cajas")
+    db_pass    = os.getenv("DB_PASS")
+    db_charset = os.getenv("DB_CHARSET", "utf8mb4")
+    db_tz      = os.getenv("DB_TIMEZONE", "America/Argentina/Buenos_Aires")
+    db_host    = os.getenv("DB_HOST", "")      # puede ser '/cloudsql/PROJECT:REGION:INSTANCE'
+    db_port    = int(os.getenv("DB_PORT", "3306"))
+
+    if not db_pass:
+        raise RuntimeError("DB_PASS no seteada")
+
+    # kwargs comunes
+    base_kwargs = dict(
+        user=db_user,
+        password=db_pass,
+        database=db_name,
+        autocommit=True,
+        charset=db_charset,
+        use_unicode=True,
     )
+
+    # Si DB_HOST empieza con /cloudsql usamos Unix Socket (Cloud SQL)
+    if db_host.startswith("/cloudsql/"):
+        conn = mysql.connector.connect(
+            unix_socket=db_host,
+            **base_kwargs
+        )
+    else:
+        # fallback a host:puerto (por ejemplo en local)
+        conn = mysql.connector.connect(
+            host=db_host or "127.0.0.1",
+            port=db_port,
+            **base_kwargs
+        )
+
+    # Setear zona horaria (opcional, si tu MySQL lo permite)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SET time_zone = %s", (db_tz,))
+    except Exception:
+        pass
+
+    return conn
 
 def _normalize_fecha(fecha):
     if isinstance(fecha, datetime):
