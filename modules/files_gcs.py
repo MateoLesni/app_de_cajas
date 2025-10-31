@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 import os, re, uuid, mimetypes, unicodedata, logging
 import datetime as dt
-from flask import Blueprint, request, jsonify, session, current_app
+from flask import Blueprint, request, jsonify, session, current_app, redirect, Response
 from werkzeug.utils import secure_filename
+from urllib.parse import quote
 
 from google.cloud import storage
 from google.api_core import exceptions as gapi_exc
 
 try:
-    # En local podés usar .env; en Cloud Run no afecta
-    from dotenv import load_dotenv
+    from dotenv import load_dotenv  # no afecta en Cloud Run
     load_dotenv()
 except Exception:
     pass
@@ -20,8 +20,7 @@ logger = logging.getLogger("files_gcs")
 
 # ===================== Config =====================
 BUCKET_NAME  = os.environ.get("GCS_BUCKET", "")
-SIGNED_TTL   = int(os.environ.get("GCS_SIGNED_URL_TTL", "600"))  # segundos
-# Ampliado por si suben HEIC/PDF (si no los querés, sacalos)
+SIGNED_TTL   = int(os.environ.get("GCS_SIGNED_URL_TTL", "600"))
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"}
 
 # ===================== Dependencias inyectadas =====================
@@ -31,36 +30,17 @@ _can_edit           = None
 _get_user_level     = None
 _normalize_fecha    = None
 
-def inject_dependencies(
-    *,
-    login_required,
-    get_db_connection,
-    can_edit,
-    get_user_level,
-    _normalize_fecha_fn
-):
-    """
-    Llamar desde app.py ANTES de registrar el blueprint:
-        from modules import files_gcs
-        files_gcs.inject_dependencies(
-            login_required=login_required,
-            get_db_connection=get_db_connection,
-            can_edit=can_edit,
-            get_user_level=get_user_level,
-            _normalize_fecha_fn=_normalize_fecha,
-        )
-        app.register_blueprint(files_gcs.bp_files, url_prefix="/files")
-    """
+def inject_dependencies(*, login_required, get_db_connection, can_edit, get_user_level, _normalize_fecha_fn):
     global _login_required, _get_db_connection, _can_edit, _get_user_level, _normalize_fecha
     _login_required    = login_required
     _get_db_connection = get_db_connection
     _can_edit          = can_edit
     _get_user_level    = get_user_level
     _normalize_fecha   = _normalize_fecha_fn
-
     _wrap_endpoint_with_login("files.upload")
     _wrap_endpoint_with_login("files.list_files")
     _wrap_endpoint_with_login("files.delete_item")
+    _wrap_endpoint_with_login("files.view_item")
 
 def _wrap_endpoint_with_login(endpoint_name: str):
     if _login_required is None:
@@ -72,11 +52,6 @@ def _wrap_endpoint_with_login(endpoint_name: str):
 
 # ===================== Helpers =====================
 def _client():
-    """
-    Usa EXCLUSIVAMENTE ADC (Application Default Credentials)
-    que provee Cloud Run con la service account asignada.
-    Ignora variables de credenciales si alguien las dejó seteadas.
-    """
     for k in ("GOOGLE_APPLICATION_CREDENTIALS", "GCP_SA_KEY_FILE", "GCP_SA_KEY_JSON"):
         os.environ.pop(k, None)
     return storage.Client()  # ADC
@@ -99,16 +74,9 @@ def _ymd_parts(fecha_yyyy_mm_dd: str):
     return y, m, d
 
 def _prefix(ctx: dict, scope: str = "day") -> str:
-    """
-    Estructura: local/tab/yyyy/mm/dd/caja/turno/
-    scope: 'day' | 'month' | 'year'
-    """
-    local = _slug(ctx["local"])
-    tab   = _slug(ctx["tab"])
-    caja  = _slug(ctx.get("caja", ""))
-    turno = _slug(ctx.get("turno", ""))
+    local = _slug(ctx["local"]); tab = _slug(ctx["tab"])
+    caja  = _slug(ctx.get("caja", "")); turno = _slug(ctx.get("turno", ""))
     yyyy, mm, dd = _ymd_parts(ctx["fecha"])
-
     base = f"{local}/{tab}/{yyyy}"
     if scope in ("month", "day"):
         base += f"/{mm}"
@@ -121,17 +89,22 @@ def _prefix(ctx: dict, scope: str = "day") -> str:
     return base
 
 def _signed_get(blob, filename):
-    """
-    Genera Signed URL (requiere roles/iam.serviceAccountTokenCreator
-    en la service account del servicio de Cloud Run).
-    Si falla, el caller lo captura y puede continuar.
-    """
     return blob.generate_signed_url(
         version="v4",
         expiration=dt.timedelta(seconds=SIGNED_TTL),
         method="GET",
         response_disposition=f'inline; filename="{filename}"',
     )
+
+def _make_view_fields(blob, orig_filename: str):
+    """Devuelve view_path (siempre utilizable) y view_url (best-effort firmado)."""
+    view_path = f"/files/view?id={quote(blob.name, safe='')}"
+    try:
+        view_url = _signed_get(blob, orig_filename)
+    except Exception:
+        current_app.logger.exception("No se pudo firmar URL para %s", blob.name)
+        view_url = view_path  # fallback seguro (redirige/ sirve el binario)
+    return view_path, view_url
 
 def _infer_ctx_from_blobname(name: str):
     parts = (name or "").split("/")
@@ -148,12 +121,6 @@ def _infer_ctx_from_blobname(name: str):
 
 @bp_files.route("/upload", methods=["POST"])
 def upload():
-    """
-    FormData:
-      files[] (1..n)
-      tab, local, caja, turno, fecha (YYYY-MM-DD)
-      [opcional] entity_type, entity_id
-    """
     if not BUCKET_NAME:
         return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
 
@@ -204,19 +171,15 @@ def upload():
                 "entity_type": entity_type or "",
                 "entity_id": str(entity_id or "")
             }
-
-            # Subida
             blob.upload_from_file(f.stream, content_type=mime)
             created_blobs.append(blob)
 
-            # Tamaño (best-effort)
             try:
                 blob.reload()
                 size_bytes = int(blob.size or 0)
             except Exception:
                 size_bytes = None
 
-            # Insert en BD
             cur.execute(
                 """
                 INSERT INTO imagenes_adjuntos
@@ -225,67 +188,39 @@ def upload():
                  gcs_path, original_name, mime, size_bytes,
                  checksum_sha256, subido_por, estado)
                 VALUES
-                (%s,%s,%s,%s,%s,
-                 %s,%s,
-                 %s,%s,%s,%s,
-                 %s,%s,'active')
+                (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'active')
                 """,
                 (
                     ctx["tab"], ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
                     entity_type, entity_id,
                     blob_name, original, mime, size_bytes,
-                    None,
-                    session.get("username") or "sistema",
+                    None, session.get("username") or "sistema",
                 ),
             )
 
-            # Firmado (best-effort)
-            view_url = None
-            try:
-                view_url = _signed_get(blob, name)
-            except Exception:
-                current_app.logger.exception("No se pudo firmar URL tras upload para %s", blob_name)
-
-            uploaded.append({"name": original, "path": blob_name, "view_url": view_url})
+            view_path, view_url = _make_view_fields(blob, name)
+            uploaded.append({"name": original, "path": blob_name, "view_url": view_url, "view_path": view_path})
 
         conn.commit()
         return jsonify(success=True, items=uploaded)
 
     except Exception as e:
-        try:
-            conn.rollback()
-        except Exception:
-            pass
-        # Borrado best-effort de blobs huérfanos
+        try: conn.rollback()
+        except Exception: pass
         for b in created_blobs:
-            try:
-                b.delete()
+            try: b.delete()
             except Exception:
                 current_app.logger.warning("No se pudo borrar blob huérfano %s", getattr(b, "name", "?"))
         current_app.logger.exception("files.upload falló")
         return jsonify(success=False, msg=str(e)), 500
-
     finally:
-        try:
-            cur.close()
-        except Exception:
-            pass
-        try:
-            conn.close()
-        except Exception:
-            pass
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
 
 @bp_files.route("/list", methods=["GET"])
 def list_files():
-    """
-    scope=day|month|year (default: day)
-    Reqs (day):   tab, local, fecha, caja, turno
-    Reqs (month/year): tab, local, fecha
-
-    Parámetros extra (opcionales):
-      - debug=1 -> adjunta diagnóstico (prefix, ctx, count)
-      - loose=1 -> si no encuentra en 'day', intenta fallback en 'month' filtrando el día
-    """
     if not BUCKET_NAME:
         return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
 
@@ -313,27 +248,19 @@ def list_files():
         client = _client()
         bucket = client.bucket(BUCKET_NAME)
         prefix = _prefix(ctx, scope=scope)
-
         current_app.logger.info("files.list prefix=%s scope=%s ctx=%s", prefix, scope, ctx)
 
         def _list_with_prefix(pfx: str):
-            items = []
-            count = 0
-            # usar client.list_blobs() o bucket.list_blobs(); ambos válidos
+            items, count = [], 0
             for b in bucket.list_blobs(prefix=pfx):
                 count += 1
                 orig = (b.metadata or {}).get("original_name") or b.name.rsplit("__", 1)[-1]
-                # firmar best-effort
-                view_url = None
-                try:
-                    view_url = _signed_get(b, orig)
-                except Exception:
-                    # Si falla, no romper el listado
-                    current_app.logger.exception("No se pudo firmar URL para %s", b.name)
+                view_path, view_url = _make_view_fields(b, orig)
                 items.append({
                     "id": b.name,
                     "name": orig,
-                    "view_url": view_url,
+                    "view_url": view_url,     # nunca "null": si no firma, apunta a /files/view?id=...
+                    "view_path": view_path,   # endpoint interno
                     "bytes": b.size or 0,
                     "mime": b.content_type or "image/*",
                     "path": b.name,
@@ -343,15 +270,11 @@ def list_files():
         out, cnt = _list_with_prefix(prefix)
         current_app.logger.info("files.list found=%d prefix=%s", cnt, prefix)
 
-        # Fallback opcional a nivel mes, filtrando el día exacto, por si caja/turno no coincidieron
         if not out and scope == "day" and loose:
             yyyy, mm, dd = _ymd_parts(ctx["fecha"])
-            month_prefix = _prefix(ctx, scope="month")  # local/tab/YYYY/MM/
-            current_app.logger.info("files.list loose=1 trying month prefix=%s (día=%s)", month_prefix, dd)
-            tmp, cnt2 = _list_with_prefix(month_prefix)
-            # filtrar por /dd/ en el path para no traer otros días
+            month_prefix = _prefix(ctx, scope="month")
+            tmp, _ = _list_with_prefix(month_prefix)
             out = [it for it in tmp if f"/{dd}/" in it["id"]]
-            current_app.logger.info("files.list loose results=%d (pre=%d)", len(out), cnt2)
 
         if debug:
             return jsonify(success=True, items=out, debug={"prefix": prefix, "scope": scope, "ctx": ctx, "count": len(out)})
@@ -362,14 +285,47 @@ def list_files():
         current_app.logger.exception("files.list falló")
         return jsonify(success=False, msg=str(e)), 500
 
-@bp_files.route("/item", methods=["DELETE"])
-def delete_item():
+@bp_files.route("/view", methods=["GET"])
+def view_item():
     """
-    DELETE /files/item?id=<blob_name>
+    /files/view?id=<blob_name>
+    Redirige a Signed URL si puede; si no, sirve el binario directo.
     """
     if not BUCKET_NAME:
         return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
 
+    blob_name = (request.args.get("id") or "").strip()
+    if not blob_name:
+        return jsonify(success=False, msg="Falta id"), 400
+
+    try:
+        client = _client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob   = bucket.get_blob(blob_name)
+        if not blob:
+            return jsonify(success=False, msg="No encontrado"), 404
+
+        filename = (blob.metadata or {}).get("original_name") or blob.name.rsplit("__", 1)[-1]
+
+        try:
+            url = _signed_get(blob, filename)
+            return redirect(url, code=302)
+        except Exception:
+            current_app.logger.exception("No se pudo firmar; sirviendo binario directo %s", blob.name)
+            data = blob.download_as_bytes()
+            mime = blob.content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            headers = {"Content-Disposition": f'inline; filename="{filename}"'}
+            return Response(data, mimetype=mime, headers=headers)
+
+    except gapi_exc.GoogleAPICallError as e:
+        return jsonify(success=False, msg=f"GCS error: {e}"), 502
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+
+@bp_files.route("/item", methods=["DELETE"])
+def delete_item():
+    if not BUCKET_NAME:
+        return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
     if not all([_get_db_connection, _can_edit, _get_user_level, _normalize_fecha]):
         return jsonify(success=False, msg="Dependencias no inicializadas"), 500
 
@@ -413,10 +369,8 @@ def delete_item():
         try:
             allowed = _can_edit(conn, _get_user_level(), local_b, caja_b, nfecha, turno_b)
         finally:
-            try:
-                conn.close()
-            except Exception:
-                pass
+            try: conn.close()
+            except Exception: pass
 
         if not allowed:
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
