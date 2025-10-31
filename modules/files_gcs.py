@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 import os, re, uuid, mimetypes, unicodedata, logging
 import datetime as dt
-from urllib.parse import quote
-
 from flask import Blueprint, request, jsonify, session, current_app
 from werkzeug.utils import secure_filename
 
 from google.cloud import storage
 from google.api_core import exceptions as gapi_exc
 
-# .env solo afecta ambientes locales; en Cloud Run no impacta
 try:
+    # En local podés usar .env; en Cloud Run no afecta
     from dotenv import load_dotenv
     load_dotenv()
 except Exception:
@@ -23,9 +21,8 @@ logger = logging.getLogger("files_gcs")
 # ===================== Config =====================
 BUCKET_NAME  = os.environ.get("GCS_BUCKET", "")
 SIGNED_TTL   = int(os.environ.get("GCS_SIGNED_URL_TTL", "600"))  # segundos
-# Ampliá si necesitás (PDF, HEIC, etc.)
-ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
-GCP_PROJECT  = os.environ.get("GCP_PROJECT")  # opcional/no requerido
+# Ampliado por si suben HEIC/PDF (si no los querés, sacalos)
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"}
 
 # ===================== Dependencias inyectadas =====================
 _login_required     = None
@@ -76,12 +73,13 @@ def _wrap_endpoint_with_login(endpoint_name: str):
 # ===================== Helpers =====================
 def _client():
     """
-    Usa exclusivamente ADC (Application Default Credentials) provistas por Cloud Run.
-    Ignora por completo cualquier variable de credenciales local.
+    Usa EXCLUSIVAMENTE ADC (Application Default Credentials)
+    que provee Cloud Run con la service account asignada.
+    Ignora variables de credenciales si alguien las dejó seteadas.
     """
     for k in ("GOOGLE_APPLICATION_CREDENTIALS", "GCP_SA_KEY_FILE", "GCP_SA_KEY_JSON"):
         os.environ.pop(k, None)
-    return storage.Client()  # ADC (no pasar project ni credentials)
+    return storage.Client()  # ADC
 
 def _slug(texto: str) -> str:
     s = (texto or "").strip().lower()
@@ -122,36 +120,18 @@ def _prefix(ctx: dict, scope: str = "day") -> str:
         base += "/"
     return base
 
-def _sanitize_ascii_filename(name: str) -> str:
-    # Evita caracteres que rompen Content-Disposition
-    base = (name or "archivo").replace('"', "").replace("\r", "").replace("\n", "")
-    base = re.sub(r"[^A-Za-z0-9._ -]+", "_", base).strip()
-    return base[:120] or "archivo"
-
 def _signed_get(blob, filename):
     """
-    Genera URL firmada V4 con filename unicode seguro.
-    Fallback sin Content-Disposition si la librería protesta.
+    Genera Signed URL (requiere roles/iam.serviceAccountTokenCreator
+    en la service account del servicio de Cloud Run).
+    Si falla, el caller lo captura y puede continuar.
     """
-    ascii_name = _sanitize_ascii_filename(filename)
-    utf8_name  = quote((filename or "archivo").encode("utf-8"))
-    try:
-        return blob.generate_signed_url(
-            version="v4",
-            expiration=dt.timedelta(seconds=SIGNED_TTL),
-            method="GET",
-            response_disposition=f'inline; filename="{ascii_name}"; filename*=UTF-8\'\'{utf8_name}',
-        )
-    except Exception as e:
-        current_app.logger.warning(
-            "Retry signed_url sin response_disposition para %s (%s)",
-            getattr(blob, "name", ""), e
-        )
-        return blob.generate_signed_url(
-            version="v4",
-            expiration=dt.timedelta(seconds=SIGNED_TTL),
-            method="GET",
-        )
+    return blob.generate_signed_url(
+        version="v4",
+        expiration=dt.timedelta(seconds=SIGNED_TTL),
+        method="GET",
+        response_disposition=f'inline; filename="{filename}"',
+    )
 
 def _infer_ctx_from_blobname(name: str):
     parts = (name or "").split("/")
@@ -215,8 +195,8 @@ def upload():
             if mime not in ALLOWED_MIME:
                 raise ValueError(f"MIME no permitido: {mime}")
 
-            safe_name = _safe_file(original)
-            blob_name = pref + f"{uuid.uuid4().hex}__{safe_name}"
+            name = _safe_file(original)
+            blob_name = pref + f"{uuid.uuid4().hex}__{name}"
             blob = bucket.blob(blob_name)
             blob.metadata = {
                 **ctx,
@@ -225,68 +205,50 @@ def upload():
                 "entity_id": str(entity_id or "")
             }
 
-            # Subida robusta
-            try:
-                blob.upload_from_file(f.stream, content_type=mime)
-            except Exception as up_e:
-                current_app.logger.exception("Error subiendo %s: %s", original, up_e)
-                # No integramos a DB ni a la respuesta si no subió
-                continue
-
+            # Subida
+            blob.upload_from_file(f.stream, content_type=mime)
             created_blobs.append(blob)
 
-            # Tamaño (si falla reload, lo toleramos)
+            # Tamaño (best-effort)
             try:
                 blob.reload()
                 size_bytes = int(blob.size or 0)
             except Exception:
                 size_bytes = None
 
-            # Insert DB (si falla DB, intentamos borrar el blob)
-            try:
-                cur.execute(
-                    """
-                    INSERT INTO imagenes_adjuntos
-                    (tab, local, caja, turno, fecha,
-                     entity_type, entity_id,
-                     gcs_path, original_name, mime, size_bytes,
-                     checksum_sha256, subido_por, estado)
-                    VALUES
-                    (%s,%s,%s,%s,%s,
-                     %s,%s,
-                     %s,%s,%s,%s,
-                     %s,%s,'active')
-                    """,
-                    (
-                        ctx["tab"], ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
-                        entity_type, entity_id,
-                        blob_name, original, mime, size_bytes,
-                        None,
-                        session.get("username") or "sistema",
-                    ),
-                )
-            except Exception as db_e:
-                current_app.logger.exception("DB insert falló para %s, borrando blob. Error: %s", blob_name, db_e)
-                try:
-                    blob.delete()
-                except Exception as de:
-                    current_app.logger.warning("No se pudo borrar blob huérfano %s: %s", blob_name, de)
-                # No cortamos todo el upload por un item con error
-                continue
+            # Insert en BD
+            cur.execute(
+                """
+                INSERT INTO imagenes_adjuntos
+                (tab, local, caja, turno, fecha,
+                 entity_type, entity_id,
+                 gcs_path, original_name, mime, size_bytes,
+                 checksum_sha256, subido_por, estado)
+                VALUES
+                (%s,%s,%s,%s,%s,
+                 %s,%s,
+                 %s,%s,%s,%s,
+                 %s,%s,'active')
+                """,
+                (
+                    ctx["tab"], ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
+                    entity_type, entity_id,
+                    blob_name, original, mime, size_bytes,
+                    None,
+                    session.get("username") or "sistema",
+                ),
+            )
 
-            # Firmar URL (tolerante)
+            # Firmado (best-effort)
             view_url = None
             try:
-                view_url = _signed_get(blob, safe_name)
-            except Exception as sig_e:
-                current_app.logger.warning("No se pudo firmar URL para %s: %s", blob_name, sig_e)
-                # Devolvemos item sin view_url; la UI podrá refrescar con /list
+                view_url = _signed_get(blob, name)
+            except Exception:
+                current_app.logger.exception("No se pudo firmar URL tras upload para %s", blob_name)
 
             uploaded.append({"name": original, "path": blob_name, "view_url": view_url})
 
         conn.commit()
-        if not uploaded:
-            return jsonify(success=False, msg="No se pudo subir ningún archivo"), 500
         return jsonify(success=True, items=uploaded)
 
     except Exception as e:
@@ -294,7 +256,7 @@ def upload():
             conn.rollback()
         except Exception:
             pass
-        # Intentamos limpiar solo lo que subimos y aún no insertamos correctamente
+        # Borrado best-effort de blobs huérfanos
         for b in created_blobs:
             try:
                 b.delete()
@@ -319,6 +281,10 @@ def list_files():
     scope=day|month|year (default: day)
     Reqs (day):   tab, local, fecha, caja, turno
     Reqs (month/year): tab, local, fecha
+
+    Parámetros extra (opcionales):
+      - debug=1 -> adjunta diagnóstico (prefix, ctx, count)
+      - loose=1 -> si no encuentra en 'day', intenta fallback en 'month' filtrando el día
     """
     if not BUCKET_NAME:
         return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
@@ -334,6 +300,8 @@ def list_files():
         "turno": request.args.get("turno", "").strip(),
         "fecha": request.args.get("fecha", "").strip(),
     }
+    debug = (request.args.get("debug") or "0").strip() == "1"
+    loose = (request.args.get("loose") or "0").strip() == "1"
 
     required = ("tab", "local", "fecha") if scope in ("month", "year") else ("tab", "local", "fecha", "caja", "turno")
     faltantes = [k for k in required if not ctx[k]]
@@ -345,27 +313,51 @@ def list_files():
         client = _client()
         bucket = client.bucket(BUCKET_NAME)
         prefix = _prefix(ctx, scope=scope)
-        blobs  = bucket.list_blobs(prefix=prefix)
 
-        out = []
-        for b in blobs:
-            orig = (b.metadata or {}).get("original_name") or b.name.rsplit("__", 1)[-1]
-            try:
-                url = _signed_get(b, orig)
-            except Exception as e:
-                # No rompemos todo por un solo objeto con nombre conflictivo
-                current_app.logger.warning("No se pudo firmar URL para %s (%s). Se omite el item.", b.name, e)
-                continue
+        current_app.logger.info("files.list prefix=%s scope=%s ctx=%s", prefix, scope, ctx)
 
-            out.append({
-                "id": b.name,
-                "name": orig,
-                "view_url": url,
-                "bytes": b.size or 0,
-                "mime": b.content_type or "image/*",
-                "path": b.name,
-            })
+        def _list_with_prefix(pfx: str):
+            items = []
+            count = 0
+            # usar client.list_blobs() o bucket.list_blobs(); ambos válidos
+            for b in bucket.list_blobs(prefix=pfx):
+                count += 1
+                orig = (b.metadata or {}).get("original_name") or b.name.rsplit("__", 1)[-1]
+                # firmar best-effort
+                view_url = None
+                try:
+                    view_url = _signed_get(b, orig)
+                except Exception:
+                    # Si falla, no romper el listado
+                    current_app.logger.exception("No se pudo firmar URL para %s", b.name)
+                items.append({
+                    "id": b.name,
+                    "name": orig,
+                    "view_url": view_url,
+                    "bytes": b.size or 0,
+                    "mime": b.content_type or "image/*",
+                    "path": b.name,
+                })
+            return items, count
+
+        out, cnt = _list_with_prefix(prefix)
+        current_app.logger.info("files.list found=%d prefix=%s", cnt, prefix)
+
+        # Fallback opcional a nivel mes, filtrando el día exacto, por si caja/turno no coincidieron
+        if not out and scope == "day" and loose:
+            yyyy, mm, dd = _ymd_parts(ctx["fecha"])
+            month_prefix = _prefix(ctx, scope="month")  # local/tab/YYYY/MM/
+            current_app.logger.info("files.list loose=1 trying month prefix=%s (día=%s)", month_prefix, dd)
+            tmp, cnt2 = _list_with_prefix(month_prefix)
+            # filtrar por /dd/ en el path para no traer otros días
+            out = [it for it in tmp if f"/{dd}/" in it["id"]]
+            current_app.logger.info("files.list loose results=%d (pre=%d)", len(out), cnt2)
+
+        if debug:
+            return jsonify(success=True, items=out, debug={"prefix": prefix, "scope": scope, "ctx": ctx, "count": len(out)})
+
         return jsonify(success=True, items=out)
+
     except Exception as e:
         current_app.logger.exception("files.list falló")
         return jsonify(success=False, msg=str(e)), 500
@@ -407,10 +399,7 @@ def delete_item():
             inferred = _infer_ctx_from_blobname(blob.name)
             if not inferred:
                 return jsonify(success=False, msg="No se pudo determinar el contexto del adjunto"), 409
-            local_b = inferred["local"]
-            caja_b  = inferred["caja"]
-            turno_b = inferred["turno"]
-            fecha_b = inferred["fecha"]
+            local_b = inferred["local"]; caja_b = inferred["caja"]; turno_b = inferred["turno"]; fecha_b = inferred["fecha"]
 
         try:
             nfecha = _normalize_fecha(fecha_b)
