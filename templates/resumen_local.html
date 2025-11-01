@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/resumen_local.css') }}">
 
   <style>
-    /* Botón de acción crítica (bien visible) */
+    /* Botón de acción crítica */
     .btn-danger-strong{
       display:inline-flex; align-items:center; gap:10px;
       padding:14px 20px; font-weight:800; border-radius:12px;
@@ -29,6 +29,32 @@
     }
     .sl-badge-open{ background:#e0f2fe; color:#075985; border:1px solid #7dd3fc; }
     .sl-badge-closed{ background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+
+    .muted { opacity:.7; }
+    .negative-amount { color:#b91c1c; font-weight:700; }
+
+    /* ================================
+       Acordeones: comportamiento visual
+       ================================ */
+
+    /* 1) FORZAR gris fuerte SIEMPRE en los encabezados de los acordeones globales */
+    /* (la caja .sl-title que está directamente dentro de .sl-section) */
+    .sl-section > .sl-title {
+      background: #5f6672 !important; /* gris fuerte */
+      color: #fff !important;
+    }
+    /* Al abrir, mantener el mismo color (evita que cambie a gris claro) */
+    .acc[aria-expanded="true"] > .sl-title {
+      background: #5f6672 !important;
+      color: #fff !important;
+    }
+
+    /* 2) Para sub-acordeones (filas con .sl-row): que el encabezado NO cambie de color al abrir */
+    .sub-acc .sl-row { transition: background .2s, color .2s; }
+    .acc[aria-expanded="true"] > .sl-row {
+      background: inherit !important;
+      color: inherit !important;
+    }
   </style>
 </head>
 <body>
@@ -53,7 +79,6 @@
           Carga de Datos
         </a>
 
-        <!-- Grupo: Reportería (desplegable) -->
         <div class="nav-group {% if request.path.startswith('/reporteria') %}is-open{% endif %}">
           <a href="javascript:void(0)"
             id="navReportes"
@@ -125,7 +150,6 @@
             <header class="sl-head">
               <h1 id="sl-title">
                 Cierre Global del Día
-                <!-- Badge de estado del LOCAL -->
                 <span id="rl-badge-estado" class="sl-badge" style="display:none;"></span>
               </h1>
               <div class="sl-meta">
@@ -152,8 +176,35 @@
               <section class="sl-section acc" aria-expanded="true" data-acc="general">
                 <div class="sl-title">Ventas</div>
                 <div class="acc-body">
+                  <!-- Ventas Z: total en fila, detalle al abrir -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Ventas Z</span>
+                      <span class="amount r" id="rl-vz-total">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <table class="sl-table">
+                        <thead>
+                          <tr>
+                            <th>Z (PV-Número)</th>
+                            <th class="r">Monto</th>
+                          </tr>
+                        </thead>
+                        <tbody id="rl-vz-items">
+                          <tr class="muted"><td colspan="2">Sin ventas z cargadas</td></tr>
+                        </tbody>
+                        <tfoot>
+                          <tr class="sl-total">
+                            <td>Total</td>
+                            <td class="r" id="rl-vz-total-foot">0,00</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Discovery (simple) -->
                   <table class="sl-table">
-                    <tr><td>Vta Z</td><td class="r" id="rl-vta-z">0,00</td></tr>
                     <tr><td>Discovery</td><td class="r" id="rl-discovery">0,00</td></tr>
                   </table>
                 </div>
@@ -171,14 +222,75 @@
                       <span class="amount r" id="rl-cash">0,00</span>
                     </div>
                     <div class="acc-body">
+                      <!-- Solo Remesas retiradas / no retiradas -->
+                      <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                        <div class="sl-row">
+                          <span class="label">Remesas retiradas</span>
+                          <span class="amount r">
+                            <span id="rl-remesas-ret-total">0,00</span>
+                            <span class="muted">(<span id="rl-remesas-ret-count">0</span>)</span>
+                          </span>
+                        </div>
+                        <div class="acc-body">
+                          <table class="sl-table">
+                            <thead>
+                              <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th class="r">Monto</th>
+                              </tr>
+                            </thead>
+                            <tbody id="rl-remesas-ret-items">
+                              <tr class="muted"><td colspan="3">Sin datos…</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                        <div class="sl-row">
+                          <span class="label">Remesas no retiradas</span>
+                          <span class="amount r">
+                            <span id="rl-remesas-no-ret-total">0,00</span>
+                            <span class="muted">(<span id="rl-remesas-no-ret-count">0</span>)</span>
+                          </span>
+                        </div>
+                        <div class="acc-body">
+                          <table class="sl-table">
+                            <thead>
+                              <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th class="r">Monto</th>
+                              </tr>
+                            </thead>
+                            <tbody id="rl-remesas-no-ret-items">
+                              <tr class="muted"><td colspan="3">Sin datos…</td></tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mercado Pago -->
+                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
+                    <div class="sl-row">
+                      <span class="label">Mercado Pago</span>
+                      <span class="amount r" id="rl-mp">0,00</span>
+                    </div>
+                    <div class="acc-body">
+                      <!-- Solo Tips Mercado Pago -->
                       <table class="sl-table">
-                        <tr><td>Remesas</td><td class="r" id="rl-remesas">0,00</td></tr>
-                        <tr class="sl-total"><td>Neto efectivo</td><td class="r" id="rl-cash-neto">0,00</td></tr>
+                        <tr>
+                          <td>Tips Mercado Pago</td>
+                          <td class="r" id="rl-mp-tips">0,00</td>
+                        </tr>
                       </table>
                     </div>
                   </div>
 
-                  <!-- Tarjeta -->
+                  <!-- Tarjeta (ventas por tarjeta) -->
                   <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
                     <div class="sl-row">
                       <span class="label">Tarjeta</span>
@@ -207,19 +319,6 @@
                         <tr><td>PAGOS INMEDIATOS</td><td class="r" id="rl-tj-pagos-inm">0,00</td></tr>
 
                         <tr class="sl-total"><td>Total tarjetas</td><td class="r" id="rl-card-total">0,00</td></tr>
-                      </table>
-                    </div>
-                  </div>
-
-                  <!-- Mercado Pago -->
-                  <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
-                    <div class="sl-row">
-                      <span class="label">Mercado Pago</span>
-                      <span class="amount r" id="rl-mp">0,00</span>
-                    </div>
-                    <div class="acc-body">
-                      <table class="sl-table">
-                        <tr><td>Propinas MP</td><td class="r" id="rl-mp-tips">0,00</td></tr>
                       </table>
                     </div>
                   </div>
@@ -278,7 +377,7 @@
                     </div>
                   </div>
 
-                  <!-- TIPs -->
+                  <!-- TIPs: tarjetas + MP + totales -->
                   <div class="sub-acc acc" aria-expanded="false" data-acc="sub">
                     <div class="sl-row">
                       <span class="label">TIPs</span>
@@ -287,6 +386,29 @@
                     <div class="acc-body">
                       <table class="sl-table">
                         <tr><td>Total propinas</td><td class="r" id="rl-tips-det">0,00</td></tr>
+                        <tr><td>Mercado Pago</td><td class="r" id="rl-tips-mp">0,00</td></tr>
+
+                        <tr><td>VISA</td><td class="r" id="rl-tip-visa">0,00</td></tr>
+                        <tr><td>VISA DÉBITO</td><td class="r" id="rl-tip-visa-deb">0,00</td></tr>
+                        <tr><td>VISA PREPAGO</td><td class="r" id="rl-tip-visa-pre">0,00</td></tr>
+
+                        <tr><td>MASTERCARD</td><td class="r" id="rl-tip-mc">0,00</td></tr>
+                        <tr><td>MASTERCARD DÉBITO</td><td class="r" id="rl-tip-mc-deb">0,00</td></tr>
+                        <tr><td>MASTERCARD PREPAGO</td><td class="r" id="rl-tip-mc-pre">0,00</td></tr>
+
+                        <tr><td>CABAL</td><td class="r" id="rl-tip-cabal">0,00</td></tr>
+                        <tr><td>CABAL DÉBITO</td><td class="r" id="rl-tip-cabal-deb">0,00</td></tr>
+
+                        <tr><td>AMEX</td><td class="r" id="rl-tip-amex">0,00</td></tr>
+                        <tr><td>MAESTRO</td><td class="r" id="rl-tip-maestro">0,00</td></tr>
+
+                        <tr><td>NARANJA</td><td class="r" id="rl-tip-naranja">0,00</td></tr>
+                        <tr><td>DECIDIR</td><td class="r" id="rl-tip-decidir">0,00</td></tr>
+                        <tr><td>DINERS</td><td class="r" id="rl-tip-diners">0,00</td></tr>
+
+                        <tr><td>PAGOS INMEDIATOS</td><td class="r" id="rl-tip-pagos-inm">0,00</td></tr>
+
+                        <tr class="sl-total"><td>Propinas Tarjetas</td><td class="r" id="rl-tips-tarjetas">0,00</td></tr>
                       </table>
                     </div>
                   </div>
@@ -302,7 +424,6 @@
             </footer>
           </section>
 
-          <!-- Acción crítica (visible solo para L2+) -->
           {% if session.get('role_level', 1) >= 2 %}
             <div class="sl-danger-wrap">
               <button id="rl-cerrar-local" class="btn-danger-strong" title="Cerrar el Local del día y congelar snapshot">
@@ -313,7 +434,6 @@
         </div>
       </div>
     </main>
-    <!-- /Main -->
   </div>
 
   <!-- Marca activo en la sidebar según la URL actual -->
@@ -348,7 +468,7 @@
   });
   </script>
 
-  <!-- Inyección de nivel para uso opcional en JS -->
+  <!-- Nivel -->
   <script>window.ROLE_LEVEL = {{ session.get('role_level', 1) | int }};</script>
 
   <!-- JS de esta vista -->
