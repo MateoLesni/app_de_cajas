@@ -27,8 +27,6 @@
     el.textContent = val;
   }
 
-  function setMoney(id, val) { setText(id, money(val)); }
-
   function nowTime() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, "0");
@@ -41,6 +39,64 @@
     const d = new Date();
     const pad = (n) => String(n).padStart(2, "0");
     input.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  // ---------- Copy helpers ----------
+  function getCopyTextFromElement(el) {
+    if (!el) return "";
+    if (el.dataset && el.dataset.copy) return String(el.dataset.copy);
+    const clone = el.cloneNode(true);
+    const btns = clone.querySelectorAll?.(".copy-btn");
+    if (btns && btns.length) btns.forEach((b) => b.remove());
+    return (clone.textContent || "").trim();
+  }
+
+  function addCopyButton(targetElement, getTextFn) {
+    if (!targetElement) return;
+    const existing = targetElement.querySelector(":scope > .copy-btn");
+    if (existing) return existing;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.style.marginLeft = "6px";
+    btn.style.fontSize = "11px";
+    btn.style.lineHeight = "1";
+    btn.style.padding = "2px 6px";
+    btn.style.border = "1px solid #cbd5e1";
+    btn.style.borderRadius = "6px";
+    btn.style.background = "#f8fafc";
+    btn.style.cursor = "pointer";
+    btn.title = "Copiar";
+    btn.textContent = "⧉";
+
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        const text =
+          typeof getTextFn === "function"
+            ? String(getTextFn())
+            : getCopyTextFromElement(targetElement);
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "✔";
+        setTimeout(() => (btn.textContent = "⧉"), 900);
+      } catch {
+        btn.textContent = "!";
+        setTimeout(() => (btn.textContent = "⧉"), 900);
+      }
+    });
+
+    targetElement.appendChild(btn);
+    return btn;
+  }
+
+  function setMoneyWithCopy(id, val) {
+    const el = typeof id === "string" ? document.getElementById(id) : id;
+    if (!el) return;
+    const txt = money(val);
+    el.textContent = txt;
+    el.dataset.copy = txt;
+    addCopyButton(el);
   }
 
   // ---------- Acordeones ----------
@@ -67,6 +123,52 @@
     });
   }
 
+  function addCopyToLabelCellsWithin(container) {
+    if (!container) return;
+    const rows = container.querySelectorAll("tbody tr, tr:not(:has(th))");
+    rows.forEach((tr) => {
+      const td = tr.querySelector("td:first-child");
+      if (!td) return;
+      const baseText = getCopyTextFromElement(td);
+      if (!baseText) return;
+      addCopyButton(td, () => baseText);
+    });
+  }
+
+  // ---------- Z display formatter (PV 5 dígitos – Número 8 dígitos) ----------
+  function formatZDisplay(it) {
+    // Si el back ya trae z_display correcto, lo usamos
+    const fromBack = (it && (it.z_display || "")).toString().trim();
+    if (fromBack) return fromBack;
+
+    // Intentamos encontrar PV y Número desde múltiples campos posibles
+    const pvRaw =
+      it?.z_pv ??
+      it?.pv ??
+      it?.pto_venta ??
+      it?.punto_venta ??
+      it?.pv_numero ??
+      it?.puntoVenta ??
+      0;
+
+    const numRaw =
+      it?.z_numero ??
+      it?.numero_z ??
+      it?.nro_z ??
+      it?.num_z ??
+      it?.numero ??
+      it?.z ??
+      0;
+
+    const pv = String(pvRaw ?? 0).replace(/\D+/g, "");
+    const num = String(numRaw ?? 0).replace(/\D+/g, "");
+
+    const pv5 = pv.padStart(5, "0");
+    const n8 = num.padStart(8, "0");
+
+    return `${pv5}-${n8}`;
+  }
+
   // ---------- Render ----------
   function renderResumen(data) {
     try {
@@ -78,9 +180,9 @@
 
       // ===== RESUMEN =====
       const r = data?.resumen || {};
-      setMoney("rl-venta-total", r.venta_total);
-      setMoney("rl-total-cobrado", r.total_cobrado);
-      setMoney("rl-diferencia", r.diferencia);
+      setMoneyWithCopy("rl-venta-total", r.venta_total);
+      setMoneyWithCopy("rl-total-cobrado", r.total_cobrado);
+      setMoneyWithCopy("rl-diferencia", r.diferencia);
 
       const diffEl = document.getElementById("rl-diferencia");
       if (diffEl) {
@@ -90,68 +192,143 @@
 
       // ===== VENTAS =====
       const v = data?.ventas || {};
-      setMoney("rl-vta-z", v.vta_z_total);
-      setMoney("rl-discovery", v.discovery);
+      setMoneyWithCopy("rl-vz-total", v.vta_z_total);
+      setMoneyWithCopy("rl-vz-total-foot", v.vta_z_total);
+      setMoneyWithCopy("rl-discovery", v.discovery);
+
+      // Detalle Ventas Z
+      const tbVz = document.getElementById("rl-vz-items");
+      if (tbVz) {
+        tbVz.innerHTML = "";
+        const items = Array.isArray(v.z_items) ? v.z_items : [];
+        if (!items.length) {
+          const tr = document.createElement("tr");
+          tr.className = "muted";
+          const td = document.createElement("td");
+          td.colSpan = 2;
+          td.textContent = "Sin ventas z cargadas";
+          tr.appendChild(td);
+          tbVz.appendChild(tr);
+        } else {
+          items.forEach((it) => {
+            const tr = document.createElement("tr");
+
+            // Siempre 00000-00000000 como en el Excel oficial
+            const display = formatZDisplay(it);
+
+            const tdName = document.createElement("td");
+            tdName.textContent = display;
+            tdName.dataset.copy = display;
+            addCopyButton(tdName);
+
+            const tdAmt = document.createElement("td");
+            tdAmt.className = "r";
+            const amtTxt = money(it?.monto || 0);
+            tdAmt.textContent = amtTxt;
+            tdAmt.dataset.copy = amtTxt;
+            addCopyButton(tdAmt);
+
+            tr.appendChild(tdName);
+            tr.appendChild(tdAmt);
+            tbVz.appendChild(tr);
+          });
+        }
+        const vzFoot = document.getElementById("rl-vz-total-foot");
+        if (vzFoot) addCopyButton(vzFoot);
+        addCopyToLabelCellsWithin(tbVz.closest("table"));
+      }
 
       // ===== INFORMACIÓN =====
       const info = data?.info || {};
 
       // Efectivo
-      setMoney("rl-cash", info?.efectivo?.total);
-      setMoney("rl-remesas", info?.efectivo?.remesas);
-      setMoney("rl-cash-neto", info?.efectivo?.neto_efectivo);
+      setMoneyWithCopy("rl-cash", info?.efectivo?.total);
+      setMoneyWithCopy("rl-remesas", info?.efectivo?.remesas);
+      setMoneyWithCopy("rl-cash-neto", info?.efectivo?.neto_efectivo);
 
-      // Tarjeta + breakdown
-      setMoney("rl-card", info?.tarjeta?.total);
+      // Si usás totales por retiradas/no retiradas
+      setMoneyWithCopy("rl-remesas-ret-total", info?.efectivo?.retiradas_total);
+      setMoneyWithCopy("rl-remesas-no-ret-total", info?.efectivo?.no_retiradas_total);
+
+      // Tarjeta + breakdown (VENTAS por tarjeta)
+      setMoneyWithCopy("rl-card", info?.tarjeta?.total);
       const bk = info?.tarjeta?.breakdown || {};
-      setMoney("rl-tj-visa", bk["VISA"]);
-      setMoney("rl-tj-visa-deb", bk["VISA DEBITO"]);
-      setMoney("rl-tj-mc", bk["MASTERCARD"]);
-      setMoney("rl-tj-mc-deb", bk["MASTERCARD DEBITO"]);
-      setMoney("rl-tj-cabal", bk["CABAL"]);
-      setMoney("rl-tj-cabal-deb", bk["CABAL DEBITO"]);
-      setMoney("rl-tj-amex", bk["AMEX"]);
-      setMoney("rl-tj-maestro", bk["MAESTRO"]);
-      setMoney("rl-tj-pagos-inm", bk["PAGOS INMEDIATOS"]);
-      setMoney("rl-card-total", info?.tarjeta?.total);
+      setMoneyWithCopy("rl-tj-visa", bk["VISA"]);
+      setMoneyWithCopy("rl-tj-visa-deb", bk["VISA DEBITO"]);
+      setMoneyWithCopy("rl-tj-visa-pre", bk["VISA PREPAGO"]);
+      setMoneyWithCopy("rl-tj-mc", bk["MASTERCARD"]);
+      setMoneyWithCopy("rl-tj-mc-deb", bk["MASTERCARD DEBITO"]);
+      setMoneyWithCopy("rl-tj-mc-pre", bk["MASTERCARD PREPAGO"]);
+      setMoneyWithCopy("rl-tj-cabal", bk["CABAL"]);
+      setMoneyWithCopy("rl-tj-cabal-deb", bk["CABAL DEBITO"]);
+      setMoneyWithCopy("rl-tj-amex", bk["AMEX"]);
+      setMoneyWithCopy("rl-tj-maestro", bk["MAESTRO"]);
+      setMoneyWithCopy("rl-tj-naranja", bk["NARANJA"]);
+      setMoneyWithCopy("rl-tj-decidir", bk["DECIDIR"]);
+      setMoneyWithCopy("rl-tj-diners", bk["DINERS"]);
+      setMoneyWithCopy("rl-tj-pagos-inm", bk["PAGOS INMEDIATOS"]);
+      setMoneyWithCopy("rl-card-total", info?.tarjeta?.total);
 
-      // MP
-      setMoney("rl-mp", info?.mercadopago?.total);
-      setMoney("rl-mp-tips", info?.mercadopago?.tips);
+      // Mercado Pago
+      setMoneyWithCopy("rl-mp", info?.mercadopago?.total);
+      setMoneyWithCopy("rl-mp-tips", info?.mercadopago?.tips);
 
       // Rappi
-      setMoney("rl-rappi", info?.rappi?.total);
-      setMoney("rl-rappi-det", info?.rappi?.total);
+      setMoneyWithCopy("rl-rappi", info?.rappi?.total);
+      setMoneyWithCopy("rl-rappi-det", info?.rappi?.total);
 
       // PedidosYa
-      setMoney("rl-pedidosya", info?.pedidosya?.total);
-      setMoney("rl-pedidosya-det", info?.pedidosya?.total);
+      setMoneyWithCopy("rl-pedidosya", info?.pedidosya?.total);
+      setMoneyWithCopy("rl-pedidosya-det", info?.pedidosya?.total);
 
       // Gastos
-      setMoney("rl-gastos", info?.gastos?.total);
-      setMoney("rl-g-caja", info?.gastos?.caja_chica);
-      setMoney("rl-g-otros", info?.gastos?.otros);
-      setMoney("rl-g-total", info?.gastos?.total);
+      setMoneyWithCopy("rl-gastos", info?.gastos?.total);
+      setMoneyWithCopy("rl-g-caja", info?.gastos?.caja_chica);
+      setMoneyWithCopy("rl-g-otros", info?.gastos?.otros);
+      setMoneyWithCopy("rl-g-total", info?.gastos?.total);
 
       // Cuenta Corriente
-      setMoney("rl-cta-cte", info?.cuenta_cte?.total);
-      setMoney("rl-cta-cte-det", info?.cuenta_cte?.total);
+      setMoneyWithCopy("rl-cta-cte", info?.cuenta_cte?.total);
+      setMoneyWithCopy("rl-cta-cte-det", info?.cuenta_cte?.total);
 
-      // TIPs
-      setMoney("rl-tips", info?.tips?.total);
-      setMoney("rl-tips-det", info?.tips?.total);
+      // TIPs (totales + detalle por tarjeta + MP)
+      setMoneyWithCopy("rl-tips", info?.tips?.total);
+      setMoneyWithCopy("rl-tips-det", info?.tips?.total);
+      setMoneyWithCopy("rl-tips-mp", info?.tips?.mp);
+      setMoneyWithCopy("rl-tips-tarjetas", info?.tips?.tarjetas);
+
+      const tbTipsBreakdown = info?.tips?.breakdown || {};
+      const tipIdMap = {
+        "VISA": "rl-tip-visa",
+        "VISA DEBITO": "rl-tip-visa-deb",
+        "VISA PREPAGO": "rl-tip-visa-pre",
+        "MASTERCARD": "rl-tip-mc",
+        "MASTERCARD DEBITO": "rl-tip-mc-deb",
+        "MASTERCARD PREPAGO": "rl-tip-mc-pre",
+        "CABAL": "rl-tip-cabal",
+        "CABAL DEBITO": "rl-tip-cabal-deb",
+        "AMEX": "rl-tip-amex",
+        "MAESTRO": "rl-tip-maestro",
+        "NARANJA": "rl-tip-naranja",
+        "DECIDIR": "rl-tip-decidir",
+        "DINERS": "rl-tip-diners",
+        "PAGOS INMEDIATOS": "rl-tip-pagos-inm",
+      };
+      Object.entries(tipIdMap).forEach(([marca, id]) => {
+        setMoneyWithCopy(id, tbTipsBreakdown[marca] || 0);
+      });
+
+      // Copy en labels dentro de tablas
+      addCopyToLabelCellsWithin(document.getElementById("rl-tj-visa")?.closest("table"));
+      addCopyToLabelCellsWithin(document.getElementById("rl-mp-tips")?.closest("table"));
+      ["rl-rappi-det", "rl-pedidosya-det", "rl-g-total", "rl-cta-cte-det", "rl-tips-det"].forEach((id) => {
+        const tbl = document.getElementById(id)?.closest("table");
+        if (tbl) addCopyToLabelCellsWithin(tbl);
+      });
+
     } catch (e) {
       console.error("renderResumen error:", e);
     }
-  }
-
-  function escapeHtml(str) {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
   }
 
   // ---------- Fetch ----------
@@ -172,23 +349,20 @@
 
     const data = await fetchResumenLocal({ local, fecha });
     renderResumen(data);
-    await refreshEstadoLocalBadge(); // badge + botón cerrar
+    await refreshEstadoLocalBadge();
   }
 
   // ========= Estado del LOCAL + botón de cierre =========
   async function refreshEstadoLocalBadge() {
     const fecha = $("#rl-fecha")?.value;
-    const local = ($("#rl-local-display")?.textContent || "").trim();
     const badge = $("#rl-badge-estado");
     const btn   = $("#rl-cerrar-local");
-
-    if (!fecha || !local) return;
+    if (!fecha) return;
 
     try {
       const url = `/estado_local?fecha=${encodeURIComponent(fecha)}`;
       const r = await fetch(url, { cache: "no-store" });
       const d = r.ok ? await r.json() : { ok:false };
-      // d.estado: 1=abierto, 0=cerrado
       const abierto = (d?.estado ?? 1) === 1;
 
       if (badge) {
@@ -198,20 +372,15 @@
         badge.classList.toggle("sl-badge-closed", !abierto);
       }
       if (btn) {
-        btn.disabled = !abierto; // solo habilitado si aún está abierto
+        btn.disabled = !abierto;
         btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado";
       }
-    } catch {
-      // si falla, no rompemos la UI
-    }
+    } catch { /* noop */ }
   }
 
   async function cerrarLocal() {
     const fecha = $("#rl-fecha")?.value;
-    if (!fecha) {
-      alert("Seleccioná una fecha.");
-      return;
-    }
+    if (!fecha) { alert("Seleccioná una fecha."); return; }
 
     if (!confirm(`Esto cerrará el LOCAL para ${fecha}.\n- Bloquea edición para nivel 2.\n- Genera el snapshot para auditoría.\n\n¿Confirmás?`)) {
       return;
@@ -221,7 +390,6 @@
     const oldTxt = btn ? btn.textContent : "";
     try {
       if (btn) { btn.disabled = true; btn.textContent = "Cerrando…"; }
-
       const r = await fetch("/api/cierre_local", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -239,8 +407,8 @@
       }
 
       alert("✅ Local cerrado y snapshot creado.");
-      await updateResumen();            // refresca datos
-      await refreshEstadoLocalBadge();  // deshabilita botón/actualiza badge
+      await updateResumen();
+      await refreshEstadoLocalBadge();
     } catch (e) {
       console.error(e);
       alert("❌ Error de red.");
@@ -251,7 +419,6 @@
 
   // ---------- Boot ----------
   document.addEventListener("DOMContentLoaded", () => {
-    // Fecha por defecto, top bar, hora
     const inFecha = document.getElementById("rl-fecha");
     setTodayIfEmpty(inFecha);
 
@@ -261,7 +428,6 @@
     setText("rl-hora-display", nowTime());
     setText("rl-updated-at", new Date().toLocaleString("es-AR"));
 
-    // Sidebar toggle
     const btnSidebar = document.getElementById("toggleSidebar");
     const root = document.querySelector(".layout");
     if (btnSidebar && root) {
@@ -270,19 +436,14 @@
       );
     }
 
-    // Acordeones
     bindGeneralAccordions();
     bindSubAccordions();
 
-    // Eventos
     document.getElementById("rl-actualizar")?.addEventListener("click", () => updateResumen().catch(console.error));
     document.getElementById("rl-fecha")?.addEventListener("change", () => updateResumen().catch(console.error));
     document.getElementById("rl-cerrar-local")?.addEventListener("click", cerrarLocal);
 
-    // Carga inicial
     updateResumen().catch(console.error);
-
-    // Imprimir
     document.getElementById("rl-imprimir")?.addEventListener("click", () => window.print());
   });
 })();

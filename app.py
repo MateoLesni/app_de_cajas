@@ -61,7 +61,7 @@ def get_db_connection():
     db_charset = os.getenv("DB_CHARSET", "utf8mb4")
     db_tz      = os.getenv("DB_TIMEZONE", "America/Argentina/Buenos_Aires")
     db_host    = os.getenv("DB_HOST", "")      # puede ser '/cloudsql/PROJECT:REGION:INSTANCE'
-    db_port    = int(os.getenv("DB_PORT", "3306"))
+    db_port    = int(os.getenv("DB_PORT", ""))
 
     if not db_pass:
         raise RuntimeError("DB_PASS no seteada")
@@ -2644,7 +2644,6 @@ def borrar_gasto(gasto_id):
 
 
 
-
 # ___________ RESUMEN_LOCAL.HTML _____________________________-#
 # ========= Vista =========
 @app.route("/resumen-local")
@@ -2666,38 +2665,24 @@ def _qsum(cur, sql, params):
     row = cur.fetchone()
     return float(row[0]) if row and row[0] is not None else 0.0
 
+def _leftpad(num, width):
+    try:
+        s = str(int(num))
+    except Exception:
+        s = str(num or "0")
+    return s.zfill(width)
+
+def _format_z(pv, nz):
+    return f"{_leftpad(pv,5)}-{_leftpad(nz,8)}"
+
 def _fetch_ventas_z(conn, cur, fecha, local):
     """
     Devuelve (items, total):
-      items = [{'numero_z': '123', 'monto': 1000.0}, ...]
+      items = [{'pv': '5', 'punto_venta': '5', 'numero_z': '1691', 'monto': 1000.0, 'z_display': '00005-00001691'}, ...]
       total = suma de los montos
+    (Versión legacy sin nombre de tabla; usa ventas_z_trns)
     """
-    numero_cols = ["numero_z", "nro_z", "z_numero", "num_z"]
-    monto_cols  = ["monto", "importe", "total"]
-    last_error = None
-
-    for ncol in numero_cols:
-        for mcol in monto_cols:
-            try:
-                cur.execute(
-                    f"""
-                    SELECT {ncol} AS znum, COALESCE(SUM({mcol}),0) AS total
-                    FROM ventas_z_trns
-                    WHERE DATE(fecha)=%s AND local=%s
-                    GROUP BY {ncol}
-                    ORDER BY {ncol}
-                    """,
-                    (fecha, local),
-                )
-                rows = cur.fetchall()
-                items = [{'numero_z': str(r[0]), 'monto': float(r[1] or 0)} for r in rows] if rows else []
-                return items, sum(i['monto'] for i in items)
-            except Exception as e:
-                conn.rollback()
-                last_error = e
-                continue
-    # Si nada funcionó
-    return [], 0.0
+    return _fetch_ventas_z_dyn(cur, fecha, local, "ventas_z_trns")
 
 def _sum_cuenta_corriente(conn, cur, fecha, local):
     """Total de Cuenta Corriente, tolerante a diferencias de columnas."""
@@ -2718,6 +2703,72 @@ def _sum_cuenta_corriente(conn, cur, fecha, local):
         except Exception:
             conn.rollback()
             return 0.0
+
+def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
+    """
+    Devuelve dict con tips por marca (mapeo normalizado) y la suma total.
+    Columnas consideradas (si alguna no existe, la tratamos como 0):
+      visa_tips, visa_debito_tips, visa_prepago_tips,
+      mastercard_tips, mastercard_debito_tips, mastercard_prepago_tips,
+      cabal_tips, cabal_debito_tips, amex_tips, maestro_tips,
+      naranja_tips, diners_tips, decidir_tips (si existe), pagos_inmediatos_tips
+    """
+    # (alias -> columna en BD)
+    cols = {
+        "VISA": "visa_tips",
+        "VISA DEBITO": "visa_debito_tips",
+        "VISA PREPAGO": "visa_prepago_tips",
+        "MASTERCARD": "mastercard_tips",
+        "MASTERCARD DEBITO": "mastercard_debito_tips",
+        "MASTERCARD PREPAGO": "mastercard_prepago_tips",
+        "CABAL": "cabal_tips",
+        "CABAL DEBITO": "cabal_debito_tips",
+        "AMEX": "amex_tips",
+        "MAESTRO": "maestro_tips",
+        "NARANJA": "naranja_tips",
+        "DINERS": "diners_tips",
+        "DECIDIR": "decidir_tips",  # algunos esquemas pueden no tenerla
+        "PAGOS INMEDIATOS": "pagos_inmediatos_tips",
+    }
+
+    # Intento sumar todo en una sola query seleccionando cada SUM(col) con alias.
+    select_parts = []
+    for alias, col in cols.items():
+        # si alguna columna no existe, el DBMS fallará -> manejamos con try/except haciendo fallback.
+        select_parts.append(f"COALESCE(SUM({col}),0) AS \"{alias}\"")
+
+    sql = f"""
+        SELECT
+            {", ".join(select_parts)}
+        FROM {table_name}
+        WHERE DATE(fecha)=%s AND local=%s
+    """
+
+    breakdown = {alias: 0.0 for alias in cols.keys()}
+    try:
+        cur.execute(sql, (fecha, local))
+        row = cur.fetchone()
+        if row:
+            # row viene en el mismo orden de select_parts
+            i = 0
+            for alias in cols.keys():
+                breakdown[alias] = float(row[i] or 0.0)
+                i += 1
+    except Exception:
+        # Si la query falla por columnas inexistentes, probamos columna por columna.
+        for alias, col in cols.items():
+            try:
+                cur.execute(
+                    f"SELECT COALESCE(SUM({col}),0) FROM {table_name} WHERE DATE(fecha)=%s AND local=%s",
+                    (fecha, local)
+                )
+                r = cur.fetchone()
+                breakdown[alias] = float((r[0] if r else 0) or 0.0)
+            except Exception:
+                breakdown[alias] = 0.0
+
+    total_tarjetas = float(sum(breakdown.values()))
+    return breakdown, total_tarjetas
 
 
 # ========= API GLOBAL =========
@@ -2778,7 +2829,7 @@ def api_resumen_local():
             (f, local),
         )
 
-        # Breakdown Z por número (usa tabla dinámica)
+        # Breakdown Z por PV + Número (tabla dinámica)
         z_items, vta_z_total = _fetch_ventas_z_dyn(cur, f, local, T_VENTAS_Z)
         discovery = max((venta_total or 0.0) - (vta_z_total or 0.0), 0.0)
 
@@ -2790,7 +2841,7 @@ def api_resumen_local():
         )
         efectivo_neto = efectivo_remesas
 
-        # ===== TARJETAS (por marca) — mismas marcas nuevas =====
+        # ===== TARJETAS (ventas por marca) =====
         marcas = [
             "VISA", "VISA DEBITO", "VISA PREPAGO",
             "MASTERCARD", "MASTERCARD DEBITO", "MASTERCARD PREPAGO",
@@ -2799,7 +2850,6 @@ def api_resumen_local():
             "NARANJA", "DECIDIR", "DINERS",
             "PAGOS INMEDIATOS"
         ]
-
         def _sum_tarjeta_from(table_name, marca):
             return _qsum(
                 cur,
@@ -2814,7 +2864,7 @@ def api_resumen_local():
         tarjetas_det = {m: _sum_tarjeta_from(T_TARJETAS, m) for m in marcas}
         tarjeta_total = float(sum(tarjetas_det.values()))
 
-        # ===== MP, Rappi, PedidosYa (dinámico con snap_*) =====
+        # ===== MP, Rappi, PedidosYa =====
         mp_total = _qsum(
             cur,
             f"SELECT COALESCE(SUM(importe),0) FROM {T_MP} WHERE DATE(fecha)=%s AND local=%s AND UPPER(tipo)='NORMAL'",
@@ -2843,35 +2893,12 @@ def api_resumen_local():
             (f, local),
         )
 
-        # ===== CTA CTE (sin snap por ahora) =====
+        # ===== CTA CTE =====
         cta_cte_total = _sum_cuenta_corriente(conn, cur, f, local)
 
-        # ===== TIPS TARJETAS (incluye las nuevas columnas) =====
-        tips_tarj = _qsum(
-            cur,
-            f"""
-            SELECT COALESCE(SUM(
-                COALESCE(visa_tips,0) +
-                COALESCE(visa_debito_tips,0) +
-                COALESCE(visa_prepago_tips,0) +
-                COALESCE(mastercard_tips,0) +
-                COALESCE(mastercard_debito_tips,0) +
-                COALESCE(mastercard_prepago_tips,0) +
-                COALESCE(cabal_tips,0) +
-                COALESCE(cabal_debito_tips,0) +
-                COALESCE(amex_tips,0) +
-                COALESCE(maestro_tips,0) +
-                COALESCE(naranja_tips,0) +
-                COALESCE(diners_tips,0) +
-                COALESCE(pagos_inmediatos_tips,0)
-            ),0)
-            FROM {T_TIPS_TJ}
-            WHERE DATE(fecha)=%s AND local=%s
-            """,
-            (f, local),
-        ) or 0.0
-
-        tips_total = float(tips_tarj or 0.0) + float(tips_mp or 0.0)
+        # ===== TIPS TARJETAS (detalle por marca + total) =====
+        tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TIPS_TJ, f, local)
+        tips_total = float(tips_tarj_total or 0.0) + float(tips_mp or 0.0)
 
         # ===== Totales del panel =====
         total_cobrado = float(sum([
@@ -2889,7 +2916,7 @@ def api_resumen_local():
             mp_total or 0.0,
             rappi_total or 0.0,
             pedidosya_total or 0.0,
-            gastos_total or 0.0,   # sólo total
+            gastos_total or 0.0,
             cta_cte_total or 0.0,
             tips_total or 0.0,
         ]))
@@ -2908,7 +2935,7 @@ def api_resumen_local():
             "ventas": {
                 "vta_z_total": float(vta_z_total or 0.0),
                 "discovery": float(discovery or 0.0),
-                "z_items": z_items
+                "z_items": z_items  # cada item trae pv, numero_z, monto y z_display
             },
 
             "info": {
@@ -2933,7 +2960,8 @@ def api_resumen_local():
                 "tips": {
                     "total": float(tips_total or 0.0),
                     "mp": float(tips_mp or 0.0),
-                    "tarjetas": float(tips_tarj or 0.0)
+                    "tarjetas": float(tips_tarj_total or 0.0),
+                    "breakdown": tips_tarj_breakdown  # <<--- DETALLE POR TARJETA
                 }
             }
         }
@@ -2955,13 +2983,52 @@ def api_resumen_local():
 
 def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
     """
-    Igual que _fetch_ventas_z original pero con nombre de tabla dinámico.
-    Devuelve (items, total) donde items = [{'numero_z': '123', 'monto': 1000.0}, ...]
+    Devuelve (items, total) con detección flexible de columnas:
+    - Punto de venta: punto_venta | pto_venta | pv | p_venta | punto_de_venta
+    - Número Z:      numero_z | nro_z | z_numero | num_z
+    - Monto:         monto | importe | total
+    items: [{'pv': '5', 'punto_venta': '5', 'numero_z': '1691', 'monto': 1000.0, 'z_display': '00005-00001691'}, ...]
     """
+    pv_cols    = ["punto_venta", "pto_venta", "pv", "p_venta", "punto_de_venta"]
     numero_cols = ["numero_z", "nro_z", "z_numero", "num_z"]
     monto_cols  = ["monto", "importe", "total"]
     last_error = None
 
+    # Intento con PV + Número
+    for pvcol in pv_cols:
+        for ncol in numero_cols:
+            for mcol in monto_cols:
+                try:
+                    cur.execute(
+                        f"""
+                        SELECT {pvcol} AS pv, {ncol} AS znum, COALESCE(SUM({mcol}),0) AS total
+                        FROM {table_name}
+                        WHERE DATE(fecha)=%s AND local=%s
+                        GROUP BY {pvcol}, {ncol}
+                        ORDER BY {pvcol}, {ncol}
+                        """,
+                        (fecha, local),
+                    )
+                    rows = cur.fetchall() or []
+                    items = []
+                    for r in rows:
+                        pv = r[0]
+                        nz = r[1]
+                        monto = float(r[2] or 0)
+                        item = {
+                            "pv": str(pv) if pv is not None else "0",
+                            "punto_venta": str(pv) if pv is not None else "0",
+                            "numero_z": str(nz),
+                            "monto": monto,
+                        }
+                        item["z_display"] = _format_z(item["pv"], item["numero_z"])
+                        items.append(item)
+                    return items, sum(i['monto'] for i in items)
+                except Exception as e:
+                    last_error = e
+                    continue
+
+    # Fallback: si no existe PV, agrupo solo por número (PV = '0')
     for ncol in numero_cols:
         for mcol in monto_cols:
             try:
@@ -2976,15 +3043,25 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
                     (fecha, local),
                 )
                 rows = cur.fetchall() or []
-                items = [{'numero_z': str(r[0]), 'monto': float(r[1] or 0)} for r in rows]
+                items = []
+                for r in rows:
+                    nz = r[0]
+                    monto = float(r[1] or 0)
+                    item = {
+                        "pv": "0",
+                        "punto_venta": "0",
+                        "numero_z": str(nz),
+                        "monto": monto,
+                    }
+                    item["z_display"] = _format_z(item["pv"], item["numero_z"])
+                    items.append(item)
                 return items, sum(i['monto'] for i in items)
             except Exception as e:
                 last_error = e
                 continue
+
     # Si nada funcionó, devolvemos vacío
     return [], 0.0
-
-
 
 ## _______________________________ REPORTERIA REMESAS _______________________
 
