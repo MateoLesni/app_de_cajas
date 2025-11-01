@@ -44,6 +44,12 @@ import random
 
 app = Flask(__name__)
 
+
+
+
+
+
+
 @app.context_processor
 def inject_role_level():
     try:
@@ -286,6 +292,73 @@ def login_required(view):
             return jsonify(success=False, msg='Auth requerido'), 401
         return view(*args, **kwargs)
     return wrapped
+
+
+
+# ---------- Router por nivel ----------
+def route_for_current_role() -> str:
+    """
+    Devuelve la URL destino según nivel:
+      1 -> '/'
+      2 -> '/encargado'
+      3 -> '/encargado' (por ahora)
+    """
+    try:
+        lvl = int(get_user_level())
+    except Exception:
+        lvl = 1
+
+    if lvl >= 2:
+        return url_for('carga_datos_encargado')
+    return url_for('index')
+
+
+@app.route('/home')
+@app.route('/inicio')
+@login_required
+def go_home():
+    """
+    Atajo para entrar siempre al lugar correcto según el nivel.
+    Útil como landing post-login.
+    """
+    return redirect(route_for_current_role())
+
+
+# (Opcional) usar esto en tu vista de login cuando autentiques OK
+def redirect_after_login():
+    """
+    Si vino con ?next=... y es seguro, va ahí; si no, va al home por nivel.
+    Llamala al finalizar el login.
+    """
+    nxt = request.args.get('next') or request.form.get('next')
+    # si querés, validá 'nxt' para evitar open redirects; por simplicidad lo ignoramos
+    return redirect(nxt or route_for_current_role())
+
+
+# Inyectamos también la URL "inicio" correcta en los templates
+@app.context_processor
+def inject_role_level_and_home():
+    try:
+        lvl = get_user_level()
+    except Exception:
+        lvl = 1
+    try:
+        home_url = route_for_current_role()
+    except Exception:
+        home_url = url_for('index')
+    return {
+        "role_level": int(lvl),
+        "home_url": home_url,
+    }
+
+
+
+
+
+
+
+
+
 
 def page_access_required(slug):
     def decorator(view):
@@ -3525,12 +3598,12 @@ def _update_last_access(user_id):
         conn.close()
 
 
-# --- rutas ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        # tu HTML de login que enviaste
-        return render_template('login.html', error=None)
+        # Podés pasar el next para mantenerlo en el form si querés
+        nxt = request.args.get('next', '')
+        return render_template('login.html', error=None, next=nxt)
 
     # POST (form tradicional o JSON)
     data = request.form if request.form else (request.get_json(silent=True) or {})
@@ -3538,35 +3611,42 @@ def login():
     password = (data.get('password') or '').strip()
 
     user = _fetch_user_by_username(username)
-    if not user or user['status'] != 'active':
-        # para HTML
-        if request.form:
-            return render_template('login.html', error='Usuario o contraseña inválidos'), 401
-        # para API
-        return jsonify(ok=False, msg="Usuario o contraseña inválidos"), 401
 
-    if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+    def _fail(msg='Usuario o contraseña inválidos'):
         if request.form:
-            return render_template('login.html', error='Usuario o contraseña inválidos'), 401
-        return jsonify(ok=False, msg="Usuario o contraseña inválidos"), 401
+            return render_template('login.html', error=msg), 401
+        return jsonify(ok=False, msg=msg), 401
 
-    # Poblo session con las MISMAS claves que usa tu app
+    if not user or user.get('status') != 'active':
+        return _fail()
+
+    # Verificación de contraseña
+    try:
+        hashed = (user.get('password') or '').encode('utf-8')
+        if not bcrypt.checkpw(password.encode('utf-8'), hashed):
+            return _fail()
+    except Exception:
+        return _fail()
+
+    # Poblar sesión con las MISMAS claves que usa tu app
     session.clear()
     session['user_id']    = user['id']
     session['username']   = user['username']
-    session['local']      = user['local']
-    session['society']    = user['society']
-    session['role']       = user['role_name']         # 'cajero'|'encargado'|'auditor'
-    session['role_level'] = int(user['role_level'])   # 1|2|3
-    session['pages']      = user['pages']             # ['index','reporte_remesas','resumen_local']
+    session['local']      = user.get('local')
+    session['society']    = user.get('society')
+    session['role']       = user.get('role_name')       # 'cajero'|'encargado'|'auditor'
+    session['role_level'] = int(user.get('role_level') or 1)  # 1|2|3
+    session['pages']      = user.get('pages') or []     # ['index','reporte_remesas','resumen_local', ...]
 
     _update_last_access(user['id'])
 
-    # si vino por HTML -> redirect
+    # Si vino por HTML -> redirect
     if request.form:
-        return redirect(url_for('index'))
-    # si vino por API
-    return jsonify(ok=True, redirect=url_for('index'))
+        # respeta ?next=... si está; si no, manda a /home según el nivel
+        return redirect_after_login()
+
+    # Si vino por API -> devolver destino sugerido
+    return jsonify(ok=True, redirect=route_for_current_role())
 
 @app.route('/logout')
 def logout():
