@@ -3136,6 +3136,30 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
     # Si nada funcionó, devolvemos vacío
     return [], 0.0
 
+
+
+
+@app.route('/api/locales_options', methods=['GET'])
+@login_required
+def api_locales_options():
+    lvl = get_user_level()
+    conn = get_db_connection()
+    try:
+        if lvl >= 3:
+            cur = conn.cursor()
+            cur.execute("SELECT DISTINCT local FROM locales ORDER BY local;")
+            locales = [r[0] for r in cur.fetchall()]
+            cur.close()
+        else:
+            locales = [session.get('local')]
+        return jsonify(locales=locales)
+    finally:
+        try: conn.close()
+        except: ...
+
+
+
+
 ## _______________________________ REPORTERIA REMESAS _______________________
 
 
