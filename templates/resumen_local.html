@@ -19,17 +19,28 @@
     .doc-head { padding:12px 16px; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
     .doc-body { padding:12px; }
 
+    .doc-actions { display:flex; gap:8px; align-items:center; }
+    .icon-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:700; }
+    .icon-btn:hover { background:#f1f5f9; }
+
     .doc-acc { border-bottom:1px solid #e5e7eb; }
     .doc-row { padding:10px 12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
     .doc-row:hover { background:#f5f6f8; }
+    .doc-row .row-left { display:flex; align-items:center; gap:8px; }
     .doc-row .count { font-weight:700; padding:2px 8px; border-radius:999px; background:#eef2f7; color:#334155; }
     .doc-acc .acc-body { display:none; background:#f5f6f8; }
     .doc-acc[aria-expanded="true"] .acc-body { display:block; }
 
     .thumbs { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
     .thumb { background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb; cursor:pointer; }
+    .thumb .thumb-top { position:relative; }
     .thumb img { width:100%; height:140px; object-fit:cover; display:block; }
+    .thumb .thumb-actions {
+      position:absolute; right:6px; top:6px; display:flex; gap:6px;
+    }
+    .thumb .thumb-actions .icon-btn { padding:4px 6px; font-size:12px; }
     .thumb .meta { padding:6px 8px; font-size:.85rem; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .media-fallback { display:none; padding:6px 8px; font-size:.85rem; background:#f1f5f9; border-top:1px solid #e5e7eb; }
 
     .modal { position:fixed; inset:0; background:rgba(15,23,42,.7); display:none; align-items:center; justify-content:center; z-index:9999; }
     .modal.is-open { display:flex; }
@@ -37,6 +48,7 @@
     .modal img { max-width:100%; max-height:82vh; display:block; margin:0 auto; }
     .modal .close { position:absolute; top:8px; right:8px; background:#111827; color:#fff; border:1px solid #374151; border-radius:8px; padding:6px 10px; cursor:pointer; }
     .modal .caption { color:#d1d5db; padding-top:8px; font-size:.9rem; text-align:center; }
+    .modal .modal-actions { position:absolute; left:8px; top:8px; display:flex; gap:8px; }
 
     .filters { display:flex; gap:12px; align-items:flex-end; }
     .filters .form-group { display:flex; flex-direction:column; gap:4px; }
@@ -317,8 +329,14 @@
           <aside>
             <section class="doc-card" aria-labelledby="doc-title">
               <div class="doc-head">
-                <span id="doc-title">Documentos</span>
-                <small class="muted">Imágenes cargadas para auditoría</small>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span id="doc-title">Documentos</span>
+                  <small class="muted">Imágenes cargadas para auditoría</small>
+                </div>
+                <div class="doc-actions">
+                  <!-- Descarga global -->
+                  <button class="icon-btn" id="doc-download-all" title="Descargar todas las imágenes">⬇️ Todo</button>
+                </div>
               </div>
               <div class="doc-body" id="doc-accordions"><!-- JS inyecta acordeones --></div>
             </section>
@@ -331,6 +349,10 @@
   <!-- Modal visor -->
   <div class="modal" id="imgModal" role="dialog" aria-modal="true" aria-label="Visor de imagen">
     <div class="box">
+      <div class="modal-actions">
+        <!-- Descarga desde modal -->
+        <button class="icon-btn" id="imgDownload" title="Descargar">⬇️</button>
+      </div>
       <button class="close" id="imgClose">Cerrar ✕</button>
       <img id="imgBig" alt="Imagen">
       <div class="caption" id="imgCaption"></div>
@@ -373,7 +395,12 @@
     document.getElementById('rl-local-display').textContent = sel.value || window.SESSION_LOCAL;
   }
 
+  // ===== Render de Documentos con DESCARGAS =====
+  let _lastGroups = [];            // cache para descargas por acordeón/todo
+  let _modalCurrentItem = null;    // item activo en modal
+
   function renderDocs(groups){
+    _lastGroups = groups || [];
     const host = document.getElementById('doc-accordions');
     host.innerHTML = '';
     const order = [
@@ -387,43 +414,133 @@
       ['cuenta_cte','Cuenta Cte.'],
     ];
     const byKey = {}; (groups||[]).forEach(g=>byKey[g.key]=g);
+
     order.forEach(([key,label])=>{
-      const g = byKey[key] || {label, count:0, items:[]};
+      const g = byKey[key] || {key, label, count:0, items:[]};
       const acc = el('div', {'class':'doc-acc', 'aria-expanded':'false'});
-      const hdr = el('div', {'class':'doc-row', onclick:()=>toggle(acc)},
-        el('span', {}, g.label || label),
-        el('span', {'class':'count'}, String(g.count||0))
+      const hdr = el('div', {'class':'doc-row'},
+        el('div', {'class':'row-left'},
+          el('span', {}, g.label || label),
+          el('span', {'class':'count'}, String(g.count||0))
+        ),
+        el('div', {'class':'doc-actions'},
+          el('button', {
+            'class':'icon-btn',
+            'title':'Descargar este acordeón',
+            'data-acc-key': g.key,
+            onclick:(e)=>{ e.stopPropagation(); downloadGroup(g.key); }
+          }, '⬇️')
+        )
       );
+      hdr.addEventListener('click', ()=>toggle(acc));
       const body = el('div', {'class':'acc-body'},
         g.count ? buildThumbs(g.items) : el('div', {'class':'muted', style:'padding:10px;'}, 'Sin imágenes cargadas')
       );
       acc.appendChild(hdr); acc.appendChild(body); host.appendChild(acc);
     });
+
     function toggle(acc){ acc.setAttribute('aria-expanded', acc.getAttribute('aria-expanded')==='true'?'false':'true'); }
+
     function buildThumbs(items){
       const wrap = el('div', {'class':'thumbs'});
       (items||[]).forEach(it=>{
-        const card = el('div', {'class':'thumb', onclick:()=>openModal(it)});
-        card.appendChild(el('img', {src:it.view_url||'', alt:it.name||'imagen'}));
-        card.appendChild(el('div', {'class':'meta'}, it.name||'—'));
+        const card = el('div', {'class':'thumb'});
+        const top = el('div', {'class':'thumb-top'});
+
+        // MINIATURA: mismo origen
+        const img = el('img', {src: it.view_path || it.view_url || '', alt: it.name || 'imagen', loading:'lazy'});
+        img.onerror = ()=>{ img.style.display='none'; fallback.style.display='block'; };
+
+        // Acciones en cada imagen
+        const actions = el('div', {'class':'thumb-actions'});
+        const btnView = el('button', {'class':'icon-btn', 'title':'Ver', onclick:(e)=>{ e.stopPropagation(); openModal(it); }}, '🔍');
+        const btnDown = el('button', {'class':'icon-btn', 'title':'Descargar', onclick:(e)=>{ e.stopPropagation(); downloadSingle(it); }}, '⬇️');
+        actions.appendChild(btnView); actions.appendChild(btnDown);
+
+        top.appendChild(img);
+        top.appendChild(actions);
+
+        const fallback = el('div', {'class':'media-fallback'}, it.name || 'Archivo');
+
+        const meta = el('div', {'class':'meta'}, it.name || '—');
+
+        // Click en la tarjeta = abrir
+        card.addEventListener('click', ()=>openModal(it));
+        card.appendChild(top);
+        card.appendChild(meta);
+        card.appendChild(fallback);
         wrap.appendChild(card);
       });
       return wrap;
     }
   }
 
+  // ===== Modal =====
   function openModal(it){
-    document.getElementById('imgBig').src = it.view_url || '';
+    _modalCurrentItem = it;
+    const img = document.getElementById('imgBig');
+    img.src = it.view_path || it.view_url || '';
     document.getElementById('imgCaption').textContent = it.name || '';
     document.getElementById('imgModal').classList.add('is-open');
   }
   function closeModal(){
     document.getElementById('imgModal').classList.remove('is-open');
     document.getElementById('imgBig').src = '';
+    _modalCurrentItem = null;
   }
   document.getElementById('imgClose').addEventListener('click', closeModal);
   document.getElementById('imgModal').addEventListener('click', e => { if (e.target.id==='imgModal') closeModal(); });
+  document.getElementById('imgDownload').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if (_modalCurrentItem) downloadSingle(_modalCurrentItem);
+  });
 
+  // ===== Descargas (single / group / all) =====
+  function triggerDownload(href, filename){
+    // Intento 1: anchor + download (mismo origen). Aunque /files/view redirija, la mayoría de navegadores lo respetan.
+    const a = document.createElement('a');
+    a.href = href;
+    if (filename) a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>a.remove(), 50);
+  }
+
+  function downloadSingle(item){
+    const name = item.name || 'archivo';
+    const href = (item.view_path || item.view_url || '#');
+    triggerDownload(href, name);
+  }
+
+  function downloadGroup(key){
+    const g = (_lastGroups||[]).find(x => x.key === key);
+    if (!g || !g.items || !g.items.length) return;
+    // Descarga secuencial simple (evita bloquear por demasiadas descargas simultáneas)
+    let i = 0;
+    const tick = () => {
+      if (i >= g.items.length) return;
+      downloadSingle(g.items[i++]);
+      setTimeout(tick, 180); // leve delay
+    };
+    tick();
+  }
+
+  function downloadAll(){
+    const all = [];
+    (_lastGroups||[]).forEach(g => (g.items||[]).forEach(it => all.push(it)));
+    if (!all.length) return;
+    let i = 0;
+    const tick = () => {
+      if (i >= all.length) return;
+      downloadSingle(all[i++]);
+      setTimeout(tick, 180);
+    };
+    tick();
+  }
+  document.getElementById('doc-download-all').addEventListener('click', downloadAll);
+
+  // ===== Data load =====
   async function loadMedia(){
     const fecha = document.getElementById('rl-fecha').value;
     const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
@@ -439,19 +556,9 @@
 
   // Dispara actualización de ambos paneles
   async function refreshAll(){
-    // Espejar local seleccionado en display
     const selectedLocal = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
     document.getElementById('rl-local-display').textContent = selectedLocal;
-
-    // Panel izquierdo: usa tu JS existente (static/js/resumen_local.js)
-    // -> Se basa en #rl-local-display y #rl-fecha, así que con esto alcanza:
-    if (window.updateResumen) {
-      // nada: tu archivo ya auto-ejecuta; opcionalmente podrías exponer updateResumen
-    }
-    // Forzamos evento click al botón "Actualizar" que ya engancha en tu JS:
     document.getElementById('rl-actualizar')?.dispatchEvent(new Event('click'));
-
-    // Panel derecho: imágenes
     await loadMedia();
   }
 

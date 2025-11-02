@@ -143,22 +143,10 @@
 
     // Intentamos encontrar PV y Número desde múltiples campos posibles
     const pvRaw =
-      it?.z_pv ??
-      it?.pv ??
-      it?.pto_venta ??
-      it?.punto_venta ??
-      it?.pv_numero ??
-      it?.puntoVenta ??
-      0;
+      it?.z_pv ?? it?.pv ?? it?.pto_venta ?? it?.punto_venta ?? it?.pv_numero ?? it?.puntoVenta ?? 0;
 
     const numRaw =
-      it?.z_numero ??
-      it?.numero_z ??
-      it?.nro_z ??
-      it?.num_z ??
-      it?.numero ??
-      it?.z ??
-      0;
+      it?.z_numero ?? it?.numero_z ?? it?.nro_z ?? it?.num_z ?? it?.numero ?? it?.z ?? 0;
 
     const pv = String(pvRaw ?? 0).replace(/\D+/g, "");
     const num = String(numRaw ?? 0).replace(/\D+/g, "");
@@ -246,7 +234,7 @@
       setMoneyWithCopy("rl-remesas", info?.efectivo?.remesas);
       setMoneyWithCopy("rl-cash-neto", info?.efectivo?.neto_efectivo);
 
-      // Si usás totales por retiradas/no retiradas
+      // Totales por retiradas/no retiradas
       setMoneyWithCopy("rl-remesas-ret-total", info?.efectivo?.retiradas_total);
       setMoneyWithCopy("rl-remesas-no-ret-total", info?.efectivo?.no_retiradas_total);
 
@@ -325,7 +313,6 @@
         const tbl = document.getElementById(id)?.closest("table");
         if (tbl) addCopyToLabelCellsWithin(tbl);
       });
-
     } catch (e) {
       console.error("renderResumen error:", e);
     }
@@ -343,13 +330,17 @@
   }
 
   async function updateResumen() {
-    const local = ($("#rl-local-display")?.textContent || "").trim();
-    const fecha = $("#rl-fecha")?.value;
-    if (!local || !fecha) return;
+    try {
+      const local = ($("#rl-local-display")?.textContent || "").trim();
+      const fecha = $("#rl-fecha")?.value;
+      if (!local || !fecha) return;
 
-    const data = await fetchResumenLocal({ local, fecha });
-    renderResumen(data);
-    await refreshEstadoLocalBadge();
+      const data = await fetchResumenLocal({ local, fecha });
+      renderResumen(data);
+      await refreshEstadoLocalBadge();
+    } catch (e) {
+      console.error("updateResumen error:", e);
+    }
   }
 
   // ========= Estado del LOCAL + botón de cierre =========
@@ -413,7 +404,7 @@
       console.error(e);
       alert("❌ Error de red.");
     } finally {
-      if (btn) { btn.textContent = oldTxt; }
+      if (btn) { btn.textContent = oldTxt; btn.disabled = false; }
     }
   }
 
@@ -446,4 +437,7 @@
     updateResumen().catch(console.error);
     document.getElementById("rl-imprimir")?.addEventListener("click", () => window.print());
   });
+
+  // Exponer para otros scripts (por ejemplo, el inline que refresca paneles)
+  window.updateResumen = updateResumen;
 })();
