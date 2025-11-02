@@ -422,13 +422,13 @@ def _norm_fecha_str(s):
     except Exception:
         return None
 
+
 @bp_files.route("/summary_media", methods=["GET"])
 def files_summary_media():
     """
     Devuelve imágenes del día agrupadas por 'tab' (remesas, ventas_z, etc.).
     Params: local, fecha (YYYY-MM-DD)
     """
-    # Requisitos básicos ya usados en /files/upload y /files/list
     if not BUCKET_NAME:
         return jsonify(error="GCS_BUCKET no configurado"), 500
     if _get_db_connection is None:
@@ -439,22 +439,21 @@ def files_summary_media():
     if not local or not fecha_s:
         return jsonify(error="Parámetros insuficientes: local y fecha"), 400
 
-    # Seguridad por rol: lvl<3 solo su local
+    # Seguridad por rol
     if _lvl() < 3:
         ses_local = (session.get("local") or "").strip()
         if not ses_local or ses_local.lower() != local.lower():
             return jsonify(error="No autorizado para el local solicitado"), 403
 
-    # Orden "amistoso" para la UI
     TAB_ORDER = [
-        ("remesas",      "Remesas"),
-        ("ventas_z",     "Ventas Z"),
-        ("mercadopago",  "Mercado Pago"),
-        ("tarjeta",      "Tarjeta"),
-        ("rappi",        "Rappi"),
-        ("pedidosya",    "PedidosYa"),
-        ("gastos",       "Gastos"),
-        ("cuenta_cte",   "Cuenta Cte."),
+        ("remesas",     "Remesas"),
+        ("ventas_z",    "Ventas Z"),
+        ("mercadopago", "Mercado Pago"),
+        ("tarjeta",     "Tarjeta"),
+        ("rappi",       "Rappi"),
+        ("pedidosya",   "PedidosYa"),
+        ("gastos",      "Gastos"),
+        ("cuenta_cte",  "Cuenta Cte."),
     ]
 
     conn = _get_db_connection()
@@ -471,54 +470,43 @@ def files_summary_media():
         rows = cur.fetchall() or []
 
         # Inicializamos grupos
-        groups = {}
-        for key, label in TAB_ORDER:
-            groups[key] = {"label": label, "items": []}
+        groups = {k: {"label": lbl, "items": []} for k, lbl in TAB_ORDER}
 
-        # Construimos (firmando URLs)
-        client = _client()  # tu helper ya existente
+        # Construcción con view_path + view_url usando helper
+        client = _client()
+        bucket = client.bucket(BUCKET_NAME)
+
         for tab, path, orig, mime, sizeb in rows:
             key = (tab or "").strip().lower() or "otros"
             if key not in groups:
                 groups[key] = {"label": tab or "Otros", "items": []}
 
-            try:
-                # Firmamos con el mismo helper de list/upload
-                url = _signed_get(client.bucket(BUCKET_NAME).blob(path), orig or path.rsplit("__",1)[-1])
-            except Exception:
-                url = None
+            blob = bucket.blob(path)
+            safe_name = orig or path.rsplit("__", 1)[-1]
+
+            # <<< ESTA ES LA CLAVE >>>
+            view_path, signed_url = _make_view_fields(blob, safe_name)
 
             groups[key]["items"].append({
                 "id": path,
-                "name": orig or path.rsplit("__", 1)[-1],
-                "view_url": url,
+                "name": safe_name,
+                "view_url": signed_url,   # puede ser None si firmar falla
+                "view_path": view_path,   # SIEMPRE presente (fallback /files/view?id=...)
                 "bytes": int(sizeb or 0),
                 "mime": mime or "image/*",
                 "path": path,
             })
 
-        # Armamos salida ordenada
+        # Ordenar salida
         ordered = []
-        seen = set()
-        for key, label in TAB_ORDER:
-            g = groups.get(key, {"label": label, "items": []})
-            ordered.append({
-                "key": key,
-                "label": g["label"],
-                "count": len(g["items"]),
-                "items": g["items"],
-            })
-            seen.add(key)
-
-        # Agregar tabs no contemplados
+        already = set()
+        for k, lbl in TAB_ORDER:
+            g = groups.get(k, {"label": lbl, "items": []})
+            ordered.append({"key": k, "label": g["label"], "count": len(g["items"]), "items": g["items"]})
+            already.add(k)
         for k, g in groups.items():
-            if k not in seen:
-                ordered.append({
-                    "key": k,
-                    "label": g["label"],
-                    "count": len(g["items"]),
-                    "items": g["items"],
-                })
+            if k not in already:
+                ordered.append({"key": k, "label": g["label"], "count": len(g["items"]), "items": g["items"]})
 
         return jsonify(local=local, fecha=fecha_s, groups=ordered)
 
@@ -527,9 +515,9 @@ def files_summary_media():
         try: conn.rollback()
         except: ...
         return jsonify(error=str(e)), 500
-
     finally:
         try: cur.close()
         except: ...
         try: conn.close()
         except: ...
+
