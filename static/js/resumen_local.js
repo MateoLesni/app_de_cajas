@@ -214,22 +214,37 @@
   let _lastGroups = [];
   let _modalCurrentItem = null;
 
-  function normalizeDocHeader() {
+  function ensureGlobalDownloadButton() {
+    // Crea/normaliza SIEMPRE el botón azul "Descargar todo"
     const head = document.querySelector(".doc-card .doc-head");
     if (!head) return;
 
-    // Quitar cualquier botón "Todo" sobrante que no sea el azul con id #doc-download-all
-    head.querySelectorAll("button").forEach((b) => {
-      const isGlobal = b.id === "doc-download-all";
-      const looksTodo = /todo/i.test((b.textContent || "").trim()) && !isGlobal;
-      if (looksTodo) b.remove();
+    // Contenedor de acciones (crearlo si no existe)
+    let actions = head.querySelector(".doc-actions");
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.className = "doc-actions";
+      head.appendChild(actions);
+    }
+
+    // Eliminar botones "Todo" heredados (texto TODO en blanco)
+    actions.querySelectorAll("button").forEach((b) => {
+      if (b.id !== "doc-download-all" && /todo/i.test((b.textContent || "").trim())) b.remove();
     });
 
-    // Asegurar icono SVG en el global
-    const gbtn = head.querySelector("#doc-download-all");
-    if (gbtn) {
-      gbtn.innerHTML = ICON_DOWNLOAD + '<span class="btn-text">Todo</span>';
+    // Crear el botón global si falta
+    let gbtn = actions.querySelector("#doc-download-all");
+    if (!gbtn) {
+      gbtn = document.createElement("button");
+      gbtn.id = "doc-download-all";
+      gbtn.type = "button";
+      gbtn.className = "icon-btn";
+      actions.appendChild(gbtn);
+      gbtn.addEventListener("click", downloadAll);
     }
+    // Normalizar contenido (icono + texto)
+    gbtn.innerHTML = ICON_DOWNLOAD + '<span class="btn-text">Todo</span>';
+    gbtn.title = "Descargar todas las imágenes";
   }
 
   function buildThumbCard(it) {
@@ -278,7 +293,7 @@
   function renderDocs(groups) {
     _lastGroups = groups || [];
     const host = document.getElementById("doc-accordions");
-    if (host) host.innerHTML = ""; // <- evita ver markup viejo (íconos floppy)
+    if (host) host.innerHTML = "";
     const order = [
       ["remesas", "Remesas"],
       ["ventas_z", "Ventas Z"],
@@ -340,7 +355,8 @@
       host?.appendChild(acc);
     });
 
-    normalizeDocHeader(); // asegura header limpio e ícono correcto
+    // Asegura que el botón global exista y quede normalizado
+    ensureGlobalDownloadButton();
   }
 
   // Descargas
@@ -382,9 +398,8 @@
     const local = document.getElementById("rl-local-select")?.value || window.SESSION_LOCAL;
     if (!fecha || !local) return;
 
-    // Limpia antes de pedir para evitar ver markup viejo
     const host = document.getElementById("doc-accordions");
-    if (host) host.innerHTML = "";
+    if (host) host.innerHTML = ""; // limpia para que no se vea markup previo
 
     const url = new URL("/files/summary_media", location.origin);
     url.searchParams.set("fecha", fecha);
@@ -401,14 +416,18 @@
     await updateResumen().catch(() => {});
     await refreshEstadoLocalBadge().catch(() => {});
     await loadMedia();
+    // Por si el HTML del header cambió tras el refresh, volvemos a asegurar el botón
+    ensureGlobalDownloadButton();
   }
 
   // Boot
   document.addEventListener("DOMContentLoaded", () => {
     setTodayIfEmpty(document.getElementById("rl-fecha"));
 
-    // Normalizar header apenas carga (quita el "Todo" blanco si quedó del HTML viejo)
-    normalizeDocHeader();
+    // Sidebar
+    const btnSidebar = document.getElementById("toggleSidebar");
+    const root = document.querySelector(".layout");
+    if (btnSidebar && root) btnSidebar.addEventListener("click", () => root.classList.toggle("sidebar-open"));
 
     // Listeners
     document.getElementById("rl-actualizar")?.addEventListener("click", () => loadMedia());
@@ -416,13 +435,9 @@
     document.getElementById("rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
     document.getElementById("imgClose")?.addEventListener("click", closeModal);
     document.getElementById("imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });
-    document.getElementById("imgDownload")?.addEventListener("click", (e) => { e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem); });
-    document.getElementById("doc-download-all")?.addEventListener("click", downloadAll);
 
-    // Sidebar
-    const btnSidebar = document.getElementById("toggleSidebar");
-    const root = document.querySelector(".layout");
-    if (btnSidebar && root) btnSidebar.addEventListener("click", () => root.classList.toggle("sidebar-open"));
+    // Asegurar desde el inicio el botón global y su handler
+    ensureGlobalDownloadButton();
 
     // Primera carga
     refreshAll().catch(console.error);
