@@ -1,301 +1,186 @@
 // static/js/resumen_local.js
 // =====================================================
-// Resumen Local (por día): acordeones + fetch + render
-// + Botón Cerrar Local (snapshot en backend, sin "turno")
-// + Panel de Documentos con preview, descarga por imagen,
-//   descarga por acordeón y descarga global.
-// Endpoints:
-//   GET  /api/resumen_local?local=...&fecha=YYYY-MM-DD
-//   GET  /estado_local?fecha=YYYY-MM-DD
-//   POST /api/cierre_local {fecha}
-//   GET  /files/summary_media?local=...&fecha=YYYY-MM-DD
-//   GET  /files/view?id=<blob_name>
+// Resumen Local (panel numérico + documentos/descargas)
 // =====================================================
 (function () {
-  // ---------- Utils ----------
+  // ----------------- Utils -----------------
   const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const money = (v) => fmt.format(Number(v || 0));
-  const $ = (sel) => document.querySelector(sel);
-  const $all = (sel) => Array.from(document.querySelectorAll(sel));
-  const ROLE_LEVEL = Number(window.ROLE_LEVEL || 1);
-  const SESSION_LOCAL = (window.SESSION_LOCAL || "").trim();
-
-  function setText(id, val, allowMissing = true) {
-    const el = typeof id === "string" ? document.getElementById(id) : id;
-    if (!el) { if (!allowMissing) console.warn("setText: missing", id); return; }
-    el.textContent = val;
-  }
-  function nowTime() {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const nowTime = () => {
     const d = new Date(), p = (n) => String(n).padStart(2, "0");
     return `${p(d.getHours())}:${p(d.getMinutes())}`;
-  }
-  function setTodayIfEmpty(input) {
+  };
+  const setText = (id, val) => { const el = typeof id === "string" ? document.getElementById(id) : id; if (el) el.textContent = val; };
+  const setTodayIfEmpty = (input) => {
     if (!input || input.value) return;
-    const d = new Date(), p = (n) => String(n).padStart(2,"0");
-    input.value = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-  }
+    const d = new Date(), p = (n) => String(n).padStart(2, "0");
+    input.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  };
 
-  // ---------- Copiar ----------
-  function getCopyTextFromElement(el) {
-    if (!el) return "";
-    if (el.dataset && el.dataset.copy) return String(el.dataset.copy);
-    const clone = el.cloneNode(true);
-    const btns = clone.querySelectorAll?.(".copy-btn");
-    if (btns && btns.length) btns.forEach((b) => b.remove());
-    return (clone.textContent || "").trim();
-  }
+  // ----------------- Iconos (SVG) -----------------
+  const ICON_DOWNLOAD = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v10m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  const ICON_ZOOM = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+
+  // ----------------- Copiar -----------------
   function addCopyButton(target, getTextFn) {
-    if (!target) return;
-    const existing = target.querySelector(":scope > .copy-btn");
-    if (existing) return existing;
+    if (!target || target.querySelector(":scope > .copy-btn")) return;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "copy-btn";
-    btn.style.marginLeft = "6px";
-    btn.style.fontSize = "11px";
-    btn.style.lineHeight = "1";
-    btn.style.padding = "2px 6px";
-    btn.style.border = "1px solid #cbd5e1";
-    btn.style.borderRadius = "6px";
-    btn.style.background = "#f8fafc";
-    btn.style.cursor = "pointer";
     btn.title = "Copiar";
     btn.textContent = "⧉";
+    Object.assign(btn.style, {
+      marginLeft: "6px", fontSize: "11px", lineHeight: "1",
+      padding: "2px 6px", border: "1px solid #cbd5e1", borderRadius: "6px",
+      background: "#f8fafc", cursor: "pointer"
+    });
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      try {
-        const text = typeof getTextFn === "function" ? String(getTextFn()) : getCopyTextFromElement(target);
-        await navigator.clipboard.writeText(text);
-        btn.textContent = "✔";
-        setTimeout(() => (btn.textContent = "⧉"), 900);
-      } catch {
-        btn.textContent = "!";
-        setTimeout(() => (btn.textContent = "⧉"), 900);
-      }
+      const txt = typeof getTextFn === "function" ? String(getTextFn()) : (target.textContent || "").trim();
+      try { await navigator.clipboard.writeText(txt); btn.textContent = "✔"; } catch { btn.textContent = "!"; }
+      setTimeout(() => (btn.textContent = "⧉"), 900);
     });
     target.appendChild(btn);
-    return btn;
   }
   function setMoneyWithCopy(id, val) {
     const el = typeof id === "string" ? document.getElementById(id) : id;
     if (!el) return;
     const txt = money(val);
-    el.textContent = txt;
-    el.dataset.copy = txt;
-    addCopyButton(el);
+    el.textContent = txt; el.dataset.copy = txt; addCopyButton(el, () => txt);
   }
 
-  // ---------- Acordeones ----------
-  function toggleAria(el) {
-    if (!el) return;
-    const isOpen = el.getAttribute("aria-expanded") === "true";
-    el.setAttribute("aria-expanded", isOpen ? "false" : "true");
-  }
-  function bindGeneralAccordions() {
-    $all(".sl-section.acc").forEach((section) => {
-      const head = section.querySelector(".sl-title");
-      if (!head) return;
-      head.addEventListener("click", () => toggleAria(section));
-    });
-  }
-  function bindSubAccordions() {
-    $all(".sub-acc.acc").forEach((sub) => {
-      const row = sub.querySelector(".sl-row");
-      if (!row) return;
-      if (!sub.hasAttribute("aria-expanded")) sub.setAttribute("aria-expanded", "false");
-      row.addEventListener("click", () => toggleAria(sub));
-    });
-  }
-  function addCopyToLabelCellsWithin(container) {
-    if (!container) return;
-    const rows = container.querySelectorAll("tbody tr, tr:not(:has(th))");
-    rows.forEach((tr) => {
-      const td = tr.querySelector("td:first-child");
-      if (!td) return;
-      const baseText = getCopyTextFromElement(td);
-      if (!baseText) return;
-      addCopyButton(td, () => baseText);
-    });
-  }
-
-  // ---------- Z display ----------
+  // ----------------- Ventas Z display -----------------
   function formatZDisplay(it) {
-    const fromBack = (it && (it.z_display || "")).toString().trim();
-    if (fromBack) return fromBack;
-    const pvRaw = it?.z_pv ?? it?.pv ?? it?.pto_venta ?? it?.punto_venta ?? it?.pv_numero ?? it?.puntoVenta ?? 0;
-    const numRaw = it?.z_numero ?? it?.numero_z ?? it?.nro_z ?? it?.num_z ?? it?.numero ?? it?.z ?? 0;
-    const pv = String(pvRaw ?? 0).replace(/\D+/g, "");
-    const num = String(numRaw ?? 0).replace(/\D+/g, "");
-    return `${pv.padStart(5,"0")}-${num.padStart(8,"0")}`;
+    const back = (it?.z_display || "").toString().trim(); if (back) return back;
+    const pv = String(it?.z_pv ?? it?.pv ?? it?.pto_venta ?? it?.punto_venta ?? it?.pv_numero ?? 0).replace(/\D+/g, "");
+    const num = String(it?.z_numero ?? it?.numero_z ?? it?.nro_z ?? it?.num_z ?? it?.numero ?? it?.z ?? 0).replace(/\D+/g, "");
+    return `${pv.padStart(5, "0")}-${num.padStart(8, "0")}`;
   }
 
-  // ---------- Render Resumen ----------
-  function renderResumen(data) {
-    try {
-      const inFecha = document.getElementById("rl-fecha");
-      setText("rl-fecha-display", inFecha?.value || "—");
-      setText("rl-hora-display", nowTime());
-      setText("rl-updated-at", new Date().toLocaleString("es-AR"));
-
-      const r = data?.resumen || {};
-      setMoneyWithCopy("rl-venta-total", r.venta_total);
-      setMoneyWithCopy("rl-total-cobrado", r.total_cobrado);
-      setMoneyWithCopy("rl-diferencia", r.diferencia);
-      const diffEl = document.getElementById("rl-diferencia");
-      if (diffEl) {
-        if (Number(r.diferencia || 0) < 0) diffEl.classList.add("negative-amount");
-        else diffEl.classList.remove("negative-amount");
-      }
-
-      const v = data?.ventas || {};
-      setMoneyWithCopy("rl-vz-total", v.vta_z_total);
-      setMoneyWithCopy("rl-vz-total-foot", v.vta_z_total);
-      setMoneyWithCopy("rl-discovery", v.discovery);
-
-      const tbVz = document.getElementById("rl-vz-items");
-      if (tbVz) {
-        tbVz.innerHTML = "";
-        const items = Array.isArray(v.z_items) ? v.z_items : [];
-        if (!items.length) {
-          const tr = document.createElement("tr");
-          tr.className = "muted";
-          const td = document.createElement("td");
-          td.colSpan = 2;
-          td.textContent = "Sin ventas z cargadas";
-          tr.appendChild(td);
-          tbVz.appendChild(tr);
-        } else {
-          items.forEach((it) => {
-            const tr = document.createElement("tr");
-            const display = formatZDisplay(it);
-            const tdName = document.createElement("td");
-            tdName.textContent = display;
-            tdName.dataset.copy = display;
-            addCopyButton(tdName);
-            const tdAmt = document.createElement("td");
-            tdAmt.className = "r";
-            const amtTxt = money(it?.monto || 0);
-            tdAmt.textContent = amtTxt;
-            tdAmt.dataset.copy = amtTxt;
-            addCopyButton(tdAmt);
-            tr.appendChild(tdName);
-            tr.appendChild(tdAmt);
-            tbVz.appendChild(tr);
-          });
-        }
-        const vzFoot = document.getElementById("rl-vz-total-foot");
-        if (vzFoot) addCopyButton(vzFoot);
-        addCopyToLabelCellsWithin(tbVz.closest("table"));
-      }
-
-      const info = data?.info || {};
-      setMoneyWithCopy("rl-cash", info?.efectivo?.total);
-      setMoneyWithCopy("rl-remesas", info?.efectivo?.remesas);
-      setMoneyWithCopy("rl-cash-neto", info?.efectivo?.neto_efectivo);
-      setMoneyWithCopy("rl-remesas-ret-total", info?.efectivo?.retiradas_total);
-      setMoneyWithCopy("rl-remesas-no-ret-total", info?.efectivo?.no_retiradas_total);
-
-      setMoneyWithCopy("rl-card", info?.tarjeta?.total);
-      const bk = info?.tarjeta?.breakdown || {};
-      setMoneyWithCopy("rl-tj-visa", bk["VISA"]);
-      setMoneyWithCopy("rl-tj-visa-deb", bk["VISA DEBITO"]);
-      setMoneyWithCopy("rl-tj-visa-pre", bk["VISA PREPAGO"]);
-      setMoneyWithCopy("rl-tj-mc", bk["MASTERCARD"]);
-      setMoneyWithCopy("rl-tj-mc-deb", bk["MASTERCARD DEBITO"]);
-      setMoneyWithCopy("rl-tj-mc-pre", bk["MASTERCARD PREPAGO"]);
-      setMoneyWithCopy("rl-tj-cabal", bk["CABAL"]);
-      setMoneyWithCopy("rl-tj-cabal-deb", bk["CABAL DEBITO"]);
-      setMoneyWithCopy("rl-tj-amex", bk["AMEX"]);
-      setMoneyWithCopy("rl-tj-maestro", bk["MAESTRO"]);
-      setMoneyWithCopy("rl-tj-naranja", bk["NARANJA"]);
-      setMoneyWithCopy("rl-tj-decidir", bk["DECIDIR"]);
-      setMoneyWithCopy("rl-tj-diners", bk["DINERS"]);
-      setMoneyWithCopy("rl-tj-pagos-inm", bk["PAGOS INMEDIATOS"]);
-      setMoneyWithCopy("rl-card-total", info?.tarjeta?.total);
-
-      setMoneyWithCopy("rl-mp", info?.mercadopago?.total);
-      setMoneyWithCopy("rl-mp-tips", info?.mercadopago?.tips);
-
-      setMoneyWithCopy("rl-rappi", info?.rappi?.total);
-      setMoneyWithCopy("rl-rappi-det", info?.rappi?.total);
-
-      setMoneyWithCopy("rl-pedidosya", info?.pedidosya?.total);
-      setMoneyWithCopy("rl-pedidosya-det", info?.pedidosya?.total);
-
-      setMoneyWithCopy("rl-gastos", info?.gastos?.total);
-      setMoneyWithCopy("rl-g-caja", info?.gastos?.caja_chica);
-      setMoneyWithCopy("rl-g-otros", info?.gastos?.otros);
-      setMoneyWithCopy("rl-g-total", info?.gastos?.total);
-
-      setMoneyWithCopy("rl-cta-cte", info?.cuenta_cte?.total);
-      setMoneyWithCopy("rl-cta-cte-det", info?.cuenta_cte?.total);
-
-      setMoneyWithCopy("rl-tips", info?.tips?.total);
-      setMoneyWithCopy("rl-tips-det", info?.tips?.total);
-      setMoneyWithCopy("rl-tips-mp", info?.tips?.mp);
-      setMoneyWithCopy("rl-tips-tarjetas", info?.tips?.tarjetas);
-      const tbTipsBreakdown = info?.tips?.breakdown || {};
-      const tipIdMap = {
-        "VISA": "rl-tip-visa",
-        "VISA DEBITO": "rl-tip-visa-deb",
-        "VISA PREPAGO": "rl-tip-visa-pre",
-        "MASTERCARD": "rl-tip-mc",
-        "MASTERCARD DEBITO": "rl-tip-mc-deb",
-        "MASTERCARD PREPAGO": "rl-tip-mc-pre",
-        "CABAL": "rl-tip-cabal",
-        "CABAL DEBITO": "rl-tip-cabal-deb",
-        "AMEX": "rl-tip-amex",
-        "MAESTRO": "rl-tip-maestro",
-        "NARANJA": "rl-tip-naranja",
-        "DECIDIR": "rl-tip-decidir",
-        "DINERS": "rl-tip-diners",
-        "PAGOS INMEDIATOS": "rl-tip-pagos-inm",
-      };
-      Object.entries(tipIdMap).forEach(([marca, id]) => {
-        setMoneyWithCopy(id, tbTipsBreakdown[marca] || 0);
-      });
-
-      addCopyToLabelCellsWithin(document.getElementById("rl-tj-visa")?.closest("table"));
-      addCopyToLabelCellsWithin(document.getElementById("rl-mp-tips")?.closest("table"));
-      ["rl-rappi-det", "rl-pedidosya-det", "rl-g-total", "rl-cta-cte-det", "rl-tips-det"].forEach((id) => {
-        const tbl = document.getElementById(id)?.closest("table");
-        if (tbl) addCopyToLabelCellsWithin(tbl);
-      });
-
-    } catch (e) {
-      console.error("renderResumen error:", e);
-    }
-  }
-
-  // ---------- Fetch Resumen ----------
+  // ----------------- Panel numérico -----------------
   async function fetchResumenLocal(params) {
     const url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}`;
     const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) {
-      const txt = await r.text().catch(() => "");
-      throw new Error(`HTTP ${r.status} ${txt}`);
-    }
-    return await r.json();
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
   }
   async function updateResumen() {
     const local = ($("#rl-local-display")?.textContent || "").trim();
     const fecha = $("#rl-fecha")?.value;
     if (!local || !fecha) return;
+
     const data = await fetchResumenLocal({ local, fecha });
-    renderResumen(data);
-    await refreshEstadoLocalBadge();
+
+    setText("rl-fecha-display", fecha || "—");
+    setText("rl-hora-display", nowTime());
+    setText("rl-updated-at", new Date().toLocaleString("es-AR"));
+
+    const r = data?.resumen || {};
+    setMoneyWithCopy("rl-venta-total", r.venta_total);
+    setMoneyWithCopy("rl-total-cobrado", r.total_cobrado);
+    setMoneyWithCopy("rl-diferencia", r.diferencia);
+    const diffEl = $("#rl-diferencia");
+    if (diffEl) diffEl.classList.toggle("negative-amount", Number(r.diferencia || 0) < 0);
+
+    const v = data?.ventas || {};
+    setMoneyWithCopy("rl-vz-total", v.vta_z_total);
+    setMoneyWithCopy("rl-vz-total-foot", v.vta_z_total);
+    setMoneyWithCopy("rl-discovery", v.discovery);
+
+    // Ventas Z detalle
+    const tbVz = $("#rl-vz-items");
+    if (tbVz) {
+      tbVz.innerHTML = "";
+      const items = Array.isArray(v.z_items) ? v.z_items : [];
+      if (!items.length) {
+        const tr = document.createElement("tr"); tr.className = "muted";
+        const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin ventas z cargadas";
+        tr.appendChild(td); tbVz.appendChild(tr);
+      } else {
+        items.forEach((it) => {
+          const tr = document.createElement("tr");
+          const display = formatZDisplay(it);
+
+          const tdName = document.createElement("td");
+          tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
+
+          const tdAmt = document.createElement("td");
+          const amtTxt = money(it?.monto || 0);
+          tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
+
+          tr.appendChild(tdName); tr.appendChild(tdAmt); tbVz.appendChild(tr);
+        });
+      }
+    }
+
+    // Info por medios
+    const info = data?.info || {};
+
+    // Efectivo
+    setMoneyWithCopy("rl-cash", info?.efectivo?.total);
+    setMoneyWithCopy("rl-remesas", info?.efectivo?.remesas);
+    setMoneyWithCopy("rl-cash-neto", info?.efectivo?.neto_efectivo);
+    setMoneyWithCopy("rl-remesas-ret-total", info?.efectivo?.retiradas_total);
+    setMoneyWithCopy("rl-remesas-no-ret-total", info?.efectivo?.no_retiradas_total);
+
+    // Tarjetas
+    setMoneyWithCopy("rl-card", info?.tarjeta?.total);
+    const bk = info?.tarjeta?.breakdown || {};
+    const idMap = {
+      "VISA": "rl-tj-visa", "VISA DEBITO": "rl-tj-visa-deb", "VISA PREPAGO": "rl-tj-visa-pre",
+      "MASTERCARD": "rl-tj-mc", "MASTERCARD DEBITO": "rl-tj-mc-deb", "MASTERCARD PREPAGO": "rl-tj-mc-pre",
+      "CABAL": "rl-tj-cabal", "CABAL DEBITO": "rl-tj-cabal-deb", "AMEX": "rl-tj-amex", "MAESTRO": "rl-tj-maestro",
+      "NARANJA": "rl-tj-naranja", "DECIDIR": "rl-tj-decidir", "DINERS": "rl-tj-diners", "PAGOS INMEDIATOS": "rl-tj-pagos-inm"
+    };
+    Object.entries(idMap).forEach(([marca, id]) => setMoneyWithCopy(id, bk[marca] || 0));
+    setMoneyWithCopy("rl-card-total", info?.tarjeta?.total);
+
+    // Otros medios
+    setMoneyWithCopy("rl-mp", info?.mercadopago?.total);
+    setMoneyWithCopy("rl-mp-tips", info?.mercadopago?.tips);
+    setMoneyWithCopy("rl-rappi", info?.rappi?.total);
+    setMoneyWithCopy("rl-rappi-det", info?.rappi?.total);
+    setMoneyWithCopy("rl-pedidosya", info?.pedidosya?.total);
+    setMoneyWithCopy("rl-pedidosya-det", info?.pedidosya?.total);
+    setMoneyWithCopy("rl-gastos", info?.gastos?.total);
+    setMoneyWithCopy("rl-g-caja", info?.gastos?.caja_chica);
+    setMoneyWithCopy("rl-g-otros", info?.gastos?.otros);
+    setMoneyWithCopy("rl-g-total", info?.gastos?.total);
+    setMoneyWithCopy("rl-cta-cte", info?.cuenta_cte?.total);
+    setMoneyWithCopy("rl-cta-cte-det", info?.cuenta_cte?.total);
+
+    // Tips
+    setMoneyWithCopy("rl-tips", info?.tips?.total);
+    setMoneyWithCopy("rl-tips-det", info?.tips?.total);
+    setMoneyWithCopy("rl-tips-mp", info?.tips?.mp);
+    setMoneyWithCopy("rl-tips-tarjetas", info?.tips?.tarjetas);
+    const tbTips = info?.tips?.breakdown || {};
+    const tipMap = {
+      "VISA": "rl-tip-visa", "VISA DEBITO": "rl-tip-visa-deb", "VISA PREPAGO": "rl-tip-visa-pre",
+      "MASTERCARD": "rl-tip-mc", "MASTERCARD DEBITO": "rl-tip-mc-deb", "MASTERCARD PREPAGO": "rl-tip-mc-pre",
+      "CABAL": "rl-tip-cabal", "CABAL DEBITO": "rl-tip-cabal-deb", "AMEX": "rl-tip-amex", "MAESTRO": "rl-tip-maestro",
+      "NARANJA": "rl-tip-naranja", "DECIDIR": "rl-tip-decidir", "DINERS": "rl-tip-diners", "PAGOS INMEDIATOS": "rl-tip-pagos-inm"
+    };
+    Object.entries(tipMap).forEach(([marca, id]) => setMoneyWithCopy(id, tbTips[marca] || 0));
   }
 
-  // ========= Estado del LOCAL + botón de cierre =========
+  // ----------------- Estado Local -----------------
   async function refreshEstadoLocalBadge() {
     const fecha = $("#rl-fecha")?.value;
     const badge = $("#rl-badge-estado");
-    const btn   = $("#rl-cerrar-local");
+    const btn = $("#rl-cerrar-local");
     if (!fecha) return;
     try {
-      const url = `/estado_local?fecha=${encodeURIComponent(fecha)}`;
-      const r = await fetch(url, { cache: "no-store" });
-      const d = r.ok ? await r.json() : { ok:false };
+      const r = await fetch(`/estado_local?fecha=${encodeURIComponent(fecha)}`, { cache: "no-store" });
+      const d = r.ok ? await r.json() : { ok: false };
       const abierto = (d?.estado ?? 1) === 1;
       if (badge) {
         badge.style.display = "inline-block";
@@ -303,266 +188,243 @@
         badge.classList.toggle("sl-badge-open", abierto);
         badge.classList.toggle("sl-badge-closed", !abierto);
       }
-      if (btn) {
-        btn.disabled = !abierto;
-        btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado";
-      }
+      if (btn) { btn.disabled = !abierto; btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado"; }
     } catch { /* noop */ }
   }
   async function cerrarLocal() {
     const fecha = $("#rl-fecha")?.value;
     if (!fecha) { alert("Seleccioná una fecha."); return; }
-    if (!confirm(`Esto cerrará el LOCAL para ${fecha}.\n- Bloquea edición para nivel 2.\n- Genera el snapshot para auditoría.\n\n¿Confirmás?`)) {
-      return;
-    }
-    const btn = $("#rl-cerrar-local");
-    const oldTxt = btn ? btn.textContent : "";
+    if (!confirm(`Esto cerrará el LOCAL para ${fecha}.\n- Bloquea edición para nivel 2.\n- Genera el snapshot para auditoría.\n\n¿Confirmás?`)) return;
+    const btn = $("#rl-cerrar-local"); const oldTxt = btn ? btn.textContent : "";
     try {
       if (btn) { btn.disabled = true; btn.textContent = "Cerrando…"; }
-      const r = await fetch("/api/cierre_local", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fecha })
-      });
+      const r = await fetch("/api/cierre_local", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fecha }) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.success) {
-        if (r.status === 409 && data?.detalle?.length) {
-          alert(`No se puede cerrar: hay cajas sin cerrar.\nDetalle: ${data.detalle.join(", ")}`);
-        } else {
-          alert(`Error al cerrar el local: ${data?.msg || r.status}`);
-        }
+        if (r.status === 409 && data?.detalle?.length) alert(`No se puede cerrar: hay cajas sin cerrar.\nDetalle: ${data.detalle.join(", ")}`);
+        else alert(`Error al cerrar el local: ${data?.msg || r.status}`);
         return;
       }
       alert("✅ Local cerrado y snapshot creado.");
-      await updateResumen();
-      await refreshEstadoLocalBadge();
-    } catch (e) {
-      console.error(e);
-      alert("❌ Error de red.");
-    } finally {
-      if (btn) { btn.textContent = oldTxt; }
-    }
+      await updateResumen(); await refreshEstadoLocalBadge();
+    } catch { alert("❌ Error de red."); } finally { if (btn) btn.textContent = oldTxt; }
   }
 
-  // ---------- Helpers DOM para Documentos ----------
-  function el(tag, attrs={}, ...children){
-    const n = document.createElement(tag);
-    Object.entries(attrs).forEach(([k,v])=>{
-      if (k==='class') n.className=v;
-      else if (k.startsWith('on') && typeof v==='function') n.addEventListener(k.slice(2), v);
-      else n.setAttribute(k,v);
-    });
-    children.forEach(c=> n.appendChild(typeof c==='string' ? document.createTextNode(c) : c));
-    return n;
-  }
+  // ----------------- Documentos / Descargas -----------------
+  let _lastGroups = [];
+  let _modalCurrentItem = null;
 
-  async function loadLocalesIfNeeded(){
-    const sel = document.getElementById('rl-local-select');
-    if (!sel) return; // nivel < 3
-    sel.innerHTML = '<option>Cargando…</option>';
-    try {
-      const res = await fetch('/api/locales_options', {credentials:'same-origin', cache:'no-store'});
-      const data = await res.json();
-      const locales = (data && data.locales) || [SESSION_LOCAL];
-      sel.innerHTML='';
-      locales.forEach(l=>{
-        const opt = el('option', {value:l}, l);
-        if (l === SESSION_LOCAL) opt.selected = true;
-        sel.appendChild(opt);
-      });
-      document.getElementById('rl-local-display').textContent = sel.value || SESSION_LOCAL;
-    } catch {
-      sel.innerHTML='';
-      const opt = el('option', {value:SESSION_LOCAL}, SESSION_LOCAL);
-      opt.selected = true; sel.appendChild(opt);
-    }
-  }
-
-  function downloadUrl(url, filename){
-    const a = document.createElement('a');
-    a.href = url;
-    if (filename) a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>a.remove(), 0);
-  }
-  async function bulkDownload(items){
-    // descarga una por una; si luego querés ZIP lo hacemos desde back o con JSZip
-    for (const it of items) {
-      const url = it.view_url || it.view_path;
-      downloadUrl(url, it.name || 'archivo');
-      await new Promise(r => setTimeout(r, 150)); // pequeña espera para no saturar
-    }
-  }
-
-  // ---------- Render Documentos ----------
-  function renderDocs(groups){
-    const host = document.getElementById('doc-accordions');
-    host.innerHTML = '';
-    const order = [
-      ['remesas','Remesas'],
-      ['ventas_z','Ventas Z'],
-      ['mercadopago','Mercado Pago'],
-      ['tarjeta','Tarjeta'],
-      ['rappi','Rappi'],
-      ['pedidosya','PedidosYa'],
-      ['gastos','Gastos'],
-      ['cuenta_cte','Cuenta Cte.'],
-    ];
-    const byKey = {}; (groups||[]).forEach(g=>byKey[g.key]=g);
-
-    // botón global "Todo" (en el header de la card)
-    ensureGlobalDownload(groups);
-
-    order.forEach(([key,label])=>{
-      const g = byKey[key] || {label, count:0, items:[]};
-      const acc = el('div', {'class':'doc-acc', 'aria-expanded':'false'});
-
-      // header con contador y botón de descarga del acordeón
-      const hdrLeft  = el('span', {}, g.label || label);
-      const hdrRight = el('span', {'class':'count'}, String(g.count||0));
-      const btnAccDownload = el('button', {
-        class: 'btn btn-ghost',
-        title: 'Descargar este grupo',
-        onclick: (e) => { e.stopPropagation(); bulkDownload(g.items || []); }
-      }, '💾');
-
-      const hdr = el('div', {'class':'doc-row', onclick:()=>toggle(acc)},
-        el('span', {}, hdrLeft, ' '),
-        el('span', {}, hdrRight, ' ', btnAccDownload)
-      );
-
-      // body
-      const body = el('div', {'class':'acc-body'},
-        (g.count ? buildThumbs(g.items) : el('div', {'class':'muted', style:'padding:10px;'}, 'Sin imágenes cargadas'))
-      );
-
-      acc.appendChild(hdr);
-      acc.appendChild(body);
-      host.appendChild(acc);
-    });
-
-    function toggle(acc){ acc.setAttribute('aria-expanded', acc.getAttribute('aria-expanded')==='true'?'false':'true'); }
-
-    function buildThumbs(items){
-      const wrap = el('div', {'class':'thumbs'});
-      (items||[]).forEach(it=>{
-        const src = it.view_url || it.view_path;       // Fallback clave
-        const card = el('div', {'class':'thumb'});
-
-        const img  = el('img', {src: src, alt: it.name || 'imagen'});
-        img.addEventListener('click', ()=> openModal(it));
-        card.appendChild(img);
-
-        const bar  = el('div', {'class':'meta'});
-        const name = el('span', {}, it.name || '—');
-
-        const actions = el('span', {style:'float:right; display:flex; gap:8px;'});
-        const btnZoom = el('button', {class:'btn-ghost', title:'Ver', onclick:()=>openModal(it)}, '🔍');
-        const btnDown = el('a', {href: src, download: it.name || 'archivo', title:'Descargar'}, '💾');
-
-        actions.appendChild(btnZoom);
-        actions.appendChild(btnDown);
-
-        bar.appendChild(name);
-        bar.appendChild(actions);
-
-        card.appendChild(bar);
-        wrap.appendChild(card);
-      });
-      return wrap;
-    }
-  }
-
-  function ensureGlobalDownload(groups){
-    // busca/crea el botón “Todo” en el header de la card de Documentos
-    const head = document.querySelector('.doc-card .doc-head');
+  function normalizeDocHeader() {
+    const head = document.querySelector(".doc-card .doc-head");
     if (!head) return;
-    let btn = head.querySelector('#btn-download-all');
-    if (!btn) {
-      btn = el('button', { id:'btn-download-all', class:'btn btn-ghost', title:'Descargar todas' }, 'Todo');
-      head.appendChild(btn);
+
+    // Quitar cualquier botón "Todo" sobrante que no sea el azul con id #doc-download-all
+    head.querySelectorAll("button").forEach((b) => {
+      const isGlobal = b.id === "doc-download-all";
+      const looksTodo = /todo/i.test((b.textContent || "").trim()) && !isGlobal;
+      if (looksTodo) b.remove();
+    });
+
+    // Asegurar icono SVG en el global
+    const gbtn = head.querySelector("#doc-download-all");
+    if (gbtn) {
+      gbtn.innerHTML = ICON_DOWNLOAD + '<span class="btn-text">Todo</span>';
     }
-    btn.onclick = async () => {
-      const allItems = [];
-      (groups||[]).forEach(g => (g.items||[]).forEach(it => allItems.push(it)));
-      if (!allItems.length) { alert('No hay imágenes para descargar.'); return; }
-      await bulkDownload(allItems);
-    };
   }
 
-  // ---------- Modal ----------
-  function openModal(it){
-    const src = it.view_url || it.view_path;          // Fallback en modal
-    document.getElementById('imgBig').src = src;
-    document.getElementById('imgCaption').textContent = it.name || '';
-    document.getElementById('imgModal').classList.add('is-open');
-  }
-  function closeModal(){
-    document.getElementById('imgModal').classList.remove('is-open');
-    document.getElementById('imgBig').src = '';
-  }
-  document.getElementById('imgClose')?.addEventListener('click', closeModal);
-  document.getElementById('imgModal')?.addEventListener('click', e => { if (e.target.id==='imgModal') closeModal(); });
+  function buildThumbCard(it) {
+    const card = document.createElement("div");
+    card.className = "thumb";
 
-  // ---------- Fetch Documentos ----------
-  async function loadMedia(){
-    const fecha = document.getElementById('rl-fecha').value;
-    const local = (document.getElementById('rl-local-select')?.value) || SESSION_LOCAL;
+    const top = document.createElement("div");
+    top.className = "thumb-top";
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.alt = it.name || "imagen";
+    img.src = it.view_path || it.view_url || "";
+    const fallback = document.createElement("div");
+    fallback.className = "media-fallback";
+    fallback.textContent = it.name || "Archivo";
+    img.onerror = () => { img.style.display = "none"; fallback.style.display = "block"; };
+
+    const actions = document.createElement("div");
+    actions.className = "thumb-actions";
+
+    const bZoom = document.createElement("button");
+    bZoom.className = "icon-btn"; bZoom.title = "Ver";
+    bZoom.innerHTML = ICON_ZOOM;
+    bZoom.addEventListener("click", (e) => { e.stopPropagation(); openModal(it); });
+
+    const bDown = document.createElement("button");
+    bDown.className = "icon-btn"; bDown.title = "Descargar";
+    bDown.innerHTML = ICON_DOWNLOAD;
+    bDown.addEventListener("click", (e) => { e.stopPropagation(); downloadSingle(it); });
+
+    actions.appendChild(bZoom); actions.appendChild(bDown);
+    top.appendChild(img); top.appendChild(actions);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = it.name || "—";
+
+    card.appendChild(top);
+    card.appendChild(meta);
+    card.appendChild(fallback);
+    card.addEventListener("click", () => openModal(it));
+    return card;
+  }
+
+  function renderDocs(groups) {
+    _lastGroups = groups || [];
+    const host = document.getElementById("doc-accordions");
+    if (host) host.innerHTML = ""; // <- evita ver markup viejo (íconos floppy)
+    const order = [
+      ["remesas", "Remesas"],
+      ["ventas_z", "Ventas Z"],
+      ["mercadopago", "Mercado Pago"],
+      ["tarjeta", "Tarjeta"],
+      ["rappi", "Rappi"],
+      ["pedidosya", "PedidosYa"],
+      ["gastos", "Gastos"],
+      ["cuenta_cte", "Cuenta Cte."],
+    ];
+    const byKey = {}; (groups || []).forEach((g) => (byKey[g.key] = g));
+
+    order.forEach(([key, label]) => {
+      const g = byKey[key] || { key, label, count: 0, items: [] };
+
+      const acc = document.createElement("div");
+      acc.className = "doc-acc";
+      acc.setAttribute("aria-expanded", "false");
+
+      const hdr = document.createElement("div");
+      hdr.className = "doc-row";
+
+      const left = document.createElement("div");
+      left.className = "row-left";
+      left.appendChild(document.createTextNode(g.label || label));
+      const badge = document.createElement("span");
+      badge.className = "count"; badge.textContent = String(g.count || 0);
+      left.appendChild(badge);
+
+      const actions = document.createElement("div");
+      actions.className = "doc-actions";
+      const btn = document.createElement("button");
+      btn.className = "icon-btn";
+      btn.title = "Descargar este acordeón";
+      btn.innerHTML = ICON_DOWNLOAD;
+      btn.addEventListener("click", (e) => { e.stopPropagation(); downloadGroup(g.key); });
+      actions.appendChild(btn);
+
+      hdr.appendChild(left); hdr.appendChild(actions);
+      hdr.addEventListener("click", () => {
+        const open = acc.getAttribute("aria-expanded") === "true";
+        acc.setAttribute("aria-expanded", open ? "false" : "true");
+      });
+
+      const body = document.createElement("div");
+      body.className = "acc-body";
+      if (g.count) {
+        const wrap = document.createElement("div"); wrap.className = "thumbs";
+        (g.items || []).forEach((it) => wrap.appendChild(buildThumbCard(it)));
+        body.appendChild(wrap);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "muted"; empty.style.padding = "10px";
+        empty.textContent = "Sin imágenes cargadas";
+        body.appendChild(empty);
+      }
+
+      acc.appendChild(hdr); acc.appendChild(body);
+      host?.appendChild(acc);
+    });
+
+    normalizeDocHeader(); // asegura header limpio e ícono correcto
+  }
+
+  // Descargas
+  function triggerDownload(href, filename) {
+    const a = document.createElement("a");
+    a.href = href; if (filename) a.download = filename; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 40);
+  }
+  function downloadSingle(item) {
+    triggerDownload(item.view_path || item.view_url || "#", item.name || "archivo");
+  }
+  function downloadGroup(key) {
+    const g = (_lastGroups || []).find((x) => x.key === key);
+    if (!g || !g.items?.length) return;
+    let i = 0; (function tick() { if (i >= g.items.length) return; downloadSingle(g.items[i++]); setTimeout(tick, 150); })();
+  }
+  function downloadAll() {
+    const all = []; (_lastGroups || []).forEach((g) => (g.items || []).forEach((it) => all.push(it)));
+    let i = 0; (function tick() { if (i >= all.length) return; downloadSingle(all[i++]); setTimeout(tick, 150); })();
+  }
+
+  // Modal
+  function openModal(it) {
+    _modalCurrentItem = it;
+    const img = document.getElementById("imgBig");
+    img.src = it.view_path || it.view_url || "";
+    document.getElementById("imgCaption").textContent = it.name || "";
+    document.getElementById("imgModal").classList.add("is-open");
+  }
+  function closeModal() {
+    document.getElementById("imgModal").classList.remove("is-open");
+    document.getElementById("imgBig").src = "";
+    _modalCurrentItem = null;
+  }
+
+  // Carga de imágenes
+  async function loadMedia() {
+    const fecha = document.getElementById("rl-fecha")?.value;
+    const local = document.getElementById("rl-local-select")?.value || window.SESSION_LOCAL;
     if (!fecha || !local) return;
-    const url = new URL('/files/summary_media', location.origin);
-    url.searchParams.set('fecha', fecha);
-    url.searchParams.set('local', local);
-    const r = await fetch(url.toString(), {credentials:'same-origin', cache:'no-store'});
-    if (!r.ok){ renderDocs([]); return; }
+
+    // Limpia antes de pedir para evitar ver markup viejo
+    const host = document.getElementById("doc-accordions");
+    if (host) host.innerHTML = "";
+
+    const url = new URL("/files/summary_media", location.origin);
+    url.searchParams.set("fecha", fecha);
+    url.searchParams.set("local", local);
+    const r = await fetch(url.toString(), { credentials: "same-origin", cache: "no-store" });
+    if (!r.ok) { renderDocs([]); return; }
     const data = await r.json();
     renderDocs(data.groups || []);
   }
 
-  // ---------- Refresh All ----------
-  async function refreshAll(){
-    const selectedLocal = (document.getElementById('rl-local-select')?.value) || SESSION_LOCAL;
-    document.getElementById('rl-local-display').textContent = selectedLocal;
-    document.getElementById('rl-actualizar')?.dispatchEvent(new Event('click')); // actualiza panel izquierdo
-    await loadMedia(); // panel derecho
+  async function refreshAll() {
+    const selLocal = document.getElementById("rl-local-select");
+    document.getElementById("rl-local-display").textContent = selLocal?.value || window.SESSION_LOCAL;
+    await updateResumen().catch(() => {});
+    await refreshEstadoLocalBadge().catch(() => {});
+    await loadMedia();
   }
 
-  // ---------- Boot ----------
-  document.addEventListener("DOMContentLoaded", async () => {
-    const inFecha = document.getElementById("rl-fecha");
-    setTodayIfEmpty(inFecha);
+  // Boot
+  document.addEventListener("DOMContentLoaded", () => {
+    setTodayIfEmpty(document.getElementById("rl-fecha"));
 
-    const topDate = document.getElementById("currentDate");
-    if (topDate) topDate.textContent = new Date().toLocaleDateString("es-AR");
-    setText("rl-fecha-display", inFecha?.value || "—");
-    setText("rl-hora-display", nowTime());
-    setText("rl-updated-at", new Date().toLocaleString("es-AR"));
+    // Normalizar header apenas carga (quita el "Todo" blanco si quedó del HTML viejo)
+    normalizeDocHeader();
 
+    // Listeners
+    document.getElementById("rl-actualizar")?.addEventListener("click", () => loadMedia());
+    document.getElementById("rl-fecha")?.addEventListener("change", () => refreshAll());
+    document.getElementById("rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
+    document.getElementById("imgClose")?.addEventListener("click", closeModal);
+    document.getElementById("imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });
+    document.getElementById("imgDownload")?.addEventListener("click", (e) => { e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem); });
+    document.getElementById("doc-download-all")?.addEventListener("click", downloadAll);
+
+    // Sidebar
     const btnSidebar = document.getElementById("toggleSidebar");
     const root = document.querySelector(".layout");
-    if (btnSidebar && root) {
-      btnSidebar.addEventListener("click", () => root.classList.toggle("sidebar-open"));
-    }
+    if (btnSidebar && root) btnSidebar.addEventListener("click", () => root.classList.toggle("sidebar-open"));
 
-    bindGeneralAccordions();
-    bindSubAccordions();
-
-    // listeners resumen numérico
-    document.getElementById("rl-actualizar")?.addEventListener("click", () => updateResumen().catch(console.error));
-    document.getElementById("rl-fecha")?.addEventListener("change", () => refreshAll().catch(console.error));
-    document.getElementById("rl-cerrar-local")?.addEventListener("click", cerrarLocal);
-    document.getElementById("rl-imprimir")?.addEventListener("click", () => window.print());
-
-    // locales (solo nivel 3)
-    await loadLocalesIfNeeded();
-
-    // primera carga
-    await updateResumen().catch(console.error);
-    await loadMedia();
-
-    // si cambia local (nivel 3) refrescamos ambos paneles
-    const sel = document.getElementById('rl-local-select');
-    if (sel) sel.addEventListener('change', () => refreshAll().catch(console.error));
+    // Primera carga
+    refreshAll().catch(console.error);
   });
 })();
