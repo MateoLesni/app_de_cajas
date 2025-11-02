@@ -20,8 +20,10 @@
     .doc-body { padding:12px; }
 
     .doc-actions { display:flex; gap:8px; align-items:center; }
-    .icon-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:700; }
-    .icon-btn:hover { background:#f1f5f9; }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; cursor:pointer; border:1px solid #cbd5e1; background:#fff; color:#334155; font-weight:700; }
+    .pill--primary { border-color:#2563eb; background:#2563eb; color:#fff; }
+    .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; cursor:pointer; }
+    .icon-btn svg, .pill .ico svg { width:16px; height:16px; display:block; }
 
     .doc-acc { border-bottom:1px solid #e5e7eb; }
     .doc-row { padding:10px 12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
@@ -35,9 +37,7 @@
     .thumb { background:#fff; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb; cursor:pointer; }
     .thumb .thumb-top { position:relative; }
     .thumb img { width:100%; height:140px; object-fit:cover; display:block; }
-    .thumb .thumb-actions {
-      position:absolute; right:6px; top:6px; display:flex; gap:6px;
-    }
+    .thumb .thumb-actions { position:absolute; right:6px; top:6px; display:flex; gap:6px; }
     .thumb .thumb-actions .icon-btn { padding:4px 6px; font-size:12px; }
     .thumb .meta { padding:6px 8px; font-size:.85rem; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .media-fallback { display:none; padding:6px 8px; font-size:.85rem; background:#f1f5f9; border-top:1px solid #e5e7eb; }
@@ -334,8 +334,11 @@
                   <small class="muted">Imágenes cargadas para auditoría</small>
                 </div>
                 <div class="doc-actions">
-                  <!-- Descarga global -->
-                  <button class="icon-btn" id="doc-download-all" title="Descargar todas las imágenes">⬇️ Todo</button>
+                  <!-- ÚNICO botón global -->
+                  <button class="pill pill--primary" id="dl-all" title="Descargar todas las imágenes">
+                    <span class="ico" aria-hidden="true"></span>
+                    <span>Todo</span>
+                  </button>
                 </div>
               </div>
               <div class="doc-body" id="doc-accordions"><!-- JS inyecta acordeones --></div>
@@ -350,8 +353,9 @@
   <div class="modal" id="imgModal" role="dialog" aria-modal="true" aria-label="Visor de imagen">
     <div class="box">
       <div class="modal-actions">
-        <!-- Descarga desde modal -->
-        <button class="icon-btn" id="imgDownload" title="Descargar">⬇️</button>
+        <button class="icon-btn" id="imgDownload" title="Descargar">
+          <!-- SVG lo inyecta JS -->
+        </button>
       </div>
       <button class="close" id="imgClose">Cerrar ✕</button>
       <img id="imgBig" alt="Imagen">
@@ -366,6 +370,25 @@
 
   <!-- JS propio de esta vista (para imágenes y filtros de auditor) -->
   <script>
+  /* ====== ICONOS SVG (consistentes) ====== */
+  const ICONS = {
+    download: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <path d="M7 10l5 5 5-5"/>
+        <path d="M12 15V3"/>
+      </svg>`,
+    search: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>`
+  };
+
   // Helpers mínimos
   function el(tag, attrs={}, ...children){
     const n = document.createElement(tag);
@@ -391,16 +414,36 @@
       if (l === window.SESSION_LOCAL) opt.selected = true;
       sel.appendChild(opt);
     });
-    // Espejar en el display del panel izquierdo
     document.getElementById('rl-local-display').textContent = sel.value || window.SESSION_LOCAL;
   }
 
-  // ===== Render de Documentos con DESCARGAS =====
-  let _lastGroups = [];            // cache para descargas por acordeón/todo
-  let _modalCurrentItem = null;    // item activo en modal
+  /* ===== Render de Documentos con DESCARGAS ===== */
+  let _lastGroups = [];
+  let _modalCurrentItem = null;
+
+  function iconBtn(onclick, title="Descargar", type='download') {
+    const b = document.createElement('button');
+    b.className = 'icon-btn';
+    b.type = 'button';
+    b.title = title;
+    b.innerHTML = ICONS[type] || ICONS.download;
+    if (onclick) b.addEventListener('click', e => { e.stopPropagation(); onclick(e); });
+    return b;
+  }
+
+  function ensureGlobalDlIcon() {
+    const all = document.getElementById('dl-all');
+    if (!all) return;
+    const ico = all.querySelector('.ico');
+    if (ico && !ico.firstChild) {
+      ico.innerHTML = ICONS.download;
+    }
+  }
 
   function renderDocs(groups){
     _lastGroups = groups || [];
+    ensureGlobalDlIcon();
+
     const host = document.getElementById('doc-accordions');
     host.innerHTML = '';
     const order = [
@@ -418,21 +461,14 @@
     order.forEach(([key,label])=>{
       const g = byKey[key] || {key, label, count:0, items:[]};
       const acc = el('div', {'class':'doc-acc', 'aria-expanded':'false'});
-      const hdr = el('div', {'class':'doc-row'},
-        el('div', {'class':'row-left'},
-          el('span', {}, g.label || label),
-          el('span', {'class':'count'}, String(g.count||0))
-        ),
-        el('div', {'class':'doc-actions'},
-          el('button', {
-            'class':'icon-btn',
-            'title':'Descargar este acordeón',
-            'data-acc-key': g.key,
-            onclick:(e)=>{ e.stopPropagation(); downloadGroup(g.key); }
-          }, '⬇️')
-        )
+      const hdrLeft = el('div', {'class':'row-left'},
+        el('span', {}, g.label || label),
+        el('span', {'class':'count'}, String(g.count||0))
       );
+      const hdrRight = el('div', {'class':'doc-actions'}, iconBtn(() => downloadGroup(g.key), `Descargar ${g.label||label}`, 'download'));
+      const hdr = el('div', {'class':'doc-row'}, hdrLeft, hdrRight);
       hdr.addEventListener('click', ()=>toggle(acc));
+
       const body = el('div', {'class':'acc-body'},
         g.count ? buildThumbs(g.items) : el('div', {'class':'muted', style:'padding:10px;'}, 'Sin imágenes cargadas')
       );
@@ -447,24 +483,19 @@
         const card = el('div', {'class':'thumb'});
         const top = el('div', {'class':'thumb-top'});
 
-        // MINIATURA: mismo origen
-        const img = el('img', {src: it.view_path || it.view_url || '', alt: it.name || 'imagen', loading:'lazy'});
+        const img = el('img', {src: it.view_path || it.view_url || '', alt: it.name || 'imagen', loading:'lazy', decoding:'async'});
+        const fallback = el('div', {'class':'media-fallback'}, it.name || 'Archivo');
         img.onerror = ()=>{ img.style.display='none'; fallback.style.display='block'; };
 
-        // Acciones en cada imagen
         const actions = el('div', {'class':'thumb-actions'});
-        const btnView = el('button', {'class':'icon-btn', 'title':'Ver', onclick:(e)=>{ e.stopPropagation(); openModal(it); }}, '🔍');
-        const btnDown = el('button', {'class':'icon-btn', 'title':'Descargar', onclick:(e)=>{ e.stopPropagation(); downloadSingle(it); }}, '⬇️');
-        actions.appendChild(btnView); actions.appendChild(btnDown);
+        actions.appendChild(iconBtn(()=>openModal(it), 'Ver', 'search'));
+        actions.appendChild(iconBtn(()=>downloadSingle(it), 'Descargar', 'download'));
 
         top.appendChild(img);
         top.appendChild(actions);
 
-        const fallback = el('div', {'class':'media-fallback'}, it.name || 'Archivo');
-
         const meta = el('div', {'class':'meta'}, it.name || '—');
 
-        // Click en la tarjeta = abrir
         card.addEventListener('click', ()=>openModal(it));
         card.appendChild(top);
         card.appendChild(meta);
@@ -475,13 +506,16 @@
     }
   }
 
-  // ===== Modal =====
+  /* ===== Modal ===== */
   function openModal(it){
     _modalCurrentItem = it;
     const img = document.getElementById('imgBig');
     img.src = it.view_path || it.view_url || '';
     document.getElementById('imgCaption').textContent = it.name || '';
     document.getElementById('imgModal').classList.add('is-open');
+    // Asegura SVG en botón del modal
+    const b = document.getElementById('imgDownload');
+    if (b && !b.firstChild) b.innerHTML = ICONS.download;
   }
   function closeModal(){
     document.getElementById('imgModal').classList.remove('is-open');
@@ -495,37 +529,32 @@
     if (_modalCurrentItem) downloadSingle(_modalCurrentItem);
   });
 
-  // ===== Descargas (single / group / all) =====
+  /* ===== Descargas ===== */
   function triggerDownload(href, filename){
-    // Intento 1: anchor + download (mismo origen). Aunque /files/view redirija, la mayoría de navegadores lo respetan.
     const a = document.createElement('a');
     a.href = href;
     if (filename) a.download = filename;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
-    setTimeout(()=>a.remove(), 50);
+    setTimeout(()=>a.remove(), 30);
   }
-
   function downloadSingle(item){
     const name = item.name || 'archivo';
     const href = (item.view_path || item.view_url || '#');
     triggerDownload(href, name);
   }
-
   function downloadGroup(key){
     const g = (_lastGroups||[]).find(x => x.key === key);
     if (!g || !g.items || !g.items.length) return;
-    // Descarga secuencial simple (evita bloquear por demasiadas descargas simultáneas)
     let i = 0;
     const tick = () => {
       if (i >= g.items.length) return;
       downloadSingle(g.items[i++]);
-      setTimeout(tick, 180); // leve delay
+      setTimeout(tick, 160);
     };
     tick();
   }
-
   function downloadAll(){
     const all = [];
     (_lastGroups||[]).forEach(g => (g.items||[]).forEach(it => all.push(it)));
@@ -534,13 +563,13 @@
     const tick = () => {
       if (i >= all.length) return;
       downloadSingle(all[i++]);
-      setTimeout(tick, 180);
+      setTimeout(tick, 160);
     };
     tick();
   }
-  document.getElementById('doc-download-all').addEventListener('click', downloadAll);
+  document.getElementById('dl-all').addEventListener('click', downloadAll);
 
-  // ===== Data load =====
+  /* ===== Fetch media ===== */
   async function loadMedia(){
     const fecha = document.getElementById('rl-fecha').value;
     const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
@@ -554,7 +583,7 @@
     renderDocs(data.groups || []);
   }
 
-  // Dispara actualización de ambos paneles
+  /* ===== Dispara actualización de ambos paneles ===== */
   async function refreshAll(){
     const selectedLocal = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
     document.getElementById('rl-local-display').textContent = selectedLocal;
