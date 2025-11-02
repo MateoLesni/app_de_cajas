@@ -284,12 +284,12 @@ def list_files():
     except Exception as e:
         current_app.logger.exception("files.list falló")
         return jsonify(success=False, msg=str(e)), 500
-
 @bp_files.route("/view", methods=["GET"])
 def view_item():
     """
     /files/view?id=<blob_name>
-    Redirige a Signed URL si puede; si no, sirve el binario directo.
+    - Si puede, redirige a Signed URL (302).
+    - Si no puede firmar, sirve el binario directo con mime correcto.
     """
     if not BUCKET_NAME:
         return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
@@ -307,20 +307,38 @@ def view_item():
 
         filename = (blob.metadata or {}).get("original_name") or blob.name.rsplit("__", 1)[-1]
 
+        # 1) Intentar URL firmada
         try:
             url = _signed_get(blob, filename)
             return redirect(url, code=302)
         except Exception:
             current_app.logger.exception("No se pudo firmar; sirviendo binario directo %s", blob.name)
-            data = blob.download_as_bytes()
+
+        # 2) Fallback: servir binario directo con MIME robusto
+        data = blob.download_as_bytes()
+
+        # Resolver mime de forma segura
+        lower = filename.lower()
+        if   lower.endswith((".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp")): mime = "image/jpeg"
+        elif lower.endswith(".png"):  mime = "image/png"
+        elif lower.endswith(".webp"): mime = "image/webp"
+        elif lower.endswith(".heic"): mime = "image/heic"
+        elif lower.endswith(".pdf"):  mime = "application/pdf"
+        else:
             mime = blob.content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
-            headers = {"Content-Disposition": f'inline; filename="{filename}"'}
-            return Response(data, mimetype=mime, headers=headers)
+
+        headers = {
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Cache-Control": "private, max-age=60",
+            "X-Content-Type-Options": "nosniff",
+        }
+        return Response(data, mimetype=mime, headers=headers)
 
     except gapi_exc.GoogleAPICallError as e:
         return jsonify(success=False, msg=f"GCS error: {e}"), 502
     except Exception as e:
         return jsonify(success=False, msg=str(e)), 500
+
 
 @bp_files.route("/item", methods=["DELETE"])
 def delete_item():
