@@ -12,7 +12,10 @@
     const d = new Date(), p = (n) => String(n).padStart(2, "0");
     return `${p(d.getHours())}:${p(d.getMinutes())}`;
   };
-  const setText = (id, val) => { const el = typeof id === "string" ? document.getElementById(id) : id; if (el) el.textContent = val; };
+  const setText = (id, val) => {
+    const el = typeof id === "string" ? document.getElementById(id) : id;
+    if (el) el.textContent = val;
+  };
   const setTodayIfEmpty = (input) => {
     if (!input || input.value) return;
     const d = new Date(), p = (n) => String(n).padStart(2, "0");
@@ -57,6 +60,35 @@
     el.textContent = txt; el.dataset.copy = txt; addCopyButton(el, () => txt);
   }
 
+  // ----------------- Acordeones (DATOS) -----------------
+  // Habilita/toggle para .sl-section (título) y .sub-acc (filas)
+  function wireDataAccordions(root = document) {
+    // Secciones principales
+    $$(".sl-section.acc .sl-title", root).forEach((title) => {
+      title.style.cursor = "pointer";
+      title.addEventListener("click", (e) => {
+        e.preventDefault();
+        const acc = title.closest(".acc");
+        if (!acc) return;
+        const open = acc.getAttribute("aria-expanded") === "true";
+        acc.setAttribute("aria-expanded", open ? "false" : "true");
+      });
+    });
+
+    // Sub-acordeones (filas con totales, p.ej. Ventas Z / Efectivo / etc.)
+    $$(".sub-acc.acc .sl-row", root).forEach((row) => {
+      row.style.cursor = "pointer";
+      row.addEventListener("click", (e) => {
+        // Evita que copiar/otros botones adentro disparen toggle
+        if ((e.target && (e.target.closest?.(".copy-btn") || e.target.closest?.("button"))) ) return;
+        const acc = row.closest(".acc");
+        if (!acc) return;
+        const open = acc.getAttribute("aria-expanded") === "true";
+        acc.setAttribute("aria-expanded", open ? "false" : "true");
+      });
+    });
+  }
+
   // ----------------- Ventas Z display -----------------
   function formatZDisplay(it) {
     const back = (it?.z_display || "").toString().trim(); if (back) return back;
@@ -72,6 +104,7 @@
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   }
+
   async function updateResumen() {
     const local = ($("#rl-local-display")?.textContent || "").trim();
     const fecha = $("#rl-fecha")?.value;
@@ -170,6 +203,9 @@
       "NARANJA": "rl-tip-naranja", "DECIDIR": "rl-tip-decidir", "DINERS": "rl-tip-diners", "PAGOS INMEDIATOS": "rl-tip-pagos-inm"
     };
     Object.entries(tipMap).forEach(([marca, id]) => setMoneyWithCopy(id, tbTips[marca] || 0));
+
+    // (re)conectar handlers de acordeones por si el DOM cambió
+    wireDataAccordions();
   }
 
   // ----------------- Estado Local -----------------
@@ -191,6 +227,7 @@
       if (btn) { btn.disabled = !abierto; btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado"; }
     } catch { /* noop */ }
   }
+
   async function cerrarLocal() {
     const fecha = $("#rl-fecha")?.value;
     if (!fecha) { alert("Seleccioná una fecha."); return; }
@@ -210,44 +247,25 @@
     } catch { alert("❌ Error de red."); } finally { if (btn) btn.textContent = oldTxt; }
   }
 
-  // ----------------- Documentos / Descargas -----------------
+  // ----------------- Documentos / Descargas (IMÁGENES) -----------------
   let _lastGroups = [];
   let _modalCurrentItem = null;
 
   function ensureGlobalDownloadButton() {
-    // Crea/normaliza SIEMPRE el botón azul "Descargar todo"
-    const head = document.querySelector(".doc-card .doc-head");
-    if (!head) return;
-
-    // Contenedor de acciones (crearlo si no existe)
-    let actions = head.querySelector(".doc-actions");
-    if (!actions) {
-      actions = document.createElement("div");
-      actions.className = "doc-actions";
-      head.appendChild(actions);
-    }
-
-    // Eliminar botones "Todo" heredados (texto TODO en blanco)
-    actions.querySelectorAll("button").forEach((b) => {
-      if (b.id !== "doc-download-all" && /todo/i.test((b.textContent || "").trim())) b.remove();
-    });
-
-    // Crear el botón global si falta
-    let gbtn = actions.querySelector("#doc-download-all");
-    if (!gbtn) {
-      gbtn = document.createElement("button");
-      gbtn.id = "doc-download-all";
-      gbtn.type = "button";
-      gbtn.className = "icon-btn";
-      actions.appendChild(gbtn);
+    // Normaliza SIEMPRE el botón azul "Descargar todo" (usa el que ya existe en el HTML: #dl-all)
+    const gbtn = document.getElementById("dl-all");
+    if (!gbtn) return;
+    // Ícono dentro del botón
+    const ico = gbtn.querySelector(".ico");
+    if (ico && !ico.firstChild) ico.innerHTML = ICON_DOWNLOAD;
+    // Handler único
+    if (!gbtn.dataset.wired) {
       gbtn.addEventListener("click", downloadAll);
+      gbtn.dataset.wired = "1";
     }
-    // Normalizar contenido (icono + texto)
-    gbtn.innerHTML = ICON_DOWNLOAD + '<span class="btn-text">Todo</span>';
-    gbtn.title = "Descargar todas las imágenes";
   }
 
-  function buildThumbCard(it) {
+  function buildThumbCard(it, groupCtx) {
     const card = document.createElement("div");
     card.className = "thumb";
 
@@ -256,12 +274,32 @@
 
     const img = document.createElement("img");
     img.loading = "lazy";
+    img.decoding = "async";
     img.alt = it.name || "imagen";
     img.src = it.view_path || it.view_url || "";
+
     const fallback = document.createElement("div");
     fallback.className = "media-fallback";
     fallback.textContent = it.name || "Archivo";
-    img.onerror = () => { img.style.display = "none"; fallback.style.display = "block"; };
+
+    // Si la imagen ya no existe (404), removemos la tarjeta y actualizamos contador
+    img.onerror = () => {
+      // remueve tarjeta
+      card.remove();
+      // resta del contador visual
+      if (groupCtx && groupCtx.badge) {
+        const n = Math.max(0, (parseInt(groupCtx.badge.textContent || "0", 10) || 0) - 1);
+        groupCtx.badge.textContent = String(n);
+        // si quedó en 0 y no hay más tarjetas, mostramos "Sin imágenes cargadas"
+        if (n === 0 && groupCtx.body) {
+          groupCtx.body.innerHTML = "";
+          const empty = document.createElement("div");
+          empty.className = "muted"; empty.style.padding = "10px";
+          empty.textContent = "Sin imágenes cargadas";
+          groupCtx.body.appendChild(empty);
+        }
+      }
+    };
 
     const actions = document.createElement("div");
     actions.className = "thumb-actions";
@@ -340,9 +378,10 @@
 
       const body = document.createElement("div");
       body.className = "acc-body";
-      if (g.count) {
+      if (g.count && (g.items || []).length) {
         const wrap = document.createElement("div"); wrap.className = "thumbs";
-        (g.items || []).forEach((it) => wrap.appendChild(buildThumbCard(it)));
+        const ctx = { badge, body };
+        (g.items || []).forEach((it) => wrap.appendChild(buildThumbCard(it, ctx)));
         body.appendChild(wrap);
       } else {
         const empty = document.createElement("div");
@@ -355,7 +394,7 @@
       host?.appendChild(acc);
     });
 
-    // Asegura que el botón global exista y quede normalizado
+    // Botón global de “Descargar todo”
     ensureGlobalDownloadButton();
   }
 
@@ -375,6 +414,7 @@
   }
   function downloadAll() {
     const all = []; (_lastGroups || []).forEach((g) => (g.items || []).forEach((it) => all.push(it)));
+    if (!all.length) return;
     let i = 0; (function tick() { if (i >= all.length) return; downloadSingle(all[i++]); setTimeout(tick, 150); })();
   }
 
@@ -383,8 +423,13 @@
     _modalCurrentItem = it;
     const img = document.getElementById("imgBig");
     img.src = it.view_path || it.view_url || "";
+    img.onerror = () => { // si justo ya no existe, cerramos
+      closeModal();
+    };
     document.getElementById("imgCaption").textContent = it.name || "";
     document.getElementById("imgModal").classList.add("is-open");
+    const dlBtn = document.getElementById("imgDownload");
+    if (dlBtn && !dlBtn.firstChild) dlBtn.innerHTML = ICON_DOWNLOAD;
   }
   function closeModal() {
     document.getElementById("imgModal").classList.remove("is-open");
@@ -416,8 +461,8 @@
     await updateResumen().catch(() => {});
     await refreshEstadoLocalBadge().catch(() => {});
     await loadMedia();
-    // Por si el HTML del header cambió tras el refresh, volvemos a asegurar el botón
     ensureGlobalDownloadButton();
+    wireDataAccordions();
   }
 
   // Boot
@@ -435,11 +480,14 @@
     document.getElementById("rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
     document.getElementById("imgClose")?.addEventListener("click", closeModal);
     document.getElementById("imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });
+    document.getElementById("imgDownload")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (_modalCurrentItem) downloadSingle(_modalCurrentItem);
+    });
 
-    // Asegurar desde el inicio el botón global y su handler
+    // Asegurar desde el inicio el botón global, los acordeones y la primera carga
     ensureGlobalDownloadButton();
-
-    // Primera carga
+    wireDataAccordions();
     refreshAll().catch(console.error);
   });
 })();
