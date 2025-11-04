@@ -1,14 +1,18 @@
 // static/js/resumen_local.js
 // =====================================================
-// Resumen Local (panel numérico + documentos/descargas)
-// Endpoints:
+// Resumen Local (numéricos + documentos) con guardia anti-doble init
+// Endpoints usados:
 //   GET  /api/resumen_local?local=...&fecha=YYYY-MM-DD
-//   GET  /estado_local?fecha=YYYY-MM-DD           -> {estado: 1|0}
-//   POST /api/cierre_local  body:{fecha:'YYYY-MM-DD'} -> {success:true}
+//   GET  /estado_local?fecha=YYYY-MM-DD
+//   POST /api/cierre_local {fecha}
 //   GET  /files/summary_media?local=...&fecha=YYYY-MM-DD
-//   GET  /files/view?id=<path>
+//   GET  /files/view?id=...
 // =====================================================
 (function () {
+  // ---- EVITA DOBLE INICIALIZACIÓN ----
+  if (window.__RL_INITED__) return;
+  window.__RL_INITED__ = true;
+
   // ----------------- Utils -----------------
   const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const money = (v) => fmt.format(Number(v ?? 0));
@@ -19,28 +23,24 @@
     const d = new Date(), p = (n) => String(n).padStart(2, "0");
     return `${p(d.getHours())}:${p(d.getMinutes())}`;
   };
-
-  const setText = (id, val, allowMissing = true) => {
+  const setText = (id, val) => {
     const el = typeof id === "string" ? document.getElementById(id) : id;
-    if (!el) { if (!allowMissing) console.warn("setText: missing", id); return; }
-    el.textContent = val;
+    if (el) el.textContent = val;
   };
-
   const setTodayIfEmpty = (input) => {
     if (!input || input.value) return;
     const d = new Date(), p = (n) => String(n).padStart(2, "0");
     input.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   };
 
-  // ----------------- Copy helpers -----------------
+  // copy helpers
   function getCopyTextFromElement(el) {
     if (!el) return "";
-    if (el.dataset && el.dataset.copy) return String(el.dataset.copy);
+    if (el.dataset?.copy) return String(el.dataset.copy);
     const clone = el.cloneNode(true);
     clone.querySelectorAll?.(".copy-btn")?.forEach((b) => b.remove());
     return (clone.textContent || "").trim();
   }
-
   function addCopyButton(target, getTextFn) {
     if (!target || target.querySelector(":scope > .copy-btn")) return;
     const btn = document.createElement("button");
@@ -51,7 +51,8 @@
       padding: "2px 6px", border: "1px solid #cbd5e1", borderRadius: "6px",
       background: "#f8fafc", cursor: "pointer"
     });
-    btn.title = "Copiar"; btn.textContent = "⧉";
+    btn.title = "Copiar";
+    btn.textContent = "⧉";
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
@@ -63,7 +64,6 @@
     });
     target.appendChild(btn);
   }
-
   function setMoneyWithCopy(id, val) {
     const el = typeof id === "string" ? document.getElementById(id) : id;
     if (!el) return;
@@ -73,19 +73,18 @@
     addCopyButton(el, () => txt);
   }
 
-  // ----------------- Acordeones (numéricos) -----------------
+  // ----------------- Acordeones numéricos -----------------
   function toggleAria(el) { if (!el) return; el.setAttribute("aria-expanded", el.getAttribute("aria-expanded") === "true" ? "false" : "true"); }
-  function bindGeneralAccordions() {
-    $$(".sl-section.acc").forEach((section) => section.querySelector(".sl-title")?.addEventListener("click", () => toggleAria(section)));
-  }
+  function bindGeneralAccordions() { $$(".sl-section.acc").forEach((s) => s.querySelector(".sl-title")?.addEventListener("click", () => toggleAria(s))); }
   function bindSubAccordions() {
     $$(".sub-acc.acc").forEach((sub) => {
       const row = sub.querySelector(".sl-row");
-      if (row) { if (!sub.hasAttribute("aria-expanded")) sub.setAttribute("aria-expanded", "false"); row.addEventListener("click", () => toggleAria(sub)); }
+      if (!sub.hasAttribute("aria-expanded")) sub.setAttribute("aria-expanded", "false");
+      row?.addEventListener("click", () => toggleAria(sub));
     });
   }
 
-  // ----------------- Ventas Z display -----------------
+  // ----------------- Ventas Z formatter -----------------
   function formatZDisplay(it) {
     const back = (it?.z_display || "").toString().trim();
     if (back) return back;
@@ -94,152 +93,163 @@
     return `${pv.padStart(5, "0")}-${num.padStart(8, "0")}`;
   }
 
-  // ----------------- Render (panel numérico) -----------------
-  function renderResumen(data) {
-    try {
-      const inFecha = document.getElementById("rl-fecha");
-      setText("rl-fecha-display", inFecha?.value || "—");
-      setText("rl-hora-display", nowTime());
-      setText("rl-updated-at", new Date().toLocaleString("es-AR"));
-
-      const r = data?.resumen || {};
-      setMoneyWithCopy("rl-venta-total", r.venta_total);
-      setMoneyWithCopy("rl-total-cobrado", r.total_cobrado);
-      setMoneyWithCopy("rl-diferencia", r.diferencia);
-      $("#rl-diferencia")?.classList.toggle("negative-amount", Number(r.diferencia ?? 0) < 0);
-
-      const v = data?.ventas || {};
-      setMoneyWithCopy("rl-vz-total", v.vta_z_total);
-      setMoneyWithCopy("rl-vz-total-foot", v.vta_z_total);
-      setMoneyWithCopy("rl-discovery", v.discovery);
-
-      const tbVz = $("#rl-vz-items");
-      if (tbVz) {
-        tbVz.innerHTML = "";
-        const items = Array.isArray(v.z_items) ? v.z_items : [];
-        if (!items.length) {
-          const tr = document.createElement("tr"); tr.className = "muted";
-          const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin ventas z cargadas";
-          tr.appendChild(td); tbVz.appendChild(tr);
-        } else {
-          items.forEach((it) => {
-            const tr = document.createElement("tr");
-            const display = formatZDisplay(it);
-            const tdName = document.createElement("td");
-            tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
-            const tdAmt = document.createElement("td");
-            const amtTxt = money(it?.monto ?? 0);
-            tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
-            tr.appendChild(tdName); tr.appendChild(tdAmt); tbVz.appendChild(tr);
-          });
-        }
-        const vzTbl = tbVz.closest("table"); if (vzTbl) addCopyToLabelCellsWithin(vzTbl);
-        const vzFoot = $("#rl-vz-total-foot"); if (vzFoot) addCopyButton(vzFoot, () => vzFoot.textContent);
-      }
-
-      // ===== VENTAS POR MEDIO (coerción explícita) =====
-      const info = data?.info || {};
-
-      const efectivo = info?.efectivo || {};
-      setMoneyWithCopy("rl-cash", Number(efectivo.total ?? 0));
-      setMoneyWithCopy("rl-remesas", Number(efectivo.remesas ?? 0));
-      setMoneyWithCopy("rl-cash-neto", Number(efectivo.neto_efectivo ?? 0));
-      setMoneyWithCopy("rl-remesas-ret-total", Number(efectivo.retiradas_total ?? 0));
-      setMoneyWithCopy("rl-remesas-no-ret-total", Number(efectivo.no_retiradas_total ?? 0));
-
-      const tarjeta = info?.tarjeta || {};
-      setMoneyWithCopy("rl-card", Number(tarjeta.total ?? 0));
-      const bk = tarjeta.breakdown || {};
-      const idMap = {
-        "VISA": "rl-tj-visa",
-        "VISA DEBITO": "rl-tj-visa-deb",
-        "VISA DÉBITO": "rl-tj-visa-deb",
-        "VISA PREPAGO": "rl-tj-visa-pre",
-        "MASTERCARD": "rl-tj-mc",
-        "MASTERCARD DEBITO": "rl-tj-mc-deb",
-        "MASTERCARD DÉBITO": "rl-tj-mc-deb",
-        "MASTERCARD PREPAGO": "rl-tj-mc-pre",
-        "CABAL": "rl-tj-cabal",
-        "CABAL DEBITO": "rl-tj-cabal-deb",
-        "CABAL DÉBITO": "rl-tj-cabal-deb",
-        "AMEX": "rl-tj-amex",
-        "MAESTRO": "rl-tj-maestro",
-        "NARANJA": "rl-tj-naranja",
-        "DECIDIR": "rl-tj-decidir",
-        "DINERS": "rl-tj-diners",
-        "PAGOS INMEDIATOS": "rl-tj-pagos-inm",
-      };
-      // limpia todos primero para evitar “arrastres”
-      Object.values(idMap).forEach((id) => setMoneyWithCopy(id, 0));
-      // carga reales
-      Object.entries(bk).forEach(([marca, val]) => {
-        const id = idMap[marca] || null;
-        if (id) setMoneyWithCopy(id, Number(val ?? 0));
-      });
-      setMoneyWithCopy("rl-card-total", Number(tarjeta.total ?? 0));
-
-      const mp = info?.mercadopago || {};
-      setMoneyWithCopy("rl-mp", Number(mp.total ?? 0));
-      setMoneyWithCopy("rl-mp-tips", Number(mp.tips ?? 0));
-
-      const rap = info?.rappi || {};
-      setMoneyWithCopy("rl-rappi", Number(rap.total ?? 0));
-      setMoneyWithCopy("rl-rappi-det", Number(rap.total ?? 0));
-
-      const pya = info?.pedidosya || {};
-      setMoneyWithCopy("rl-pedidosya", Number(pya.total ?? 0));
-      setMoneyWithCopy("rl-pedidosya-det", Number(pya.total ?? 0));
-
-      const gg = info?.gastos || {};
-      setMoneyWithCopy("rl-gastos", Number(gg.total ?? 0));
-      setMoneyWithCopy("rl-g-caja", Number(gg.caja_chica ?? 0));
-      setMoneyWithCopy("rl-g-otros", Number(gg.otros ?? 0));
-      setMoneyWithCopy("rl-g-total", Number(gg.total ?? 0));
-
-      const cc = info?.cuenta_cte || {};
-      setMoneyWithCopy("rl-cta-cte", Number(cc.total ?? 0));
-      setMoneyWithCopy("rl-cta-cte-det", Number(cc.total ?? 0));
-
-      const tips = info?.tips || {};
-      setMoneyWithCopy("rl-tips", Number(tips.total ?? 0));
-      setMoneyWithCopy("rl-tips-det", Number(tips.total ?? 0));
-      setMoneyWithCopy("rl-tips-mp", Number(tips.mp ?? 0));
-      setMoneyWithCopy("rl-tips-tarjetas", Number(tips.tarjetas ?? 0));
-      const tbTips = tips.breakdown || {};
-      const tipMap = {
-        "VISA": "rl-tip-visa",
-        "VISA DEBITO": "rl-tip-visa-deb",
-        "VISA DÉBITO": "rl-tip-visa-deb",
-        "VISA PREPAGO": "rl-tip-visa-pre",
-        "MASTERCARD": "rl-tip-mc",
-        "MASTERCARD DEBITO": "rl-tip-mc-deb",
-        "MASTERCARD DÉBITO": "rl-tip-mc-deb",
-        "MASTERCARD PREPAGO": "rl-tip-mc-pre",
-        "CABAL": "rl-tip-cabal",
-        "CABAL DEBITO": "rl-tip-cabal-deb",
-        "CABAL DÉBITO": "rl-tip-cabal-deb",
-        "AMEX": "rl-tip-amex",
-        "MAESTRO": "rl-tip-maestro",
-        "NARANJA": "rl-tip-naranja",
-        "DECIDIR": "rl-tip-decidir",
-        "DINERS": "rl-tip-diners",
-        "PAGOS INMEDIATOS": "rl-tip-pagos-inm",
-      };
-      Object.values(tipMap).forEach((id) => setMoneyWithCopy(id, 0));
-      Object.entries(tbTips).forEach(([marca, val]) => {
-        const id = tipMap[marca] || null;
-        if (id) setMoneyWithCopy(id, Number(val ?? 0));
-      });
-
-      // Copy en labels de varias tablas
-      ["rl-tj-visa", "rl-mp-tips", "rl-rappi-det", "rl-pedidosya-det", "rl-g-total", "rl-cta-cte-det", "rl-tips-det"]
-        .map((id) => document.getElementById(id)?.closest("table"))
-        .forEach((tbl) => { if (tbl) addCopyToLabelCellsWithin(tbl); });
-
-    } catch (e) { console.error("renderResumen error:", e); }
+  // ----------------- RENDER: panel numérico -----------------
+  function addCopyToLabelCellsWithin(container) {
+    if (!container) return;
+    container.querySelectorAll("tbody tr").forEach((tr) => {
+      const td = tr.querySelector("td:first-child");
+      if (td) addCopyButton(td, () => getCopyTextFromElement(td));
+    });
   }
 
-  // ----------------- Fetch resumen -----------------
+  function renderResumen(data) {
+    // meta
+    const inFecha = $("#rl-fecha");
+    setText("rl-fecha-display", inFecha?.value || "—");
+    setText("rl-hora-display", nowTime());
+    setText("rl-updated-at", new Date().toLocaleString("es-AR"));
+
+    // --- RESUMEN ---
+    const r = data?.resumen || {};
+    setMoneyWithCopy("rl-venta-total", r.venta_total);
+    setMoneyWithCopy("rl-total-cobrado", r.total_cobrado);
+    setMoneyWithCopy("rl-diferencia", r.diferencia);
+    $("#rl-diferencia")?.classList.toggle("negative-amount", Number(r.diferencia ?? 0) < 0);
+
+    // --- VENTAS Z ---
+    const v = data?.ventas || {};
+    setMoneyWithCopy("rl-vz-total", v.vta_z_total);
+    setMoneyWithCopy("rl-vz-total-foot", v.vta_z_total);
+    setMoneyWithCopy("rl-discovery", v.discovery);
+
+    const tbVz = $("#rl-vz-items");
+    if (tbVz) {
+      tbVz.innerHTML = "";
+      const items = Array.isArray(v.z_items) ? v.z_items : [];
+      if (!items.length) {
+        const tr = document.createElement("tr"); tr.className = "muted";
+        const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin ventas z cargadas";
+        tr.appendChild(td); tbVz.appendChild(tr);
+      } else {
+        items.forEach((it) => {
+          const tr = document.createElement("tr");
+          const display = formatZDisplay(it);
+          const tdName = document.createElement("td");
+          tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
+          const tdAmt = document.createElement("td");
+          const amtTxt = money(it?.monto ?? 0);
+          tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
+          tr.appendChild(tdName); tr.appendChild(tdAmt); tbVz.appendChild(tr);
+        });
+      }
+      const vzTbl = tbVz.closest("table"); if (vzTbl) addCopyToLabelCellsWithin(vzTbl);
+      const vzFoot = $("#rl-vz-total-foot"); if (vzFoot) addCopyButton(vzFoot, () => vzFoot.textContent || "");
+    }
+
+    // --- VENTAS POR MEDIO ---
+    const info = data?.info || {};
+
+    // Efectivo
+    const ef = info?.efectivo || {};
+    setMoneyWithCopy("rl-cash", Number(ef.total ?? 0));
+    setMoneyWithCopy("rl-remesas", Number(ef.remesas ?? 0));
+    setMoneyWithCopy("rl-cash-neto", Number(ef.neto_efectivo ?? 0));
+    setMoneyWithCopy("rl-remesas-ret-total", Number(ef.retiradas_total ?? 0));
+    setMoneyWithCopy("rl-remesas-no-ret-total", Number(ef.no_retiradas_total ?? 0));
+
+    // Tarjetas
+    const tj = info?.tarjeta || {};
+    setMoneyWithCopy("rl-card", Number(tj.total ?? 0));
+    const bk = tj.breakdown || {};
+    const idMap = {
+      "VISA": "rl-tj-visa",
+      "VISA DEBITO": "rl-tj-visa-deb",
+      "VISA DÉBITO": "rl-tj-visa-deb",
+      "VISA PREPAGO": "rl-tj-visa-pre",
+      "MASTERCARD": "rl-tj-mc",
+      "MASTERCARD DEBITO": "rl-tj-mc-deb",
+      "MASTERCARD DÉBITO": "rl-tj-mc-deb",
+      "MASTERCARD PREPAGO": "rl-tj-mc-pre",
+      "CABAL": "rl-tj-cabal",
+      "CABAL DEBITO": "rl-tj-cabal-deb",
+      "CABAL DÉBITO": "rl-tj-cabal-deb",
+      "AMEX": "rl-tj-amex",
+      "MAESTRO": "rl-tj-maestro",
+      "NARANJA": "rl-tj-naranja",
+      "DECIDIR": "rl-tj-decidir",
+      "DINERS": "rl-tj-diners",
+      "PAGOS INMEDIATOS": "rl-tj-pagos-inm",
+    };
+    // limpia todo y luego setea reales
+    Object.values(idMap).forEach((id) => setMoneyWithCopy(id, 0));
+    Object.entries(bk).forEach(([marca, val]) => {
+      const id = idMap[marca] || null;
+      if (id) setMoneyWithCopy(id, Number(val ?? 0));
+    });
+    setMoneyWithCopy("rl-card-total", Number(tj.total ?? 0));
+
+    // Otros medios
+    const mp = info?.mercadopago || {};
+    setMoneyWithCopy("rl-mp", Number(mp.total ?? 0));
+    setMoneyWithCopy("rl-mp-tips", Number(mp.tips ?? 0));
+
+    const rp = info?.rappi || {};
+    setMoneyWithCopy("rl-rappi", Number(rp.total ?? 0));
+    setMoneyWithCopy("rl-rappi-det", Number(rp.total ?? 0));
+
+    const py = info?.pedidosya || {};
+    setMoneyWithCopy("rl-pedidosya", Number(py.total ?? 0));
+    setMoneyWithCopy("rl-pedidosya-det", Number(py.total ?? 0));
+
+    const gg = info?.gastos || {};
+    setMoneyWithCopy("rl-gastos", Number(gg.total ?? 0));
+    setMoneyWithCopy("rl-g-caja", Number(gg.caja_chica ?? 0));
+    setMoneyWithCopy("rl-g-otros", Number(gg.otros ?? 0));
+    setMoneyWithCopy("rl-g-total", Number(gg.total ?? 0));
+
+    const cc = info?.cuenta_cte || {};
+    setMoneyWithCopy("rl-cta-cte", Number(cc.total ?? 0));
+    setMoneyWithCopy("rl-cta-cte-det", Number(cc.total ?? 0));
+
+    // Tips
+    const tips = info?.tips || {};
+    setMoneyWithCopy("rl-tips", Number(tips.total ?? 0));
+    setMoneyWithCopy("rl-tips-det", Number(tips.total ?? 0));
+    setMoneyWithCopy("rl-tips-mp", Number(tips.mp ?? 0));
+    setMoneyWithCopy("rl-tips-tarjetas", Number(tips.tarjetas ?? 0));
+    const tbTips = tips.breakdown || {};
+    const tipMap = {
+      "VISA": "rl-tip-visa",
+      "VISA DEBITO": "rl-tip-visa-deb",
+      "VISA DÉBITO": "rl-tip-visa-deb",
+      "VISA PREPAGO": "rl-tip-visa-pre",
+      "MASTERCARD": "rl-tip-mc",
+      "MASTERCARD DEBITO": "rl-tip-mc-deb",
+      "MASTERCARD DÉBITO": "rl-tip-mc-deb",
+      "MASTERCARD PREPAGO": "rl-tip-mc-pre",
+      "CABAL": "rl-tip-cabal",
+      "CABAL DEBITO": "rl-tip-cabal-deb",
+      "CABAL DÉBITO": "rl-tip-cabal-deb",
+      "AMEX": "rl-tip-amex",
+      "MAESTRO": "rl-tip-maestro",
+      "NARANJA": "rl-tip-naranja",
+      "DECIDIR": "rl-tip-decidir",
+      "DINERS": "rl-tip-diners",
+      "PAGOS INMEDIATOS": "rl-tip-pagos-inm",
+    };
+    Object.values(tipMap).forEach((id) => setMoneyWithCopy(id, 0));
+    Object.entries(tbTips).forEach(([marca, val]) => {
+      const id = tipMap[marca] || null;
+      if (id) setMoneyWithCopy(id, Number(val ?? 0));
+    });
+
+    // copy en labels
+    ["rl-tj-visa", "rl-mp-tips", "rl-rappi-det", "rl-pedidosya-det", "rl-g-total", "rl-cta-cte-det", "rl-tips-det"]
+      .map((id) => document.getElementById(id)?.closest("table"))
+      .forEach((tbl) => { if (tbl) addCopyToLabelCellsWithin(tbl); });
+  }
+
+  // ----------------- Fetch & estado local -----------------
   async function fetchResumenLocal(params) {
     const url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}`;
     const r = await fetch(url, { cache: "no-store" });
@@ -256,7 +266,6 @@
     await refreshEstadoLocalBadge();
   }
 
-  // ----------------- Estado Local -----------------
   async function refreshEstadoLocalBadge() {
     const fecha = $("#rl-fecha")?.value;
     const badge = $("#rl-badge-estado");
@@ -302,24 +311,20 @@
   // =====================================================
   //                DOCUMENTOS / IMÁGENES
   // =====================================================
-  const ICON_DOWNLOAD = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 3v10m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
-  const ICON_ZOOM = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
+  const ICON_DOWNLOAD = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v10m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ICON_ZOOM = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
   let _lastGroups = [];
   let _modalCurrentItem = null;
 
   function normalizeKey(raw) {
     const k = String(raw || "").toLowerCase();
-    const map = { tarjetas: "tarjeta", tarjeta: "tarjeta", ventasz: "ventas_z", "ventas z": "ventas_z", mp: "mercadopago" };
+    const map = { tarjetas: "tarjeta", tarjeta: "tarjeta", "ventas z": "ventas_z", ventasz: "ventas_z", mp: "mercadopago" };
     return map[k] || k;
   }
   function uniqueItems(items) {
     const seen = new Set();
-    return (items || []).filter(it => {
+    return (items || []).filter((it) => {
       const key = it.id || it.path || it.view_path || it.view_url || it.name;
       if (!key || seen.has(key)) return false;
       seen.add(key);
@@ -398,9 +403,11 @@
       const body = document.createElement("div"); body.className = "acc-body";
       if (count) {
         const wrap = document.createElement("div"); wrap.className = "thumbs";
-        g.items.forEach((it) => wrap.appendChild(buildThumbCard(it))); body.appendChild(wrap);
+        g.items.forEach((it) => wrap.appendChild(buildThumbCard(it)));
+        body.appendChild(wrap);
       } else {
-        const empty = document.createElement("div"); empty.className = "muted"; empty.style.padding = "10px"; empty.textContent = "Sin imágenes cargadas"; body.appendChild(empty);
+        const empty = document.createElement("div"); empty.className = "muted"; empty.style.padding = "10px"; empty.textContent = "Sin imágenes cargadas";
+        body.appendChild(empty);
       }
 
       acc.appendChild(hdr); acc.appendChild(body);
@@ -423,11 +430,11 @@
     document.getElementById("imgModal")?.classList.add("is-open");
     const b = document.getElementById("imgDownload"); if (b && !b.firstChild) b.innerHTML = ICON_DOWNLOAD;
   }
-  function closeModal() { document.getElementById("imgModal")?.classList.remove("is-open"); const img = document.getElementById("imgBig"); if (img) img.src=""; _modalCurrentItem = null; }
+  function closeModal() { document.getElementById("imgModal")?.classList.remove("is-open"); const img = document.getElementById("imgBig"); if (img) img.src = ""; _modalCurrentItem = null; }
 
   async function loadMedia() {
-    const fecha = document.getElementById("rl-fecha")?.value;
-    const local = (document.getElementById("rl-local-select")?.value) || window.SESSION_LOCAL;
+    const fecha = $("#rl-fecha")?.value;
+    const local = $("#rl-local-select")?.value || window.SESSION_LOCAL;
     if (!fecha || !local) return;
     const url = new URL("/files/summary_media", location.origin);
     url.searchParams.set("fecha", fecha);
@@ -439,8 +446,8 @@
   }
 
   async function refreshAll() {
-    const selLocal = document.getElementById("rl-local-select");
-    document.getElementById("rl-local-display").textContent = selLocal?.value || window.SESSION_LOCAL;
+    const selLocal = $("#rl-local-select");
+    $("#rl-local-display").textContent = selLocal?.value || window.SESSION_LOCAL;
     await updateResumen().catch(() => {});
     await loadMedia().catch(() => {});
     ensureGlobalDownloadButton();
@@ -448,23 +455,24 @@
 
   // ----------------- Boot -----------------
   document.addEventListener("DOMContentLoaded", () => {
-    setTodayIfEmpty(document.getElementById("rl-fecha"));
-    const btnSidebar = document.getElementById("toggleSidebar");
+    setTodayIfEmpty($("#rl-fecha"));
+    const btnSidebar = $("#toggleSidebar");
     const root = document.querySelector(".layout");
     if (btnSidebar && root) btnSidebar.addEventListener("click", () => root.classList.toggle("sidebar-open"));
 
-    bindGeneralAccordions(); bindSubAccordions();
+    bindGeneralAccordions();
+    bindSubAccordions();
 
-    document.getElementById("rl-actualizar")?.addEventListener("click", () => refreshAll());
-    document.getElementById("rl-fecha")?.addEventListener("change", () => refreshAll());
-    document.getElementById("rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
+    $("#rl-actualizar")?.addEventListener("click", () => refreshAll());
+    $("#rl-fecha")?.addEventListener("change", () => refreshAll());
+    $("#rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
 
-    document.getElementById("imgClose")?.addEventListener("click", closeModal);
-    document.getElementById("imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });
-    document.getElementById("imgDownload")?.addEventListener("click", (e) => { e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem); });
+    $("#imgClose")?.addEventListener("click", closeModal);
+    $("#imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });
+    $("#imgDownload")?.addEventListener("click", (e) => { e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem); });
 
     ensureGlobalDownloadButton();
     refreshAll().catch(console.error);
-    document.getElementById("rl-imprimir")?.addEventListener("click", () => window.print());
+    $("#rl-imprimir")?.addEventListener("click", () => window.print());
   });
 })();
