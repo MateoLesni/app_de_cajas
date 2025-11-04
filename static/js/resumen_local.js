@@ -11,7 +11,7 @@
 (function () {
   // ----------------- Utils -----------------
   const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const money = (v) => fmt.format(Number(v || 0));
+  const money = (v) => fmt.format(Number(v ?? 0));
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -51,8 +51,7 @@
       padding: "2px 6px", border: "1px solid #cbd5e1", borderRadius: "6px",
       background: "#f8fafc", cursor: "pointer"
     });
-    btn.title = "Copiar";
-    btn.textContent = "⧉";
+    btn.title = "Copiar"; btn.textContent = "⧉";
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
@@ -75,23 +74,14 @@
   }
 
   // ----------------- Acordeones (numéricos) -----------------
-  function toggleAria(el) {
-    if (!el) return;
-    el.setAttribute("aria-expanded", el.getAttribute("aria-expanded") === "true" ? "false" : "true");
-  }
+  function toggleAria(el) { if (!el) return; el.setAttribute("aria-expanded", el.getAttribute("aria-expanded") === "true" ? "false" : "true"); }
   function bindGeneralAccordions() {
-    $$(".sl-section.acc").forEach((section) => {
-      const head = section.querySelector(".sl-title");
-      if (head) head.addEventListener("click", () => toggleAria(section));
-    });
+    $$(".sl-section.acc").forEach((section) => section.querySelector(".sl-title")?.addEventListener("click", () => toggleAria(section)));
   }
   function bindSubAccordions() {
     $$(".sub-acc.acc").forEach((sub) => {
       const row = sub.querySelector(".sl-row");
-      if (row) {
-        if (!sub.hasAttribute("aria-expanded")) sub.setAttribute("aria-expanded", "false");
-        row.addEventListener("click", () => toggleAria(sub));
-      }
+      if (row) { if (!sub.hasAttribute("aria-expanded")) sub.setAttribute("aria-expanded", "false"); row.addEventListener("click", () => toggleAria(sub)); }
     });
   }
 
@@ -116,8 +106,7 @@
       setMoneyWithCopy("rl-venta-total", r.venta_total);
       setMoneyWithCopy("rl-total-cobrado", r.total_cobrado);
       setMoneyWithCopy("rl-diferencia", r.diferencia);
-      const diffEl = $("#rl-diferencia");
-      if (diffEl) diffEl.classList.toggle("negative-amount", Number(r.diferencia || 0) < 0);
+      $("#rl-diferencia")?.classList.toggle("negative-amount", Number(r.diferencia ?? 0) < 0);
 
       const v = data?.ventas || {};
       setMoneyWithCopy("rl-vz-total", v.vta_z_total);
@@ -139,34 +128,40 @@
             const tdName = document.createElement("td");
             tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
             const tdAmt = document.createElement("td");
-            const amtTxt = money(it?.monto || 0);
+            const amtTxt = money(it?.monto ?? 0);
             tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
             tr.appendChild(tdName); tr.appendChild(tdAmt); tbVz.appendChild(tr);
           });
         }
-        const vzFoot = $("#rl-vz-total-foot"); if (vzFoot) addCopyButton(vzFoot);
         const vzTbl = tbVz.closest("table"); if (vzTbl) addCopyToLabelCellsWithin(vzTbl);
+        const vzFoot = $("#rl-vz-total-foot"); if (vzFoot) addCopyButton(vzFoot, () => vzFoot.textContent);
       }
 
+      // ===== VENTAS POR MEDIO (coerción explícita) =====
       const info = data?.info || {};
-      // Efectivo
-      setMoneyWithCopy("rl-cash", info?.efectivo?.total);
-      setMoneyWithCopy("rl-remesas", info?.efectivo?.remesas);
-      setMoneyWithCopy("rl-cash-neto", info?.efectivo?.neto_efectivo);
-      setMoneyWithCopy("rl-remesas-ret-total", info?.efectivo?.retiradas_total);
-      setMoneyWithCopy("rl-remesas-no-ret-total", info?.efectivo?.no_retiradas_total);
-      // Tarjetas
-      setMoneyWithCopy("rl-card", info?.tarjeta?.total);
-      const bk = info?.tarjeta?.breakdown || {};
+
+      const efectivo = info?.efectivo || {};
+      setMoneyWithCopy("rl-cash", Number(efectivo.total ?? 0));
+      setMoneyWithCopy("rl-remesas", Number(efectivo.remesas ?? 0));
+      setMoneyWithCopy("rl-cash-neto", Number(efectivo.neto_efectivo ?? 0));
+      setMoneyWithCopy("rl-remesas-ret-total", Number(efectivo.retiradas_total ?? 0));
+      setMoneyWithCopy("rl-remesas-no-ret-total", Number(efectivo.no_retiradas_total ?? 0));
+
+      const tarjeta = info?.tarjeta || {};
+      setMoneyWithCopy("rl-card", Number(tarjeta.total ?? 0));
+      const bk = tarjeta.breakdown || {};
       const idMap = {
         "VISA": "rl-tj-visa",
         "VISA DEBITO": "rl-tj-visa-deb",
+        "VISA DÉBITO": "rl-tj-visa-deb",
         "VISA PREPAGO": "rl-tj-visa-pre",
         "MASTERCARD": "rl-tj-mc",
         "MASTERCARD DEBITO": "rl-tj-mc-deb",
+        "MASTERCARD DÉBITO": "rl-tj-mc-deb",
         "MASTERCARD PREPAGO": "rl-tj-mc-pre",
         "CABAL": "rl-tj-cabal",
         "CABAL DEBITO": "rl-tj-cabal-deb",
+        "CABAL DÉBITO": "rl-tj-cabal-deb",
         "AMEX": "rl-tj-amex",
         "MAESTRO": "rl-tj-maestro",
         "NARANJA": "rl-tj-naranja",
@@ -174,36 +169,55 @@
         "DINERS": "rl-tj-diners",
         "PAGOS INMEDIATOS": "rl-tj-pagos-inm",
       };
-      Object.entries(idMap).forEach(([marca, id]) => setMoneyWithCopy(id, bk[marca] || 0));
-      setMoneyWithCopy("rl-card-total", info?.tarjeta?.total);
-      // Otros medios
-      setMoneyWithCopy("rl-mp", info?.mercadopago?.total);
-      setMoneyWithCopy("rl-mp-tips", info?.mercadopago?.tips);
-      setMoneyWithCopy("rl-rappi", info?.rappi?.total);
-      setMoneyWithCopy("rl-rappi-det", info?.rappi?.total);
-      setMoneyWithCopy("rl-pedidosya", info?.pedidosya?.total);
-      setMoneyWithCopy("rl-pedidosya-det", info?.pedidosya?.total);
-      setMoneyWithCopy("rl-gastos", info?.gastos?.total);
-      setMoneyWithCopy("rl-g-caja", info?.gastos?.caja_chica);
-      setMoneyWithCopy("rl-g-otros", info?.gastos?.otros);
-      setMoneyWithCopy("rl-g-total", info?.gastos?.total);
-      setMoneyWithCopy("rl-cta-cte", info?.cuenta_cte?.total);
-      setMoneyWithCopy("rl-cta-cte-det", info?.cuenta_cte?.total);
-      // Tips
-      setMoneyWithCopy("rl-tips", info?.tips?.total);
-      setMoneyWithCopy("rl-tips-det", info?.tips?.total);
-      setMoneyWithCopy("rl-tips-mp", info?.tips?.mp);
-      setMoneyWithCopy("rl-tips-tarjetas", info?.tips?.tarjetas);
-      const tbTips = info?.tips?.breakdown || {};
+      // limpia todos primero para evitar “arrastres”
+      Object.values(idMap).forEach((id) => setMoneyWithCopy(id, 0));
+      // carga reales
+      Object.entries(bk).forEach(([marca, val]) => {
+        const id = idMap[marca] || null;
+        if (id) setMoneyWithCopy(id, Number(val ?? 0));
+      });
+      setMoneyWithCopy("rl-card-total", Number(tarjeta.total ?? 0));
+
+      const mp = info?.mercadopago || {};
+      setMoneyWithCopy("rl-mp", Number(mp.total ?? 0));
+      setMoneyWithCopy("rl-mp-tips", Number(mp.tips ?? 0));
+
+      const rap = info?.rappi || {};
+      setMoneyWithCopy("rl-rappi", Number(rap.total ?? 0));
+      setMoneyWithCopy("rl-rappi-det", Number(rap.total ?? 0));
+
+      const pya = info?.pedidosya || {};
+      setMoneyWithCopy("rl-pedidosya", Number(pya.total ?? 0));
+      setMoneyWithCopy("rl-pedidosya-det", Number(pya.total ?? 0));
+
+      const gg = info?.gastos || {};
+      setMoneyWithCopy("rl-gastos", Number(gg.total ?? 0));
+      setMoneyWithCopy("rl-g-caja", Number(gg.caja_chica ?? 0));
+      setMoneyWithCopy("rl-g-otros", Number(gg.otros ?? 0));
+      setMoneyWithCopy("rl-g-total", Number(gg.total ?? 0));
+
+      const cc = info?.cuenta_cte || {};
+      setMoneyWithCopy("rl-cta-cte", Number(cc.total ?? 0));
+      setMoneyWithCopy("rl-cta-cte-det", Number(cc.total ?? 0));
+
+      const tips = info?.tips || {};
+      setMoneyWithCopy("rl-tips", Number(tips.total ?? 0));
+      setMoneyWithCopy("rl-tips-det", Number(tips.total ?? 0));
+      setMoneyWithCopy("rl-tips-mp", Number(tips.mp ?? 0));
+      setMoneyWithCopy("rl-tips-tarjetas", Number(tips.tarjetas ?? 0));
+      const tbTips = tips.breakdown || {};
       const tipMap = {
         "VISA": "rl-tip-visa",
         "VISA DEBITO": "rl-tip-visa-deb",
+        "VISA DÉBITO": "rl-tip-visa-deb",
         "VISA PREPAGO": "rl-tip-visa-pre",
         "MASTERCARD": "rl-tip-mc",
         "MASTERCARD DEBITO": "rl-tip-mc-deb",
+        "MASTERCARD DÉBITO": "rl-tip-mc-deb",
         "MASTERCARD PREPAGO": "rl-tip-mc-pre",
         "CABAL": "rl-tip-cabal",
         "CABAL DEBITO": "rl-tip-cabal-deb",
+        "CABAL DÉBITO": "rl-tip-cabal-deb",
         "AMEX": "rl-tip-amex",
         "MAESTRO": "rl-tip-maestro",
         "NARANJA": "rl-tip-naranja",
@@ -211,7 +225,11 @@
         "DINERS": "rl-tip-diners",
         "PAGOS INMEDIATOS": "rl-tip-pagos-inm",
       };
-      Object.entries(tipMap).forEach(([marca, id]) => setMoneyWithCopy(id, tbTips[marca] || 0));
+      Object.values(tipMap).forEach((id) => setMoneyWithCopy(id, 0));
+      Object.entries(tbTips).forEach(([marca, val]) => {
+        const id = tipMap[marca] || null;
+        if (id) setMoneyWithCopy(id, Number(val ?? 0));
+      });
 
       // Copy en labels de varias tablas
       ["rl-tj-visa", "rl-mp-tips", "rl-rappi-det", "rl-pedidosya-det", "rl-g-total", "rl-cta-cte-det", "rl-tips-det"]
@@ -254,10 +272,7 @@
         badge.classList.toggle("sl-badge-open", abierto);
         badge.classList.toggle("sl-badge-closed", !abierto);
       }
-      if (btn) {
-        btn.disabled = !abierto;
-        btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado";
-      }
+      if (btn) { btn.disabled = !abierto; btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado"; }
     } catch { /* noop */ }
   }
 
@@ -274,14 +289,12 @@
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.success) {
-        if (r.status === 409 && data?.detalle?.length)
-          alert(`No se puede cerrar: hay cajas sin cerrar.\nDetalle: ${data.detalle.join(", ")}`);
+        if (r.status === 409 && data?.detalle?.length) alert(`No se puede cerrar: hay cajas sin cerrar.\nDetalle: ${data.detalle.join(", ")}`);
         else alert(`Error al cerrar el local: ${data?.msg || r.status}`);
         return;
       }
       alert("✅ Local cerrado y snapshot creado.");
-      await updateResumen();
-      await refreshEstadoLocalBadge();
+      await updateResumen(); await refreshEstadoLocalBadge();
     } catch { alert("❌ Error de red."); }
     finally { if (btn) btn.textContent = oldTxt; }
   }
@@ -296,19 +309,12 @@
     <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
-  let _lastGroups = [];   // para descargas
+  let _lastGroups = [];
   let _modalCurrentItem = null;
 
-  // Normaliza claves que llegan del back y evita duplicados
   function normalizeKey(raw) {
     const k = String(raw || "").toLowerCase();
-    const map = {
-      tarjetas: "tarjeta",
-      tarjeta: "tarjeta",
-      ventasz: "ventas_z",
-      "ventas z": "ventas_z",
-      mp: "mercadopago"
-    };
+    const map = { tarjetas: "tarjeta", tarjeta: "tarjeta", ventasz: "ventas_z", "ventas z": "ventas_z", mp: "mercadopago" };
     return map[k] || k;
   }
   function uniqueItems(items) {
@@ -331,57 +337,27 @@
   }
 
   function buildThumbCard(it) {
-    const card = document.createElement("div");
-    card.className = "thumb";
-
-    const top = document.createElement("div");
-    top.className = "thumb-top";
-
-    const img = document.createElement("img");
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.alt = it.name || "imagen";
-    img.src = it.view_path || it.view_url || "";
-
-    const fallback = document.createElement("div");
-    fallback.className = "media-fallback";
-    fallback.textContent = it.name || "Archivo";
-
+    const card = document.createElement("div"); card.className = "thumb";
+    const top = document.createElement("div"); top.className = "thumb-top";
+    const img = document.createElement("img"); img.loading = "lazy"; img.decoding = "async"; img.alt = it.name || "imagen"; img.src = it.view_path || it.view_url || "";
+    const fallback = document.createElement("div"); fallback.className = "media-fallback"; fallback.textContent = it.name || "Archivo";
     img.onerror = () => { img.style.display = "none"; fallback.style.display = "block"; };
-
-    const actions = document.createElement("div");
-    actions.className = "thumb-actions";
-
-    const bZoom = document.createElement("button");
-    bZoom.className = "icon-btn";
-    bZoom.title = "Ver";
-    bZoom.innerHTML = ICON_ZOOM;
-    bZoom.addEventListener("click", (e) => { e.stopPropagation(); openModal(it); });
-
-    const bDown = document.createElement("button");
-    bDown.className = "icon-btn";
-    bDown.title = "Descargar";
-    bDown.innerHTML = ICON_DOWNLOAD;
-    bDown.addEventListener("click", (e) => { e.stopPropagation(); downloadSingle(it); });
-
+    const actions = document.createElement("div"); actions.className = "thumb-actions";
+    const bZoom = document.createElement("button"); bZoom.className = "icon-btn"; bZoom.title = "Ver"; bZoom.innerHTML = ICON_ZOOM; bZoom.addEventListener("click", (e) => { e.stopPropagation(); openModal(it); });
+    const bDown = document.createElement("button"); bDown.className = "icon-btn"; bDown.title = "Descargar"; bDown.innerHTML = ICON_DOWNLOAD; bDown.addEventListener("click", (e) => { e.stopPropagation(); downloadSingle(it); });
     actions.appendChild(bZoom); actions.appendChild(bDown);
     top.appendChild(img); top.appendChild(actions);
-
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    meta.textContent = it.name || "—";
-
+    const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = it.name || "—";
     card.appendChild(top); card.appendChild(meta); card.appendChild(fallback);
     card.addEventListener("click", () => openModal(it));
     return card;
   }
 
   function renderDocs(groups) {
-    _lastGroups = []; // reset
+    _lastGroups = [];
     const host = document.getElementById("doc-accordions");
     if (host) host.innerHTML = "";
 
-    // Merge por clave canónica y de-dupe
     const byKey = {};
     (groups || []).forEach((g) => {
       const key = normalizeKey(g.key);
@@ -406,92 +382,48 @@
       const g = byKey[key] || { key, label: fallbackLabel, items: [] };
       const count = (g.items || []).length;
 
-      const acc = document.createElement("div");
-      acc.className = "doc-acc";
-      acc.setAttribute("aria-expanded", "false");
-
-      const hdr = document.createElement("div");
-      hdr.className = "doc-row";
-
-      const left = document.createElement("div");
-      left.className = "row-left";
+      const acc = document.createElement("div"); acc.className = "doc-acc"; acc.setAttribute("aria-expanded", "false");
+      const hdr = document.createElement("div"); hdr.className = "doc-row";
+      const left = document.createElement("div"); left.className = "row-left";
       left.appendChild(document.createTextNode(g.label || fallbackLabel));
-
-      const badge = document.createElement("span");
-      badge.className = "count";
-      badge.textContent = String(count);
+      const badge = document.createElement("span"); badge.className = "count"; badge.textContent = String(count);
       left.appendChild(badge);
-
-      const actions = document.createElement("div");
-      actions.className = "doc-actions";
-      const btn = document.createElement("button");
-      btn.className = "icon-btn";
-      btn.title = "Descargar este acordeón";
-      btn.innerHTML = ICON_DOWNLOAD;
+      const actions = document.createElement("div"); actions.className = "doc-actions";
+      const btn = document.createElement("button"); btn.className = "icon-btn"; btn.title = "Descargar este acordeón"; btn.innerHTML = ICON_DOWNLOAD;
       btn.addEventListener("click", (e) => { e.stopPropagation(); downloadGroup(key); });
       actions.appendChild(btn);
-
       hdr.appendChild(left); hdr.appendChild(actions);
-      hdr.addEventListener("click", () => {
-        acc.setAttribute("aria-expanded", acc.getAttribute("aria-expanded") === "true" ? "false" : "true");
-      });
+      hdr.addEventListener("click", () => acc.setAttribute("aria-expanded", acc.getAttribute("aria-expanded") === "true" ? "false" : "true"));
 
-      const body = document.createElement("div");
-      body.className = "acc-body";
-
+      const body = document.createElement("div"); body.className = "acc-body";
       if (count) {
-        const wrap = document.createElement("div");
-        wrap.className = "thumbs";
-        g.items.forEach((it) => wrap.appendChild(buildThumbCard(it)));
-        body.appendChild(wrap);
+        const wrap = document.createElement("div"); wrap.className = "thumbs";
+        g.items.forEach((it) => wrap.appendChild(buildThumbCard(it))); body.appendChild(wrap);
       } else {
-        const empty = document.createElement("div");
-        empty.className = "muted";
-        empty.style.padding = "10px";
-        empty.textContent = "Sin imágenes cargadas";
-        body.appendChild(empty);
+        const empty = document.createElement("div"); empty.className = "muted"; empty.style.padding = "10px"; empty.textContent = "Sin imágenes cargadas"; body.appendChild(empty);
       }
 
       acc.appendChild(hdr); acc.appendChild(body);
       host?.appendChild(acc);
-
-      _lastGroups.push({ key, items: g.items || [] }); // para descargas globales
+      _lastGroups.push({ key, items: g.items || [] });
     });
 
     ensureGlobalDownloadButton();
   }
 
-  // Descargas / modal
-  function triggerDownload(href, filename) {
-    const a = document.createElement("a");
-    a.href = href; if (filename) a.download = filename; a.rel = "noopener";
-    document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 40);
-  }
+  function triggerDownload(href, filename) { const a = document.createElement("a"); a.href = href; if (filename) a.download = filename; a.rel = "noopener"; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 40); }
   function downloadSingle(item) { triggerDownload(item.view_path || item.view_url || "#", item.name || "archivo"); }
-  function downloadGroup(key) {
-    const g = (_lastGroups || []).find((x) => x.key === key);
-    if (!g || !g.items?.length) return;
-    let i = 0; (function tick() { if (i >= g.items.length) return; downloadSingle(g.items[i++]); setTimeout(tick, 150); })();
-  }
-  function downloadAll() {
-    const all = []; (_lastGroups || []).forEach((g) => (g.items || []).forEach((it) => all.push(it)));
-    let i = 0; (function tick() { if (i >= all.length) return; downloadSingle(all[i++]); setTimeout(tick, 150); })();
-  }
+  function downloadGroup(key) { const g = (_lastGroups || []).find((x) => x.key === key); if (!g || !g.items?.length) return; let i = 0; (function tick() { if (i >= g.items.length) return; downloadSingle(g.items[i++]); setTimeout(tick, 150); })(); }
+  function downloadAll() { const all = []; (_lastGroups || []).forEach((g) => (g.items || []).forEach((it) => all.push(it))); let i = 0; (function tick() { if (i >= all.length) return; downloadSingle(all[i++]); setTimeout(tick, 150); })(); }
 
   function openModal(it) {
     _modalCurrentItem = it;
-    const img = document.getElementById("imgBig");
-    if (img) img.src = it.view_path || it.view_url || "";
+    const img = document.getElementById("imgBig"); if (img) img.src = it.view_path || it.view_url || "";
     setText("imgCaption", it.name || "");
     document.getElementById("imgModal")?.classList.add("is-open");
-    const b = document.getElementById("imgDownload");
-    if (b && !b.firstChild) b.innerHTML = ICON_DOWNLOAD;
+    const b = document.getElementById("imgDownload"); if (b && !b.firstChild) b.innerHTML = ICON_DOWNLOAD;
   }
-  function closeModal() {
-    document.getElementById("imgModal")?.classList.remove("is-open");
-    const img = document.getElementById("imgBig"); if (img) img.src = "";
-    _modalCurrentItem = null;
-  }
+  function closeModal() { document.getElementById("imgModal")?.classList.remove("is-open"); const img = document.getElementById("imgBig"); if (img) img.src=""; _modalCurrentItem = null; }
 
   async function loadMedia() {
     const fecha = document.getElementById("rl-fecha")?.value;
@@ -506,7 +438,6 @@
     renderDocs(data.groups || []);
   }
 
-  // ----------------- Refresh conjunto -----------------
   async function refreshAll() {
     const selLocal = document.getElementById("rl-local-select");
     document.getElementById("rl-local-display").textContent = selLocal?.value || window.SESSION_LOCAL;
@@ -518,35 +449,22 @@
   // ----------------- Boot -----------------
   document.addEventListener("DOMContentLoaded", () => {
     setTodayIfEmpty(document.getElementById("rl-fecha"));
-
-    // Sidebar
     const btnSidebar = document.getElementById("toggleSidebar");
     const root = document.querySelector(".layout");
     if (btnSidebar && root) btnSidebar.addEventListener("click", () => root.classList.toggle("sidebar-open"));
 
-    // Acordeones numéricos
-    bindGeneralAccordions();
-    bindSubAccordions();
+    bindGeneralAccordions(); bindSubAccordions();
 
-    // Listeners
     document.getElementById("rl-actualizar")?.addEventListener("click", () => refreshAll());
     document.getElementById("rl-fecha")?.addEventListener("change", () => refreshAll());
     document.getElementById("rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
 
-    // Modal
     document.getElementById("imgClose")?.addEventListener("click", closeModal);
     document.getElementById("imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });
-    document.getElementById("imgDownload")?.addEventListener("click", (e) => {
-      e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem);
-    });
+    document.getElementById("imgDownload")?.addEventListener("click", (e) => { e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem); });
 
-    // Botón global "Todo"
     ensureGlobalDownloadButton();
-
-    // Primera carga
     refreshAll().catch(console.error);
-
-    // Imprimir
     document.getElementById("rl-imprimir")?.addEventListener("click", () => window.print());
   });
 })();
