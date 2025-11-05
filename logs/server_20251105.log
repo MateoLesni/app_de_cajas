@@ -1,0 +1,143 @@
+2025-11-05 18:26:43,610 - waitress - INFO - Serving on http://0.0.0.0:8080
+2025-11-05 18:30:08,637 - waitress - INFO - Serving on http://0.0.0.0:8080
+2025-11-05 18:33:25,553 - waitress - INFO - Serving on http://0.0.0.0:8080
+2025-11-05 18:36:24,284 - waitress - INFO - Serving on http://0.0.0.0:8080
+2025-11-05 18:39:44,378 - waitress - INFO - Serving on http://127.0.0.1:8080
+2025-11-05 18:43:22,398 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-05 18:43:22,399 - mysql.connector - INFO - plugin_name: caching_sha2_password
+2025-11-05 18:43:22,406 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLCachingSHA2PasswordAuthPlugin
+2025-11-05 18:43:22,429 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-05 18:43:22,429 - mysql.connector - INFO - plugin_name: sha256_password
+2025-11-05 18:43:22,443 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLSHA256PasswordAuthPlugin
+2025-11-05 18:43:22,480 - app - ERROR - Exception on /login [POST]
+Traceback (most recent call last):
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 3637, in login
+    user = _fetch_user_by_username(username)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 3576, in _fetch_user_by_username
+    conn = get_db_connection()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 93, in get_db_connection
+    conn = mysql.connector.connect(
+        host=db_host or "127.0.0.1",
+        port=db_port,
+        **base_kwargs
+    )
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\pooling.py", line 294, in connect
+    return MySQLConnection(*args, **kwargs)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 164, in __init__
+    self.connect(**kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\abstracts.py", line 1181, in connect
+    self._open_connection()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 572, in _open_connection
+    self._do_auth(
+    ~~~~~~~~~~~~~^
+        self._user,
+        ^^^^^^^^^^^
+    ...<5 lines>...
+        self._conn_attrs,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 309, in _do_auth
+    self._auth_switch_request(username, password)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 366, in _auth_switch_request
+    raise get_exception(packet)
+mysql.connector.errors.ProgrammingError: 1045 (28000): Access denied for user 'app_cajas'@'localhost' (using password: YES)
+2025-11-05 18:43:45,722 - app - ERROR - Exception on /login [POST]
+Traceback (most recent call last):
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 3637, in login
+    user = _fetch_user_by_username(username)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 3576, in _fetch_user_by_username
+    conn = get_db_connection()
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\app.py", line 93, in get_db_connection
+    conn = mysql.connector.connect(
+        host=db_host or "127.0.0.1",
+        port=db_port,
+        **base_kwargs
+    )
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\pooling.py", line 294, in connect
+    return MySQLConnection(*args, **kwargs)
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 164, in __init__
+    self.connect(**kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\abstracts.py", line 1181, in connect
+    self._open_connection()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 572, in _open_connection
+    self._do_auth(
+    ~~~~~~~~~~~~~^
+        self._user,
+        ^^^^^^^^^^^
+    ...<5 lines>...
+        self._conn_attrs,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 309, in _do_auth
+    self._auth_switch_request(username, password)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\.venv\Lib\site-packages\mysql\connector\connection.py", line 366, in _auth_switch_request
+    raise get_exception(packet)
+mysql.connector.errors.ProgrammingError: 1045 (28000): Access denied for user 'app_cajas'@'localhost' (using password: YES)
+2025-11-05 19:09:14,712 - waitress - INFO - Serving on http://127.0.0.1:8080
+2025-11-05 19:09:25,192 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-05 19:09:25,193 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-05 19:09:25,223 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-05 19:09:33,419 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:09:33,509 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-05'}
+2025-11-05 19:09:35,363 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/
+2025-11-05 19:09:35,368 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:09:35,375 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-05'}
+2025-11-05 19:09:37,096 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/
+2025-11-05 19:09:37,101 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:09:37,112 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-05'}
+2025-11-05 19:09:38,936 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/
+2025-11-05 19:09:38,940 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:09:38,946 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-05'}
+2025-11-05 19:09:40,512 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/
+2025-11-05 19:09:40,518 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:09:40,529 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-05'}
+2025-11-05 19:09:42,244 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/05/caja-1/turno-dia/
+2025-11-05 19:10:04,471 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:04,505 - app - INFO - files.list prefix=fabric-sushi/tarjetas/2025/11/03/caja-1/turno-dia/ scope=day ctx={'tab': 'tarjetas', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-03'}
+2025-11-05 19:10:06,478 - app - INFO - files.list found=2 prefix=fabric-sushi/tarjetas/2025/11/03/caja-1/turno-dia/
+2025-11-05 19:10:06,485 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:06,494 - app - INFO - files.list prefix=fabric-sushi/tarjetas/2025/11/03/caja-1/turno-dia/ scope=day ctx={'tab': 'tarjetas', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-03'}
+2025-11-05 19:10:08,395 - app - INFO - files.list found=2 prefix=fabric-sushi/tarjetas/2025/11/03/caja-1/turno-dia/
+2025-11-05 19:10:20,058 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:24,587 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:25,055 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:25,055 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:25,960 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:26,022 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:26,024 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:26,030 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:27,877 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:29,228 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:29,271 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:29,806 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:30,120 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:39,954 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:40,014 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:43,878 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json
+2025-11-05 19:10:44,181 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json

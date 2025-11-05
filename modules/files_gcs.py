@@ -19,6 +19,11 @@ bp_files = Blueprint("files", __name__)
 logger = logging.getLogger("files_gcs")
 
 # ===================== Config =====================
+# NUEVO: flags para distinguir local vs nube sin romper prod
+ENV = (os.environ.get("ENV") or "").strip().lower()      # dev | prod | local (opcional)
+LOCAL_MODE = (os.environ.get("LOCAL_MODE") or "").strip().lower() in ("1", "true", "yes") or ENV in ("dev", "local")
+LOCAL_SA_PATH = (os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_LOCAL") or os.path.join(os.getcwd(), "secrets", "sa-cajas.json"))
+
 BUCKET_NAME  = os.environ.get("GCS_BUCKET", "")
 SIGNED_TTL   = int(os.environ.get("GCS_SIGNED_URL_TTL", "600"))
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"}
@@ -52,6 +57,30 @@ def _wrap_endpoint_with_login(endpoint_name: str):
 
 # ===================== Helpers =====================
 def _client():
+    """
+    NUEVO: Cliente Storage que:
+    - En local (LOCAL_MODE=True) intenta usar ./secrets/sa-cajas.json (o GOOGLE_APPLICATION_CREDENTIALS_LOCAL).
+    - Si no existe el JSON, o en prod, usa ADC (lo mismo que Cloud Run: service account del servicio).
+    - Limpia variables conflictivas cuando no corresponde.
+    """
+    # si estamos en local y existe el JSON, lo usamos
+    if LOCAL_MODE and LOCAL_SA_PATH and os.path.exists(LOCAL_SA_PATH):
+        # set temporal para este proceso
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = LOCAL_SA_PATH
+        try:
+            current_app.logger.info(f"[GCS] Modo LOCAL: usando SA JSON {LOCAL_SA_PATH}")
+        except Exception:
+            logger.info(f"[GCS] Modo LOCAL: usando SA JSON {LOCAL_SA_PATH}")
+        return storage.Client()
+
+    # si estamos en local pero NO hay JSON, avisamos y caemos a ADC
+    if LOCAL_MODE and (not os.path.exists(LOCAL_SA_PATH)):
+        try:
+            current_app.logger.warning(f"[GCS] Modo LOCAL sin JSON ({LOCAL_SA_PATH}); usando ADC fallback.")
+        except Exception:
+            logger.warning(f"[GCS] Modo LOCAL sin JSON ({LOCAL_SA_PATH}); usando ADC fallback.")
+
+    # en prod (o local sin json), garantizamos ADC (service account de Cloud Run)
     for k in ("GOOGLE_APPLICATION_CREDENTIALS", "GCP_SA_KEY_FILE", "GCP_SA_KEY_JSON"):
         os.environ.pop(k, None)
     return storage.Client()  # ADC
@@ -284,6 +313,7 @@ def list_files():
     except Exception as e:
         current_app.logger.exception("files.list falló")
         return jsonify(success=False, msg=str(e)), 500
+
 @bp_files.route("/view", methods=["GET"])
 def view_item():
     """
@@ -401,11 +431,9 @@ def delete_item():
     except Exception as e:
         return jsonify(success=False, msg=str(e)), 500
 
+# (estas importaciones ya estaban al final de tu archivo original)
 from flask import Blueprint, request, jsonify, session, current_app
 from datetime import datetime, date
-
-# Si ya tenés bp_files definido arriba, NO vuelvas a crearlo
-# bp_files = Blueprint("files", __name__)  # <-- ya existe
 
 def _lvl():
     try:
@@ -421,7 +449,6 @@ def _norm_fecha_str(s):
         return datetime.strptime(s, "%Y-%m-%d").strftime("%Y-%m-%d")
     except Exception:
         return None
-
 
 @bp_files.route("/summary_media", methods=["GET"])
 def files_summary_media():
@@ -484,14 +511,13 @@ def files_summary_media():
             blob = bucket.blob(path)
             safe_name = orig or path.rsplit("__", 1)[-1]
 
-            # <<< ESTA ES LA CLAVE >>>
             view_path, signed_url = _make_view_fields(blob, safe_name)
 
             groups[key]["items"].append({
                 "id": path,
                 "name": safe_name,
-                "view_url": signed_url,   # puede ser None si firmar falla
-                "view_path": view_path,   # SIEMPRE presente (fallback /files/view?id=...)
+                "view_url": signed_url,   # puede ser fallback a /files/view
+                "view_path": view_path,
                 "bytes": int(sizeb or 0),
                 "mime": mime or "image/*",
                 "path": path,
@@ -520,4 +546,3 @@ def files_summary_media():
         except: ...
         try: conn.close()
         except: ...
-
