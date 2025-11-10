@@ -295,6 +295,17 @@ def login_required(view):
 
 
 
+
+
+def _is_safe_url(target: str) -> bool:
+    """Evita open-redirects: sólo permite URLs relativas o del mismo host."""
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return (test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc)
+
+
 # ---------- Router por nivel ----------
 def route_for_current_role() -> str:
     """
@@ -313,6 +324,16 @@ def route_for_current_role() -> str:
     return url_for('index')
 
 
+
+
+
+
+
+
+
+
+
+
 @app.route('/home')
 @app.route('/inicio')
 @login_required
@@ -324,15 +345,21 @@ def go_home():
     return redirect(route_for_current_role())
 
 
-# (Opcional) usar esto en tu vista de login cuando autentiques OK
 def redirect_after_login():
     """
-    Si vino con ?next=... y es seguro, va ahí; si no, va al home por nivel.
-    Llamala al finalizar el login.
+    Decide adónde redirigir post-login:
+    - Respeta ?next= si es seguro.
+    - Si next apunta a raíz ('/') y el usuario es nivel 2, lo manda a /encargado.
+    - Si no hay next válido, va a la ruta por rol.
     """
-    nxt = request.args.get('next') or request.form.get('next')
-    # si querés, validá 'nxt' para evitar open redirects; por simplicidad lo ignoramos
-    return redirect(nxt or route_for_current_role())
+    nxt = request.args.get('next') or (request.form.get('next') if hasattr(request, 'form') else None)
+    if nxt and _is_safe_url(nxt):
+        if get_user_level() == 2:
+            path_only = urlparse(nxt).path or '/'
+            if path_only in ('/', url_for('index')):
+                return redirect(url_for('encargado'))
+        return redirect(nxt)
+    return redirect(route_for_current_role())
 
 
 # Inyectamos también la URL "inicio" correcta en los templates
@@ -415,10 +442,14 @@ load_dotenv()
 
 
 
-@app.route('/', endpoint='index')  # ← el endpoint pasa a llamarse "index"
+@app.route('/', endpoint='index')
 @login_required
-@page_access_required('index')               # ← valida el slug que ya tienen tus usuarios
+@page_access_required('index')
 def nuevo_registro():
+    # si es encargado (nivel 2), jamás ve '/', va a /encargado
+    if get_user_level() == 2:
+        return redirect(url_for('encargado'))
+
     local = session.get('local')
     conn = get_db_connection()
     cur = conn.cursor()
@@ -428,12 +459,54 @@ def nuevo_registro():
     row = cur.fetchone()
     cantidad_cajas = row[0] if row else 1
 
-    # turnos habilitados para este local
+    # turnos habilitados
     cur.execute("SELECT turnos FROM locales WHERE local = %s", (local,))
     turnos = [r[0] for r in cur.fetchall()] or ['UNI']
 
     cur.close(); conn.close()
     return render_template('index.html', cantidad_cajas=cantidad_cajas, turnos=turnos)
+
+
+@app.route('/encargado', endpoint='encargado')
+@login_required
+@role_min_required(2)  # o el slug que corresponda
+def encargado():
+    # Defensa por nivel (opcional, pero recomendado)
+    if get_user_level() < 2:
+        return redirect(route_for_current_role())
+
+    local = session.get('local')
+
+    # Default seguros si por algún motivo no hay local en sesión
+    cantidad_cajas = 1
+    turnos = ['UNI']
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # cantidad de cajas
+        cur.execute("SELECT cantidad_cajas FROM locales WHERE local = %s LIMIT 1", (local,))
+        row = cur.fetchone()
+        if row and row[0]:
+            cantidad_cajas = int(row[0])
+
+        # turnos habilitados
+        cur.execute("SELECT turnos FROM locales WHERE local = %s", (local,))
+        rows = cur.fetchall()
+        turnos = [r[0] for r in rows] or ['UNI']
+
+        cur.close(); conn.close()
+    except Exception:
+        # En caso de fallo DB, mantenemos defaults para no romper la vista
+        pass
+
+    # IMPORTANTE: pasar las variables que la plantilla espera
+    return render_template(
+        'index_encargado.html',
+        cantidad_cajas=cantidad_cajas,
+        turnos=turnos
+    )
 
 
 
@@ -3625,7 +3698,6 @@ def _update_last_access(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        # Podés pasar el next para mantenerlo en el form si querés
         nxt = request.args.get('next', '')
         return render_template('login.html', error=None, next=nxt)
 
@@ -3652,25 +3724,24 @@ def login():
     except Exception:
         return _fail()
 
-    # Poblar sesión con las MISMAS claves que usa tu app
+    # Sesión (mismas claves que usa tu app)
     session.clear()
     session['user_id']    = user['id']
     session['username']   = user['username']
     session['local']      = user.get('local')
     session['society']    = user.get('society')
-    session['role']       = user.get('role_name')       # 'cajero'|'encargado'|'auditor'
-    session['role_level'] = int(user.get('role_level') or 1)  # 1|2|3
-    session['pages']      = user.get('pages') or []     # ['index','reporte_remesas','resumen_local', ...]
-
+    session['role']       = user.get('role_name')                 # 'cajero'|'encargado'|'auditor'
+    session['role_level'] = int(user.get('role_level') or 1)      # 1|2|3
+    session['pages']      = user.get('pages') or []
     _update_last_access(user['id'])
 
-    # Si vino por HTML -> redirect
+    # Si vino por HTML -> redirigir respetando next y rol
     if request.form:
-        # respeta ?next=... si está; si no, manda a /home según el nivel
         return redirect_after_login()
 
-    # Si vino por API -> devolver destino sugerido
+    # Si vino por API -> sugerir destino
     return jsonify(ok=True, redirect=route_for_current_role())
+
 
 @app.route('/logout')
 def logout():
@@ -3691,6 +3762,7 @@ def logout():
 
 # === ruta nueva (Nivel 2) ===
 @app.route('/encargado', endpoint='carga_datos_encargado')
+@role_min_required(2)  # encargado+ crea usuarios
 @login_required
 def carga_datos_encargado():
     # seguridad de acceso por rol: mínimo 2
