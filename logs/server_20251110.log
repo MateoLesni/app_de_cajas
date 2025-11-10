@@ -1,0 +1,891 @@
+2025-11-10 09:54:39,627 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 09:54:39,627 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 09:54:39,633 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 09:54:42,327 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 09:54:42,330 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 09:59:08,583 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 09:59:08,584 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 09:59:08,587 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 09:59:11,296 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 09:59:11,299 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 09:59:22,499 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:22] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 09:59:22,577 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:22] "GET /login?next=/? HTTP/1.1" 200 -
+2025-11-10 09:59:22,628 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:22] "GET /static/css/login.css HTTP/1.1" 200 -
+2025-11-10 09:59:22,683 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:22] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-10 09:59:36,625 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:36] "[35m[1mPOST /login HTTP/1.1[0m" 500 -
+2025-11-10 09:59:36,696 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:36] "GET /login?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-11-10 09:59:36,719 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:36] "GET /login?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-11-10 09:59:36,804 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:36] "GET /login?__debugger__=yes&cmd=resource&f=console.png&s=F08aMvKhJu82lWPfdl7m HTTP/1.1" 200 -
+2025-11-10 09:59:36,853 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 09:59:36] "GET /login?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-11-10 10:07:13,275 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 10:07:13,275 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 10:07:13,278 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 10:07:15,722 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 10:07:15,725 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 10:07:18,277 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:18] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 10:07:18,302 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:18] "GET /login?next=/? HTTP/1.1" 200 -
+2025-11-10 10:07:18,341 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:18] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-10 10:07:20,257 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:20] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-10 10:07:24,773 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:24] "[35m[1mPOST /login HTTP/1.1[0m" 500 -
+2025-11-10 10:07:24,815 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:24] "[36mGET /login?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-11-10 10:07:24,816 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:24] "[36mGET /login?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-11-10 10:07:24,911 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:07:24] "GET /login?__debugger__=yes&cmd=resource&f=console.png&s=Htq3f5zcKAf9FgMT323J HTTP/1.1" 200 -
+2025-11-10 10:07:56,056 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 10:07:56,057 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 10:07:56,061 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 10:07:58,679 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 10:07:58,683 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 10:08:00,611 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:00] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 10:08:00,635 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:00] "GET /login?next=/? HTTP/1.1" 200 -
+2025-11-10 10:08:00,666 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:00] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-10 10:08:03,911 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-10 10:08:03,911 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-10 10:08:03,938 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-10 10:08:05,597 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:05] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-10 10:08:06,511 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "GET /encargado HTTP/1.1" 200 -
+2025-11-10 10:08:06,596 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,640 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,640 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,652 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,658 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,678 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,699 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,708 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,710 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,718 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,730 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,770 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,812 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:06] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:06,861 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:07,602 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:07] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:08:07,638 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:07] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:08:07,638 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:07] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 10:08:07,788 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:07] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:08:08,544 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:08] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 10:08:09,342 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:09] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 10:08:18,849 - app - ERROR - files.list falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 277, in list_files
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:19,056 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:19] "[35m[1mGET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 500 -
+2025-11-10 10:08:19,065 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:26,875 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:26,877 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:26,878 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:28,415 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:28] "GET /resumen-local HTTP/1.1" 200 -
+2025-11-10 10:08:28,451 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:28] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 10:08:28,478 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:28] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2025-11-10 10:08:28,508 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:28] "[36mGET /static/js/resumen_local.js HTTP/1.1[0m" 304 -
+2025-11-10 10:08:29,249 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:30,994 - app - ERROR - files.list falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 277, in list_files
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:30,998 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:30] "[35m[1mGET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 500 -
+2025-11-10 10:08:31,223 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:31] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 10:08:31,889 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:31] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 10:08:32,604 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:38,758 - app - ERROR - files.list falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 277, in list_files
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:38,762 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:38] "[35m[1mGET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 500 -
+2025-11-10 10:08:38,808 - app - ERROR - files.list falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 277, in list_files
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:38,814 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:38] "[35m[1mGET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 500 -
+2025-11-10 10:08:38,955 - app - ERROR - files.list falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 277, in list_files
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:38,960 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:38] "[35m[1mGET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 500 -
+2025-11-10 10:08:41,273 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:41,338 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:41] "[35m[1mGET /files/summary_media?fecha=2025-11-10&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:08:44,572 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:44,619 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:44] "[35m[1mGET /files/summary_media?fecha=2025-11-10&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:08:45,247 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:45,368 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:46,979 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:46] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:08:47,609 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:47] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:08:48,065 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:48] "GET /estado_local?fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:08:48,328 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:48] "GET /estado_local?fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:08:48,768 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:49,060 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:08:57,227 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:57] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 10:08:57,227 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:57] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2025-11-10 10:08:57,236 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:57] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-10 10:08:57,251 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:57,309 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:57] "[35m[1mGET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:08:57,457 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:08:57,506 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:08:57] "[35m[1mGET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:09:00,524 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:09:00,572 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:00] "[35m[1mGET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:09:01,181 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:09:01,277 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:01] "[35m[1mGET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:09:05,640 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:09:05,688 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:09:07,481 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:07] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-04 HTTP/1.1" 200 -
+2025-11-10 10:09:07,482 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:07] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-04 HTTP/1.1" 200 -
+2025-11-10 10:09:08,215 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:08] "GET /estado_local?fecha=2025-11-04 HTTP/1.1" 200 -
+2025-11-10 10:09:08,286 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:08] "GET /estado_local?fecha=2025-11-04 HTTP/1.1" 200 -
+2025-11-10 10:09:08,879 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:09:08,956 - app - WARNING - [GCS] Modo LOCAL sin JSON (C:\Users\gesti\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas\sa-cajas.json); usando ADC fallback.
+2025-11-10 10:09:17,675 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:09:17,737 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:09:17,878 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:17] "[35m[1mGET /files/summary_media?fecha=2025-11-04&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:09:17,878 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:17] "[35m[1mGET /files/summary_media?fecha=2025-11-04&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:09:20,819 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:09:20,882 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:20] "[35m[1mGET /files/summary_media?fecha=2025-11-04&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:09:21,130 - app - ERROR - files.summary_media falló
+Traceback (most recent call last):
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 503, in files_summary_media
+    client = _client()
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\modules\files_gcs.py", line 86, in _client
+    return storage.Client()  # ADC
+           ~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\storage\client.py", line 227, in __init__
+    super(Client, self).__init__(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        project=project,
+        ^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        _http=_http,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 339, in __init__
+    _ClientProjectMixin.__init__(self, project=project, credentials=credentials)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 287, in __init__
+    project = self._determine_default(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\client\__init__.py", line 306, in _determine_default
+    return _determine_default_project(project)
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\cloud\_helpers\__init__.py", line 152, in _determine_default_project
+    _, project = google.auth.default()
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\.venv\Lib\site-packages\google\auth\_default.py", line 739, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+2025-11-10 10:09:21,175 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:09:21] "[35m[1mGET /files/summary_media?fecha=2025-11-04&local=Fabric+Sushi HTTP/1.1[0m" 500 -
+2025-11-10 10:10:36,389 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 10:10:36,390 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 10:10:36,394 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 10:10:38,970 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 10:10:38,973 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 10:10:53,042 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-10 10:10:53,043 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-10 10:10:53,051 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-10 10:10:53,784 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "GET / HTTP/1.1" 200 -
+2025-11-10 10:10:53,809 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,828 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,829 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,830 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,830 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,835 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,838 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,844 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,846 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,856 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,866 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:53,868 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:53] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:54,512 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:54] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:54,657 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:10:54,756 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 10:10:55,330 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:55] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 10:10:55,332 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:55] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:10:55,333 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:55] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:10:55,401 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:55] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:10:56,752 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:56] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 10:10:56,871 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 10:10:56,872 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:56] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:10:56,876 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:10:56,882 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 10:10:57,090 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:57] "GET /resumen-local HTTP/1.1" 200 -
+2025-11-10 10:10:57,117 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:57] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 10:10:57,128 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:57] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2025-11-10 10:10:57,130 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:57] "[36mGET /static/js/resumen_local.js HTTP/1.1[0m" 304 -
+2025-11-10 10:10:57,632 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:57] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 10:10:57,910 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:10:57,916 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:57] "GET /files/summary_media?fecha=2025-11-10&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 10:10:58,627 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 10:10:58,628 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:58] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:10:58,633 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:10:58,639 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 10:10:59,537 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:10:59] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 10:11:00,256 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:00] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 10:11:00,328 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 10:11:00,329 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:00] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:11:00,334 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:00,340 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 10:11:01,021 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:01,027 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:01] "GET /files/summary_media?fecha=2025-11-10&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 10:11:02,173 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 10:11:02,175 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:02] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:11:02,179 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:02,186 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 10:11:02,415 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:02,416 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:03,088 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:03] "GET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 10:11:03,239 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:03] "GET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 10:11:03,252 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:03,255 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:03,257 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:04,558 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 10:11:04,565 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:04] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 10:11:04,569 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:05,071 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:11:05,082 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:05,179 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:11:05,848 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "[32mGET /files/view?id=fabric-sushi/remesas/2025/11/03/caja-1/turno-noche/9dedb892ef454a61a331b26c9cdbc6a0__image.jpg HTTP/1.1[0m" 302 -
+2025-11-10 10:11:05,864 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 10:11:05,874 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2025-11-10 10:11:05,894 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "GET /estado_local?fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:11:05,898 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-10 10:11:05,977 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:05] "[32mGET /files/view?id=fabric-sushi/ventas-z/2025/11/03/caja-1/turno-noche/bdf3520da0fc4ad69aa1cf18173084ce__image.jpg HTTP/1.1[0m" 302 -
+2025-11-10 10:11:06,018 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:06] "[32mGET /files/view?id=fabric-sushi/remesas/2025/11/03/caja-1/turno-dia/353ba339581a4af5a670090783666767__image.jpg HTTP/1.1[0m" 302 -
+2025-11-10 10:11:06,549 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:06] "GET /estado_local?fecha=2025-11-03 HTTP/1.1" 200 -
+2025-11-10 10:11:06,649 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:07,087 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:07] "GET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 10:11:07,087 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:07,089 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:07,327 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:07] "[32mGET /files/view?id=fabric-sushi/ventas-z/2025/11/03/caja-1/turno-noche/b58a75da90124cc9990e689789a4458d__image.jpg HTTP/1.1[0m" 302 -
+2025-11-10 10:11:07,431 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:07] "[33mGET /files/view?id=fabric-sushi/ventas-z/2025/11/03/caja-1/turno-dia/e34cb3c5622b4ffcb260234392ed745e__WhatsApp_Image_2025-10-20_at_13.28.33.jpeg HTTP/1.1[0m" 404 -
+2025-11-10 10:11:07,516 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 10:11:07,926 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:07] "GET /files/summary_media?fecha=2025-11-03&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 10:11:09,359 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:09] "[33mGET /files/view?id=fabric-sushi/ventas-z/2025/11/03/caja-1/turno-dia/5fa3aa2770634b05b136b520b7dbadc3__OC_44263_-_MR_1000068662_-_Cochinchina_-_CERVECERIA_y_MALTERIA_QUILMES_S.A._1.jpg HTTP/1.1[0m" 404 -
+2025-11-10 10:11:09,378 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:11:09] "[33mGET /files/view?id=fabric-sushi/ventas-z/2025/11/03/caja-1/turno-dia/5ef05b50f2694e6bac205d34279f4e74__prueba_0311_ventas.png HTTP/1.1[0m" 404 -
+2025-11-10 10:50:12,332 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 10:50:12,880 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 10:50:16,037 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 10:50:16,040 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 10:50:43,705 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 10:50:44,085 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 10:50:47,233 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 10:50:47,237 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 10:54:38,660 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 10:54:39,039 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 10:54:42,249 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 10:54:42,252 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 10:55:25,357 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:55:25] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-11-10 10:55:25,386 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:55:25] "GET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-11-10 10:55:25,396 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:55:25] "GET /?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-11-10 10:55:26,194 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:55:26] "GET /?__debugger__=yes&cmd=resource&f=console.png&s=IiUhoqb7dDTVvg0MteWG HTTP/1.1" 200 -
+2025-11-10 10:55:27,741 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 10:55:27] "GET /?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-11-10 11:01:04,399 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 11:01:04,891 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 11:01:36,892 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 11:01:36,893 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 11:01:36,896 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 11:01:39,602 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 11:01:39,607 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 11:01:42,394 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:01:42] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 11:01:42,412 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:01:42] "[31m[1mGET /encargado HTTP/1.1[0m" 403 -
+2025-11-10 11:01:50,136 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:01:50] "GET /login HTTP/1.1" 200 -
+2025-11-10 11:01:50,171 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:01:50] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-10 11:01:53,488 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-10 11:01:53,489 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-10 11:01:53,491 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-10 11:01:55,153 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:01:55] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-10 11:01:55,160 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:01:55] "[31m[1mGET /encargado HTTP/1.1[0m" 403 -
+2025-11-10 11:02:14,504 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:02:14] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-10 11:02:14,510 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:02:14] "[31m[1mGET /encargado HTTP/1.1[0m" 403 -
+2025-11-10 11:04:24,472 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 11:04:24,819 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 11:04:27,778 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 11:04:27,783 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 11:04:29,641 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-10 11:04:29,642 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-10 11:04:29,645 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 11:04:32,388 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 11:04:32,392 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 11:04:32,466 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:32] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 11:04:32,485 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:32] "GET /login?next=/? HTTP/1.1" 200 -
+2025-11-10 11:04:32,524 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:32] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-10 11:04:38,865 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-10 11:04:38,865 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-10 11:04:38,869 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-10 11:04:41,081 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:41] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-10 11:04:41,227 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:41] "[35m[1mGET /encargado HTTP/1.1[0m" 500 -
+2025-11-10 11:04:41,270 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:41] "GET /encargado?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-11-10 11:04:41,270 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:41] "GET /encargado?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-11-10 11:04:41,287 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:41] "GET /encargado?__debugger__=yes&cmd=resource&f=console.png&s=8kPN2b5y3i3vBdTd0hdx HTTP/1.1" 200 -
+2025-11-10 11:04:41,369 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:04:41] "GET /encargado?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-11-10 11:05:21,749 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 11:05:21,881 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 11:05:22,210 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 11:05:25,078 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 11:05:25,080 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 11:05:28,156 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:05:28] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 11:05:28,243 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:05:28] "[35m[1mGET /encargado HTTP/1.1[0m" 500 -
+2025-11-10 11:05:28,267 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:05:28] "[36mGET /encargado?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-11-10 11:05:28,270 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:05:28] "[36mGET /encargado?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-11-10 11:05:28,350 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:05:28] "GET /encargado?__debugger__=yes&cmd=resource&f=console.png&s=HCrPGYp3SqTe7IlBYdsK HTTP/1.1" 200 -
+2025-11-10 11:08:07,639 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-11-10 11:08:08,018 - werkzeug - INFO -  * Restarting with stat
+2025-11-10 11:08:10,920 - werkzeug - WARNING -  * Debugger is active!
+2025-11-10 11:08:10,923 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-10 11:08:14,620 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-10 11:08:14,621 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-10 11:08:14,624 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-10 11:08:15,214 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "GET / HTTP/1.1" 200 -
+2025-11-10 11:08:15,241 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,248 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,252 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,255 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,257 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,270 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,273 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,275 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,279 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,280 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,294 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,295 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:15,939 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:15] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:16,070 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:16,097 - app - INFO - files.list prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'La Mala', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-10'}
+2025-11-10 11:08:16,712 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:16] "[35m[1mGET /ventas_z_cargadas?local=La+Mala&caja=Caja+1&fecha=2025-11-10&turno=Turno+noche HTTP/1.1[0m" 500 -
+2025-11-10 11:08:16,713 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:16] "GET /estado_caja?local=La%20Mala&caja=Caja%201&fecha=2025-11-10&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-10 11:08:16,798 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:16] "[35m[1mGET /ventas_cargadas?local=La+Mala&caja=Caja+1&fecha=2025-11-10&turno=Turno+noche HTTP/1.1[0m" 500 -
+2025-11-10 11:08:16,809 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:16] "GET /estado_caja?local=La+Mala&caja=Caja+1&fecha=2025-11-10&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-10 11:08:17,761 - app - INFO - files.list found=0 prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/
+2025-11-10 11:08:17,762 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:17] "GET /files/list?tab=ventas_z&local=La+Mala&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-10 11:08:17,766 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:17,773 - app - INFO - files.list prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'La Mala', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-10'}
+2025-11-10 11:08:17,862 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:17] "GET /estado_caja?local=La%20Mala&caja=Caja%201&fecha=2025-11-10&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-10 11:08:18,549 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:18] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 11:08:19,561 - app - INFO - files.list found=0 prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/
+2025-11-10 11:08:19,561 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:19] "GET /files/list?tab=ventas_z&local=La+Mala&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-10 11:08:19,566 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:19,572 - app - INFO - files.list prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'La Mala', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-10'}
+2025-11-10 11:08:21,327 - app - INFO - files.list found=0 prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/
+2025-11-10 11:08:21,328 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:21] "GET /files/list?tab=ventas_z&local=La+Mala&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-10 11:08:21,332 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:21,337 - app - INFO - files.list prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'La Mala', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-10'}
+2025-11-10 11:08:22,550 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:22] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-11-10 11:08:22,563 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:22] "GET /login HTTP/1.1" 200 -
+2025-11-10 11:08:22,590 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:22] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:22,984 - app - INFO - files.list found=0 prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/
+2025-11-10 11:08:22,985 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:22] "GET /files/list?tab=ventas_z&local=La+Mala&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-10 11:08:22,990 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:22,996 - app - INFO - files.list prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'La Mala', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-10'}
+2025-11-10 11:08:24,765 - app - INFO - files.list found=0 prefix=la-mala/ventas-z/2025/11/10/caja-1/turno-noche/
+2025-11-10 11:08:24,766 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:24] "GET /files/list?tab=ventas_z&local=La+Mala&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-10 11:08:26,218 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:26] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-10 11:08:26,924 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:26] "GET /encargado HTTP/1.1" 200 -
+2025-11-10 11:08:26,979 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:26] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:26,980 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:26] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:26,986 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:26] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,005 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,008 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,011 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,021 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,053 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,057 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,063 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,068 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,075 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,076 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:27,093 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:27,105 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:27,875 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:27,876 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 11:08:27,882 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:27,883 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:27] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:28,741 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:28] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 11:08:28,810 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:28,811 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:28] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:28,816 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:28,824 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:29,443 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:29] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 11:08:30,573 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:30,574 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:30] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:30,580 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:30,588 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:31,806 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:31] "GET /resumen-local HTTP/1.1" 200 -
+2025-11-10 11:08:31,839 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:31] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:31,842 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:31] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:31,843 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:31] "[36mGET /static/js/resumen_local.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:32,614 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:32,615 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:32] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:32,621 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:32,631 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:32,678 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:32,685 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:32] "GET /files/summary_media?fecha=2025-11-10&local=Fabric+Sushi HTTP/1.1" 200 -
+2025-11-10 11:08:33,181 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:33] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 11:08:34,103 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "GET /encargado HTTP/1.1" 200 -
+2025-11-10 11:08:34,148 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,151 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,152 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,152 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,158 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,171 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,172 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,178 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,179 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,180 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,196 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,196 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,199 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:34,459 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:34,460 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:34,465 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:34,472 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:34,780 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "GET /api/resumen_local?local=Fabric%20Sushi&fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 11:08:34,978 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:34] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 11:08:35,038 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:35] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:35,177 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:35] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:35,225 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:35] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:35,955 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:35] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 11:08:36,587 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:36,588 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:36] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:36,593 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:36,602 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:36,874 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:36] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 11:08:38,490 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:38,491 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:38] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:38,496 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:38,503 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:38,593 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:38] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-10 11:08:39,205 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "GET /encargado HTTP/1.1" 200 -
+2025-11-10 11:08:39,235 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,237 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,240 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,242 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,247 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,255 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,259 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,261 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,266 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,275 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,276 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,277 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,291 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-10 11:08:39,308 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:39,314 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:39,888 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:39,931 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:39,989 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:39] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-10&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:40,037 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:40] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 11:08:40,440 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:40,441 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:40] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:40,732 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:40] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-10&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-10 11:08:41,346 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:41,347 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:41] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:41,351 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:41,356 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:41,434 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:41] "GET /estado_local?fecha=2025-11-10 HTTP/1.1" 200 -
+2025-11-10 11:08:43,051 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:43,051 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:43] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:43,060 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:43,075 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:44,989 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:44,991 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:44] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:44,998 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:45,005 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:46,796 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:46,797 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:46] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:08:46,803 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-10 11:08:46,811 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-10'}
+2025-11-10 11:08:48,527 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/10/caja-1/turno-dia/
+2025-11-10 11:08:48,528 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:08:48] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-10&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-10 11:11:23,553 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:11:23] "[31m[1mGET /reporteria/remesas HTTP/1.1[0m" 403 -
+2025-11-10 11:11:42,025 - werkzeug - INFO - 127.0.0.1 - - [10/Nov/2025 11:11:42] "[31m[1mGET /reporteria/remesas HTTP/1.1[0m" 403 -
