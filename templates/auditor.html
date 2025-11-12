@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Auditor – Carga Masiva</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 16px; }
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    label { font-size: 14px; color: #333; }
+    input, select, button { padding: 8px 10px; font-size: 14px; }
+    button { cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+    th { background: #f5f5f5; text-align: left; }
+    .right { text-align: right; }
+    .muted { color: #777; }
+  </style>
+</head>
+<body>
+  <h2>Visualización Auditor – Carga Masiva</h2>
+
+  <div class="toolbar">
+    <div>
+      <label for="sel-local">Local</label><br />
+      <select id="sel-local"></select>
+    </div>
+    <div>
+      <label for="inp-fecha">Fecha</label><br />
+      <input id="inp-fecha" type="date" />
+    </div>
+    <div style="align-self: end;">
+      <button id="btn-recargar">Recargar</button>
+      <button id="btn-copiar">Copiar (TSV 8 columnas)</button>
+    </div>
+    <div class="muted" id="status"></div>
+  </div>
+
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>Forma de Pago</th>
+        <th>Descripción</th>
+        <th>Tarjeta de Crédito</th>
+        <th>Plan</th>
+        <th>Cuotas</th>
+        <th>Nro de Lote</th>
+        <th>Cheque/Cupón</th>
+        <th>Pagado</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="{{ url_for('static', filename='js/auditor.js') }}"></script>
+</body>
+</html>

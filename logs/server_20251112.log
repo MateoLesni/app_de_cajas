@@ -1,0 +1,216 @@
+2025-11-12 13:32:53,644 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-12 13:32:53,647 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-12 13:32:53,652 - werkzeug - INFO -  * Restarting with stat
+2025-11-12 13:32:56,510 - werkzeug - WARNING -  * Debugger is active!
+2025-11-12 13:32:56,514 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-12 13:32:56,933 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-12 13:32:56,933 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-12 13:32:56,936 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-12 13:32:57,678 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "GET / HTTP/1.1" 200 -
+2025-11-12 13:32:57,713 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,727 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,729 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,732 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,734 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,736 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,753 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,753 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,756 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,762 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,768 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:57,775 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:57] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:58,418 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:58] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-12 13:32:58,542 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:58] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:32:58,544 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:58] "[31m[1mGET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1[0m" 400 -
+2025-11-12 13:32:58,546 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:58] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-12 13:32:58,580 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:32:58,626 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:32:59,375 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:59] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 13:32:59,418 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:59] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:32:59,469 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:59] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:32:59,510 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:59] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:32:59,552 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:32:59] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:33:00,766 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:00] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 13:33:00,809 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:00] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:33:00,939 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:33:00,940 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:00] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:33:00,943 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:33:00,947 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:33:01,602 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:01] "GET /estado_local?fecha=2025-11-12 HTTP/1.1" 200 -
+2025-11-12 13:33:02,539 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:33:02,540 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:02] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:33:02,544 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:33:02,547 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:33:04,304 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:33:04,304 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:04] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:33:04,308 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:33:04,311 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:33:05,585 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:33:05,585 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:05] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:33:05,589 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:33:05,592 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:33:07,077 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:33:07,078 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:33:07] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:20,089 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-12 13:37:20,089 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-12 13:37:20,091 - werkzeug - INFO -  * Restarting with stat
+2025-11-12 13:37:21,719 - werkzeug - WARNING -  * Debugger is active!
+2025-11-12 13:37:21,721 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-12 13:37:22,360 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-12 13:37:22,360 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-12 13:37:22,361 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-12 13:37:23,027 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "GET / HTTP/1.1" 200 -
+2025-11-12 13:37:23,043 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,044 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,048 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,052 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,054 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,058 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,060 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "GET /static/js/ventas.js HTTP/1.1" 200 -
+2025-11-12 13:37:23,067 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,067 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,069 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,071 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,074 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,440 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-12 13:37:23,509 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:37:23,509 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[31m[1mGET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1[0m" 400 -
+2025-11-12 13:37:23,510 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:23] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-12 13:37:23,530 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:37:23,558 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:37:24,341 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:24] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:37:24,474 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:24] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:24,903 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:24] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:24,911 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:24] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 13:37:24,945 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:24] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:25,308 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:37:25,309 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:25] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:25,312 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:37:25,316 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:37:25,824 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:25] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:37:25,825 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:25] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 13:37:26,579 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:37:26,580 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:26] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:26,583 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:37:26,586 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:37:26,662 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:26] "GET /estado_local?fecha=2025-11-12 HTTP/1.1" 200 -
+2025-11-12 13:37:27,945 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:37:27,945 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:27] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:27,950 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:37:27,952 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:37:28,994 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:37:28,995 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:28] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:37:28,998 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:37:29,002 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:37:30,310 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:37:30,310 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:37:30] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:02,270 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-12 13:44:02,271 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-12 13:44:02,273 - werkzeug - INFO -  * Restarting with stat
+2025-11-12 13:44:03,937 - werkzeug - WARNING -  * Debugger is active!
+2025-11-12 13:44:03,939 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-12 13:44:06,228 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-12 13:44:06,229 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-12 13:44:06,230 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-12 13:44:06,940 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "GET / HTTP/1.1" 200 -
+2025-11-12 13:44:06,956 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,965 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,965 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,967 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,968 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,972 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,975 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,980 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,986 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,987 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,990 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:06,991 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:06] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:07,351 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:07] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-12 13:44:07,420 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:07] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:44:07,421 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:07] "[31m[1mGET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1[0m" 400 -
+2025-11-12 13:44:07,422 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:07] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-12 13:44:07,442 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:44:07,465 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:44:08,236 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:08] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:44:08,237 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:08] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:08,251 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:08] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:08,259 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:08] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:08,296 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:08] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 13:44:08,830 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:44:08,831 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:08] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:08,835 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:44:08,839 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:44:09,054 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:09] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 13:44:09,135 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:09] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 13:44:09,902 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:09] "GET /estado_local?fecha=2025-11-12 HTTP/1.1" 200 -
+2025-11-12 13:44:10,300 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:44:10,301 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:10] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:10,305 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:44:10,308 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:44:11,734 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:44:11,734 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:11] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:11,738 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:44:11,743 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:44:13,021 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:44:13,021 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:13] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 13:44:13,025 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 13:44:13,029 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 13:44:14,468 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 13:44:14,468 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 13:44:14] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:21:52,746 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-12 14:21:52,747 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-12 14:21:52,751 - werkzeug - INFO -  * Restarting with stat
+2025-11-12 14:21:55,466 - werkzeug - WARNING -  * Debugger is active!
+2025-11-12 14:21:55,469 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-12 14:21:59,866 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-12 14:21:59,867 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-12 14:21:59,870 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-12 14:22:01,314 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "GET / HTTP/1.1" 200 -
+2025-11-12 14:22:01,342 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,344 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,356 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,363 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,363 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,364 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,372 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,378 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "GET /static/js/ventas.js HTTP/1.1" 200 -
+2025-11-12 14:22:01,396 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,401 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,406 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:01,409 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:01] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:02,061 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:02] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-12 14:22:02,189 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:02] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 14:22:02,189 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:02] "[31m[1mGET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1[0m" 400 -
+2025-11-12 14:22:02,192 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:02] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-12 14:22:02,234 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 14:22:02,279 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 14:22:02,959 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:02] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 14:22:03,028 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:03] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:03,038 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:03] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 14:22:03,046 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:03] "GET /ventas_z_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:03,058 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:03] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-12&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:04,087 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 14:22:04,088 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:04] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:04,093 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 14:22:04,098 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 14:22:04,249 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:04] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-12 14:22:04,287 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:04] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-12&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-12 14:22:05,139 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:05] "GET /estado_local?fecha=2025-11-12 HTTP/1.1" 200 -
+2025-11-12 14:22:06,070 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 14:22:06,071 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:06] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:06,075 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 14:22:06,081 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 14:22:07,687 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 14:22:07,688 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:07] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:07,692 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 14:22:07,700 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 14:22:09,624 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 14:22:09,625 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:09] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-12 14:22:09,629 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-12 14:22:09,637 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-12'}
+2025-11-12 14:22:11,572 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/12/caja-1/turno-dia/
+2025-11-12 14:22:11,573 - werkzeug - INFO - 127.0.0.1 - - [12/Nov/2025 14:22:11] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-12&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -

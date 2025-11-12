@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tabs: {
       ventasTab:      { endpoints: ['/ventas_cargadas','/ventas_z_cargadas'], render: renderVentas },
       mercadopago:    { endpoints: ['/mercadopago_cargadas'], render: renderMercadoPago },
-      tarjetas:       { endpoints: ['/tarjetas_cargadas_hoy','/tips_tarjetas_cargados'], render: renderTarjetas },
+      tarjetas:       { endpoints: ['/tarjetas_cargadas_hoy'], render: renderTarjetas },
       rappiTab:       { endpoints: ['/rappi_cargadas'], render: renderRappi },
       pedidosyaTab:   { endpoints: ['/pedidosya_cargadas'], render: renderPedidosYa },
       remesas:        { endpoints: ['/remesas_no_retiradas','/remesas_hoy'], render: renderRemesas },
