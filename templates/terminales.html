@@ -1,0 +1,416 @@
+<!-- templates/terminales.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Gestión de Terminales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #0b1220;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --accent: #22c55e;
+      --accent-2: #10b981;
+      --danger: #ef4444;
+      --border: #1f2a44;
+      --row: #0e1a2b;
+      --row-alt: #0d2238;
+      --focus: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg, #0a0f1f 0%, #071227 100%);
+      color: var(--text);
+    }
+    h1 { margin: 0 0 18px; font-weight: 700; letter-spacing: .2px; }
+    .card {
+      background: linear-gradient(180deg, #091326 0%, #0c1a33 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: end;
+    }
+    .toolbar .group {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    label { display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"] {
+      width: 100%;
+      background: #0a1326;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(56,189,248,.15); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #031a0b; font-weight: 700; border: 0;
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(16,185,129,.35), inset 0 -1px 0 rgba(0,0,0,.2);
+    }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .btn.secondary {
+      background: #0a1326; color: var(--text); border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .table-wrap {
+      overflow: auto; border: 1px solid var(--border);
+      border-radius: 14px; margin-top: 10px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left; font-size: 12px; color: var(--muted);
+      background: #0a1326; position: sticky; top: 0; z-index: 1;
+      border-bottom: 1px solid var(--border); padding: 12px;
+    }
+    tbody td { padding: 12px; border-bottom: 1px solid var(--border); }
+    tbody tr:nth-child(odd) { background: var(--row); }
+    tbody tr:nth-child(even){ background: var(--row-alt); }
+    .actions { display: flex; gap: 8px; }
+    .pill {
+      display:inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px;
+      background: #0b1b34; border: 1px solid var(--border); color: var(--muted);
+    }
+    .icon-btn {
+      background: #0a1326; color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 10px; cursor: pointer;
+    }
+    .icon-btn.danger {
+      border-color: rgba(239,68,68,.35);
+      color: #fecaca; background: #2a0a0a;
+    }
+    .inline-edit {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .inline-edit input[type="text"] { width: 220px; }
+    .empty {
+      text-align: center; padding: 20px; color: var(--muted);
+    }
+    .row-new {
+      background: #072210 !important; border-bottom: 1px solid #14532d !important;
+    }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px;}
+  </style>
+</head>
+<body>
+  <h1>Terminales (Nivel 3)</h1>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="group">
+        <label>Buscar (terminal o local)</label>
+        <input id="q" type="text" placeholder="Ej: POS-ALMA-01, 1653D333, Fabric Sushi..." />
+        <div class="hint">Búsqueda contiene. Se combina con el filtro por Local.</div>
+      </div>
+      <div class="group">
+        <label>Filtrar por Local</label>
+        <input id="f_local" type="text" placeholder="Ej: Fabric Sushi" />
+      </div>
+      <div>
+        <button id="btnReload" class="btn secondary" title="Recargar">🔄 Recargar</button>
+      </div>
+    </div>
+
+    <div class="group" style="margin-bottom: 10px;">
+      <label>Crear nueva Terminal</label>
+      <div class="inline-edit">
+        <input id="new_local" type="text" placeholder="Local (ej: Alma Café)" />
+        <input id="new_terminal" type="text" placeholder="Terminal (ej: POS-ALMA-01)" />
+        <button id="btnCreate" class="btn">➕ Crear</button>
+      </div>
+      <div class="hint">Se creará única por (Local, Terminal). El campo <em>creada_por</em> se completa automáticamente.</div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 16%">Local</th>
+            <th style="width: 20%">Terminal</th>
+            <th style="width: 18%">Creada por</th>
+            <th style="width: 18%">Fecha creación</th>
+            <th style="width: 28%">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyTerm">
+          <!-- filas dinámicas -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const $ = sel => document.querySelector(sel);
+      const tbody = $("#tbodyTerm");
+      const q = $("#q");
+      const fLocal = $("#f_local");
+      const btnReload = $("#btnReload");
+      const btnCreate = $("#btnCreate");
+      const newLocal = $("#new_local");
+      const newTerminal = $("#new_terminal");
+
+      let lastQuery = { q: "", local: "" };
+      let rows = [];
+
+      // Debounce simple
+      let t;
+      function debounce(fn, ms=250) {
+        return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+      }
+
+      function notify(msg, isErr=false) {
+        if (isErr) alert("❌ " + msg);
+        else console.log("✅ " + msg);
+      }
+
+      function fmtDate(s) {
+        if (!s) return "";
+        try {
+          const d = new Date(s);
+          if (isNaN(d.getTime())) return s;
+          return d.toLocaleString("es-AR");
+        } catch {
+          return s;
+        }
+      }
+
+      function render() {
+        tbody.innerHTML = "";
+        if (!rows || rows.length === 0) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 5;
+          td.className = "empty";
+          td.textContent = "No hay terminales para los filtros aplicados.";
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+          return;
+        }
+
+        rows.forEach(r => {
+          const tr = document.createElement("tr");
+          tr.dataset.id = r.id;
+
+          // Local (editable inline)
+          const tdLocal = document.createElement("td");
+          tdLocal.innerHTML = `
+            <div class="inline-edit">
+              <input type="text" class="ed-local" value="${escapeHtml(r.local)}" />
+            </div>
+          `;
+
+          // Terminal (editable inline)
+          const tdTerm = document.createElement("td");
+          tdTerm.innerHTML = `
+            <div class="inline-edit">
+              <input type="text" class="ed-terminal" value="${escapeHtml(r.terminal)}" />
+            </div>
+          `;
+
+          // creada_por
+          const tdUser = document.createElement("td");
+          tdUser.innerHTML = `<span class="pill">${escapeHtml(r.creada_por || "-")}</span>`;
+
+          // fecha
+          const tdDate = document.createElement("td");
+          tdDate.textContent = fmtDate(r.fecha_creacion);
+
+          // acciones
+          const tdActions = document.createElement("td");
+          tdActions.className = "actions";
+          tdActions.innerHTML = `
+            <button class="icon-btn btn-save" title="Guardar cambios">💾 Guardar</button>
+            <button class="icon-btn danger btn-del" title="Borrar">🗑️ Borrar</button>
+          `;
+
+          tr.appendChild(tdLocal);
+          tr.appendChild(tdTerm);
+          tr.appendChild(tdUser);
+          tr.appendChild(tdDate);
+          tr.appendChild(tdActions);
+          tbody.appendChild(tr);
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      async function loadData({force=false} = {}) {
+        const qv = (q.value || "").trim();
+        const lv = (fLocal.value || "").trim();
+        if (!force && qv === lastQuery.q && lv === lastQuery.local) return;
+
+        const params = new URLSearchParams();
+        if (lv) params.set("local", lv);
+        if (qv)  params.set("q", qv);
+
+        const url = "/api/terminales" + (params.toString() ? ("?" + params.toString()) : "");
+        try {
+          const r = await fetch(url);
+          if (!r.ok) {
+            const txt = await r.text();
+            notify(txt || `Error ${r.status}`, true);
+            return;
+          }
+          const data = await r.json();
+          if (!data.success) {
+            notify(data.msg || "Error de backend", true);
+            return;
+          }
+          rows = (data.items || []).sort((a,b) => {
+            const k1 = (a.local || "") + "|" + (a.terminal || "");
+            const k2 = (b.local || "") + "|" + (b.terminal || "");
+            return k1.localeCompare(k2, "es");
+          });
+          lastQuery = { q: qv, local: lv };
+          render();
+        } catch (e) {
+          notify("No se pudo cargar la lista", true);
+        }
+      }
+
+      async function createRow() {
+        const local = (newLocal.value || "").trim();
+        const terminal = (newTerminal.value || "").trim();
+        if (!local || !terminal) {
+          notify("Completá Local y Terminal", true);
+          return;
+        }
+        btnCreate.disabled = true;
+        try {
+          const r = await fetch("/api/terminales", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ local, terminal })
+          });
+          if (r.status === 403) { notify("No autorizado (solo nivel 3)", true); return; }
+          const data = await r.json();
+          if (!r.ok || !data.success) {
+            notify(data.msg || "No se pudo crear", true);
+            return;
+          }
+          // Prepend (con resaltado)
+          const item = data.item;
+          rows.unshift(item);
+          render();
+          const tr = tbody.querySelector('tr[data-id="'+ item.id +'"]');
+          if (tr) {
+            tr.classList.add("row-new");
+            setTimeout(() => tr.classList.remove("row-new"), 1400);
+          }
+          newLocal.value = "";
+          newTerminal.value = "";
+        } catch (e) {
+          notify("Error de red al crear", true);
+        } finally {
+          btnCreate.disabled = false;
+        }
+      }
+
+      async function saveRow(id, newLocal, newTerminal, btnEl) {
+        btnEl.disabled = true;
+        try {
+          const r = await fetch(`/api/terminales/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ local: newLocal, terminal: newTerminal })
+          });
+          if (r.status === 403) { notify("No autorizado (solo nivel 3)", true); return; }
+          const data = await r.json();
+          if (!r.ok || !data.success) {
+            notify(data.msg || "No se pudo guardar", true);
+            return;
+          }
+          // Reemplazar fila en memoria
+          const idx = rows.findIndex(x => x.id === id);
+          if (idx >= 0) rows[idx] = data.item;
+          render();
+          notify("Cambios guardados");
+        } catch (e) {
+          notify("Error de red al guardar", true);
+        } finally {
+          btnEl.disabled = false;
+        }
+      }
+
+      async function deleteRow(id, btnEl) {
+        if (!confirm("¿Borrar esta terminal? Esta acción no se puede deshacer.")) return;
+        btnEl.disabled = true;
+        try {
+          const r = await fetch(`/api/terminales/${id}`, { method: "DELETE" });
+          if (r.status === 403) { notify("No autorizado (solo nivel 3)", true); return; }
+          const data = await r.json();
+          if (!r.ok || !data.success) {
+            notify(data.msg || "No se pudo borrar", true);
+            return;
+          }
+          rows = rows.filter(x => x.id !== id);
+          render();
+          notify("Terminal borrada");
+        } catch (e) {
+          notify("Error de red al borrar", true);
+        } finally {
+          btnEl.disabled = false;
+        }
+      }
+
+      // Listeners
+      btnReload.addEventListener("click", () => loadData({force:true}));
+      btnCreate.addEventListener("click", createRow);
+
+      q.addEventListener("input", debounce(() => loadData(), 300));
+      fLocal.addEventListener("input", debounce(() => loadData(), 300));
+
+      tbody.addEventListener("click", ev => {
+        const btn = ev.target.closest("button");
+        if (!btn) return;
+        const tr = ev.target.closest("tr");
+        const id = parseInt(tr?.dataset?.id || "0", 10);
+        if (!id) return;
+
+        if (btn.classList.contains("btn-save")) {
+          const newL = tr.querySelector(".ed-local")?.value?.trim() || "";
+          const newT = tr.querySelector(".ed-terminal")?.value?.trim() || "";
+          if (!newL || !newT) { notify("Local y Terminal no pueden estar vacíos", true); return; }
+          saveRow(id, newL, newT, btn);
+          return;
+        }
+        if (btn.classList.contains("btn-del")) {
+          deleteRow(id, btn);
+          return;
+        }
+      });
+
+      // Carga inicial
+      loadData({force:true});
+    })();
+  </script>
+</body>
+</html>

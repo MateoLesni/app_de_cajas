@@ -81,39 +81,6 @@
           Carga de Datos
         </a>
 
-      <!-- Grupo: Reportería (desplegable) -->
-      <div class="nav-group {% if request.path.startswith('/reporteria') %}is-open{% endif %}">
-        <!-- Toggle con el MISMO look de .nav-item -->
-        <a href="javascript:void(0)"
-          id="navReportes"
-          class="nav-item nav-toggle {% if request.path.startswith('/reporteria') %}is-active{% endif %}"
-          aria-expanded="{% if request.path.startswith('/reporteria') %}true{% else %}false{% endif %}">
-          <span class="nav-dot" aria-hidden="true"></span>
-          <span>Reportería</span>
-          <!-- caret -->
-          <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              aria-hidden="true" focusable="false" style="margin-left:auto;">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </a>
-
-        <!-- Subitems con leve sangría -->
-        <div class="nav-sub">
-          <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
-            href="{{ url_for('ui_reporteria_remesas') }}">
-            <span class="nav-dot" aria-hidden="true"></span>
-            Remesas
-          </a>
-
-          <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
-            href="{{ url_for('ui_reporteria_remesas') if false else '#' }}">
-            <span class="nav-dot" aria-hidden="true"></span>
-            Cuentas Corrientes
-          </a>
-        </div>
-      </div>
-
       <div class="sidebar__footer">
         <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
       </div>

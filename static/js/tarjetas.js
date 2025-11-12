@@ -1,82 +1,110 @@
-// tarjetas.js — integrado con OrqTabs: render controlado por el orquestador (con TURNO)
 "use strict";
 
 document.addEventListener("DOMContentLoaded", function () {
-  // ---------- Referencias DOM ----------
-  const tarjetasTab             = document.getElementById("tarjetas");
-  const tarjetaForm             = document.getElementById("tarjetasForm");
-  const tarjetaPreview          = document.getElementById("tablaPreviewTarjetas");
-  const btnGuardarTarjetas      = document.getElementById("btnGuardarTarjetas");
-  const btnAgregarLote          = document.getElementById("btnAgregarLote");
-  const inputNuevoLote          = document.getElementById("nuevoLote");
-  const selectLote              = document.getElementById("selectLote");
-  const cajaSelect              = document.getElementById("cajaSelect");
-  const turnoSelect             = document.getElementById("turnoSelect");
-  const tarjetaInfoLote         = document.getElementById("infoLoteActivo");
-  const labelTarjetasCargadas   = document.getElementById("labelTarjetasCargadas");
-  const totalTarjetasPrevias    = document.getElementById("totalCargadasHoy");
-  const totalTarjetasNuevas     = document.getElementById("totalNuevas");
-  const fechaGlobalInput        = document.getElementById("fechaGlobal");
+  // ======= Estilos extras =======
+  (function injectStyle() {
+    const css = `
+      /* tabla base */
+      #tablaPreviewTarjetas tr:nth-child(even){ background:#f8fafc; }
+      #tablaPreviewTarjetas td { padding:8px 10px; border-bottom:1px solid #e5e7eb; }
+      #tablaPreviewTarjetas td.montos { text-align:right; white-space:nowrap; }
+      #tablaPreviewTarjetas td.montos .field { display:inline-flex; align-items:center; gap:6px; margin-left:10px; }
+      #tablaPreviewTarjetas td.montos input { width:95px; text-align:right; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; }
 
-  // === NUEVO: Rol y flags de estado
+      /* chip y acciones */
+      #tablaPreviewTarjetas .chip { font-weight:600; font-size:12px; background:#e2e8f0; border-radius:999px; padding:3px 10px; display:inline-block; }
+      #tablaPreviewTarjetas .actions { text-align:right; }
+      #tablaPreviewTarjetas .btn { border:none; background:transparent; cursor:pointer; font-size:16px; }
+      #tablaPreviewTarjetas .btn[disabled]{ opacity:.35; cursor:not-allowed; }
+
+      /* separador de lote (gris un poco más oscuro) */
+      #tablaPreviewTarjetas .group-header { background:#dde7f3; }
+
+      /* fila guardada en BD (verde suave) */
+      #tablaPreviewTarjetas tr.saved-row { background:#eaf7ea; }
+
+      .txt-muted{ color:#64748b; }
+
+      /* Botón + Tips azul con letras blancas */
+      .btn-tip { margin-left:8px; font-size:12px; padding:4px 10px; border-radius:6px; }
+      .btn-submit, .btn-tip { background:#1d79f2; color:#fff; }
+
+      .input-tip { width:95px; text-align:right; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px; display:none; margin-left:6px; }
+
+      /* Indicador de lote activo */
+      #loteActivoDisplay { margin-top:6px; font-size:14px; }
+      #loteActivoDisplay b { font-weight:700; }
+    `;
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+  })();
+
+  // ---------- DOM ----------
+  const tarjetaForm = document.getElementById("tarjetasForm");
+
+  // tbody robusto (o table si no hay tbody)
+  const tablaBody =
+    document.querySelector("#tablaPreviewTarjetas tbody") ||
+    document.getElementById("tablaPreviewTarjetas");
+
+  const btnGuardarTarjetas    = document.getElementById("btnGuardarTarjetas");
+  const btnAgregarLote        = document.getElementById("btnAgregarLote");
+  const inputNuevoLote        = document.getElementById("nuevoLote");
+  const selectLote            = document.getElementById("selectLote");
+  const cajaSelect            = document.getElementById("cajaSelect");
+  const turnoSelect           = document.getElementById("turnoSelect");
+  const fechaGlobalInput      = document.getElementById("fechaGlobal");
+  const labelTarjetasCargadas = document.getElementById("labelTarjetasCargadas");
+  const totalTarjetasPrevias  = document.getElementById("totalCargadasHoy");
+  const totalTarjetasNuevas   = document.getElementById("totalNuevas"); // opcional
+
+  // Selector de Terminal (si no existe)
+  (function ensureTerminalSelector() {
+    if (document.getElementById("terminalActivoTarj")) return;
+    const primerGrupo = document.querySelector('#tarjetas .form-group'); // “Nuevo Lote”
+    const cont = document.createElement("div");
+    cont.className = "form-group";
+    cont.innerHTML = `
+      <label for="terminalActivoTarj">Terminal activa:</label>
+      <select id="terminalActivoTarj" class="form-control"></select>
+    `;
+    if (primerGrupo && primerGrupo.parentNode) {
+      primerGrupo.parentNode.insertBefore(cont, primerGrupo);
+    }
+  })();
+
+  // Indicador de Lote activo (si no existe)
+  (function ensureLoteDisplay() {
+    if (document.getElementById("loteActivoDisplay")) return;
+    const ref = selectLote?.parentElement || btnAgregarLote?.parentElement;
+    const div = document.createElement("div");
+    div.id = "loteActivoDisplay";
+    div.textContent = "Lote actual: Sin lote";
+    if (ref && ref.parentNode) {
+      ref.parentNode.insertBefore(div, ref.nextSibling);
+    }
+  })();
+
+  const loteDisplay = document.getElementById("loteActivoDisplay");
+
+  // ---------- Estado/rol ----------
   const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
   window.cajaCerrada = window.cajaCerrada ?? false;
   let localCerrado = false;
 
-  // ---------- Inyección de TERMINAL ----------
-  const primerFormGroup = tarjetasTab?.querySelector(".form-group");
-  const IDS = {
-    grupoCrear: "grupoCrearTerminalTarj",
-    btnMostrarCrear: "btnMostrarCrearTerminalTarj",
-    formCrear: "formCrearTerminalTarj",
-    inputNuevo: "nuevoTerminalTarj",
-    btnOkCrear: "btnOkCrearTerminalTarj",
-    btnCancelCrear: "btnCancelarCrearTerminalTarj",
-    grupoActivo: "grupoTerminalActivoTarj",
-    selectActivo: "terminalActivoTarj",
-    textoActivo: "terminalActivaTextoTarj",
-  };
-  if (tarjetasTab && primerFormGroup && !document.getElementById(IDS.selectActivo)) {
-    primerFormGroup.insertAdjacentHTML("beforebegin", `
-      <div class="form-group" id="${IDS.grupoCrear}">
-        <button type="button" class="btn-submit" id="${IDS.btnMostrarCrear}">➕ Crear terminal</button>
-        <div id="${IDS.formCrear}" style="display:none; margin-top: 10px;">
-          <input type="text" id="${IDS.inputNuevo}" class="form-control" placeholder="Nombre de la terminal" style="margin-bottom: 10px;">
-          <button type="button" class="btn-custom btn-save" id="${IDS.btnOkCrear}">✅ Ok</button>
-          <button type="button" class="btn-submit" id="${IDS.btnCancelCrear}">❌ Cancelar</button>
-        </div>
-      </div>
-      <div class="form-group" id="${IDS.grupoActivo}" style="display:none;">
-        <label for="${IDS.selectActivo}">Terminal activa:</label>
-        <select id="${IDS.selectActivo}" class="form-control"></select>
-      </div>
-      <p id="${IDS.textoActivo}" style="font-weight: bold; margin-bottom: 20px;"></p>
-    `);
-  }
-
-  // ---------- Referencias de Terminal ----------
-  let btnMostrarCrearTerminal = document.getElementById(IDS.btnMostrarCrear);
-  let formCrearTerminal       = document.getElementById(IDS.formCrear);
-  let inputNuevoTerminal      = document.getElementById(IDS.inputNuevo);
-  let btnOkCrearTerminal      = document.getElementById(IDS.btnOkCrear);
-  let btnCancelarCrearTerminal= document.getElementById(IDS.btnCancelCrear);
-  let grupoTerminalActivo     = document.getElementById(IDS.grupoActivo);
-  let selectTerminalActivo    = document.getElementById(IDS.selectActivo);
-  let terminalActivaTexto     = document.getElementById(IDS.textoActivo);
-
-  // ---------- Estructuras de datos ----------
-  const tarjetasPorCaja = {};
-  const tarjetasCargadasHoyPorCaja = {};
-  const tipsPorCaja = {};
-  const tipsCargadosPorCaja = {};
-
-  const terminalesPorCaja = {};
-  const terminalActivoPorCaja = {};
-  const lotesPorCajaTerminal = {};
-  const loteActivoPorCajaTerminal = {};
-
+  // ---------- Terminal / Lote ----------
+  const IDS = { selectActivo:"terminalActivoTarj" };
+  let selectTerminalActivo = document.getElementById(IDS.selectActivo);
   let terminalActivo = null;
-  let loteActivo = null;
+  let loteActivo     = null;
+
+  // ---------- Estructuras ----------
+  const tarjetasCargadasHoyPorCaja   = {}; // dataset BD
+  const terminalesPorCaja            = {};
+  const lotesPorCajaTerminal         = {};
+  const terminalActivoPorCaja        = {};
+  const loteActivoPorCajaTerminal    = {};
 
   // ---------- Helpers ----------
   function getLocalActual() {
@@ -102,58 +130,69 @@ document.addEventListener("DOMContentLoaded", function () {
     const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   }
-
-  // === NUEVO: centraliza si el usuario puede actuar en UI
   function canActUI() {
-    if (ROLE >= 3) return true;          // auditor: siempre
-    if (ROLE >= 2) return !localCerrado; // encargado: mientras el local NO esté cerrado
-    return !window.cajaCerrada;          // cajero: sólo con caja abierta
+    if (ROLE >= 3) return true;          // auditor
+    if (ROLE >= 2) return !localCerrado; // encargado
+    return !window.cajaCerrada;          // cajero
+  }
+  function setLoteDisplay(val) {
+    if (!loteDisplay) return;
+    if (val) loteDisplay.innerHTML = `Lote actual: <b>${val}</b>`;
+    else loteDisplay.textContent = "Lote actual: Sin lote";
   }
 
-  // ---------- Listeners robustos para crear terminal ----------
-  document.addEventListener("click", (ev) => {
-    const t = ev.target;
+  // Todas las tarjetas definidas en el formulario (para saber cuáles “faltan”)
+  function getTodasLasTarjetas() {
+    const rows = tarjetaForm?.querySelectorAll(".tarjeta-row") || [];
+    const set = new Set();
+    rows.forEach(r => {
+      const t = (r.dataset.tarjeta || "").trim();
+      if (t) set.add(t);
+    });
+    return Array.from(set); // ej. ["VISA","MASTERCARD",...]
+  }
 
-    if (t?.id === IDS.btnMostrarCrear) {
-      if (!canActUI()) { alert("No tenés permisos para crear una terminal (caja/local cerrado para tu rol)."); return; }
-      formCrearTerminal = document.getElementById(IDS.formCrear);
-      inputNuevoTerminal = document.getElementById(IDS.inputNuevo);
-      if (formCrearTerminal) formCrearTerminal.style.display = "block";
-      if (inputNuevoTerminal) inputNuevoTerminal.focus();
-      return;
+  // ---------- Cargar terminales ----------
+  function normalizeTerminalList(data) {
+    let arr = [];
+    if (Array.isArray(data)) arr = data;
+    else if (data && Array.isArray(data.items)) arr = data.items;
+    else arr = [];
+    return arr
+      .map(x => (typeof x === "string" ? { terminal: x } : x))
+      .filter(x => x && x.terminal);
+  }
+
+  async function fetchTerminales(local) {
+    try {
+      let r = await fetch(`/api/terminales?local=${encodeURIComponent(local)}`);
+      if (!r.ok) r = await fetch(`/terminales?local=${encodeURIComponent(local)}`); // fallback
+      if (!r.ok) return [];
+      const data = await r.json();
+      return normalizeTerminalList(data);
+    } catch { return []; }
+  }
+
+  async function loadTerminalesLocal({ mergeFromToday=true } = {}) {
+    const local = getLocalActual();
+    const caja  = cajaSelect.value;
+
+    const apiList = await fetchTerminales(local); // [{terminal,...}]
+    const nombresApi = apiList.map(x => x.terminal).filter(Boolean);
+
+    let nombresHoy = [];
+    if (mergeFromToday) {
+      const arr = tarjetasCargadasHoyPorCaja[caja] || [];
+      nombresHoy = Array.from(new Set(arr.map(x => x.terminal).filter(Boolean)));
     }
 
-    if (t?.id === IDS.btnCancelCrear) {
-      formCrearTerminal = document.getElementById(IDS.formCrear);
-      inputNuevoTerminal = document.getElementById(IDS.inputNuevo);
-      if (inputNuevoTerminal) inputNuevoTerminal.value = "";
-      if (formCrearTerminal) formCrearTerminal.style.display = "none";
-      return;
-    }
+    const merged = Array.from(new Set([...(terminalesPorCaja[caja] || []), ...nombresApi, ...nombresHoy]));
+    terminalesPorCaja[caja] = merged;
 
-    if (t?.id === IDS.btnOkCrear) {
-      if (!canActUI()) { alert("No tenés permisos para crear una terminal (caja/local cerrado para tu rol)."); return; }
-      inputNuevoTerminal = document.getElementById(IDS.inputNuevo);
-      const nuevo = (inputNuevoTerminal?.value || "").trim();
-      const caja = cajaSelect?.value || "";
-      if (!caja) { alert("Seleccioná una caja primero."); return; }
-      if (!nuevo) { alert("Debe ingresar un nombre de terminal"); return; }
-      (terminalesPorCaja[caja] ||= []);
-      (lotesPorCajaTerminal[caja] ||= {});
-      (loteActivoPorCajaTerminal[caja] ||= {});
-      if (terminalesPorCaja[caja].includes(nuevo)) { alert("Esa terminal ya existe."); return; }
-      terminalesPorCaja[caja].push(nuevo);
-      lotesPorCajaTerminal[caja][nuevo] = [];
-      if (!terminalActivoPorCaja[caja]) { terminalActivoPorCaja[caja] = nuevo; terminalActivo = nuevo; }
-      if (inputNuevoTerminal) inputNuevoTerminal.value = "";
-      if (formCrearTerminal) formCrearTerminal.style.display = "none";
-      renderTerminales(caja);
-      actualizarTerminalActivoDisplay();
-      return;
-    }
-  });
+    renderTerminales(caja);
+  }
 
-  // ---------- Estado caja/local y UI ----------
+  // ---------- Estado caja/local ----------
   async function refrescarEstadoCaja({ reRender = true } = {}) {
     const { local, caja, fecha, turno } = getCtx();
     if (!caja || !fecha || !turno) {
@@ -176,23 +215,12 @@ document.addEventListener("DOMContentLoaded", function () {
       localCerrado = false;
     }
     toggleUIByEstado();
-    if (reRender) renderVistaPrevia(cajaSelect.value);
+    if (reRender) renderTabla(cajaSelect.value);
   }
 
   function toggleUIByEstado() {
     const disabled = !canActUI();
-
-    // refrescar refs dinámicas (por si el DOM cambió)
-    btnMostrarCrearTerminal = document.getElementById(IDS.btnMostrarCrear);
-    formCrearTerminal       = document.getElementById(IDS.formCrear);
-    inputNuevoTerminal      = document.getElementById(IDS.inputNuevo);
-    btnOkCrearTerminal      = document.getElementById(IDS.btnOkCrear);
-    btnCancelarCrearTerminal= document.getElementById(IDS.btnCancelCrear);
-    selectTerminalActivo    = document.getElementById(IDS.selectActivo);
-
-    [btnMostrarCrearTerminal, btnOkCrearTerminal, btnCancelarCrearTerminal, inputNuevoTerminal, selectTerminalActivo,
-     btnAgregarLote, inputNuevoLote, selectLote].forEach(el => { if (el) el.disabled = disabled; });
-
+    [btnAgregarLote, inputNuevoLote, selectLote, selectTerminalActivo].forEach(el => { if (el) el.disabled = disabled; });
     if (tarjetaForm) {
       tarjetaForm.querySelectorAll("input, button, select, textarea").forEach(el => {
         if (el === btnGuardarTarjetas) return;
@@ -202,102 +230,41 @@ document.addEventListener("DOMContentLoaded", function () {
     if (btnGuardarTarjetas) btnGuardarTarjetas.disabled = disabled;
   }
 
-  document.getElementById('btnCerrarCaja')?.addEventListener('click', () => {
-    setTimeout(() => refrescarEstadoCaja({ reRender: true }), 800);
-  });
-
-  // Quitar fila "TIPS" estática y agregar UI de tips por tarjeta
-  const tipsRow = tarjetaForm?.querySelector('.tarjeta-row[data-tarjeta="TIPS"]');
-  if (tipsRow) tipsRow.remove();
-
-  const tarjetaRows = tarjetaForm?.querySelectorAll(".tarjeta-row") || [];
-  tarjetaRows.forEach(row => {
-    const tdMonto = row.querySelector("td:last-child");
-    if (!tdMonto) return;
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn-submit";
-    btn.textContent = "➕ Agregar un Tip";
-    btn.style.marginLeft = "8px";
-    const tipBox = document.createElement("div");
-    tipBox.style.display = "none";
-    tipBox.style.marginTop = "6px";
-    const tipLabel = document.createElement("label");
-    tipLabel.textContent = "TIP:";
-    tipLabel.style.marginRight = "6px";
-    const tipInput = document.createElement("input");
-    tipInput.type = "text";
-    tipInput.className = "input-tip";
-    tipInput.placeholder = "0,00";
-    tipInput.style.width = "100px";
-    tipInput.dataset.tarjeta = row.dataset.tarjeta;
-    btn.addEventListener("click", () => {
-      if (!canActUI()) { alert("No tenés permisos para editar TIPS en esta caja/turno."); return; }
-      tipBox.style.display = (tipBox.style.display === "none") ? "block" : "none";
-    });
-    tipBox.appendChild(tipLabel);
-    tipBox.appendChild(tipInput);
-    tdMonto.appendChild(btn);
-    tdMonto.appendChild(tipBox);
-  });
-
-  // ---------- Render Terminales/Lotes ----------
-  function actualizarTerminalActivoDisplay() {
-    let el = document.getElementById(IDS.textoActivo);
-    if (el) el.innerText = `Terminal actual: ${terminalActivo || 'Sin terminal'}`;
-  }
-  function actualizarLoteActivoDisplay() {
-    if (tarjetaInfoLote) tarjetaInfoLote.innerText = `Lote actual: ${loteActivo || 'Sin lote'}`;
-  }
+  // ---------- Render terminales y lotes ----------
   function renderTerminales(caja) {
     selectTerminalActivo = document.getElementById(IDS.selectActivo);
-    grupoTerminalActivo  = document.getElementById(IDS.grupoActivo);
-    if (!selectTerminalActivo || !grupoTerminalActivo) return;
-
-    selectTerminalActivo.innerHTML = "";
+    if (!selectTerminalActivo) return;
     const terminals = terminalesPorCaja[caja] || [];
-    if (terminals.length === 0) {
-      grupoTerminalActivo.style.display = "none";
-      terminalActivo = null;
-      terminalActivoPorCaja[caja] = null;
-    } else if (terminals.length === 1) {
-      grupoTerminalActivo.style.display = "none";
-      terminalActivo = terminals[0];
-      terminalActivoPorCaja[caja] = terminalActivo;
-    } else {
-      terminals.forEach(t => {
-        const opt = document.createElement("option"); opt.value = t; opt.textContent = t;
-        selectTerminalActivo.appendChild(opt);
-      });
-      grupoTerminalActivo.style.display = "block";
-      if (terminalActivoPorCaja[caja] && terminals.includes(terminalActivoPorCaja[caja])) {
-        selectTerminalActivo.value = terminalActivoPorCaja[caja];
-      } else {
-        selectTerminalActivo.value = terminals[0];
-        terminalActivoPorCaja[caja] = terminals[0];
-      }
-      terminalActivo = selectTerminalActivo.value;
+    selectTerminalActivo.innerHTML = "";
+    terminals.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t; opt.textContent = t;
+      selectTerminalActivo.appendChild(opt);
+    });
+    if (!terminalActivoPorCaja[caja] || !terminals.includes(terminalActivoPorCaja[caja])) {
+      terminalActivoPorCaja[caja] = terminals[0] || null;
     }
-    actualizarTerminalActivoDisplay();
+    terminalActivo = terminalActivoPorCaja[caja] || null;
+    if (terminalActivo) selectTerminalActivo.value = terminalActivo;
     renderLotes(caja);
   }
+
   function renderLotes(caja) {
     if (!selectLote) return;
-    selectLote.innerHTML = "";
     const terminal = terminalActivo;
     const mapa = lotesPorCajaTerminal[caja] || {};
     const lotes = (terminal && mapa[terminal]) ? mapa[terminal] : [];
-
+    selectLote.innerHTML = "";
     if (lotes.length <= 1) {
       selectLote.style.display = "none";
     } else {
       lotes.forEach(l => {
-        const opt = document.createElement("option"); opt.value = l; opt.textContent = l;
+        const opt = document.createElement("option");
+        opt.value = l; opt.textContent = l;
         selectLote.appendChild(opt);
       });
       selectLote.style.display = "inline-block";
     }
-
     const lotesActivos = (loteActivoPorCajaTerminal[caja] ||= {});
     if (lotes.length > 1 && lotesActivos[terminal]) {
       selectLote.value = lotesActivos[terminal];
@@ -305,415 +272,305 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       loteActivo = (lotes.length === 1) ? lotes[0] : (lotesActivos[terminal] || null);
       if (loteActivo && selectLote.style.display !== "none") selectLote.value = loteActivo;
-      actualizarLoteActivoDisplay();
+      setLoteDisplay(loteActivo);
     }
-    renderVistaPrevia(caja);
+    renderTabla(caja);
   }
 
-  // ---------- Render vista previa ----------
-  function renderVistaPrevia(caja) {
-    if (!tarjetaPreview) return;
-    tarjetaPreview.innerHTML = "";
-    let totalCargadas = 0, totalNuevas = 0;
+  // ---------- Agrupación ----------
+  function sortForRender(arr) {
+    return [...arr].sort((a,b) => {
+      const k1 = `${a.terminal || ''}||${a.lote || ''}||${a.tarjeta || ''}`.toUpperCase();
+      const k2 = `${b.terminal || ''}||${b.lote || ''}||${b.tarjeta || ''}`.toUpperCase();
+      return k1.localeCompare(k2);
+    });
+  }
+  function groupByTerminalLote(arr) {
+    const map = new Map();
+    arr.forEach(r => {
+      const key = `${r.terminal || ''}||${r.lote || ''}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(r);
+    });
+    return map;
+  }
+
+  // ---------- Render principal ----------
+  function renderTabla(caja) {
+    if (!tablaBody) return;
+    tablaBody.innerHTML = "";
 
     const previas = tarjetasCargadasHoyPorCaja[caja] || [];
-    const nuevas  = tarjetasPorCaja[caja] || [];
-    const tipsPrevios = tipsCargadosPorCaja[caja] || [];
-    const tipsNuevos  = tipsPorCaja[caja] || [];
-
     const puedeActuar = canActUI();
+    let totalPrevios = 0;
 
-    if (previas.length > 0) {
-      labelTarjetasCargadas.style.display = "block";
-      previas.forEach(t => {
-        const fila = document.createElement("tr");
-        fila.style.backgroundColor = "#d0f0c0";
-        const loteCellText = t.terminal ? `${t.terminal} / ${t.lote}` : `${t.lote}`;
-        const accionesHTML = puedeActuar ? `
-          <button class="btn-editar-bd" data-id="${t.id}" title="Editar (BD)">✏️</button>
-          <button class="btn-borrar-bd" data-id="${t.id}" title="Borrar grupo (BD)">🗑️</button>
-        ` : "";
+    const ordenados = sortForRender(previas);
+    const grupos = groupByTerminalLote(ordenados);
 
-        // 4 columnas: Tarjeta | Terminal/Lote | Monto | TIP
-        fila.innerHTML = `
-          <td>${t.tarjeta}</td>
-          <td>${loteCellText}</td>
-          <td>
-            <span class="monto-text-bd" data-id="${t.id}">${fmt(t.monto)}</span>
-            <input type="text" class="monto-edit-bd" data-id="${t.id}" style="display:none; width: 90px;">
-            <button class="btn-aceptar-bd" data-id="${t.id}" style="display:none;">✅</button>
-            <button class="btn-cancelar-bd" data-id="${t.id}" style="display:none;">❌</button>
-            ${accionesHTML}
-          </td>
-          <td style="text-align:right">${fmt(t.tip || 0)}</td>
-        `;
-        tarjetaPreview.appendChild(fila);
-        totalCargadas += parseFloat(t.monto || 0);
-        totalCargadas += parseFloat(t.tip || 0); // si querés sumar TIP al total cargado
-      });
-    } else {
-      labelTarjetasCargadas.style.display = "none";
+    // Si hay lote activo/terminal activo, aseguramos mostrar también filas "faltantes" en 0
+    if (terminalActivo && loteActivo) {
+      const key = `${terminalActivo}||${loteActivo}`;
+      if (!grupos.has(key)) grupos.set(key, []); // grupo vacío para mostrar faltantes
     }
 
-    // TIPs ya cargados (por columnas)
-    tipsPrevios.forEach(row => {
-      const termLot = `${row.terminal} / ${row.lote}`;
-      const pairs = [
-        ["VISA", row.visa_tips],
-        ["VISA DÉBITO", row.visa_debito_tips],
-        ["VISA PREPAGO", row.visa_prepago_tips],
-        ["MASTERCARD", row.mastercard_tips],
-        ["MASTERCARD DÉBITO", row.mastercard_debito_tips],
-        ["MASTERCARD PREPAGO", row.mastercard_prepago_tips],
-        ["CABAL", row.cabal_tips],
-        ["CABAL DÉBITO", row.cabal_debito_tips],
-        ["AMEX", row.amex_tips],
-        ["MAESTRO", row.maestro_tips],
-        ["NARANJA", row.naranja_tips],
-        ["DINERS", row.diners_tips],
-        ["PAGOS INMEDIATOS", row.pagos_inmediatos_tips],
-      ];
-      pairs.forEach(([nombre, val]) => {
-        const v = parseFloat(val || 0);
-        if (v > 0) {
+    if (grupos.size > 0) {
+      if (labelTarjetasCargadas) labelTarjetasCargadas.style.display = "block";
+      const todasTarjetas = getTodasLasTarjetas();
+
+      grupos.forEach((items, key) => {
+        const [terminal, lote] = key.split("||");
+
+        // Encabezado de lote (gris divisor) + texto "Lote"
+        const gh = document.createElement("tr");
+        gh.className = "group-header";
+        gh.innerHTML = `
+          <td class="grp">Lote</td>
+          <td class="grp"><span class="chip">${terminal || '—'} / ${lote || '—'}</span></td>
+          <td class="actions" colspan="2">
+            ${puedeActuar ? `<button class="btn btn-borrar-grupo" data-terminal="${terminal}" data-lote="${lote}" title="Borrar grupo completo">🗑️</button>` : `<span class="txt-muted">—</span>`}
+          </td>
+        `;
+        tablaBody.appendChild(gh);
+
+        // Mapa por tarjeta de las que existen en BD
+        const porTarjeta = new Map();
+        items.forEach(r => porTarjeta.set((r.tarjeta || '').toUpperCase(), r));
+
+        // Conjunto de tarjetas a renderizar = (ya guardadas) ∪ (todas si es el grupo activo para “completar en 0”)
+        let tarjetasARender = Array.from(porTarjeta.keys());
+        const esGrupoActivo = (terminal === terminalActivo && lote === loteActivo);
+        if (esGrupoActivo) {
+          const faltantes = todasTarjetas
+            .map(t => t.toUpperCase())
+            .filter(t => !porTarjeta.has(t));
+          tarjetasARender = Array.from(new Set([...tarjetasARender, ...faltantes]));
+        }
+
+        // Pintamos todas
+        tarjetasARender.forEach(tKey => {
+          const r = porTarjeta.get(tKey); // si existe en BD
+          const isSaved = !!r;            // para color verde
+
+          const tarjetaName = r ? (r.tarjeta || tKey) : tKey;
+          const idAttr = r ? `data-id="${r.id}"` : `data-id=""`;
+          const montoVal = r ? parseFloat(r.monto || 0) : 0;
+          const tipVal   = r ? parseFloat(r.monto_tip || 0) : 0;
+
           const tr = document.createElement("tr");
-          tr.style.backgroundColor = "#d0f0c0";
-          const acciones = puedeActuar ? `
-            <button class="btn-editar-tip-bd" data-terminal="${row.terminal}" data-lote="${row.lote}" data-tarjeta="${nombre}" title="Editar TIP">✏️</button>
-            <button class="btn-borrar-tip-bd" data-terminal="${row.terminal}" data-lote="${row.lote}" data-tarjeta="${nombre}" title="Borrar grupo (incluye TIPS)">🗑️</button>
-          ` : "";
-          // 4 columnas: Tarjeta (TIP) | Terminal/Lote | Monto(—) | TIP
+          if (isSaved) tr.classList.add("saved-row"); // verde
+
           tr.innerHTML = `
-            <td>${nombre} (TIP)</td>
-            <td>${termLot}</td>
-            <td></td>
-            <td style="text-align:right">
-              <span class="tip-text-bd" data-terminal="${row.terminal}" data-lote="${row.lote}" data-tarjeta="${nombre}">${fmt(v)}</span>
-              <input type="text" class="tip-edit-bd" data-terminal="${row.terminal}" data-lote="${row.lote}" data-tarjeta="${nombre}" style="display:none; width: 90px;">
-              <button class="btn-aceptar-tip-bd" data-terminal="${row.terminal}" data-lote="${row.lote}" data-tarjeta="${nombre}" style="display:none;">✅</button>
-              <button class="btn-cancelar-tip-bd" data-terminal="${row.terminal}" data-lote="${row.lote}" data-tarjeta="${nombre}" style="display:none;">❌</button>
-              ${acciones}
+            <td>${tarjetaName}</td>
+            <td>${(terminal || '—')} / ${(lote || '—')}</td>
+
+            <td class="montos">
+              <div class="field" data-type="monto"
+                   ${idAttr}
+                   data-tarjeta="${tarjetaName}"
+                   data-terminal="${terminal || ''}"
+                   data-lote="${lote || ''}">
+                <span class="view monto-text-bd">${fmt(montoVal)}</span>
+                ${puedeActuar ? `
+                  <input class="edit monto-edit-bd" type="text" style="display:none" />
+                  <button class="btn btn-edit" title="Editar">✏️</button>
+                  <button class="btn btn-ok"   style="display:none" title="Guardar">✅</button>
+                  <button class="btn btn-cancel" style="display:none" title="Cancelar">❌</button>
+                ` : ``}
+              </div>
+            </td>
+
+            <td class="montos">
+              <div class="field" data-type="tip"
+                   ${idAttr}
+                   data-tarjeta="${tarjetaName}"
+                   data-terminal="${terminal || ''}"
+                   data-lote="${lote || ''}">
+                <span class="view tip-text-bd">${fmt(tipVal)}</span>
+                ${puedeActuar ? `
+                  <input class="edit tip-edit-bd" type="text" style="display:none" />
+                  <button class="btn btn-edit" title="Editar">✏️</button>
+                  <button class="btn btn-ok"   style="display:none" title="Guardar">✅</button>
+                  <button class="btn btn-cancel" style="display:none" title="Cancelar">❌</button>
+                ` : ``}
+              </div>
             </td>
           `;
-          tarjetaPreview.appendChild(tr);
-          totalCargadas += v;
-        }
+          tablaBody.appendChild(tr);
+
+          totalPrevios += montoVal + tipVal;
+        });
       });
-    });
 
-    // Nuevas tarjetas (memoria)
-    nuevas.forEach((t, index) => {
-      const fila = document.createElement("tr");
-      const loteCellText = t.terminal ? `${t.terminal} / ${t.lote}` : `${t.lote}`;
-      // 4 columnas: Tarjeta | Terminal/Lote | Monto (con acciones) | TIP vacío
-      fila.innerHTML = `
-        <td>${t.tarjeta}</td>
-        <td>${loteCellText}</td>
-        <td>
-          <span class="monto-text">${fmt(t.monto)}</span>
-          <input type="text" class="monto-edit" style="display:none; width: 90px;">
-          ${puedeActuar ? `
-            <button class="btn-aceptar" style="display:none;">✅</button>
-            <button class="btn-cancelar" style="display:none;">❌</button>
-            <button class="btn-editar" data-idx="${index}" title="Editar">✏️</button>
-            <button class="btn-borrar" data-idx="${index}" title="Poner en 0">🗑️</button>
-          ` : ``}
-        </td>
-        <td></td>
-      `;
-      tarjetaPreview.appendChild(fila);
-      totalNuevas += parseFloat(t.monto || 0);
-    });
+    } else {
+      if (labelTarjetasCargadas) labelTarjetasCargadas.style.display = "none";
+    }
 
-    // Tips nuevos (memoria)
-    tipsNuevos.forEach(t => {
-      const tr = document.createElement("tr");
-      // 4 columnas: Tarjeta (TIP) | Terminal/Lote | Monto(—) | TIP
-      tr.innerHTML = `
-        <td>${t.tarjeta} (TIP)</td>
-        <td>${t.terminal} / ${t.lote}</td>
-        <td></td>
-        <td style="text-align:right">${fmt(t.tip || 0)}</td>
-      `;
-      tarjetaPreview.appendChild(tr);
-      totalNuevas += parseFloat(t.tip || 0);
-    });
-
-    totalTarjetasPrevias.innerText = fmt(totalCargadas);
-    totalTarjetasNuevas.innerText  = fmt(totalNuevas);
+    if (totalTarjetasPrevias) totalTarjetasPrevias.innerText = fmt(totalPrevios);
+    if (totalTarjetasNuevas)  totalTarjetasNuevas.innerText  = fmt(0);
   }
 
-  function findTarjetaIdByGrupo(caja, terminal, lote) {
-    const lista = tarjetasCargadasHoyPorCaja[caja] || [];
-    const it = lista.find(x => String(x.terminal) === String(terminal) && String(x.lote) === String(lote));
-    return it ? it.id : null;
-  }
-
-  // ---------- Delegación sobre la vista previa ----------
-  tarjetaPreview?.addEventListener("click", async (e) => {
+  // ---------- Delegación de eventos (borrar/editar/crear) ----------
+  tablaBody?.addEventListener("click", function (e) {
     const caja = cajaSelect.value;
+    const target = e.target;
 
-    if (!canActUI() && e.target.closest("button")) {
-      alert("No tenés permisos para editar/borrar en esta caja/turno.");
+    if (target.classList.contains("btn-borrar-grupo")) {
+      if (!canActUI()) { alert("No tenés permisos para borrar este grupo."); return; }
+      const terminal = target.dataset.terminal || '';
+      const lote = target.dataset.lote || '';
+      const id = (tarjetasCargadasHoyPorCaja[caja] || []).find(x => String(x.terminal)===String(terminal) && String(x.lote)===String(lote))?.id;
+      if (!id) { alert("No se encontró el grupo en BD."); return; }
+      if (!confirm("Vas a borrar TODO el grupo (fecha, caja, terminal y lote). ¿Continuar?")) return;
+
+      fetch(`/tarjetas/${id}`, { method:"DELETE" })
+        .then(async r => {
+          if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido."); else alert("Error al borrar: "+(txt||r.status)); return null; }
+          return r.json();
+        })
+        .then(async data => {
+          if (!data) return;
+          if (data.success) {
+            await refrescarEstadoCaja({ reRender:false });
+            if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
+          } else {
+            alert("❌ " + (data.msg || "Error al borrar grupo"));
+          }
+        })
+        .catch(()=>alert("❌ Error de red"));
       return;
     }
 
-    const nuevas = tarjetasPorCaja[caja] || [];
+    const field = target.closest(".field");
+    if (!field) return;
 
-    // Editar nuevo (memoria)
-    if (e.target.classList.contains("btn-editar")) {
-      const idx = parseInt(e.target.dataset.idx);
-      const td = e.target.closest("td");
-      const montoSpan = td.querySelector(".monto-text");
-      const input = td.querySelector(".monto-edit");
-      const aceptar = td.querySelector(".btn-aceptar");
-      const cancelar = td.querySelector(".btn-cancelar");
-      input.value = (nuevas[idx].monto ?? 0).toString().replace('.', ',');
-      montoSpan.style.display = "none";
+    const isMonto = field.dataset.type === "monto";
+    const isTip   = field.dataset.type === "tip";
+    const id      = (field.dataset.id || "").trim();          // si está vacío => aún no existe en BD
+    const tarjeta = field.dataset.tarjeta || "";
+    const terminal= field.dataset.terminal || "";
+    const lote    = field.dataset.lote || "";
+
+    if (target.classList.contains("btn-edit")) {
+      if (!canActUI()) { alert("No tenés permisos para editar."); return; }
+      const view = field.querySelector(".view");
+      const input = field.querySelector(".edit");
+      const ok = field.querySelector(".btn-ok");
+      const cancel = field.querySelector(".btn-cancel");
+      const actual = (view?.innerText || "").replace(/[^\d,.-]/g, "");
+      input.value = actual;
+      view.style.display = "none";
       input.style.display = "inline-block";
-      if (aceptar) aceptar.style.display = "inline-block";
-      if (cancelar) cancelar.style.display = "inline-block";
-      e.target.style.display = "none";
-      return;
-    }
-    if (e.target.classList.contains("btn-cancelar")) {
-      const td = e.target.closest("td");
-      td.querySelector(".monto-text").style.display = "inline";
-      td.querySelector(".monto-edit").style.display = "none";
-      const aceptar = td.querySelector(".btn-aceptar");
-      const cancelar = td.querySelector(".btn-cancelar");
-      const editar = td.querySelector(".btn-editar");
-      if (aceptar) aceptar.style.display = "none";
-      if (cancelar) cancelar.style.display = "none";
-      if (editar) editar.style.display = "inline";
-      return;
-    }
-    if (e.target.classList.contains("btn-aceptar")) {
-      const tr = e.target.closest("tr");
-      const idx = parseInt(tr.querySelector(".btn-editar")?.dataset.idx || "0");
-      const input = tr.querySelector(".monto-edit");
-      const nuevo = parseMonto(input.value);
-      nuevas[idx].monto = nuevo;
-      renderVistaPrevia(caja);
-      return;
-    }
-    if (e.target.classList.contains("btn-borrar")) {
-      const idx = parseInt(e.target.dataset.idx);
-      nuevas[idx].monto = 0;
-      renderVistaPrevia(caja);
+      ok.style.display = "inline-block";
+      cancel.style.display = "inline-block";
+      target.style.display = "none";
       return;
     }
 
-    // BD: EDITAR / CANCELAR / ACEPTAR
-    if (e.target.classList.contains("btn-editar-bd")) {
-      const id = e.target.dataset.id;
-      const td = e.target.closest("td");
-      const span = td.querySelector(`.monto-text-bd[data-id="${id}"]`);
-      const input = td.querySelector(`.monto-edit-bd[data-id="${id}"]`);
-      const okBtn = td.querySelector(`.btn-aceptar-bd[data-id="${id}"]`);
-      const cancelBtn = td.querySelector(`.btn-cancelar-bd[data-id="${id}"]`);
-      const actual = (span?.innerText || "").replace(/[^\d,.-]/g, "");
-      if (input) input.value = actual;
-      if (span) span.style.display = "none";
-      if (input) input.style.display = "inline-block";
-      if (okBtn) okBtn.style.display = "inline-block";
-      if (cancelBtn) cancelBtn.style.display = "inline-block";
-      e.target.style.display = "none";
+    if (target.classList.contains("btn-cancel")) {
+      const view = field.querySelector(".view");
+      const input = field.querySelector(".edit");
+      const ok = field.querySelector(".btn-ok");
+      const edit = field.querySelector(".btn-edit");
+      view.style.display = "inline";
+      input.style.display = "none";
+      ok.style.display = "none";
+      target.style.display = "none";
+      if (edit) edit.style.display = (canActUI() ? "inline" : "none");
       return;
     }
-    if (e.target.classList.contains("btn-cancelar-bd")) {
-      const id = e.target.dataset.id;
-      const td = e.target.closest("td");
-      const span = td.querySelector(`.monto-text-bd[data-id="${id}"]`);
-      const input = td.querySelector(`.monto-edit-bd[data-id="${id}"]`);
-      const okBtn = td.querySelector(`.btn-aceptar-bd[data-id="${id}"]`);
-      const cancelBtn = td.querySelector(`.btn-cancelar-bd[data-id="${id}"]`);
-      const editBtn = td.querySelector(`.btn-editar-bd[data-id="${id}"]`);
-      if (span) span.style.display = "inline";
-      if (input) input.style.display = "none";
-      if (okBtn) okBtn.style.display = "none";
-      if (cancelBtn) cancelBtn.style.display = "none";
-      if (editBtn) editBtn.style.display = (canActUI() ? "inline" : "none");
-      return;
-    }
-    if (e.target.classList.contains("btn-aceptar-bd")) {
-      const id = e.target.dataset.id;
-      const td = e.target.closest("td");
-      const input = td.querySelector(`.monto-edit-bd[data-id="${id}"]`);
+
+    if (target.classList.contains("btn-ok")) {
+      const input = field.querySelector(".edit");
       const nuevo = parseMonto(input?.value || "0");
-      fetch(`/tarjetas/${id}`, {
-        method:"PUT",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ monto: nuevo })
-      })
-      .then(async r => {
-        if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido (caja/local cerrados para tu rol)."); else alert("Error al actualizar: "+(txt||r.status)); return null; }
-        return r.json();
-      })
-      .then(async data => {
-        if (!data) return;
-        if (data.success) {
-          await refrescarEstadoCaja({reRender:false});
-          if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
-        } else {
-          alert("❌ " + (data.msg || "No se pudo actualizar"));
-        }
-      })
-      .catch(()=>alert("❌ Error de red"));
-      return;
-    }
 
-    // Borrar grupo
-    if (e.target.classList.contains("btn-borrar-bd")) {
-      const id = e.target.dataset.id;
-      if (!confirm("Vas a borrar TODO el grupo (fecha, caja, terminal y lote), incluidos los TIPS. ¿Continuar?")) return;
-      fetch(`/tarjetas/${id}`, { method:"DELETE" })
-      .then(async r => {
-        if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido (caja/local cerrados para tu rol)."); else alert("Error al borrar: "+(txt||r.status)); return null; }
-        return r.json();
-      })
-      .then(async data => {
-        if (!data) return;
-        if (data.success) {
-          await refrescarEstadoCaja({reRender:false});
-          if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
-        } else {
-          alert("❌ " + (data.msg || "Error al borrar"));
-        }
-      })
-      .catch(()=>alert("❌ Error de red"));
-      return;
-    }
+      if (id) {
+        // ----- Actualiza registro existente (PUT)
+        const body = {};
+        if (isMonto) body.monto = nuevo;
+        if (isTip)   body.monto_tip = nuevo;
 
-    // TIP BD editar / cancelar / aceptar
-    if (e.target.classList.contains("btn-editar-tip-bd")) {
-      const { terminal, lote, tarjeta } = e.target.dataset;
-      const td = e.target.closest("td");
-      const span = td.querySelector(`.tip-text-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const input = td.querySelector(`.tip-edit-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const okBtn = td.querySelector(`.btn-aceptar-tip-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const cancelBtn = td.querySelector(`.btn-cancelar-tip-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const actual = (span?.innerText || "").replace(/[^\d,.-]/g, "");
-      if (input) input.value = actual;
-      if (span) span.style.display = "none";
-      if (input) input.style.display = "inline-block";
-      if (okBtn) okBtn.style.display = "inline-block";
-      if (cancelBtn) cancelBtn.style.display = "inline-block";
-      e.target.style.display = "none";
-      return;
-    }
-    if (e.target.classList.contains("btn-cancelar-tip-bd")) {
-      const { terminal, lote, tarjeta } = e.target.dataset;
-      const td = e.target.closest("td");
-      const span = td.querySelector(`.tip-text-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const input = td.querySelector(`.tip-edit-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const okBtn = td.querySelector(`.btn-aceptar-tip-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const cancelBtn = td.querySelector(`.btn-cancelar-tip-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const editBtn = td.querySelector(`.btn-editar-tip-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      if (span) span.style.display = "inline";
-      if (input) input.style.display = "none";
-      if (okBtn) okBtn.style.display = "none";
-      if (cancelBtn) cancelBtn.style.display = "none";
-      if (editBtn) editBtn.style.display = (canActUI() ? "inline" : "none");
-      return;
-    }
-    if (e.target.classList.contains("btn-aceptar-tip-bd")) {
-      const { terminal, lote, tarjeta } = e.target.dataset;
-      const td = e.target.closest("td");
-      const input = td.querySelector(`.tip-edit-bd[data-terminal="${terminal}"][data-lote="${lote}"][data-tarjeta="${tarjeta}"]`);
-      const nuevoTip = parseMonto(input?.value || "0");
-      const { caja, fecha, turno } = getCtx();
-      fetch(`/tarjetas/tip`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caja, fecha, turno, terminal, lote, tarjeta, tip: nuevoTip })
-      })
-      .then(async r => {
-        if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido (caja/local cerrados para tu rol)."); else alert("Error al actualizar TIP: "+(txt||r.status)); return null; }
-        return r.json();
-      })
-      .then(async data => {
-        if (!data) return;
-        if (data.success) {
-          await refrescarEstadoCaja({ reRender:false });
-          if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
-        } else {
-          alert("❌ " + (data.msg || "No se pudo actualizar el TIP"));
-        }
-      })
-      .catch(() => alert("❌ Error de red"));
-      return;
-    }
+        fetch(`/tarjetas/${id}`, {
+          method:"PUT",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(body)
+        })
+        .then(async r => {
+          if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido."); else alert("Error al actualizar: "+(txt||r.status)); return null; }
+          return r.json();
+        })
+        .then(async data => {
+          if (!data) return;
+          if (data.success) {
+            await refrescarEstadoCaja({ reRender:false });
+            if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
+          } else {
+            alert("❌ " + (data.msg || "No se pudo actualizar"));
+          }
+        })
+        .catch(()=>alert("❌ Error de red"));
 
-    // Borrar grupo desde TIP
-    if (e.target.classList.contains("btn-borrar-tip-bd")) {
-      const { terminal, lote } = e.target.dataset;
-      if (!confirm("Vas a borrar TODO el grupo (fecha, caja, terminal y lote), incluidos los TIPS y tarjetas. ¿Continuar?")) return;
-      const id = findTarjetaIdByGrupo(caja, terminal, lote);
-      if (!id) { alert("No se encontró un registro de tarjetas para este grupo. (No se pudo borrar)"); return; }
-      fetch(`/tarjetas/${id}`, { method:"DELETE" })
-      .then(async r => {
-        if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido (caja/local cerrados para tu rol)."); else alert("Error al borrar: "+(txt||r.status)); return null; }
-        return r.json();
-      })
-      .then(async data => {
-        if (!data) return;
-        if (data.success) {
-          await refrescarEstadoCaja({reRender:false});
-          if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
-        } else {
-          alert("❌ " + (data.msg || "Error al borrar"));
-        }
-      })
-      .catch(()=>alert("❌ Error de red"));
+      } else {
+        // ----- No existía registro: crear uno nuevo con el campo editado y el otro en 0
+        const { caja, fecha, turno } = getCtx();
+        const nuevoRegistro = {
+          tarjeta,
+          terminal,
+          lote,
+          monto: isMonto ? nuevo : 0,
+          tip:   isTip   ? nuevo : 0
+        };
+        fetch("/guardar_tarjetas_lote", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ caja, fecha, turno, tarjetas: [nuevoRegistro] })
+        })
+        .then(r => r.json())
+        .then(async data => {
+          if (data && data.success) {
+            if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
+            await refrescarEstadoCaja({ reRender:false });
+            loadTerminalesLocal({ mergeFromToday:true });
+          } else {
+            alert("❌ Error: " + ((data && data.msg) || "No se pudo crear el registro"));
+          }
+        })
+        .catch(()=>alert("❌ Error de red"));
+      }
       return;
     }
   });
 
   // ---------- Añadir lote ----------
   btnAgregarLote?.addEventListener("click", () => {
-    if (!canActUI()) { alert("No tenés permisos para añadir lote en esta caja/turno."); return; }
+    if (!canActUI()) { alert("No tenés permisos para añadir lote."); return; }
     const nuevoLote = (inputNuevoLote.value || "").trim();
     if (!nuevoLote) return alert("Debe ingresar un número de lote");
     const caja = cajaSelect.value;
-    if (!terminalActivo) { alert("Primero cree/seleccione una Terminal."); return; }
+    if (!terminalActivo) { alert("Primero seleccione/cree una Terminal."); return; }
 
-    (terminalesPorCaja[caja] ||= (terminalActivo ? [terminalActivo] : []));
     (lotesPorCajaTerminal[caja] ||= {});
     (loteActivoPorCajaTerminal[caja] ||= {});
     lotesPorCajaTerminal[caja][terminalActivo] = lotesPorCajaTerminal[caja][terminalActivo] || [];
-    (tarjetasCargadasHoyPorCaja[caja] ||= []);
-    (tarjetasPorCaja[caja] ||= []);
-
-    const dupBD = (tarjetasCargadasHoyPorCaja[caja] || []).some(t => {
-      if (!t.terminal) return t.lote === nuevoLote;
-      return t.lote === nuevoLote && t.terminal === terminalActivo;
-    });
-    if (dupBD) { alert("Ese lote ya existe en los registros guardados para esta terminal."); return; }
-
-    const dupVP = (tarjetasPorCaja[caja] || []).some(t => t.lote === nuevoLote && t.terminal === terminalActivo);
-    if (dupVP) { alert("Ese lote ya está en la vista previa para esta terminal."); return; }
 
     if (!lotesPorCajaTerminal[caja][terminalActivo].includes(nuevoLote)) {
       lotesPorCajaTerminal[caja][terminalActivo].push(nuevoLote);
-      renderLotes(caja);
-      const act = (loteActivoPorCajaTerminal[caja] ||= {});
-      act[terminalActivo] = nuevoLote;
-      loteActivo = nuevoLote;
-      if (selectLote.style.display !== "none") selectLote.value = nuevoLote;
-      actualizarLoteActivoDisplay();
     }
+    loteActivoPorCajaTerminal[caja][terminalActivo] = nuevoLote;
+    loteActivo = nuevoLote;
+
+    renderLotes(caja);
+    setLoteDisplay(loteActivo);
     inputNuevoLote.value = "";
   });
 
-  // ---------- Cambio de Terminal/Lote activos ----------
-  selectTerminalActivo?.addEventListener("change", () => {
+  // ---------- Cambio de terminal / lote ----------
+  document.getElementById("terminalActivoTarj")?.addEventListener("change", () => {
     const caja = cajaSelect.value;
-    terminalActivo = selectTerminalActivo.value;
+    terminalActivo = document.getElementById("terminalActivoTarj").value;
     terminalActivoPorCaja[caja] = terminalActivo;
     loteActivo = (loteActivoPorCajaTerminal[caja]?.[terminalActivo]) || null;
-    actualizarTerminalActivoDisplay();
     renderLotes(caja);
+    setLoteDisplay(loteActivo);
   });
   selectLote?.addEventListener("change", () => {
     const caja = cajaSelect.value;
@@ -721,152 +578,147 @@ document.addEventListener("DOMContentLoaded", function () {
     loteActivo = val;
     (loteActivoPorCajaTerminal[caja] ||= {});
     if (terminalActivo) loteActivoPorCajaTerminal[caja][terminalActivo] = val;
-    actualizarLoteActivoDisplay();
+    setLoteDisplay(loteActivo);
   });
 
-  // ---------- Añadir tarjetas + TIPS ----------
-  tarjetaForm?.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    if (!canActUI()) { alert("No tenés permisos para añadir en esta caja/turno."); return; }
-    const caja = cajaSelect.value;
-    if (!terminalActivo) return alert("Debe crear/seleccionar una Terminal primero");
-    if (!loteActivo)    return alert("Debe agregar/seleccionar un Lote para la Terminal activa");
+  // ---------- “+ Tips” (azul, blanco) ----------
+  (function wireTipsButtons() {
+    if (!tarjetaForm) return;
+    const rows = tarjetaForm.querySelectorAll(".tarjeta-row");
+    rows.forEach(row => {
+      const montoInp = row.querySelector(".input-monto");
+      if (!montoInp) return;
 
-    (tarjetasPorCaja[caja] ||= []);
-    (tipsPorCaja[caja]     ||= []);
+      let btn = row.querySelector(".btn-tip");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-tip btn-submit";
+        btn.textContent = "+ Tips";
+        montoInp.parentElement.appendChild(btn);
+      }
 
-    const yaEnVistaPrevia = (tarjetasPorCaja[caja] || []).some(t => t.lote === loteActivo && t.terminal === terminalActivo);
-    const yaEnBD = (tarjetasCargadasHoyPorCaja[caja] || []).some(t => (!t.terminal ? t.lote === loteActivo : t.lote === loteActivo && t.terminal === terminalActivo));
-    if (yaEnBD || yaEnVistaPrevia) return alert("Este lote para esta terminal ya fue cargado previamente o está en la vista previa.");
+      let tipInp = row.querySelector(".input-tip");
+      if (!tipInp) {
+        tipInp = document.createElement("input");
+        tipInp.type = "text";
+        tipInp.placeholder = "0,00";
+        tipInp.className = "input-tip";
+        montoInp.parentElement.appendChild(tipInp);
+      }
 
-    const tarjetaInputs = tarjetaForm.querySelectorAll(".tarjeta-row");
-    tarjetaInputs.forEach(row => {
-      const tarjeta = row.dataset.tarjeta;
-      const input = row.querySelector(".input-monto");
-      let monto = (input?.value || "").trim();
-      if (!monto) return;
-      monto = parseMonto(monto);
-      if (isNaN(monto)) return;
-      tarjetasPorCaja[caja].push({ tarjeta, monto, lote: loteActivo, terminal: terminalActivo });
-    });
-
-    const tipInputs = tarjetaForm.querySelectorAll(".input-tip");
-    tipInputs.forEach(inp => {
-      const valRaw = (inp.value || "").trim();
-      if (!valRaw) return;
-      let tip = parseMonto(valRaw);
-      if (isNaN(tip) || tip <= 0) return;
-      const tarjeta = inp.dataset.tarjeta;
-      tipsPorCaja[caja].push({ tarjeta, tip, lote: loteActivo, terminal: terminalActivo });
-      inp.value = "";
-    });
-
-    renderVistaPrevia(caja);
-    tarjetaForm.reset();
-  });
-
-  // ---------- Guardar BD ----------
-  btnGuardarTarjetas?.addEventListener("click", async () => {
-    const { caja, fecha, turno } = getCtx();
-    const tarjetas   = tarjetasPorCaja[caja] || [];
-    const tipsNuevos = tipsPorCaja[caja]     || [];
-
-    await refrescarEstadoCaja({ reRender: false });
-    if (!canActUI()) { alert("No tenés permisos para guardar en esta caja/turno."); return; }
-    if (tarjetas.length === 0 && tipsNuevos.length === 0) return alert("No hay datos para guardar");
-
-    const promises = [];
-    if (tarjetas.length > 0) {
-      promises.push(fetch("/guardar_tarjetas_lote", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caja, fecha, turno, tarjetas })
-      }).then(r => r.json()));
-    }
-    if (tipsNuevos.length > 0) {
-      const gruposMap = {};
-      tipsNuevos.forEach(t => {
-        const key = `${t.terminal}||${t.lote}`;
-        if (!gruposMap[key]) gruposMap[key] = { terminal: t.terminal, lote: t.lote, tips: {} };
-        gruposMap[key].tips[t.tarjeta] = (gruposMap[key].tips[t.tarjeta] || 0) + (t.tip || 0);
+      btn.addEventListener("click", () => {
+        tipInp.style.display = tipInp.style.display === "none" || !tipInp.style.display ? "inline-block" : "none";
+        if (tipInp.style.display !== "none") tipInp.focus();
       });
-      const grupos = Object.values(gruposMap);
-      promises.push(fetch("/guardar_tips_tarjetas_lote", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caja, fecha, turno, grupos })
-      }).then(r => r.json()));
-    }
+    });
+  })();
 
-    Promise.all(promises)
-      .then(async results => {
-        const ok = results.every(r => r && r.success !== false);
-        if (ok) {
-          alert("✅ Datos guardados correctamente");
-          tarjetasPorCaja[caja] = [];
-          tipsPorCaja[caja] = [];
-          if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
-          await refrescarEstadoCaja({ reRender: false });
-        } else {
-          const firstErr = results.find(r => !r || r.success === false);
-          alert("❌ Error: " + ((firstErr && firstErr.msg) || "No se pudo guardar"));
-        }
-      })
-      .catch(() => alert("❌ Error de red"));
+  // ---------- Submit: guarda DIRECTO en BD ----------
+  tarjetaForm?.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!canActUI()) { alert("No tenés permisos para añadir."); return; }
+    const { caja, fecha, turno } = getCtx();
+    if (!terminalActivo) return alert("Debe seleccionar una Terminal");
+    if (!loteActivo)    return alert("Debe agregar/seleccionar un Lote");
+
+    const tarjetas = [];
+    const rows = tarjetaForm.querySelectorAll(".tarjeta-row");
+    rows.forEach(row => {
+      const tarjeta = row.dataset.tarjeta;
+      const montoInp = row.querySelector(".input-monto");
+      const tipInp   = row.querySelector(".input-tip");
+      let monto = parseMonto(montoInp?.value || "");
+      let tip   = parseMonto(tipInp?.value   || "");
+      if (isNaN(monto) || (!monto && !tip)) return; // al menos algo
+      tarjetas.push({ tarjeta, monto, tip, lote: loteActivo, terminal: terminalActivo });
+      if (montoInp) montoInp.value = "";
+      if (tipInp)   tipInp.value = "";
+    });
+
+    if (tarjetas.length === 0) return alert("No hay datos para guardar");
+
+    fetch("/guardar_tarjetas_lote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caja, fecha, turno, tarjetas })
+    })
+    .then(r => r.json())
+    .then(async data => {
+      if (data && data.success) {
+        if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
+        await refrescarEstadoCaja({ reRender:false });
+        loadTerminalesLocal({ mergeFromToday:true });
+      } else {
+        alert("❌ Error: " + ((data && data.msg) || "No se pudo guardar"));
+      }
+    })
+    .catch(()=>alert("❌ Error de red"));
   });
 
-  // ---------- Fallback para recargar sin orquestador ----------
+  // Compatibilidad: botón “Guardar Tarjetas” dispara submit del form
+  btnGuardarTarjetas?.addEventListener("click", () => {
+    tarjetaForm?.requestSubmit?.();
+  });
+
+  // ---------- Fallback (sin OrqTabs) ----------
   function legacyReload() {
     const { local, caja, fecha, turno } = getCtx();
     const qTar = fetch(`/tarjetas_cargadas_hoy?caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
-      .then(r=>r.json()).catch(()=>[]);
-    const qTip = fetch(`/tips_tarjetas_cargados?caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
       .then(r=>r.json()).catch(()=>[]);
     const qEC = fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
       .then(r=>r.json()).catch(()=>({estado:1}));
     const qEL = fetch(`/estado_local?fecha=${encodeURIComponent(fecha)}`)
       .then(r=>r.json()).catch(()=>({ok:true, estado:1}));
 
-    Promise.all([qTar,qTip,qEC,qEL]).then(([arrTar, arrTip, estCaja, estLocal]) => {
+    Promise.all([qTar,qEC,qEL]).then(([arrTar, estCaja, estLocal]) => {
       window.cajaCerrada = ((estCaja?.estado ?? 1) === 0);
       localCerrado = ((estLocal?.estado ?? 1) === 0);
       toggleUIByEstado();
-      applyDatasetsFromServer(caja, arrTar, arrTip);
+      applyFromServer(caja, arrTar);
       renderTerminales(caja);
-      renderVistaPrevia(caja);
+      renderTabla(caja);
+      loadTerminalesLocal({ mergeFromToday:true });
+      setLoteDisplay(loteActivo);
     });
   }
 
-  // ---------- Aplicar datasets del servidor ----------
-  function applyDatasetsFromServer(caja, arrTar, arrTip) {
+  // ---------- Aplicar dataset del servidor ----------
+  function applyFromServer(caja, arrTar) {
     const normalizados = (arrTar || []).map(d => ({
       id: d.id,
       tarjeta: d.tarjeta,
       lote: d.lote,
-      monto: d.monto,
       terminal: d.terminal || null,
-      // ⬇️ Guardamos TIP que viene de /tarjetas_cargadas_hoy
-      tip: (typeof d.tip !== "undefined") ? parseFloat(d.tip) : 0
+      monto: parseFloat(d.monto || 0),
+      monto_tip: parseFloat(d.monto_tip || 0)
     }));
-    tarjetasCargadasHoyPorCaja[caja] = normalizados;
 
-    // /tips_tarjetas_cargados ya trae columnas por tarjeta (incluidas las nuevas)
-    tipsCargadosPorCaja[caja] = Array.isArray(arrTip) ? arrTip : [];
+    // preservamos anteriores si server viene vacío
+    const anteriores = tarjetasCargadasHoyPorCaja[caja] || [];
+    tarjetasCargadasHoyPorCaja[caja] = normalizados.length ? normalizados : anteriores;
 
-    const termSet = new Set();
-    const lotesMap = {};
-    normalizados.forEach(r => {
+    // Construimos lotes/terminales sin borrar lo que ya había si viene vacío
+    const termSetServer = new Set();
+    const lotesMapServer = {};
+    (normalizados.length ? normalizados : anteriores).forEach(r => {
       const term = r.terminal || '';
       const lote = r.lote || '';
-      if (term) { termSet.add(term); (lotesMap[term] ||= new Set()).add(lote); }
-      else if (lote) { (lotesMap[""] ||= new Set()).add(lote); }
-    });
-    (tipsCargadosPorCaja[caja] || []).forEach(row => {
-      if (row.terminal) { termSet.add(row.terminal); (lotesMap[row.terminal] ||= new Set()).add(row.lote); }
+      if (term) { termSetServer.add(term); (lotesMapServer[term] ||= new Set()).add(lote); }
+      else if (lote) { (lotesMapServer[""] ||= new Set()).add(lote); }
     });
 
-    terminalesPorCaja[caja] = Array.from(termSet);
-    lotesPorCajaTerminal[caja] = {};
-    Object.keys(lotesMap).forEach(t => { lotesPorCajaTerminal[caja][t] = Array.from(lotesMap[t]); });
+    const prevTerms = new Set(terminalesPorCaja[caja] || []);
+    const mergedTerms = new Set([...prevTerms, ...termSetServer]);
+    terminalesPorCaja[caja] = Array.from(mergedTerms);
 
+    lotesPorCajaTerminal[caja] = lotesPorCajaTerminal[caja] || {};
+    Object.keys(lotesMapServer).forEach(t => {
+      const arr = Array.from(lotesMapServer[t]);
+      lotesPorCajaTerminal[caja][t] = Array.from(new Set([...(lotesPorCajaTerminal[caja][t] || []), ...arr]));
+    });
+
+    // Mantener terminal/lote activos válidos
     if (!terminalActivoPorCaja[caja] || !terminalesPorCaja[caja].includes(terminalActivoPorCaja[caja])) {
       terminalActivoPorCaja[caja] = terminalesPorCaja[caja][0] || null;
     }
@@ -882,44 +734,38 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       loteActivo = null;
     }
+    setLoteDisplay(loteActivo);
   }
 
-  // ---------- Render que llama el Orquestador ----------
+  // ---------- Hook OrqTabs ----------
   window.renderTarjetas = function (data, opts = {}) {
     const caja = cajaSelect.value;
     const map = opts.datasets || {};
     const epTar = Object.keys(map).find(k => k.includes('tarjetas_cargadas_hoy')) || Object.keys(map)[0];
-    const epTip = Object.keys(map).find(k => k.includes('tips_tarjetas_cargados'));
     const epEC  = Object.keys(map).find(k => k.includes('estado_caja'));
     const epEL  = Object.keys(map).find(k => k.includes('estado_local'));
-
     const arrTar = Array.isArray(map[epTar]) ? map[epTar] : (Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []));
-    const arrTip = epTip ? (Array.isArray(map[epTip]) ? map[epTip] : (map[epTip] && Array.isArray(map[epTip].items) ? map[epTip].items : [])) : [];
 
-    // === NUEVO: sincronizar estado si vino en payload
     if (epEC && map[epEC] && typeof map[epEC] === 'object') {
-      const d = map[epEC];
-      window.cajaCerrada = ((d.estado ?? 1) === 0);
+      window.cajaCerrada = ((map[epEC].estado ?? 1) === 0);
     }
     if (epEL && map[epEL] && typeof map[epEL] === 'object') {
-      const d = map[epEL];
-      localCerrado = ((d.estado ?? 1) === 0);
+      localCerrado = ((map[epEL].estado ?? 1) === 0);
     }
     toggleUIByEstado();
 
-    applyDatasetsFromServer(caja, arrTar, arrTip);
+    applyFromServer(caja, arrTar);
     refrescarEstadoCaja({ reRender: false }).finally(() => {
       renderTerminales(caja);
-      renderVistaPrevia(caja);
+      renderTabla(caja);
+      loadTerminalesLocal({ mergeFromToday:true });
+      setLoteDisplay(loteActivo);
     });
   };
 
-  // ---------- Init mínimo ----------
+  // ---------- Init ----------
   const cajaInicial = cajaSelect.value;
-  (tarjetasPorCaja[cajaInicial] ||= []);
   (tarjetasCargadasHoyPorCaja[cajaInicial] ||= []);
-  (tipsPorCaja[cajaInicial] ||= []);
-  (tipsCargadosPorCaja[cajaInicial] ||= []);
   (terminalesPorCaja[cajaInicial] ||= []);
   (lotesPorCajaTerminal[cajaInicial] ||= {});
   (loteActivoPorCajaTerminal[cajaInicial] ||= {});
@@ -927,20 +773,25 @@ document.addEventListener("DOMContentLoaded", function () {
   terminalActivo = terminalActivoPorCaja[cajaInicial];
 
   renderTerminales(cajaInicial);
-  actualizarTerminalActivoDisplay();
   renderLotes(cajaInicial);
 
-  if (!window.OrqTabs) {
-    (async () => {
-      await refrescarEstadoCaja({ reRender: false });
-      legacyReload();
-    })();
-    // listeners fallback
-    cajaSelect?.addEventListener("change", async () => { await refrescarEstadoCaja({ reRender: false }); legacyReload(); });
-    fechaGlobalInput?.addEventListener("change", async () => { await refrescarEstadoCaja({ reRender: false }); legacyReload(); });
-    turnoSelect?.addEventListener("change", async () => { await refrescarEstadoCaja({ reRender: false }); legacyReload(); });
-  } else {
-    // asegurar estado inicial de botones
-    toggleUIByEstado();
-  }
+  (async () => {
+    await refrescarEstadoCaja({ reRender: false });
+    legacyReload();
+    loadTerminalesLocal(); // llena el selector desde el endpoint {success, items:[...]}
+  })();
+
+  cajaSelect?.addEventListener("change", async () => {
+    await refrescarEstadoCaja({ reRender: false });
+    legacyReload();
+    loadTerminalesLocal();
+  });
+  fechaGlobalInput?.addEventListener("change", async () => {
+    await refrescarEstadoCaja({ reRender: false });
+    legacyReload();
+  });
+  turnoSelect?.addEventListener("change", async () => {
+    await refrescarEstadoCaja({ reRender: false });
+    legacyReload();
+  });
 });

@@ -199,7 +199,6 @@ CLOSED_LOCAL_SUBQUERY = """
     FROM cierres_locales cl
     WHERE cl.local = {a}.local
       AND DATE(cl.fecha) = DATE({a}.fecha)
-      AND cl.turno = {a}.turno
       AND cl.estado = 0  -- 0 = cerrado
   )
 """
@@ -305,22 +304,24 @@ def _is_safe_url(target: str) -> bool:
     test_url = urlparse(urljoin(request.host_url, target))
     return (test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc)
 
-
 # ---------- Router por nivel ----------
 def route_for_current_role() -> str:
     """
     Devuelve la URL destino según nivel:
-      1 -> '/'
-      2 -> '/encargado'
-      3 -> '/encargado' (por ahora)
+      1 -> 'index'            => '/'
+      2 -> 'encargado'        => '/encargado' (o el que tengas: p.ej. 'ventas_cargadas')
+      3 -> 'auditor'          => '/auditor'
     """
     try:
         lvl = int(get_user_level())
     except Exception:
         lvl = 1
 
-    if lvl >= 2:
-        return url_for('carga_datos_encargado')
+    if lvl == 2:
+        # Usa el endpoint real que tengas para la home del encargado
+        return url_for('encargado')              # <-- o 'ventas_cargadas' / 'carga_datos_encargado' si existe
+    if lvl >= 3:
+        return url_for('auditor')
     return url_for('index')
 
 
@@ -344,22 +345,17 @@ def go_home():
     """
     return redirect(route_for_current_role())
 
-
 def redirect_after_login():
-    """
-    Decide adónde redirigir post-login:
-    - Respeta ?next= si es seguro.
-    - Si next apunta a raíz ('/') y el usuario es nivel 2, lo manda a /encargado.
-    - Si no hay next válido, va a la ruta por rol.
-    """
     nxt = request.args.get('next') or (request.form.get('next') if hasattr(request, 'form') else None)
     if nxt and _is_safe_url(nxt):
-        if get_user_level() == 2:
-            path_only = urlparse(nxt).path or '/'
-            if path_only in ('/', url_for('index')):
-                return redirect(url_for('encargado'))
+        path_only = urlparse(nxt).path or '/'
+        if get_user_level() == 2 and path_only in ('/', url_for('index')):
+            return redirect(url_for('encargado'))   # <-- endpoint real de encargado
+        if get_user_level() >= 3 and path_only in ('/', url_for('index')):
+            return redirect(url_for('auditor'))
         return redirect(nxt)
     return redirect(route_for_current_role())
+
 
 
 # Inyectamos también la URL "inicio" correcta en los templates
@@ -423,6 +419,11 @@ files_gcs.inject_dependencies(
 
 from modules.files_gcs import bp_files     # ← importa el blueprint
 app.register_blueprint(bp_files, url_prefix="/files")
+from modules.auditoria import auditoria_bp
+app.register_blueprint(auditoria_bp)
+from modules.terminales import terminales_bp
+app.register_blueprint(terminales_bp)
+
 app.secret_key = '8V#n*aQHYUt@7MdGBY0wE8f'  # Cambiar en producción
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///registros.db'
 app.config['SESSION_COOKIE_SECURE'] = False  # Cambiar a True solo en producción con HTTPS
@@ -441,25 +442,25 @@ load_dotenv()
 # _________________________________________________________________________________ #
 
 
-
 @app.route('/', endpoint='index')
 @login_required
 @page_access_required('index')
 def nuevo_registro():
-    # si es encargado (nivel 2), jamás ve '/', va a /encargado
-    if get_user_level() == 2:
-        return redirect(url_for('encargado'))
+    lvl = get_user_level()
+    if lvl == 2:
+        return redirect(url_for('encargado'))   # <-- endpoint real de encargado
+    if lvl >= 3:
+        return redirect(url_for('auditor'))
 
+    # Nivel 1: render normal
     local = session.get('local')
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # cajas
     cur.execute("SELECT cantidad_cajas FROM locales WHERE local = %s LIMIT 1", (local,))
     row = cur.fetchone()
     cantidad_cajas = row[0] if row else 1
 
-    # turnos habilitados
     cur.execute("SELECT turnos FROM locales WHERE local = %s", (local,))
     turnos = [r[0] for r in cur.fetchall()] or ['UNI']
 
@@ -507,6 +508,49 @@ def encargado():
         cantidad_cajas=cantidad_cajas,
         turnos=turnos
     )
+
+
+@app.route('/auditor', endpoint='auditor')
+@login_required
+@role_min_required(3)  # o el slug que corresponda
+def encargado():
+    # Defensa por nivel (opcional, pero recomendado)
+    if get_user_level() < 3:
+        return redirect(route_for_current_role())
+
+    local = session.get('local')
+
+    # Default seguros si por algún motivo no hay local en sesión
+    cantidad_cajas = 1
+    turnos = ['UNI']
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # cantidad de cajas
+        cur.execute("SELECT cantidad_cajas FROM locales WHERE local = %s LIMIT 1", (local,))
+        row = cur.fetchone()
+        if row and row[0]:
+            cantidad_cajas = int(row[0])
+
+        # turnos habilitados
+        cur.execute("SELECT turnos FROM locales WHERE local = %s", (local,))
+        rows = cur.fetchall()
+        turnos = [r[0] for r in rows] or ['UNI']
+
+        cur.close(); conn.close()
+    except Exception:
+        # En caso de fallo DB, mantenemos defaults para no romper la vista
+        pass
+
+    # IMPORTANTE: pasar las variables que la plantilla espera
+    return render_template(
+        'index_auditor.html',
+        cantidad_cajas=cantidad_cajas,
+        turnos=turnos
+    )
+
 
 
 
@@ -835,55 +879,37 @@ def remesas_delete(remesa_id):
 # ----------------------------------------------
 # TARJETAS (con TURNO + USUARIO en todas las ops)
 # ----------------------------------------------
-from datetime import datetime, date
-from flask import request, jsonify, session
+import json
+from flask import request, jsonify
 
-# ------------ Helpers comunes ------------
+def _parse_float(value):
+    """
+    Reemplazo seguro para json.loads(..., parse_float=_parse_float)
+    Limpia comas y puntos según formato argentino antes de convertir.
+    """
+    try:
+        if value is None or str(value).strip() == "":
+            return 0.0
+        s = str(value).strip()
 
+        # Elimina espacios y símbolos monetarios
+        s = s.replace("$", "").replace(" ", "")
 
-def is_caja_abierta(conn, local, caja, fecha, turno):
-    """Caja abierta para (local, caja, fecha, turno). Si no hay fila => abierta."""
-    fecha = _normalize_fecha(fecha)
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT estado
-          FROM cajas_estado
-         WHERE local=%s AND caja=%s AND fecha_operacion=%s AND turno=%s
-    """, (local, caja, fecha, turno))
-    row = cur.fetchone()
-    cur.close()
-    return (row is None) or (row[0] is None) or (int(row[0]) == 1)
-# ____________________________ TARJETAS__________________________________
-# ---------- Mapeo de columnas de tips ----------
-def _tip_col_from_tarjeta(nombre):
-    n = (nombre or "").strip().upper()
-    n = (n.replace("É","E").replace("Á","A").replace("Í","I").replace("Ó","O").replace("Ú","U"))
-    if n == "VISA": return "visa_tips"
-    if n in ("VISA DEBITO","VISA DÉBITO"): return "visa_debito_tips"
-    if n == "VISA PREPAGO": return "visa_prepago_tips"              # ← NUEVO
-    if n == "MASTERCARD": return "mastercard_tips"
-    if n in ("MASTERCARD DEBITO","MASTERCARD DÉBITO"): return "mastercard_debito_tips"
-    if n == "MASTERCARD PREPAGO": return "mastercard_prepago_tips"  # ← NUEVO
-    if n == "CABAL": return "cabal_tips"
-    if n in ("CABAL DEBITO","CABAL DÉBITO"): return "cabal_debito_tips"
-    if n == "AMEX": return "amex_tips"
-    if n == "MAESTRO": return "maestro_tips"
-    if n == "NARANJA": return "naranja_tips"                        # ← NUEVO
-    if n in ("DINERS","DINER"): return "diners_tips"                # ← NUEVO
-    if n == "PAGOS INMEDIATOS": return "pagos_inmediatos_tips"
+        # Si tiene formato argentino (1.234,56) -> 1234.56
+        if "," in s and "." in s and s.find(".") < s.find(","):
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", ".")  # por si solo usa coma
+
+        return float(s)
+    except Exception:
+        return 0.0
+def _ensure_full_brand_set(*args, **kwargs):
+    """Placeholder temporal: evitar error de referencia."""
     return None
 
-_ALL_TIP_COLS = [
-    "visa_tips","visa_debito_tips","visa_prepago_tips",            # ← NUEVO
-    "mastercard_tips","mastercard_debito_tips","mastercard_prepago_tips",  # ← NUEVO
-    "cabal_tips","cabal_debito_tips","amex_tips","maestro_tips",
-    "naranja_tips","diners_tips",                                  # ← NUEVO
-    "pagos_inmediatos_tips"
-]
 
-# ----------------------------------------------------------------------
-# GUARDAR LOTE (Tarjetas) — usa @require_edit_ctx → can_edit(L1/L2/L3)
-# ----------------------------------------------------------------------
+
 @app.route('/guardar_tarjetas_lote', methods=['POST'])
 @login_required
 @require_edit_ctx
@@ -893,35 +919,54 @@ def guardar_tarjetas_lote():
     if not tarjetas:
         return jsonify(success=False, msg="No se recibieron tarjetas"), 400
 
-    ctx     = g.ctx  # require_edit_ctx ya validó permisos y normalizó fecha
-    local   = ctx['local']
-    caja    = ctx['caja']
-    fecha   = ctx['fecha']
-    turno   = ctx['turno']
+    ctx     = g.ctx
+    local   = ctx['local']; caja = ctx['caja']; fecha = ctx['fecha']; turno = ctx['turno']
     usuario = session.get('username')
+
+    # agrupamos por (terminal,lote) para luego completar el set de marcas
+    grupos: Dict[Tuple[str,str], List[dict]] = {}
+    for t in tarjetas:
+        terminal = (t.get('terminal') or "").strip()
+        lote     = (t.get('lote') or "").strip()
+        if not terminal or not lote:
+            # si falta, no procesamos esta fila
+            continue
+        grupos.setdefault((terminal, lote), []).append(t)
 
     try:
         conn = get_db_connection()
         cur  = conn.cursor()
-        sql = """
+
+        sql_upsert = """
             INSERT INTO tarjetas_trns
-            (usuario, local, caja, turno, tarjeta, terminal, lote, monto, fecha, estado)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'revision')
+            (usuario, local, caja, turno, tarjeta, terminal, lote, monto, monto_tip, fecha, estado)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'revision')
+            ON DUPLICATE KEY UPDATE
+              monto=VALUES(monto),
+              monto_tip=VALUES(monto_tip),
+              usuario=VALUES(usuario),
+              estado='revision'
         """
+
         inserted = 0
-        for t in tarjetas:
-            tarjeta   = (t.get('tarjeta') or "").strip()
-            lote      = (t.get('lote') or "").strip()
-            terminal  = (t.get('terminal') or "").strip()
-            monto_str = str(t.get('monto', '0')).replace(".", "").replace(",", ".")
-            try:
-                monto = float(monto_str or 0)
-            except Exception:
-                monto = 0.0
-            if not (tarjeta and lote and terminal):
-                continue
-            cur.execute(sql, (usuario, local, caja, turno, tarjeta, terminal, lote, monto, fecha))
-            inserted += cur.rowcount
+        for (terminal, lote), filas in grupos.items():
+            # Primero: insert/upsert las que vinieron con datos
+            for t in filas:
+                tarjeta   = (t.get('tarjeta') or "").strip()
+                if not tarjeta:
+                    continue
+                monto     = _parse_float(t.get('monto', 0))
+                monto_tip = _parse_float(t.get('tip', 0))
+                cur.execute(sql_upsert, (
+                    usuario, local, caja, turno, tarjeta, terminal, lote, monto, monto_tip, fecha
+                ))
+                inserted += cur.rowcount
+
+            # Luego: garantizar set completo de marcas con 0
+            _ensure_full_brand_set(
+                conn, local=local, caja=caja, turno=turno, fecha=fecha,
+                terminal=terminal, lote=lote
+            )
 
         conn.commit()
         cur.close(); conn.close()
@@ -930,19 +975,13 @@ def guardar_tarjetas_lote():
         print("❌ ERROR al guardar tarjetas:", e)
         return jsonify(success=False, msg=f"Error al guardar tarjetas: {e}"), 500
 
-# ----------------------------------------------------------------------
-# LISTADO (Tarjetas + TIP por fila) — con @with_read_scope('t')
-# L2: sólo “cajas cerradas” por ÚLTIMO estado del día/turno
-# L3: sólo “locales cerrados”
-# ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-# LISTADO (Tarjetas + TIP por fila) — con @with_read_scope('t')
-# L2: sólo “cajas cerradas” por ÚLTIMO estado del día/turno
-# L3: sólo “locales cerrados”
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------------
+#  Listado de tarjetas cargadas del día (única tabla: incluye monto_tip)
+#  Protegido por with_read_scope (L2/L3 ven según cierre de caja/local)
+# ------------------------------------------------------------------------------------
 @app.route("/tarjetas_cargadas_hoy")
 @login_required
-@with_read_scope('t')  # inyecta g.read_scope usando CLOSED_BOX_SUBQUERY/CLOSED_LOCAL_SUBQUERY
+@with_read_scope('t')
 def tarjetas_cargadas_hoy():
     caja      = request.args.get("caja")
     fecha_str = request.args.get("fecha")
@@ -959,45 +998,14 @@ def tarjetas_cargadas_hoy():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
-        # ⬇️ CASE extendido para contemplar nuevas tarjetas de TIPS
-        case_tip = """
-            CASE
-                WHEN t.tarjeta='VISA' THEN COALESCE(tt.visa_tips,0)
-                WHEN t.tarjeta IN ('VISA DÉBITO','VISA DEBITO') THEN COALESCE(tt.visa_debito_tips,0)
-                WHEN t.tarjeta='VISA PREPAGO' THEN COALESCE(tt.visa_prepago_tips,0)
-
-                WHEN t.tarjeta='MASTERCARD' THEN COALESCE(tt.mastercard_tips,0)
-                WHEN t.tarjeta IN ('MASTERCARD DÉBITO','MASTERCARD DEBITO') THEN COALESCE(tt.mastercard_debito_tips,0)
-                WHEN t.tarjeta='MASTERCARD PREPAGO' THEN COALESCE(tt.mastercard_prepago_tips,0)
-
-                WHEN t.tarjeta='CABAL' THEN COALESCE(tt.cabal_tips,0)
-                WHEN t.tarjeta IN ('CABAL DÉBITO','CABAL DEBITO') THEN COALESCE(tt.cabal_debito_tips,0)
-
-                WHEN t.tarjeta='AMEX' THEN COALESCE(tt.amex_tips,0)
-                WHEN t.tarjeta='MAESTRO' THEN COALESCE(tt.maestro_tips,0)
-                WHEN t.tarjeta='NARANJA' THEN COALESCE(tt.naranja_tips,0)
-                WHEN t.tarjeta='DINERS' THEN COALESCE(tt.diners_tips,0)
-                WHEN t.tarjeta='PAGOS INMEDIATOS' THEN COALESCE(tt.pagos_inmediatos_tips,0)
-                ELSE 0
-            END AS tip
-        """
-
         sql = f"""
-            SELECT t.id, t.tarjeta, t.terminal, t.lote, t.monto, {case_tip}
+            SELECT t.id, t.tarjeta, t.terminal, t.lote, t.monto, t.monto_tip, t.estado
               FROM tarjetas_trns t
-              LEFT JOIN tips_tarjetas tt
-                ON tt.local    = %s
-               AND tt.caja     = t.caja
-               AND DATE(tt.fecha) = DATE(t.fecha)
-               AND tt.turno    = t.turno
-               AND tt.terminal = t.terminal
-               AND tt.lote     = t.lote
              WHERE t.local=%s AND t.caja=%s AND DATE(t.fecha)=%s AND t.turno=%s
-               {g.read_scope}   -- L2/L3 según reglas
+               {g.read_scope}
              ORDER BY t.terminal, t.lote, t.tarjeta, t.id
         """
-        cursor.execute(sql, (local, local, caja, fecha, turno))
+        cursor.execute(sql, (local, caja, fecha, turno))
         resultados = cursor.fetchall()
         cursor.close(); conn.close()
         return jsonify(resultados)
@@ -1005,22 +1013,17 @@ def tarjetas_cargadas_hoy():
         print("❌ ERROR al consultar tarjetas cargadas:", e)
         return jsonify([])
 
-
-# ----------------------------------------------------------------------
-# UPDATE (Tarjeta) — can_edit en base a la fila (rol + caja/local)
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------------
+#  Update puntual de una tarjeta (monto y/o monto_tip)
+#  can_edit por fila
+# ------------------------------------------------------------------------------------
 @app.route("/tarjetas/<int:tarjeta_id>", methods=["PUT"])
 @login_required
-def actualizar_tarjeta(tarjeta_id):
+def actualizar_tarjeta(tarjeta_id: int):
     data = request.get_json() or {}
-    nuevo_monto = data.get("monto")
-    if nuevo_monto is None:
-        return jsonify(success=False, msg="Falta 'monto'"), 400
-
-    try:
-        nuevo_monto = float(str(nuevo_monto).replace(".", "").replace(",", "."))
-    except Exception:
-        return jsonify(success=False, msg="Monto inválido"), 400
+    monto_raw   = data.get("monto")
+    tip_raw     = data.get("monto_tip")
+    estado_raw  = data.get("estado")  # opcional, por si luego querés marcar 'ok'/'cargado'
 
     try:
         conn = get_db_connection()
@@ -1031,13 +1034,28 @@ def actualizar_tarjeta(tarjeta_id):
             cur.close(); conn.close()
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
-        # Permisos L1/L2/L3 idénticos a remesas/MP
         if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
             cur.close(); conn.close()
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+            return jsonify(success=False, msg="No permitido"), 409
 
+        sets = []
+        vals = []
+        if monto_raw is not None:
+            monto = _parse_float(monto_raw)
+            sets.append("monto=%s"); vals.append(monto)
+        if tip_raw is not None:
+            monto_tip = _parse_float(tip_raw)
+            sets.append("monto_tip=%s"); vals.append(monto_tip)
+        if estado_raw is not None:
+            sets.append("estado=%s"); vals.append(str(estado_raw))
+
+        if not sets:
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="Sin cambios"), 400
+
+        vals.append(tarjeta_id)
         cur2 = conn.cursor()
-        cur2.execute("UPDATE tarjetas_trns SET monto=%s WHERE id=%s", (nuevo_monto, tarjeta_id))
+        cur2.execute(f"UPDATE tarjetas_trns SET {', '.join(sets)} WHERE id=%s", tuple(vals))
         conn.commit()
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True)
@@ -1045,12 +1063,13 @@ def actualizar_tarjeta(tarjeta_id):
         print("❌ ERROR al actualizar tarjeta:", e)
         return jsonify(success=False, msg=f"Error al actualizar tarjeta: {e}"), 500
 
-# ----------------------------------------------------------------------
-# DELETE en bloque (tarjetas + tips del grupo) — usa can_edit con la fila
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------------
+#  Delete en bloque por id (borra todo el grupo terminal/lote del día/turno/caja/local)
+#  can_edit por fila
+# ------------------------------------------------------------------------------------
 @app.route("/tarjetas/<int:tarjeta_id>", methods=["DELETE"])
 @login_required
-def borrar_tarjeta(tarjeta_id):
+def borrar_tarjeta(tarjeta_id: int):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
@@ -1066,184 +1085,23 @@ def borrar_tarjeta(tarjeta_id):
 
         if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
             cur.close(); conn.close()
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+            return jsonify(success=False, msg="No permitido"), 409
 
         cur2 = conn.cursor()
-        # tarjetas
         cur2.execute("""
             DELETE FROM tarjetas_trns
-             WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s AND terminal=%s AND lote=%s
+             WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s
+               AND terminal=%s AND lote=%s
         """, (row['local'], row['caja'], _normalize_fecha(row['fecha']), row['turno'], row['terminal'], row['lote']))
-        # tips
-        cur2.execute("""
-            DELETE FROM tips_tarjetas
-             WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s AND terminal=%s AND lote=%s
-        """, (row['local'], row['caja'], _normalize_fecha(row['fecha']), row['turno'], row['terminal'], row['lote']))
-
         eliminadas = cur2.rowcount
         conn.commit()
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True, deleted=eliminadas)
     except Exception as e:
-        print("❌ ERROR al borrar tarjetas/tips (bloque):", e)
+        print("❌ ERROR al borrar tarjetas (bloque):", e)
         return jsonify(success=False, msg=f"Error al borrar: {e}"), 500
 
-# =========================
-#  TIPS DE TARJETAS - API
-# =========================
 
-# UPDATE puntual de un TIP — valida con @require_edit_ctx (rol + estado)
-@app.route("/tarjetas/tip", methods=["PUT"])
-@login_required
-@require_edit_ctx
-def actualizar_tip_tarjeta():
-    data     = request.get_json() or {}
-    ctx      = g.ctx  # local/caja/fecha/turno validados y normalizados
-    local    = ctx['local']
-    caja     = ctx['caja']
-    fecha    = ctx['fecha']
-    turno    = ctx['turno']
-
-    usuario  = session.get("username")
-    terminal = data.get("terminal")
-    lote     = data.get("lote")
-    tarjeta  = data.get("tarjeta")
-    tip_raw  = data.get("tip", 0)
-
-    if not all([terminal, lote, tarjeta]):
-        return jsonify(success=False, msg="Faltan parámetros (terminal/lote/tarjeta)"), 400
-
-    try:
-        tip_val = float(str(tip_raw).replace(".", "").replace(",", "."))
-    except Exception:
-        tip_val = 0.0
-
-    col = _tip_col_from_tarjeta(tarjeta)
-    if not col:
-        return jsonify(success=False, msg="Tarjeta no soportada para TIP"), 400
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # asegurar fila
-        cur.execute(f"""
-            INSERT INTO tips_tarjetas
-                (usuario, local, caja, turno, terminal, lote, fecha, {", ".join(_ALL_TIP_COLS)})
-            VALUES (%s,%s,%s,%s,%s,%s,%s,{",".join(["0"]*len(_ALL_TIP_COLS))})
-            ON DUPLICATE KEY UPDATE local=local
-        """, (usuario, local, caja, turno, terminal, lote, fecha))
-
-        # actualizar solo la columna del TIP
-        cur.execute(f"""
-            UPDATE tips_tarjetas
-               SET {col}=%s
-             WHERE local=%s AND caja=%s AND turno=%s AND terminal=%s AND lote=%s AND DATE(fecha)=%s
-        """, (tip_val, local, caja, turno, terminal, lote, fecha))
-
-        conn.commit()
-        cur.close(); conn.close()
-        return jsonify(success=True)
-    except Exception as e:
-        print("❌ ERROR actualizar_tip_tarjeta:", e)
-        return jsonify(success=False, msg=str(e)), 500
-
-@app.post("/guardar_tips_tarjetas_lote")
-@login_required
-@require_edit_ctx
-def guardar_tips_tarjetas_lote():
-    data   = request.get_json() or {}
-    grupos = data.get("grupos", []) or []
-    if not grupos:
-        return jsonify(success=False, msg="Faltan datos (grupos)"), 400
-
-    ctx     = g.ctx
-    local   = ctx['local']
-    caja    = ctx['caja']
-    fecha   = ctx['fecha']
-    turno   = ctx['turno']
-    usuario = session.get("username")
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        for grp in grupos:  # <-- NO usar 'g' aquí
-            terminal = (grp.get("terminal") or "").strip()
-            lote     = (grp.get("lote") or "").strip()
-            tips_dict= grp.get("tips", {}) or {}
-            estado   = "revision"
-            if not (terminal and lote):
-                continue
-
-            valores = {c: 0.0 for c in _ALL_TIP_COLS}
-            for nombre_tarj, monto in tips_dict.items():
-                col = _tip_col_from_tarjeta(nombre_tarj)
-                if not col:
-                    continue
-                try:
-                    monto_f = float(str(monto).replace(".", "").replace(",", "."))
-                except Exception:
-                    monto_f = 0.0
-                valores[col] = valores.get(col, 0.0) + (monto_f or 0.0)
-
-            if all(v == 0 for v in valores.values()):
-                continue
-
-            cols_part    = ", ".join(_ALL_TIP_COLS)
-            placeholders = ", ".join(["%s"] * len(_ALL_TIP_COLS))
-            update_part  = ", ".join([f"{c}={c}+VALUES({c})" for c in _ALL_TIP_COLS])
-
-            sql = f"""
-                INSERT INTO tips_tarjetas
-                  (usuario, local, caja, turno, terminal, lote, fecha, {cols_part}, estado)
-                VALUES
-                  (%s,%s,%s,%s,%s,%s,%s,{placeholders},%s)
-                ON DUPLICATE KEY UPDATE
-                  {update_part}
-            """
-            cur.execute(sql, (
-                usuario, local, caja, turno, terminal, lote, fecha,
-                *[valores[c] for c in _ALL_TIP_COLS], estado
-            ))
-
-        conn.commit()
-        cur.close(); conn.close()
-        return jsonify(success=True)
-    except Exception as e:
-        print("❌ ERROR guardar_tips_tarjetas_lote:", e)
-        return jsonify(success=False, msg=f"Error al guardar TIPS: {e}"), 500
-
-
-# Lectura de TIPS — con @with_read_scope('tt') para aplicar visibilidad L2/L3
-@app.get("/tips_tarjetas_cargados")
-@login_required
-@with_read_scope('tt')
-def tips_tarjetas_cargados():
-    caja   = request.args.get("caja")
-    fecha  = request.args.get("fecha")
-    turno  = request.args.get("turno")
-    local  = session.get("local")
-
-    if not (caja and fecha and turno and local):
-        return jsonify([])
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(dictionary=True)
-        sql = f"""
-            SELECT tt.terminal, tt.lote, {", ".join(_ALL_TIP_COLS)}
-              FROM tips_tarjetas tt
-             WHERE tt.local=%s AND tt.caja=%s AND tt.turno=%s AND DATE(tt.fecha)=%s
-               {g.read_scope}   -- L2/L3 según reglas
-             ORDER BY tt.terminal, tt.lote
-        """
-        cur.execute(sql, (local, caja, turno, _normalize_fecha(fecha)))
-        rows = cur.fetchall()
-        cur.close(); conn.close()
-        return jsonify(rows or [])
-    except Exception as e:
-        print("❌ ERROR tips_tarjetas_cargados:", e)
-        return jsonify([])
 
     #____________________________________RAPPI_______________________________
 
@@ -3789,6 +3647,9 @@ def carga_datos_encargado():
                            cantidad_cajas=cantidad_cajas,
                            turnos=turnos,
                            role_level=get_user_level())
+
+
+
 
 
 

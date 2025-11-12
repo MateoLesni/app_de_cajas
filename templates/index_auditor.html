@@ -81,6 +81,39 @@
           Carga de Datos
         </a>
 
+      <!-- Grupo: Reportería (desplegable) -->
+      <div class="nav-group {% if request.path.startswith('/reporteria') %}is-open{% endif %}">
+        <!-- Toggle con el MISMO look de .nav-item -->
+        <a href="javascript:void(0)"
+          id="navReportes"
+          class="nav-item nav-toggle {% if request.path.startswith('/reporteria') %}is-active{% endif %}"
+          aria-expanded="{% if request.path.startswith('/reporteria') %}true{% else %}false{% endif %}">
+          <span class="nav-dot" aria-hidden="true"></span>
+          <span>Reportería</span>
+          <!-- caret -->
+          <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true" focusable="false" style="margin-left:auto;">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </a>
+
+        <!-- Subitems con leve sangría -->
+        <div class="nav-sub">
+          <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
+            href="{{ url_for('ui_reporteria_remesas') }}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            Remesas
+          </a>
+
+          <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
+            href="{{ url_for('ui_reporteria_remesas') if false else '#' }}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            Cuentas Corrientes
+          </a>
+        </div>
+      </div>
+
       <div class="sidebar__footer">
         <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
       </div>
@@ -216,46 +249,33 @@
 
             <div class="soft-divider"></div>
 
-            <!-- FORM 2: Comprobantes (Z/A/B/CC) -->
-            <form id="ventasFacturasForm" class="form-container">
-              <div class="grid-4">
-                <div class="form-group">
-                  <label for="tipoFacturaSelect">Tipo</label>
-                  <select id="tipoFacturaSelect" class="form-control">
-                    <option value="Z" selected>Z</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="CC">CC</option>
-                  </select>
-                </div>
-
+            <!-- FORM 2: Comprobantes Z -->
+            <form id="ventasZForm" class="form-container">
+              <div class="grid-3">
                 <div class="form-group">
                   <label for="puntoVentaInput">Punto de venta</label>
                   <input type="text" id="puntoVentaInput" class="form-control" placeholder="Ej: 0001" autocomplete="off">
                 </div>
-
                 <div class="form-group">
-                  <label id="numeroDocLabel" for="numeroDocInput">Número de Factura</label>
-                  <input type="text" id="numeroDocInput" class="form-control" placeholder="Ej: 00000001" autocomplete="off">
+                  <label for="numeroZInput">Número de Z</label>
+                  <input type="text" id="numeroZInput" class="form-control" placeholder="Ej: 123" autocomplete="off">
                 </div>
-
                 <div class="form-group">
-                  <label for="montoDocInput">Monto</label>
+                  <label for="montoZInput">Monto</label>
                   <div class="input-money">
                     <span>$</span>
-                    <input type="text" id="montoDocInput" class="form-control input-moneda" placeholder="0,00" autocomplete="off">
+                    <input type="text" id="montoZInput" class="form-control input-moneda" placeholder="0,00" autocomplete="off">
                   </div>
                 </div>
               </div>
-
               <div class="form-actions">
-                <button type="button" id="btnGuardarFactura" class="btn-custom btn-save">💾 Guardar</button>
-                <span id="msgFactura" class="form-msg"></span>
+                <button type="button" id="btnGuardarZ" class="btn-custom btn-save">💾 Guardar</button>
+                <span id="msgZ" class="form-msg"></span>
               </div>
             </form>
 
-            <!-- Uploader Comprobantes -->
-            <div id="uploader-ventas-z" class="img-uploader" data-title="Adjuntar imágenes de comprobantes" data-tab="ventas_z" style="margin-top:12px;"></div>
+            <!-- Uploader Ventas Z -->
+            <div id="uploader-ventas-z" class="img-uploader" data-title="Adjuntar imágenes de Ventas Z" data-tab="ventas_z" style="margin-top:12px;"></div>
             <div id="galeria-ventas-z" class="iu-grid" style="margin-top:8px;"></div>
 
             <div class="soft-divider"></div>
@@ -277,21 +297,20 @@
 
             <div class="soft-divider"></div>
 
-            <!-- Tabla: Comprobantes -->
+            <!-- Tabla: Comprobantes Z -->
             <div class="preview-block">
-              <h4>Comprobantes registrados</h4>
+              <h4>Comprobantes Z registrados</h4>
               <table class="table table-bordered">
                 <thead>
                   <tr>
                     <th>Fecha</th>
-                    <th>Tipo</th>
                     <th>Pto. venta</th>
-                    <th id="thNumDoc">N° Factura</th>
+                    <th>N° Z</th>
                     <th>Monto</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="tablaPreviewFacturas"></tbody>
+                <tbody id="tablaPreviewZ"></tbody>
               </table>
             </div>
           </div>
@@ -304,25 +323,15 @@
             .form-actions { display:flex; align-items:center; gap:10px; margin-top: 8px; }
             .form-msg { font-weight:600; }
             .soft-divider { height: 1px; margin: 16px 0; background: linear-gradient(90deg,#e5e7eb,#cbd5e1,#e5e7eb); }
-
-            /* 4 columnas para que Monto quede a la derecha en la misma fila */
-            .grid-4 { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; }
-
-            /* Responsive: en pantallas chicas se apila */
-            @media (max-width: 900px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
-            @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } }
-
+            .grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
             .input-money { display:flex; align-items:center; gap:6px; }
             .input-money > span { font-weight:600; }
-
             .btn-custom.btn-save { padding:6px 12px; border-radius:8px; border:1px solid #d1d5db; background:#0ea5e9; color:#fff; font-weight:600; }
             .btn-custom[disabled] { opacity:.5; pointer-events:none; }
-
             .table { width:100%; border-collapse: collapse; }
             .table th, .table td { border:1px solid #e5e7eb; padding:8px; }
             .table thead th { background:#f8fafc; }
             .table .row-ok { background:#e7f7ea; }
-
             .btn-icon { padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
             .btn-icon + .btn-icon { margin-left:4px; }
           </style>
@@ -463,81 +472,37 @@
           <div id="tarjetas" class="tab-pane">
             <h2>Registro de Tarjetas</h2>
 
-            <!-- ⚠️ El selector de TERMINAL se inyecta por tarjetas.js antes de este form-group -->
-
             <div class="form-group">
               <label for="nuevoLote">Nuevo Lote:</label>
               <input type="text" id="nuevoLote" placeholder="Ej: 001">
               <button type="button" id="btnAgregarLote" class="btn-submit">➕ Añadir Lote</button>
             </div>
 
+            <div class="form-group">
+              <label for="selectLote">Lote activo:</label>
+              <select id="selectLote" style="display: none;"></select>
+              <span id="infoLoteActivo">Lote actual: Sin lote</span>
+            </div>
 
             <form id="tarjetasForm" class="form-container">
               <table style="width: 100%; margin-bottom: 20px;">
-                <thead>
-                  <tr>
-                    <th>Tarjeta</th>
-                    <th>Monto</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Tarjeta</th><th>Monto</th></tr></thead>
                 <tbody>
-                  <tr class="tarjeta-row" data-tarjeta="VISA">
-                    <td>VISA</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="VISA DEBITO">
-                    <td>VISA DÉBITO</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="VISA PREPAGO">
-                    <td>VISA PREPAGO</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="MASTERCARD">
-                    <td>MASTERCARD</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="MASTERCARD DEBITO">
-                    <td>MASTERCARD DÉBITO</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="MASTERCARD PREPAGO">
-                    <td>MASTERCARD PREPAGO</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="CABAL">
-                    <td>CABAL</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="CABAL DEBITO">
-                    <td>CABAL DÉBITO</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="AMEX">
-                    <td>AMEX</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="MAESTRO">
-                    <td>MAESTRO</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="NARANJA">
-                    <td>NARANJA</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="DECIDIR">
-                    <td>DECIDIR</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="DINERS">
-                    <td>DINERS</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <tr class="tarjeta-row" data-tarjeta="PAGOS INMEDIATOS">
-                    <td>PAGOS INMEDIATOS</td>
-                    <td><input type="text" class="input-monto currency-input" placeholder="0,00"></td>
-                  </tr>
-                  <!-- ⚠️ Fila TIPS eliminada: el botón “+ Tips” lo agrega tarjetas.js por cada tarjeta -->
+                  <tr class="tarjeta-row" data-tarjeta="VISA"><td>VISA</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="VISA DEBITO"><td>VISA DÉBITO</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="VISA PREPAGO"><td>VISA PREPAGO</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="MASTERCARD"><td>MASTERCARD</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="MASTERCARD DEBITO"><td>MASTERCARD DÉBITO</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="MASTERCARD PREPAGO"><td>MASTERCARD PREPAGO</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="CABAL"><td>CABAL</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="CABAL DEBITO"><td>CABAL DÉBITO</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="AMEX"><td>AMEX</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="MAESTRO"><td>MAESTRO</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="NARANJA"><td>NARANJA</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="DECIDIR"><td>DECIDIR</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="DINERS"><td>DINERS</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="PAGOS INMEDIATOS"><td>PAGOS INMEDIATOS</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
+                  <tr class="tarjeta-row" data-tarjeta="TIPS"><td>TIPS</td><td><input type="text" class="input-monto currency-input" placeholder="0,00"></td></tr>
                 </tbody>
               </table>
               <button type="submit" class="btn-submit">➕ Añadir Tarjetas</button>
@@ -766,6 +731,10 @@
     document.getElementById('turnoSelect')?.addEventListener('change', refrescarBadge);
   })();
   </script>
+  <script>
+  // 1=cajero, 2=encargado/adm, 3=auditor
+  window.ROLE_LEVEL = {{ session['role_level']|int }};
+</script>
 
   <!-- Módulos existentes -->
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
