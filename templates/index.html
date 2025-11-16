@@ -172,6 +172,9 @@
                   <thead><tr><th colspan="2">VENTAS</th></tr></thead>
                   <tbody>
                     <tr><td>Vta Z</td><td class="valor" id="resVtaZ">$ 0,00</td></tr>
+                    <tr><td>Facturas A</td><td class="valor" id="resFacturasA">$ 0,00</td></tr>
+                    <tr><td>Facturas B</td><td class="valor" id="resFacturasB">$ 0,00</td></tr>
+                    <tr><td>Facturas CC</td><td class="valor" id="resFacturasCC">$ 0,00</td></tr>
                     <tr><td>Discovery</td><td class="valor" id="resDiscovery">$ 0,00</td></tr>
                   </tbody>
                 </table>
@@ -218,7 +221,7 @@
 
             <!-- FORM 2: Comprobantes (Z/A/B/CC) -->
             <form id="ventasFacturasForm" class="form-container">
-              <div class="grid-4">
+              <div id="facturasGrid" class="grid-4">
                 <div class="form-group">
                   <label for="tipoFacturaSelect">Tipo</label>
                   <select id="tipoFacturaSelect" class="form-control">
@@ -237,6 +240,11 @@
                 <div class="form-group">
                   <label id="numeroDocLabel" for="numeroDocInput">Número de Factura</label>
                   <input type="text" id="numeroDocInput" class="form-control" placeholder="Ej: 00000001" autocomplete="off">
+                </div>
+
+                <div class="form-group" id="comentarioGroup" style="display: none;">
+                  <label for="comentarioInput">Comentario</label>
+                  <input type="text" id="comentarioInput" class="form-control" placeholder="Comentario opcional" autocomplete="off">
                 </div>
 
                 <div class="form-group">
@@ -287,6 +295,7 @@
                     <th>Tipo</th>
                     <th>Pto. venta</th>
                     <th id="thNumDoc">N° Factura</th>
+                    <th>Comentario</th>
                     <th>Monto</th>
                     <th>Acciones</th>
                   </tr>
@@ -308,9 +317,18 @@
             /* 4 columnas para que Monto quede a la derecha en la misma fila */
             .grid-4 { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; }
 
+            /* 5 columnas para cuando se muestra el campo comentario (tipo CC) */
+            .grid-5 { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:12px; }
+
             /* Responsive: en pantallas chicas se apila */
-            @media (max-width: 900px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
-            @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } }
+            @media (max-width: 900px) {
+              .grid-4 { grid-template-columns: 1fr 1fr; }
+              .grid-5 { grid-template-columns: 1fr 1fr; }
+            }
+            @media (max-width: 600px) {
+              .grid-4 { grid-template-columns: 1fr; }
+              .grid-5 { grid-template-columns: 1fr; }
+            }
 
             .input-money { display:flex; align-items:center; gap:6px; }
             .input-money > span { font-weight:600; }
@@ -649,7 +667,9 @@
               <input type="hidden" id="idxEdicionGastos" value="-1">
               <div class="form-group">
                 <label for="tipoGasto">Tipo de Gasto:</label>
-                <input type="text" id="tipoGasto" name="tipoGasto" class="form-control" required>
+                <select id="tipoGasto" name="tipoGasto" class="form-control" required>
+                  <option value="">-- Seleccionar tipo de gasto --</option>
+                </select>
               </div>
               <div class="form-group">
                 <label for="montoGastos">Monto:</label>
@@ -736,11 +756,21 @@
         if(!confirm(`Vas a cerrar ${caja} (${turno}) del ${fecha} en ${local}. Luego de esto NO se podrá editar ni borrar.\n\n¿Confirmás?`)){
           return;
         }
+
+        // Pedir observación/descargo
+        const observacion = prompt('Ingresá una Observación/Descargo para el cierre de caja (opcional):');
+        if(observacion === null){ return; } // Canceló el prompt
+
         try{
+          const payload = {local, caja, fecha, turno};
+          if(observacion && observacion.trim()){
+            payload.observacion = observacion.trim();
+          }
+
           const r = await fetch('/cerrar_caja', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({local, caja, fecha, turno})
+            body: JSON.stringify(payload)
           });
           const data = await r.json();
           if(data.ok || data.closed || data.already_closed){
@@ -773,7 +803,7 @@
   <script src="{{ url_for('static', filename='js/mercadopago.js') }}"></script>
   <script src="{{ url_for('static', filename='js/rappi.js') }}"></script>
   <script src="{{ url_for('static', filename='js/pedidosya.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/ventas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ventas.js') }}?v=20251114002"></script>
   <script src="{{ url_for('static', filename='js/resumen.js') }}"></script>
   <script src="{{ url_for('static', filename='js/gastos.js') }}"></script>
   <script src="{{ url_for('static', filename='js/orquestador-tabs.js') }}"></script>

@@ -230,8 +230,8 @@ def auditor_resumen_api():
             # -------- PROPINAS (tips tarjetas / mp) --------
             # Se asume: tips_tarjetas(local, fecha, visa_tips, ...)
             sql_tips = f"""
-                SELECT SUM(visa_tips) AS total
-                FROM tips_tarjetas t
+                SELECT SUM(monto) AS total
+                FROM facturas_trns t
                 WHERE t.local = %s
                   AND DATE(t.fecha) = DATE(%s)
                   {g.read_scope}

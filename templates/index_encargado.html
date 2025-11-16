@@ -172,6 +172,9 @@
                   <thead><tr><th colspan="2">VENTAS</th></tr></thead>
                   <tbody>
                     <tr><td>Vta Z</td><td class="valor" id="resVtaZ">$ 0,00</td></tr>
+                    <tr><td>Facturas A</td><td class="valor" id="resFacturasA">$ 0,00</td></tr>
+                    <tr><td>Facturas B</td><td class="valor" id="resFacturasB">$ 0,00</td></tr>
+                    <tr><td>Facturas CC</td><td class="valor" id="resFacturasCC">$ 0,00</td></tr>
                     <tr><td>Discovery</td><td class="valor" id="resDiscovery">$ 0,00</td></tr>
                   </tbody>
                 </table>
@@ -216,33 +219,51 @@
 
             <div class="soft-divider"></div>
 
-            <!-- FORM 2: Comprobantes Z -->
-            <form id="ventasZForm" class="form-container">
-              <div class="grid-3">
+            <!-- FORM 2: Comprobantes (Z/A/B/CC) -->
+            <form id="ventasFacturasForm" class="form-container">
+              <div id="facturasGrid" class="grid-4">
+                <div class="form-group">
+                  <label for="tipoFacturaSelect">Tipo</label>
+                  <select id="tipoFacturaSelect" class="form-control">
+                    <option value="Z" selected>Z</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="CC">CC</option>
+                  </select>
+                </div>
+
                 <div class="form-group">
                   <label for="puntoVentaInput">Punto de venta</label>
                   <input type="text" id="puntoVentaInput" class="form-control" placeholder="Ej: 0001" autocomplete="off">
                 </div>
+
                 <div class="form-group">
-                  <label for="numeroZInput">Número de Z</label>
-                  <input type="text" id="numeroZInput" class="form-control" placeholder="Ej: 123" autocomplete="off">
+                  <label id="numeroDocLabel" for="numeroDocInput">Número de Factura</label>
+                  <input type="text" id="numeroDocInput" class="form-control" placeholder="Ej: 00000001" autocomplete="off">
                 </div>
+
+                <div class="form-group" id="comentarioGroup" style="display: none;">
+                  <label for="comentarioInput">Comentario</label>
+                  <input type="text" id="comentarioInput" class="form-control" placeholder="Comentario opcional" autocomplete="off">
+                </div>
+
                 <div class="form-group">
-                  <label for="montoZInput">Monto</label>
+                  <label for="montoDocInput">Monto</label>
                   <div class="input-money">
                     <span>$</span>
-                    <input type="text" id="montoZInput" class="form-control input-moneda" placeholder="0,00" autocomplete="off">
+                    <input type="text" id="montoDocInput" class="form-control input-moneda" placeholder="0,00" autocomplete="off">
                   </div>
                 </div>
               </div>
+
               <div class="form-actions">
-                <button type="button" id="btnGuardarZ" class="btn-custom btn-save">💾 Guardar</button>
-                <span id="msgZ" class="form-msg"></span>
+                <button type="button" id="btnGuardarFactura" class="btn-custom btn-save">💾 Guardar</button>
+                <span id="msgFactura" class="form-msg"></span>
               </div>
             </form>
 
-            <!-- Uploader Ventas Z -->
-            <div id="uploader-ventas-z" class="img-uploader" data-title="Adjuntar imágenes de Ventas Z" data-tab="ventas_z" style="margin-top:12px;"></div>
+            <!-- Uploader Comprobantes -->
+            <div id="uploader-ventas-z" class="img-uploader" data-title="Adjuntar imágenes de comprobantes" data-tab="ventas_z" style="margin-top:12px;"></div>
             <div id="galeria-ventas-z" class="iu-grid" style="margin-top:8px;"></div>
 
             <div class="soft-divider"></div>
@@ -264,20 +285,22 @@
 
             <div class="soft-divider"></div>
 
-            <!-- Tabla: Comprobantes Z -->
+            <!-- Tabla: Comprobantes -->
             <div class="preview-block">
-              <h4>Comprobantes Z registrados</h4>
+              <h4>Comprobantes registrados</h4>
               <table class="table table-bordered">
                 <thead>
                   <tr>
                     <th>Fecha</th>
+                    <th>Tipo</th>
                     <th>Pto. venta</th>
-                    <th>N° Z</th>
+                    <th id="thNumDoc">N° Factura</th>
+                    <th>Comentario</th>
                     <th>Monto</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="tablaPreviewZ"></tbody>
+                <tbody id="tablaPreviewFacturas"></tbody>
               </table>
             </div>
           </div>
@@ -290,18 +313,38 @@
             .form-actions { display:flex; align-items:center; gap:10px; margin-top: 8px; }
             .form-msg { font-weight:600; }
             .soft-divider { height: 1px; margin: 16px 0; background: linear-gradient(90deg,#e5e7eb,#cbd5e1,#e5e7eb); }
-            .grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
+
+            /* 4 columnas para que Monto quede a la derecha en la misma fila */
+            .grid-4 { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; }
+
+            /* 5 columnas para cuando se muestra el campo comentario (tipo CC) */
+            .grid-5 { display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:12px; }
+
+            /* Responsive: en pantallas chicas se apila */
+            @media (max-width: 900px) {
+              .grid-4 { grid-template-columns: 1fr 1fr; }
+              .grid-5 { grid-template-columns: 1fr 1fr; }
+            }
+            @media (max-width: 600px) {
+              .grid-4 { grid-template-columns: 1fr; }
+              .grid-5 { grid-template-columns: 1fr; }
+            }
+
             .input-money { display:flex; align-items:center; gap:6px; }
             .input-money > span { font-weight:600; }
+
             .btn-custom.btn-save { padding:6px 12px; border-radius:8px; border:1px solid #d1d5db; background:#0ea5e9; color:#fff; font-weight:600; }
             .btn-custom[disabled] { opacity:.5; pointer-events:none; }
+
             .table { width:100%; border-collapse: collapse; }
             .table th, .table td { border:1px solid #e5e7eb; padding:8px; }
             .table thead th { background:#f8fafc; }
             .table .row-ok { background:#e7f7ea; }
+
             .btn-icon { padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
             .btn-icon + .btn-icon { margin-left:4px; }
           </style>
+
 
           <!-- MercadoPago -->
           <div id="mercadopago" class="tab-pane">
@@ -581,7 +624,9 @@
               <input type="hidden" id="idxEdicionGastos" value="-1">
               <div class="form-group">
                 <label for="tipoGasto">Tipo de Gasto:</label>
-                <input type="text" id="tipoGasto" name="tipoGasto" class="form-control" required>
+                <select id="tipoGasto" name="tipoGasto" class="form-control" required>
+                  <option value="">-- Seleccionar tipo de gasto --</option>
+                </select>
               </div>
               <div class="form-group">
                 <label for="montoGastos">Monto:</label>
@@ -668,11 +713,21 @@
         if(!confirm(`Vas a cerrar ${caja} (${turno}) del ${fecha} en ${local}. Luego de esto NO se podrá editar ni borrar.\n\n¿Confirmás?`)){
           return;
         }
+
+        // Pedir observación/descargo
+        const observacion = prompt('Ingresá una Observación/Descargo para el cierre de caja (opcional):');
+        if(observacion === null){ return; } // Canceló el prompt
+
         try{
+          const payload = {local, caja, fecha, turno};
+          if(observacion && observacion.trim()){
+            payload.observacion = observacion.trim();
+          }
+
           const r = await fetch('/cerrar_caja', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({local, caja, fecha, turno})
+            body: JSON.stringify(payload)
           });
           const data = await r.json();
           if(data.ok || data.closed || data.already_closed){
