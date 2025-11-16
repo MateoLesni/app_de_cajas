@@ -141,10 +141,11 @@
                   </div>
                 </section>
 
-                <!-- VENTAS -->
+                <!-- FACTURAS -->
                 <section class="sl-section acc" aria-expanded="true">
-                  <div class="sl-title">Ventas</div>
+                  <div class="sl-title">Facturas</div>
                   <div class="acc-body">
+                    <!-- Ventas Z -->
                     <div class="sub-acc acc" aria-expanded="false">
                       <div class="sl-row"><span class="label">Ventas Z</span><span class="amount r" id="rl-vz-total">0,00</span></div>
                       <div class="acc-body">
@@ -152,6 +153,30 @@
                           <thead><tr><th>Z (PV-Número)</th><th class="r">Monto</th></tr></thead>
                           <tbody id="rl-vz-items"><tr class="muted"><td colspan="2">Sin ventas z cargadas</td></tr></tbody>
                           <tfoot><tr class="sl-total"><td>Total</td><td class="r" id="rl-vz-total-foot">0,00</td></tr></tfoot>
+                        </table>
+                      </div>
+                    </div>
+
+                    <!-- Facturas A -->
+                    <div class="sub-acc acc" aria-expanded="false">
+                      <div class="sl-row"><span class="label">Facturas A</span><span class="amount r" id="rl-fa-total">0,00</span></div>
+                      <div class="acc-body">
+                        <table class="sl-table">
+                          <thead><tr><th>Factura A (PV-Número)</th><th class="r">Monto</th></tr></thead>
+                          <tbody id="rl-fa-items"><tr class="muted"><td colspan="2">Sin facturas A cargadas</td></tr></tbody>
+                          <tfoot><tr class="sl-total"><td>Total</td><td class="r" id="rl-fa-total-foot">0,00</td></tr></tfoot>
+                        </table>
+                      </div>
+                    </div>
+
+                    <!-- Facturas B -->
+                    <div class="sub-acc acc" aria-expanded="false">
+                      <div class="sl-row"><span class="label">Facturas B</span><span class="amount r" id="rl-fb-total">0,00</span></div>
+                      <div class="acc-body">
+                        <table class="sl-table">
+                          <thead><tr><th>Factura B (PV-Número)</th><th class="r">Monto</th></tr></thead>
+                          <tbody id="rl-fb-items"><tr class="muted"><td colspan="2">Sin facturas B cargadas</td></tr></tbody>
+                          <tfoot><tr class="sl-total"><td>Total</td><td class="r" id="rl-fb-total-foot">0,00</td></tr></tfoot>
                         </table>
                       </div>
                     </div>
@@ -277,7 +302,7 @@
                       <div class="sl-row"><span class="label">Cuenta Cte.</span><span class="amount r" id="rl-cta-cte">0,00</span></div>
                       <div class="acc-body">
                         <table class="sl-table">
-                          <tr><td>Total Cuenta Corriente</td><td class="r" id="rl-cta-cte-det">0,00</td></tr>
+                          <tr><td>Facturas CC</td><td class="r" id="rl-cta-cte-cc">0,00</td></tr>
                         </table>
                       </div>
                     </div>
@@ -449,6 +474,7 @@
     const order = [
       ['remesas','Remesas'],
       ['ventas_z','Ventas Z'],
+      ['facturas','Facturas'],
       ['mercadopago','Mercado Pago'],
       ['tarjeta','Tarjeta'],
       ['rappi','Rappi'],

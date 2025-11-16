@@ -116,16 +116,19 @@
     setMoneyWithCopy("rl-diferencia", r.diferencia);
     $("#rl-diferencia")?.classList.toggle("negative-amount", Number(r.diferencia ?? 0) < 0);
 
-    // --- VENTAS Z ---
-    const v = data?.ventas || {};
-    setMoneyWithCopy("rl-vz-total", v.vta_z_total);
-    setMoneyWithCopy("rl-vz-total-foot", v.vta_z_total);
-    setMoneyWithCopy("rl-discovery", v.discovery);
+    // --- FACTURAS (Ventas Z, A, B) ---
+    const index = data?.index || {};
+    const facturas = data?.info?.facturas || {};
+
+    // Ventas Z
+    setMoneyWithCopy("rl-vz-total", index.vta_z_total);
+    setMoneyWithCopy("rl-vz-total-foot", index.vta_z_total);
+    setMoneyWithCopy("rl-discovery", index.discovery);
 
     const tbVz = $("#rl-vz-items");
     if (tbVz) {
       tbVz.innerHTML = "";
-      const items = Array.isArray(v.z_items) ? v.z_items : [];
+      const items = Array.isArray(index.z_items) ? index.z_items : [];
       if (!items.length) {
         const tr = document.createElement("tr"); tr.className = "muted";
         const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin ventas z cargadas";
@@ -144,6 +147,62 @@
       }
       const vzTbl = tbVz.closest("table"); if (vzTbl) addCopyToLabelCellsWithin(vzTbl);
       const vzFoot = $("#rl-vz-total-foot"); if (vzFoot) addCopyButton(vzFoot, () => vzFoot.textContent || "");
+    }
+
+    // Facturas A
+    setMoneyWithCopy("rl-fa-total", facturas.a);
+    setMoneyWithCopy("rl-fa-total-foot", facturas.a);
+
+    const tbFa = $("#rl-fa-items");
+    if (tbFa) {
+      tbFa.innerHTML = "";
+      const itemsA = Array.isArray(facturas.a_items) ? facturas.a_items : [];
+      if (!itemsA.length) {
+        const tr = document.createElement("tr"); tr.className = "muted";
+        const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin facturas A cargadas";
+        tr.appendChild(td); tbFa.appendChild(tr);
+      } else {
+        itemsA.forEach((it) => {
+          const tr = document.createElement("tr");
+          const display = formatZDisplay(it);
+          const tdName = document.createElement("td");
+          tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
+          const tdAmt = document.createElement("td");
+          const amtTxt = money(it?.monto ?? 0);
+          tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
+          tr.appendChild(tdName); tr.appendChild(tdAmt); tbFa.appendChild(tr);
+        });
+      }
+      const faTbl = tbFa.closest("table"); if (faTbl) addCopyToLabelCellsWithin(faTbl);
+      const faFoot = $("#rl-fa-total-foot"); if (faFoot) addCopyButton(faFoot, () => faFoot.textContent || "");
+    }
+
+    // Facturas B
+    setMoneyWithCopy("rl-fb-total", facturas.b);
+    setMoneyWithCopy("rl-fb-total-foot", facturas.b);
+
+    const tbFb = $("#rl-fb-items");
+    if (tbFb) {
+      tbFb.innerHTML = "";
+      const itemsB = Array.isArray(facturas.b_items) ? facturas.b_items : [];
+      if (!itemsB.length) {
+        const tr = document.createElement("tr"); tr.className = "muted";
+        const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin facturas B cargadas";
+        tr.appendChild(td); tbFb.appendChild(tr);
+      } else {
+        itemsB.forEach((it) => {
+          const tr = document.createElement("tr");
+          const display = formatZDisplay(it);
+          const tdName = document.createElement("td");
+          tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
+          const tdAmt = document.createElement("td");
+          const amtTxt = money(it?.monto ?? 0);
+          tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
+          tr.appendChild(tdName); tr.appendChild(tdAmt); tbFb.appendChild(tr);
+        });
+      }
+      const fbTbl = tbFb.closest("table"); if (fbTbl) addCopyToLabelCellsWithin(fbTbl);
+      const fbFoot = $("#rl-fb-total-foot"); if (fbFoot) addCopyButton(fbFoot, () => fbFoot.textContent || "");
     }
 
     // --- VENTAS POR MEDIO ---
@@ -209,6 +268,8 @@
 
     const cc = info?.cuenta_cte || {};
     setMoneyWithCopy("rl-cta-cte", Number(cc.total ?? 0));
+    setMoneyWithCopy("rl-cta-cte-cc", Number(cc.cc ?? 0));
+    setMoneyWithCopy("rl-cta-cte-legacy", Number(cc.legacy ?? 0));
     setMoneyWithCopy("rl-cta-cte-det", Number(cc.total ?? 0));
 
     // Tips
@@ -375,6 +436,7 @@
     const order = [
       ["remesas", "Remesas"],
       ["ventas_z", "Ventas Z"],
+      ["facturas", "Facturas"],
       ["mercadopago", "Mercado Pago"],
       ["tarjeta", "Tarjeta"],
       ["rappi", "Rappi"],

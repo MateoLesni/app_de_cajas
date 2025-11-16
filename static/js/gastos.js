@@ -28,6 +28,33 @@ document.addEventListener("DOMContentLoaded", function () {
   let gastosBD = [];       // vienen del backend a través de OrqTabs
   let gastosLocal = [];    // buffer local antes de guardar
   let idxEdicionActual = -1;
+  let tiposGastos = {};    // mapeo código -> descripción
+
+  // ----------- cargar tipos de gastos -----------
+  async function cargarTiposGastos() {
+    try {
+      const res = await fetch('/api/tipos_gastos');
+      const data = await res.json();
+      if (data.success && data.tipos) {
+        tiposGastos = data.tipos;
+        // Poblar el select
+        if (tipoInput) {
+          tipoInput.innerHTML = '<option value="">-- Seleccionar tipo de gasto --</option>';
+          Object.entries(tiposGastos).forEach(([codigo, descripcion]) => {
+            const opt = document.createElement('option');
+            opt.value = codigo;
+            opt.textContent = descripcion;
+            tipoInput.appendChild(opt);
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Error cargando tipos de gastos:', e);
+    }
+  }
+
+  // Cargar tipos al inicio
+  cargarTiposGastos();
 
   // ----------- estilos (centrado + overlay) -----------
   (function ensureStyle() {
@@ -90,6 +117,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const mm = String(d.getUTCMonth()+1).padStart(2,'0');
     const yy = d.getUTCFullYear();
     return `${dd}/${mm}/${yy}`;
+  }
+
+  // Obtener descripción de un código de gasto (si no existe, retorna el código)
+  function getDescripcionGasto(codigo) {
+    return tiposGastos[codigo] || codigo;
   }
 
   function canActUI() {
@@ -177,11 +209,22 @@ document.addEventListener("DOMContentLoaded", function () {
         ? `<span class="text-obs" data-id="${g.id ?? ''}">${g.observaciones || ""}</span>`
         : `<span class="text-obs-local">${g.observaciones || ""}</span>`;
 
+      // Crear select de tipos para edición (si es de BD)
+      let selectTipos = '';
+      if (g.origen === "bd") {
+        selectTipos = '<select class="edit-tipo-bd" data-id="' + (g.id ?? '') + '" style="display:none; width:200px;">';
+        Object.entries(tiposGastos).forEach(([codigo, descripcion]) => {
+          const selected = codigo === g.tipo ? ' selected' : '';
+          selectTipos += `<option value="${codigo}"${selected}>${descripcion}</option>`;
+        });
+        selectTipos += '</select>';
+      }
+
       tr.innerHTML = `
         <td>${formatearFechaISO(g.fecha)}</td>
         <td>
-          <span class="text-tipo" data-id="${g.id ?? ''}">${g.tipo || "-"}</span>
-          ${g.origen === "bd" ? `<input class="edit-tipo-bd" data-id="${g.id ?? ''}" type="text" value="${g.tipo || ''}" style="display:none; width:150px;">` : ""}
+          <span class="text-tipo" data-id="${g.id ?? ''}">${getDescripcionGasto(g.tipo) || "-"}</span>
+          ${selectTipos}
         </td>
         <td>
           <span class="text-monto" data-id="${g.id ?? ''}">$${formatearMoneda(g.monto)}</span>

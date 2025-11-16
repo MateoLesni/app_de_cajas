@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const campos = {
     venta_total: 'resVentaTotal',
     venta_z:     'resVtaZ',
+    facturas_a:  'resFacturasA',
+    facturas_b:  'resFacturasB',
+    facturas_cc: 'resFacturasCC',
     efectivo:    'resEfectivo',
     tarjeta:     'resTarjeta',
     mercadopago: 'resMercadoPago',
@@ -95,7 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
         safeNum(resumen.mercadopago) +
         safeNum(resumen.rappi) +
         safeNum(resumen.pedidosya) +
-        safeNum(resumen.cuenta_cte);
+        safeNum(resumen.cuenta_cte) +
+        safeNum(resumen.facturas_cc);
     }
     setTextIf('totalCobrado', formatMoneda(totalCobrado));
     setTextIf('resTotalCobradoVentas', formatMoneda(totalCobrado));

@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoading: toggleSpinner,
     showError:   showToastError,
     tabs: {
-      ventasTab:      { endpoints: ['/ventas_cargadas','/ventas_z_cargadas'], render: renderVentas },
+      ventasTab:      { endpoints: ['/ventas_cargadas','/facturas_cargadas'], render: renderVentas },
       mercadopago:    { endpoints: ['/mercadopago_cargadas'], render: renderMercadoPago },
       tarjetas:       { endpoints: ['/tarjetas_cargadas_hoy'], render: renderTarjetas },
       rappiTab:       { endpoints: ['/rappi_cargadas'], render: renderRappi },

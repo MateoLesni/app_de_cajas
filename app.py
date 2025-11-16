@@ -37,7 +37,7 @@ import random
 # ========================================================================
 
 # acá, declaro la app y ni bien declaro la app ya lo que hago es crear los decoradores
-# .. y funciones necesarias, con el fin de que estén disponibles para los blueprints 
+# .. y funciones necesarias, con el fin de que estén disponibles para los blueprints
 # que importe luego y sea inyectable en los blueprints
 # esto debe ser así ya que cargar el app.py está tardando mucho y no llega a cargar
 # los decoradores antes de que los blueprints los necesiten
@@ -143,7 +143,7 @@ def is_local_closed(conn, local:str, fecha) -> bool:
     return (row is not None and int(row[0]) == 0)
 
 
-def can_edit(conn, user_level: int, local: str, caja: str, fecha, turno: str) -> bool:
+def can_edit(conn, local: str, caja: str, turno: str, fecha, user_level: int) -> bool:
     """
     Reglas:
     - Si el LOCAL está cerrado (por día): sólo nivel 3 puede modificar.
@@ -271,7 +271,7 @@ def require_edit_ctx(fn):
             return jsonify(success=False, msg='falta local/caja/fecha/turno'), 400
         conn = get_db_connection()
         try:
-            ok = can_edit(conn, get_user_level(), ctx['local'], ctx['caja'], ctx['fecha'], ctx['turno'])
+            ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], get_user_level())
         finally:
             conn.close()
         if not ok:
@@ -423,6 +423,7 @@ from modules.auditoria import auditoria_bp
 app.register_blueprint(auditoria_bp)
 from modules.terminales import terminales_bp
 app.register_blueprint(terminales_bp)
+
 
 app.secret_key = '8V#n*aQHYUt@7MdGBY0wE8f'  # Cambiar en producción
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///registros.db'
@@ -753,7 +754,7 @@ def remesas_actualizar_retirada():
         if not row:
             return jsonify(success=False, msg="No existe la remesa"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
         fecha_retirada = _normalize_fecha(fecha_retirada_s) if fecha_retirada_s else None
@@ -796,7 +797,7 @@ def remesas_update(remesa_id):
         if not row:
             return jsonify(success=False, msg="No existe la remesa"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
         sets, params = [], []
@@ -855,7 +856,7 @@ def remesas_delete(remesa_id):
         if not row:
             return jsonify(success=False, msg="No existe la remesa"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
         cur2 = conn.cursor()
@@ -1034,7 +1035,7 @@ def actualizar_tarjeta(tarjeta_id: int):
             cur.close(); conn.close()
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido"), 409
 
@@ -1083,7 +1084,7 @@ def borrar_tarjeta(tarjeta_id: int):
             cur.close(); conn.close()
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido"), 409
 
@@ -1221,7 +1222,7 @@ def actualizar_rappi(rappi_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         # Permisos por nivel/estado (L1/L2/L3)
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
@@ -1254,7 +1255,7 @@ def borrar_rappi(rappi_id):
             cur.close(); conn.close()
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
@@ -1304,7 +1305,7 @@ def is_caja_abierta_turno(conn, local, caja, fecha, turno="UNI"):
 # Requiere utilidades ya presentes en tu app:
 # - get_db_connection()
 # - _normalize_fecha()
-# - can_edit(conn, user_level, local, caja, fecha, turno) -> bool
+# - can_edit(conn, local, caja, turno, fecha, user_level) -> bool
 # - get_user_level() -> int
 # - require_edit_ctx: valida permisos de escritura y expone g.ctx = {local,caja,fecha,turno}
 # - with_read_scope(alias): expone g.read_scope para filtrar según rol (L1/L2/L3)
@@ -1438,7 +1439,7 @@ def actualizar_pedidosya(py_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         # Permisos por nivel/estado (L1/L2/L3)
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
@@ -1471,7 +1472,7 @@ def borrar_pedidosya(py_id):
             cur.close(); conn.close()
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
@@ -1647,7 +1648,7 @@ def actualizar_mercadopago(mp_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         # Permiso por rol/estado (igual que Remesas)
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
@@ -1679,7 +1680,7 @@ def borrar_mercadopago(mp_id):
             cur.close(); conn.close()
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
-        if not can_edit(conn, get_user_level(), row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
@@ -1694,7 +1695,7 @@ def borrar_mercadopago(mp_id):
         return jsonify(success=False, msg=str(e)), 500
 
 # ______________________________________ VENTAS (BASE + Z) ____________________________________________
-# Reemplaza tu sección de "VENTAS" por esto.
+# Reemplaza tu sección de "index" por esto.
 # Quita: /guardar_ventas y TODOS los /ventas_especiales_*
 
 
@@ -1769,7 +1770,7 @@ def ventas_base():
 
     try:
         # Permisos por rol/estado
-        if not can_edit(conn, get_user_level(), local, caja, nfecha, turno):
+        if not can_edit(conn, local, caja, turno, nfecha, get_user_level()):
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
         # Resolvemos monto (acepta venta_total_sistema o venta_total)
@@ -1882,231 +1883,492 @@ def ventas_cargadas():
 
 
 # ─────────────────────────────────────
-# VENTA Z (múltiples por fecha/caja/turno/local)
+# _______________FACTURAS Z, A, B, CC__________________
 # ─────────────────────────────────────
-@app.route('/ventas_z', methods=['POST'])
-@login_required
-def ventas_z_crear():
+# ===================== BLOQUE FACTURAS (pegar completo en app.py) =====================
+# Requisitos previos existentes en tu app.py:
+# - from flask import request, jsonify, session, current_app
+# - import mysql.connector
+# - get_db_connection()
+# - login_required, page_access_required
+# - get_user_level()
+# - can_edit(conn, local, caja, turno, fecha, user_level)  # firma existente en tu app
+# - (opcional) is_local_closed / is_box_closed que ya usa can_edit internamente
+
+import unicodedata
+
+# ---------- Helpers locales del módulo Facturas (no rompen nada del resto) ----------
+
+def _f_strip_accents(s: str) -> str:
+    if not isinstance(s, str):
+        return s
+    return ''.join(c for c in unicodedata.normalize('NFKD', s) if not unicodedata.combining(c))
+
+def _f_norm_turno_for_can_edit(t: str) -> str:
     """
-    POST -> Crea un comprobante Z
-    body: { fecha, caja, turno, punto_venta, numero_z, monto }
-    Reglas de edición:
-      - L1: sólo si la CAJA (de ese turno) está abierta.
-      - L2: puede aunque la caja esté cerrada, siempre que el LOCAL esté abierto.
-      - L3: siempre puede.
+    Normaliza el turno SOLO para el chequeo de permisos:
+    - Saca tildes (día -> dia)
+    - Recorta espacios
+    - Mapea a valores esperados por tu can_edit
+    Nota: NO cambia lo que insertamos en DB (ahí guardamos el turno tal cual venga).
     """
-    data   = request.get_json() or {}
-    local  = session.get('local')
-    user   = session.get('username')
+    if not t:
+        return t
+    t0 = _f_strip_accents(str(t)).strip()
+    tl = t0.lower()
+    if tl in ("uni", "turno uni", "turno unico", "turno unico/uni"):
+        return "UNI"
+    if tl in ("turno dia", "dia"):
+        return "Turno dia"
+    if tl in ("turno noche", "noche"):
+        return "Turno noche"
+    # fallback: devolver sin acentos
+    return t0
 
-    if not local or not user:
-        return jsonify(success=False, msg="Faltan datos de sesión (usuario/local)."), 401
+def _f_norm(x):
+    if x is None:
+        return ""
+    return str(x).strip()
 
-    fecha       = data.get('fecha')
-    caja        = data.get('caja')
-    turno       = _get_turno_from_request(data)
-    punto_venta = (data.get('punto_venta') or '').strip()
-    numero_z    = (data.get('numero_z') or '').strip()
-
-    # Parseo robusto de monto (admite "12.345,67" o 12345.67)
-    monto_raw   = data.get('monto')
+def _f_get_json():
     try:
-        if isinstance(monto_raw, str):
-            monto = float(monto_raw.replace('.', '').replace(',', '.'))
-        else:
-            monto = float(monto_raw or 0)
+        if request.is_json:
+            return request.get_json(force=True, silent=True) or {}
+        # fallback para forms
+        return dict(request.form) if request.form else {}
     except Exception:
-        monto = 0.0
+        return {}
 
-    if not fecha or not caja or not turno or not punto_venta or not numero_z or monto <= 0:
-        return jsonify(success=False, msg="Parámetros inválidos."), 400
-
-    conn = get_db_connection()
+def _f_parse_monto(v) -> float:
+    """
+    Acepta '50.000,25' o '50000.25' y devuelve float. Vacío => 0.
+    """
+    if v is None:
+        return 0.0
+    s = str(v).strip()
+    if not s:
+        return 0.0
+    # limpiar símbolos
+    s = s.replace(" ", "").replace("$", "")
+    # detectar último separador decimal (coma o punto)
+    last_comma = s.rfind(",")
+    last_dot   = s.rfind(".")
+    last_sep   = max(last_comma, last_dot)
+    if last_sep >= 0:
+        int_part = s[:last_sep].replace(".", "").replace(",", "")
+        frac     = s[last_sep+1:].replace(".", "").replace(",", "")
+        s = f"{int_part}.{frac}" if frac else int_part
+    else:
+        s = s.replace(".", "").replace(",", "")
     try:
-        # ⬇️ Permisos por rol/estado (misma lógica que remesas / MP):
-        if not can_edit(conn, get_user_level(), local, caja, fecha, turno):
-            conn.close()
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)."), 409
+        n = float(s)
+        if not (n == n and n != float("inf") and n != float("-inf")):
+            return 0.0
+        return n
+    except Exception:
+        return 0.0
 
-        cur = conn.cursor()
-        try:
-            cur.execute("""
-                INSERT INTO ventas_z_trns
-                    (local, caja, turno, fecha, punto_venta, numero_z, monto, usuario, estado)
-                VALUES
-                    (%s,    %s,   %s,    %s,    %s,          %s,       %s,    %s,      %s)
-            """, (local, caja, turno, _normalize_fecha(fecha), punto_venta, numero_z, monto, user, "Revision"))
-            conn.commit()
-        except mysql.connector.Error as me:
-            # Duplicado por UNIQUE (local,caja,fecha,turno,punto_venta,numero_z)
-            if getattr(me, 'errno', None) == 1062:
-                conn.rollback()
-                return jsonify(success=False, msg="Comprobante Z duplicado para esa fecha/caja/turno/punto/número."), 409
-            conn.rollback()
-            raise
-        finally:
-            cur.close()
+def _f_ctx_from_request():
+    body = request.get_json(silent=True) or {}
+    local = (
+        request.args.get("local")
+        or body.get("local")
+        or (request.form.get("local") if request.form else None)
+        # fallbacks de sesión habituales en tu app:
+        or (session.get("local") if session else None)
+        or (session.get("Local") if session else None)
+        or (session.get("user_local") if session else None)
+        or (session.get("local_name") if session else None)
+        # fallback por header opcional (si alguna vista lo manda):
+        or request.headers.get("X-Local")
+        or ""
+    )
+    caja  = request.args.get("caja")  or body.get("caja")  or (request.form.get("caja")  if request.form else None)  or ""
+    fecha = request.args.get("fecha") or body.get("fecha") or (request.form.get("fecha") if request.form else None) or ""
+    turno = request.args.get("turno") or body.get("turno") or (request.form.get("turno") if request.form else None) or ""
 
-        return jsonify(success=True)
-    except Exception as e:
-        print("❌ ventas_z_crear:", e)
-        return jsonify(success=False, msg=str(e)), 500
-    finally:
-        try: conn.close()
-        except: ...
+    ctx = {
+        "local": (str(local).strip() if local else ""),
+        "caja":  (str(caja).strip()  if caja  else ""),
+        "fecha": (str(fecha).strip() if fecha else ""),
+        "turno": (str(turno).strip() if turno else ""),
+    }
+    ctx["turno_canedit"] = _f_norm_turno_for_can_edit(ctx["turno"])
+    return ctx
 
 
+def _f_level_int() -> int:
+    try:
+        return int(get_user_level())
+    except Exception:
+        return 1
 
-@app.route('/ventas_z/<int:z_id>', methods=['PUT', 'DELETE'])
+def _f_is_box_closed(conn, ctx) -> bool:
+    """
+    Verifica si la caja está cerrada para el contexto dado.
+    Retorna True si la caja está cerrada (estado=0), False en caso contrario.
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT estado FROM cajas_estado
+                WHERE local=%s AND caja=%s AND LOWER(turno)=LOWER(%s) AND DATE(fecha_operacion)=%s
+                  AND id = (
+                    SELECT MAX(id) FROM cajas_estado
+                    WHERE local=%s AND caja=%s AND LOWER(turno)=LOWER(%s) AND DATE(fecha_operacion)=%s
+                  )
+                """,
+                (ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
+                 ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"])
+            )
+            row = cur.fetchone()
+            return row and row[0] == 0
+    except Exception:
+        return False
+
+def _f_is_local_closed(conn, ctx) -> bool:
+    """
+    Verifica si el local está cerrado para el contexto dado.
+    Retorna True si el local está cerrado (estado=0), False en caso contrario.
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT estado FROM cierres_locales
+                WHERE local=%s AND DATE(fecha)=%s
+                """,
+                (ctx["local"], ctx["fecha"])
+            )
+            row = cur.fetchone()
+            return row and row[0] == 0
+    except Exception:
+        return False
+
+def _f_is_local_auditado(conn, ctx) -> bool:
+    """
+    Verifica si el local está auditado para el contexto dado.
+    Retorna True si el local está auditado, False en caso contrario.
+    """
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id FROM locales_auditados
+                WHERE local=%s AND DATE(fecha)=%s
+                """,
+                (ctx["local"], ctx["fecha"])
+            )
+            row = cur.fetchone()
+            return row is not None
+    except Exception:
+        return False
+
+def _f_safe_can_edit(conn, ctx) -> bool:
+    """
+    Verifica si el usuario puede editar basándose en su nivel y el estado de caja/local:
+    - Nivel 1 (cajero): puede editar solo si la caja NO está cerrada
+    - Nivel 2 (encargado): puede editar solo si el local NO está cerrado
+    - Nivel 3 (auditor): puede editar solo si el local está cerrado pero NO auditado
+    - NADIE puede editar si el local está auditado
+    """
+    lvl = _f_level_int()
+
+    # Si el local está auditado, NADIE puede editar (inmutable)
+    if _f_is_local_auditado(conn, ctx):
+        return False
+
+    # Nivel 1 (cajero): no puede editar si la caja está cerrada
+    if lvl == 1:
+        return not _f_is_box_closed(conn, ctx)
+
+    # Nivel 2 (encargado): no puede editar si el local está cerrado
+    if lvl == 2:
+        return not _f_is_local_closed(conn, ctx)
+
+    # Nivel 3+ (auditor): puede editar solo si el local está cerrado
+    if lvl >= 3:
+        return _f_is_local_closed(conn, ctx)
+
+    return False
+
+def _f_check_can_edit_or_409(conn, ctx):
+    """
+    Devuelve (True, ()) si puede editar; si no, (False, (respuesta_json_409)).
+    """
+    # Verificar si está auditado primero (bloquea a todos)
+    if _f_is_local_auditado(conn, ctx):
+        return False, (jsonify(success=False, msg="No puede editar: el local está auditado (inmutable)"), 409)
+
+    allowed = _f_safe_can_edit(conn, ctx)
+    if not allowed:
+        lvl = _f_level_int()
+        if lvl == 1:
+            msg = "No puede editar: la caja está cerrada"
+        elif lvl == 2:
+            msg = "No puede editar: el local está cerrado"
+        elif lvl >= 3:
+            msg = "No puede editar: el local debe estar cerrado para auditar"
+        else:
+            msg = "No permitido para tu rol/estado"
+        return False, (jsonify(success=False, msg=msg), 409)
+    return True, ()
+
+# ---------- ENDPOINTS FACTURAS ----------
+
+@app.post("/facturas")
 @login_required
-def ventas_z_mutar(z_id):
+@page_access_required("index")
+def facturas_create():
     """
-    PUT    -> body: { punto_venta, numero_z, monto }
-    DELETE -> sin body
+    Crea una factura (Z/A/B/CC) en facturas_trns.
+    Body JSON: { tipo, punto_venta, nro_factura, comentario?, monto, estado? }
+    Requiere local/caja/fecha/turno + can_edit ok.
     """
-    local = session.get('local')
-    user  = session.get('username')
-    if not local or not user:
-        return jsonify(success=False, msg="Faltan datos de sesión (usuario/local)."), 401
+    ctx = _f_ctx_from_request()
+    if not all([ctx["local"], ctx["caja"], ctx["fecha"], ctx["turno"]]):
+        return jsonify(success=False, msg="falta local/caja/fecha/turno"), 400
+
+    data = _f_get_json()
+    tipo        = _f_norm(data.get("tipo")).upper()
+    punto_venta = _f_norm(data.get("punto_venta"))
+    nro_factura = _f_norm(data.get("nro_factura"))
+    comentario  = _f_norm(data.get("comentario") or "")
+    monto       = _f_parse_monto(data.get("monto"))
+    estado      = _f_norm(data.get("estado") or "ok")
+    usuario     = session.get("username") or "system"
+
+    if tipo not in {"Z", "A", "B", "CC"}:
+        return jsonify(success=False, msg="tipo inválido (Z|A|B|CC)"), 400
+    if not punto_venta or not nro_factura or not (monto > 0):
+        return jsonify(success=False, msg="Faltan/invalidos: punto_venta / nro_factura / monto"), 400
 
     conn = get_db_connection()
-    cur  = conn.cursor(dictionary=True)
-
     try:
-        # Traer registro para conocer fecha/caja/turno y validar permisos
-        cur.execute("""
-            SELECT id, fecha, caja, turno, punto_venta, numero_z
-              FROM ventas_z_trns
-             WHERE id=%s AND local=%s
-             LIMIT 1
-        """, (z_id, local))
-        row = cur.fetchone()
-        if not row:
-            return jsonify(success=False, msg="Z no encontrado."), 404
+        ok, resp = _f_check_can_edit_or_409(conn, ctx)
+        if not ok:
+            return resp
 
-        nfecha = _normalize_fecha(row['fecha'])
-        caja   = row['caja']
-        turno  = row['turno']
-
-        # Permisos por rol/estado
-        if not can_edit(conn, get_user_level(), local, caja, nfecha, turno):
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
-
-        if request.method == 'PUT':
-            data         = request.get_json() or {}
-            punto_venta  = (data.get('punto_venta') or '').strip()
-            numero_z     = (data.get('numero_z') or '').strip()
+        with conn.cursor() as cur:
             try:
-                monto = float(str(data.get('monto') or 0).replace('.', '').replace(',', '.'))
-            except Exception:
-                return jsonify(success=False, msg="Monto inválido"), 400
+                cur.execute(
+                    """
+                    INSERT INTO facturas_trns
+                      (local, caja, turno, fecha, tipo, punto_venta, nro_factura, comentario, monto, estado, usuario, update_by)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        ctx["local"], ctx["caja"], ctx["turno"], ctx["fecha"],
+                        tipo, punto_venta, nro_factura, comentario, monto, estado, usuario, usuario
+                    ),
+                )
+                conn.commit()
+                new_id = cur.lastrowid
+            except mysql.connector.IntegrityError:
+                return jsonify(success=False, msg="Factura duplicada para ese contexto"), 409
 
-            if not punto_venta or not numero_z or monto <= 0:
-                return jsonify(success=False, msg="Parámetros inválidos."), 400
-
-            # Evitar colisión con otro registro (UNIQUE) para el MISMO turno
-            cur.execute("""
-                SELECT id
-                  FROM ventas_z_trns
-                 WHERE local=%s AND caja=%s AND turno=%s AND DATE(fecha)=%s
-                   AND punto_venta=%s AND numero_z=%s AND id<>%s
-                 LIMIT 1
-            """, (local, caja, turno, nfecha, punto_venta, numero_z, z_id))
-            dupe = cur.fetchone()
-            if dupe:
-                return jsonify(success=False, msg="Otro Z con mismo Punto/Número ya existe para esa fecha/caja/turno."), 409
-
-            cur2 = conn.cursor()
-            cur2.execute("""
-                UPDATE ventas_z_trns
-                   SET punto_venta=%s, numero_z=%s, monto=%s, usuario=%s
-                 WHERE id=%s AND local=%s
-            """, (punto_venta, numero_z, monto, user, z_id, local))
-            cur2.close()
-            conn.commit()
-            return jsonify(success=True)
-
-        # DELETE
-        cur2 = conn.cursor()
-        cur2.execute("""
-            DELETE FROM ventas_z_trns
-             WHERE id=%s AND local=%s
-        """, (z_id, local))
-        cur2.close()
-        conn.commit()
-        return jsonify(success=True)
-
-    except Exception as e:
-        conn.rollback()
-        return jsonify(success=False, msg=str(e)), 500
+        with conn.cursor(dictionary=True) as cur2:
+            cur2.execute(
+                """
+                SELECT id, local, caja, turno, fecha, tipo, punto_venta, nro_factura, comentario, monto, estado,
+                       usuario, created_at, updated_at, update_by
+                  FROM facturas_trns
+                 WHERE id=%s
+                """,
+                (new_id,),
+            )
+            row = cur2.fetchone()
+        return jsonify(success=True, item=row), 201
     finally:
-        cur.close()
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
-@app.route('/ventas_z_cargadas')
+@app.get("/facturas_cargadas")
 @login_required
-@with_read_scope('t')
-def ventas_z_cargadas():
+@page_access_required("index")
+@with_read_scope('f')
+def facturas_cargadas():
     """
-    GET -> Devuelve TODOS los Z de la fecha/caja/turno/local
-    resp: { success:true, datos:[ { id, fecha:'YYYY-MM-DD', caja, turno, punto_venta, numero_z, monto } ] }
+    Lista facturas de la fecha/caja/turno actuales (o filtros por query).
+    Query: ?fecha=YYYY-MM-DD&caja=Caja%201&turno=Turno%20d%C3%ADa&tipo=Z|A|B|CC
+
+    Control de visibilidad por rol:
+    - Cajero (lvl 1): ve todo (sin restricción de estado)
+    - Encargado (lvl 2): solo cajas cerradas
+    - Auditor (lvl 3): solo locales cerrados
     """
-    local = session.get('local')
-    fecha = request.args.get('fecha')
-    caja  = request.args.get('caja')
-    turno = request.args.get('turno') or 'UNI'
+    ctx = _f_ctx_from_request()
+    if not ctx["fecha"] or not ctx["caja"]:
+        return jsonify(success=True, datos=[])
 
-    if not local or not fecha or not caja or not turno:
-        return jsonify(success=False, msg="Faltan parámetros"), 400
+    tipo = _f_norm(request.args.get("tipo") or (request.get_json(silent=True) or {}).get("tipo"))
 
-    try:
-        nfecha = _normalize_fecha(fecha)
-        conn = get_db_connection()
-        cur  = conn.cursor(dictionary=True)
-
-        # Elegí la colación que tiene cajas_estado (probable: utf8mb4_unicode_ci).
-        COLL = "utf8mb4_unicode_ci"
-
-        # Normalizamos local/caja/turno SOLO en este endpoint, sin tocar la subquery global.
-        sql = f"""
-            SELECT
-              t.id,
-              DATE_FORMAT(t.fecha,'%Y-%m-%d') AS fecha,
-              t.caja,
-              t.turno,
-              t.punto_venta,
-              t.numero_z,
-              t.monto
-            FROM (
-                SELECT
-                  id,
-                  fecha,
-                  -- Las tres columnas textual que se comparan en el scope:
-                  CONVERT(local  USING utf8mb4) COLLATE {COLL} AS local,
-                  CONVERT(caja   USING utf8mb4) COLLATE {COLL} AS caja,
-                  CONVERT(turno  USING utf8mb4) COLLATE {COLL} AS turno,
-                  punto_venta,
-                  numero_z,
-                  monto
-                FROM ventas_z_trns
-            ) AS t
-            WHERE t.local=%s
-              AND t.caja=%s
-              AND t.turno=%s
-              AND DATE(t.fecha)=%s
-              {g.read_scope}  -- L2: sólo cajas cerradas; L3: sólo locales cerrados
-            ORDER BY t.id ASC
+    sql = [
         """
+        SELECT f.id, f.local, f.caja, f.turno, f.fecha, f.tipo, f.punto_venta, f.nro_factura, f.comentario, f.monto, f.estado,
+               f.usuario, f.created_at, f.updated_at, f.update_by
+          FROM facturas_trns f
+         WHERE f.local=%s AND f.caja=%s AND f.fecha=%s
+        """
+    ]
+    args = [ctx["local"], ctx["caja"], ctx["fecha"]]
 
-        cur.execute(sql, (local, caja, turno, nfecha))
-        datos = cur.fetchall()
-        cur.close(); conn.close()
-        return jsonify(success=True, datos=datos)
-    except Exception as e:
-        # Logueá e para ver si hubiera otro problema
-        print("❌ ventas_z_cargadas:", e)
-        return jsonify(success=False, msg=str(e)), 500
+    if ctx["turno"]:
+        sql.append("AND f.turno=%s")
+        args.append(ctx["turno"])
+
+    if tipo:
+        sql.append("AND f.tipo=%s")
+        args.append(tipo.upper())
+
+    # Agregar filtro de visibilidad por rol
+    sql.append(g.read_scope)
+
+    sql.append("ORDER BY f.created_at ASC")
+    query = " ".join(sql)
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor(dictionary=True) as cur:
+            cur.execute(query, tuple(args))
+            rows = cur.fetchall()
+        return jsonify(success=True, datos=rows)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+@app.put("/facturas/<int:fid>")
+@login_required
+@page_access_required("index")
+def facturas_update(fid: int):
+    """
+    Actualiza PV / nro_factura / comentario / monto / tipo / estado.
+    Body JSON: cualquier subset de {tipo, punto_venta, nro_factura, comentario, monto, estado}
+    Requiere can_edit ok para el contexto de esa factura.
+    """
+    # 1) Traer la fila para conocer su contexto original
+    conn = get_db_connection()
+    try:
+        with conn.cursor(dictionary=True) as cur:
+            cur.execute(
+                "SELECT id, local, caja, turno, fecha FROM facturas_trns WHERE id=%s",
+                (fid,)
+            )
+            base = cur.fetchone()
+            if not base:
+                return jsonify(success=False, msg="No encontrado"), 404
+
+        # 2) chequear permisos con el contexto de la fila (usamos turno normalizado solo para permiso)
+        ctx = {
+            "local": base["local"],
+            "caja":  base["caja"],
+            "fecha": str(base["fecha"]),
+            "turno": base["turno"],
+            "turno_canedit": _f_norm_turno_for_can_edit(base["turno"]),
+        }
+        ok, resp = _f_check_can_edit_or_409(conn, ctx)
+        if not ok:
+            return resp
+
+        # 3) aplicar cambios
+        data = _f_get_json()
+        sets = []
+        args = []
+
+        if "tipo" in data and _f_norm(data.get("tipo")):
+            sets.append("tipo=%s"); args.append(_f_norm(data["tipo"]).upper())
+        if "punto_venta" in data and _f_norm(data.get("punto_venta")):
+            sets.append("punto_venta=%s"); args.append(_f_norm(data["punto_venta"]))
+        if "nro_factura" in data and _f_norm(data.get("nro_factura")):
+            sets.append("nro_factura=%s"); args.append(_f_norm(data["nro_factura"]))
+        if "comentario" in data:
+            sets.append("comentario=%s"); args.append(_f_norm(data.get("comentario") or ""))
+        if "monto" in data:
+            sets.append("monto=%s"); args.append(_f_parse_monto(data.get("monto")))
+        if "estado" in data and _f_norm(data.get("estado")):
+            sets.append("estado=%s"); args.append(_f_norm(data["estado"]))
+
+        sets.append("update_by=%s"); args.append(session.get("username") or "system")
+
+        if len(sets) == 1:  # solo update_by => sin cambios de negocio
+            return jsonify(success=True, msg="Sin cambios")
+
+        args.append(fid)
+
+        with conn.cursor() as cur2:
+            cur2.execute(f"UPDATE facturas_trns SET {', '.join(sets)} WHERE id=%s", tuple(args))
+            conn.commit()
+
+        with conn.cursor(dictionary=True) as cur3:
+            cur3.execute(
+                """
+                SELECT id, local, caja, turno, fecha, tipo, punto_venta, nro_factura, comentario, monto, estado,
+                       usuario, created_at, updated_at, update_by
+                  FROM facturas_trns WHERE id=%s
+                """,
+                (fid,)
+            )
+            row = cur3.fetchone()
+        return jsonify(success=True, item=row)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+@app.delete("/facturas/<int:fid>")
+@login_required
+@page_access_required("index")
+def facturas_delete(fid: int):
+    """
+    Borra una factura. Requiere can_edit ok con el contexto original de la fila.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor(dictionary=True) as cur:
+            cur.execute(
+                "SELECT id, local, caja, turno, fecha FROM facturas_trns WHERE id=%s",
+                (fid,)
+            )
+            base = cur.fetchone()
+            if not base:
+                return jsonify(success=False, msg="No encontrado"), 404
+
+        ctx = {
+            "local": base["local"],
+            "caja":  base["caja"],
+            "fecha": str(base["fecha"]),
+            "turno": base["turno"],
+            "turno_canedit": _f_norm_turno_for_can_edit(base["turno"]),
+        }
+        ok, resp = _f_check_can_edit_or_409(conn, ctx)
+        if not ok:
+            return resp
+
+        with conn.cursor() as cur2:
+            cur2.execute("DELETE FROM facturas_trns WHERE id=%s", (fid,))
+            deleted = cur2.rowcount
+            conn.commit()
+
+        if deleted == 0:
+            return jsonify(success=False, msg="No encontrado"), 404
+        return jsonify(success=True, deleted=deleted)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+# =================== FIN BLOQUE FACTURAS ===================
+
 
 
 
@@ -2125,7 +2387,40 @@ def cierre_resumen():
     if not local or not caja or not fecha or not turno:
         return jsonify(error="Parámetros insuficientes"), 400
 
+    # Control de visibilidad por rol (igual que facturas)
+    lvl = get_user_level()
     conn = get_db_connection()
+
+    # Nivel 2 (encargado): solo puede ver si la caja está cerrada
+    if lvl == 2:
+        cur_check = conn.cursor()
+        cur_check.execute("""
+            SELECT COUNT(*) FROM cajas_estado
+            WHERE local=%s AND caja=%s AND fecha_operacion=%s AND turno=%s AND estado=0
+        """, (local, caja, _normalize_fecha(fecha), turno))
+        row = cur_check.fetchone()
+        cur_check.close()
+        if not row or row[0] == 0:
+            # Caja no cerrada, retornar resumen vacío
+            conn.close()
+            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b','facturas_cc',
+                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','discovery','total_cobrado']})
+
+    # Nivel 3 (auditor): solo puede ver si el local está cerrado
+    if lvl >= 3:
+        cur_check = conn.cursor()
+        cur_check.execute("""
+            SELECT COUNT(*) FROM cierres_locales
+            WHERE local=%s AND DATE(fecha)=%s AND turno=%s AND estado=0
+        """, (local, _normalize_fecha(fecha), turno))
+        row = cur_check.fetchone()
+        cur_check.close()
+        if not row or row[0] == 0:
+            # Local no cerrado, retornar resumen vacío
+            conn.close()
+            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b','facturas_cc',
+                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','discovery','total_cobrado']})
+
     cur  = conn.cursor()
 
     resumen = {}
@@ -2141,15 +2436,45 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['venta_total'] = float(row[0]) if row and row[0] is not None else 0.0
 
-        # venta_z  (se respeta tu lógica actual en ventas_trns)
+        # venta_z  (ahora desde facturas_trns con tipo='Z')
         cur.execute("""
             SELECT COALESCE(SUM(monto),0)
-              FROM ventas_z_trns
-             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+              FROM facturas_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='Z'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['venta_z'] = float(row[0]) if row and row[0] is not None else 0.0
-        resumen['discovery'] = float(resumen['venta_total'] - resumen['venta_z'])
+
+        # facturas_a (informativo)
+        cur.execute("""
+            SELECT COALESCE(SUM(monto),0)
+              FROM facturas_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='A'
+        """, (fecha, local, caja, turno))
+        row = cur.fetchone()
+        resumen['facturas_a'] = float(row[0]) if row and row[0] is not None else 0.0
+
+        # facturas_b (informativo)
+        cur.execute("""
+            SELECT COALESCE(SUM(monto),0)
+              FROM facturas_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='B'
+        """, (fecha, local, caja, turno))
+        row = cur.fetchone()
+        resumen['facturas_b'] = float(row[0]) if row and row[0] is not None else 0.0
+
+        # facturas_cc (cuenta corriente - suma como medio de cobro)
+        cur.execute("""
+            SELECT COALESCE(SUM(monto),0)
+              FROM facturas_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'
+        """, (fecha, local, caja, turno))
+        row = cur.fetchone()
+        resumen['facturas_cc'] = float(row[0]) if row and row[0] is not None else 0.0
+
+        # Sumatoria de todas las facturas (Z + A + B) para calcular discovery
+        total_facturas = resumen['venta_z'] + resumen['facturas_a'] + resumen['facturas_b']
+        resumen['discovery'] = float(resumen['venta_total'] - total_facturas)
 
         # ===== Ingresos / medios de cobro =====
         # efectivo (remesas)
@@ -2207,18 +2532,10 @@ def cierre_resumen():
         resumen['pedidosya'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # ===== TIPS =====
-        # Tips de tarjetas: suma de columnas (respetando tu set actual)
+        # Tips de tarjetas: ahora desde tarjetas_trns.monto_tip
         cur.execute("""
-            SELECT COALESCE(SUM(
-              COALESCE(visa_tips,0) +
-              COALESCE(visa_debito_tips,0) +
-              COALESCE(mastercard_tips,0) +
-              COALESCE(mastercard_debito_tips,0) +
-              COALESCE(cabal_tips,0) +
-              COALESCE(cabal_debito_tips,0) +
-              COALESCE(amex_tips,0)
-            ),0)
-              FROM tips_tarjetas
+            SELECT COALESCE(SUM(monto_tip),0)
+              FROM tarjetas_trns
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
@@ -2235,7 +2552,9 @@ def cierre_resumen():
 
         resumen['tips'] = tips_tarjeta + tips_mp
 
-        # ===== Total cobrado (sin venta_total ni tips)
+        # ===== Total cobrado (medios de cobro + facturas CC)
+        # Las facturas A, B, Z son informativas y NO suman al cobrado
+        # Las facturas CC sí suman porque son cuenta corriente (medio de cobro)
         resumen['total_cobrado'] = sum([
             resumen.get('efectivo',0.0),
             resumen.get('tarjeta',0.0),
@@ -2243,6 +2562,7 @@ def cierre_resumen():
             resumen.get('rappi',0.0),
             resumen.get('pedidosya',0.0),
             resumen.get('cuenta_cte',0.0),
+            resumen.get('facturas_cc',0.0),  # CC suma como medio de cobro
         ])
 
         # ===== Estado de caja (por turno)
@@ -2393,6 +2713,7 @@ def cerrar_caja():
     caja    = data.get('caja')
     fecha   = data.get('fecha')
     turno   = data.get('turno')            # ← obligatorio
+    observacion = data.get('observacion', '')  # ← observación/descargo opcional
     usuario = session.get('username') or data.get('usuario') or 'sistema'
 
     if not (local and caja and fecha and turno):
@@ -2420,12 +2741,22 @@ def cerrar_caja():
             cur.close(); conn.close()
             return jsonify(ok=True, already_closed=True)
 
+        # Actualizar estado con observación
         cur.execute("""
             UPDATE cajas_estado
-            SET estado=0, cerrada_en=NOW(), cerrada_por=%s
+            SET estado=0, cerrada_en=NOW(), cerrada_por=%s, observacion=%s
             WHERE id=%s
-        """, (usuario, _id))
+        """, (usuario, observacion, _id))
         conn.commit()
+
+        # Crear snapshot de la caja cerrada
+        try:
+            create_snapshot_for_local(conn, local, _normalize_fecha(fecha), turno, made_by=usuario)
+            conn.commit()
+        except Exception as snap_err:
+            print(f"⚠️ Error creando snapshot: {snap_err}")
+            # No rollback del cierre, solo advertencia
+
         cur.close(); conn.close()
         return jsonify(ok=True, closed=True)
 
@@ -2441,6 +2772,31 @@ def cerrar_caja():
 ##__________________________ GASTOS PESTAÑA _____________________________-#
 # __________________________________ GASTOS _______________________________________
 # CRUD + lote, con soporte de turno y bloqueo por estado de caja
+
+@app.route('/api/tipos_gastos')
+@login_required
+def api_tipos_gastos():
+    """Retorna los tipos de gastos normalizados desde la tabla tipos_gastos"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT codigo, descripcion
+            FROM tipos_gastos
+            WHERE activo = 1
+            ORDER BY orden, descripcion
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # Convertir a diccionario {codigo: descripcion}
+        tipos = {row['codigo']: row['descripcion'] for row in rows}
+        return jsonify(success=True, tipos=tipos)
+    except Exception as e:
+        print(f"❌ ERROR api_tipos_gastos: {e}")
+        return jsonify(success=False, msg=str(e)), 500
+
 
 @app.route('/gastos_cargadas')
 @login_required
@@ -2508,7 +2864,7 @@ def guardar_gastos_lote():
         conn = get_db_connection()
 
         user_level = get_user_level()
-        if not can_edit(conn, user_level, local, caja, _normalize_fecha(fecha), turno):
+        if not can_edit(conn, local, caja, turno, _normalize_fecha(fecha), user_level):
             conn.close()
             return jsonify(success=False, msg="No tenés permisos para guardar (caja/local cerrados para tu rol)."), 409
 
@@ -2571,7 +2927,7 @@ def actualizar_gasto(gasto_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         user_level = get_user_level()
-        if not can_edit(conn, user_level, row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], user_level):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No tenés permisos para actualizar (caja/local cerrados para tu rol)."), 409
 
@@ -2610,7 +2966,7 @@ def borrar_gasto(gasto_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         user_level = get_user_level()
-        if not can_edit(conn, user_level, row['local'], row['caja'], row['fecha'], row['turno']):
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], user_level):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No tenés permisos para borrar (caja/local cerrados para tu rol)."), 409
 
@@ -2684,9 +3040,9 @@ def _fetch_ventas_z(conn, cur, fecha, local):
     Devuelve (items, total):
       items = [{'pv': '5', 'punto_venta': '5', 'numero_z': '1691', 'monto': 1000.0, 'z_display': '00005-00001691'}, ...]
       total = suma de los montos
-    (Versión legacy sin nombre de tabla; usa ventas_z_trns)
+    (Versión legacy sin nombre de tabla; usa facturas_trns con tipo='Z')
     """
-    return _fetch_ventas_z_dyn(cur, fecha, local, "ventas_z_trns")
+    return _fetch_ventas_z_dyn(cur, fecha, local, "facturas_trns", tipo='Z')
 
 def _sum_cuenta_corriente(conn, cur, fecha, local):
     """Total de Cuenta Corriente, tolerante a diferencias de columnas."""
@@ -2710,66 +3066,35 @@ def _sum_cuenta_corriente(conn, cur, fecha, local):
 
 def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
     """
-    Devuelve dict con tips por marca (mapeo normalizado) y la suma total.
-    Columnas consideradas (si alguna no existe, la tratamos como 0):
-      visa_tips, visa_debito_tips, visa_prepago_tips,
-      mastercard_tips, mastercard_debito_tips, mastercard_prepago_tips,
-      cabal_tips, cabal_debito_tips, amex_tips, maestro_tips,
-      naranja_tips, diners_tips, decidir_tips (si existe), pagos_inmediatos_tips
+    Devuelve dict con tips por marca desde tarjetas_trns (usando columna monto_tip).
+    Suma por tarjeta (marca normalizada).
     """
-    # (alias -> columna en BD)
-    cols = {
-        "VISA": "visa_tips",
-        "VISA DEBITO": "visa_debito_tips",
-        "VISA PREPAGO": "visa_prepago_tips",
-        "MASTERCARD": "mastercard_tips",
-        "MASTERCARD DEBITO": "mastercard_debito_tips",
-        "MASTERCARD PREPAGO": "mastercard_prepago_tips",
-        "CABAL": "cabal_tips",
-        "CABAL DEBITO": "cabal_debito_tips",
-        "AMEX": "amex_tips",
-        "MAESTRO": "maestro_tips",
-        "NARANJA": "naranja_tips",
-        "DINERS": "diners_tips",
-        "DECIDIR": "decidir_tips",  # algunos esquemas pueden no tenerla
-        "PAGOS INMEDIATOS": "pagos_inmediatos_tips",
-    }
+    marcas = [
+        "VISA", "VISA DEBITO", "VISA PREPAGO",
+        "MASTERCARD", "MASTERCARD DEBITO", "MASTERCARD PREPAGO",
+        "CABAL", "CABAL DEBITO",
+        "AMEX", "MAESTRO",
+        "NARANJA", "DECIDIR", "DINERS",
+        "PAGOS INMEDIATOS"
+    ]
 
-    # Intento sumar todo en una sola query seleccionando cada SUM(col) con alias.
-    select_parts = []
-    for alias, col in cols.items():
-        # si alguna columna no existe, el DBMS fallará -> manejamos con try/except haciendo fallback.
-        select_parts.append(f"COALESCE(SUM({col}),0) AS \"{alias}\"")
+    breakdown = {m: 0.0 for m in marcas}
 
-    sql = f"""
-        SELECT
-            {", ".join(select_parts)}
-        FROM {table_name}
-        WHERE DATE(fecha)=%s AND local=%s
-    """
-
-    breakdown = {alias: 0.0 for alias in cols.keys()}
     try:
-        cur.execute(sql, (fecha, local))
-        row = cur.fetchone()
-        if row:
-            # row viene en el mismo orden de select_parts
-            i = 0
-            for alias in cols.keys():
-                breakdown[alias] = float(row[i] or 0.0)
-                i += 1
+        for marca in marcas:
+            cur.execute(
+                f"""
+                SELECT COALESCE(SUM(monto_tip),0)
+                FROM {table_name}
+                WHERE DATE(fecha)=%s AND local=%s AND UPPER(tarjeta)=%s
+                """,
+                (fecha, local, marca.upper())
+            )
+            row = cur.fetchone()
+            breakdown[marca] = float(row[0] or 0.0) if row else 0.0
     except Exception:
-        # Si la query falla por columnas inexistentes, probamos columna por columna.
-        for alias, col in cols.items():
-            try:
-                cur.execute(
-                    f"SELECT COALESCE(SUM({col}),0) FROM {table_name} WHERE DATE(fecha)=%s AND local=%s",
-                    (fecha, local)
-                )
-                r = cur.fetchone()
-                breakdown[alias] = float((r[0] if r else 0) or 0.0)
-            except Exception:
-                breakdown[alias] = 0.0
+        # Si falla, dejamos todo en 0
+        pass
 
     total_tarjetas = float(sum(breakdown.values()))
     return breakdown, total_tarjetas
@@ -2808,23 +3133,21 @@ def api_resumen_local():
         if local_cerrado:
             T_REMESAS    = "snap_remesas"
             T_TARJETAS   = "snap_tarjetas"
-            T_TIPS_TJ    = "snap_tips_tarjetas"
             T_MP         = "snap_mercadopago"
             T_RAPPI      = "snap_rappi"
             T_PEDIDOSYA  = "snap_pedidosya"
             T_GASTOS     = "snap_gastos"
             T_VENTAS     = "snap_ventas"
-            T_VENTAS_Z   = "snap_ventas_z"
+            T_FACTURAS   = "snap_facturas"  # Contiene Z, A, B, CC
         else:
             T_REMESAS    = "remesas_trns"
             T_TARJETAS   = "tarjetas_trns"
-            T_TIPS_TJ    = "tips_tarjetas"
             T_MP         = "mercadopago_trns"
             T_RAPPI      = "rappi_trns"
             T_PEDIDOSYA  = "pedidosya_trns"
             T_GASTOS     = "gastos_trns"
             T_VENTAS     = "ventas_trns"
-            T_VENTAS_Z   = "ventas_z_trns"
+            T_FACTURAS   = "facturas_trns"  # Contiene Z, A, B, CC
 
         # ===== RESUMEN: venta total, Z y discovery =====
         venta_total = _qsum(
@@ -2833,8 +3156,8 @@ def api_resumen_local():
             (f, local),
         )
 
-        # Breakdown Z por PV + Número (tabla dinámica)
-        z_items, vta_z_total = _fetch_ventas_z_dyn(cur, f, local, T_VENTAS_Z)
+        # Breakdown Z por PV + Número (tabla facturas con tipo='Z')
+        z_items, vta_z_total = _fetch_ventas_z_dyn(cur, f, local, T_FACTURAS, tipo='Z')
         discovery = max((venta_total or 0.0) - (vta_z_total or 0.0), 0.0)
 
         # ===== EFECTIVO (Remesas) =====
@@ -2890,18 +3213,90 @@ def api_resumen_local():
             (f, local),
         )
 
-        # ===== GASTOS (solo total) =====
+        # ===== GASTOS (total + detalle por tipo) =====
         gastos_total = _qsum(
             cur,
             f"SELECT COALESCE(SUM(monto),0) FROM {T_GASTOS} WHERE DATE(fecha)=%s AND local=%s",
             (f, local),
         )
 
-        # ===== CTA CTE =====
-        cta_cte_total = _sum_cuenta_corriente(conn, cur, f, local)
+        # Detalle de gastos por tipo (con JOIN a tipos_gastos)
+        gastos_detalle = {}
+        try:
+            cur.execute(
+                f"""
+                SELECT g.tipo, COALESCE(tg.descripcion, g.tipo) as descripcion, SUM(g.monto) as total
+                FROM {T_GASTOS} g
+                LEFT JOIN tipos_gastos tg ON g.tipo = tg.codigo
+                WHERE DATE(g.fecha)=%s AND g.local=%s
+                GROUP BY g.tipo, tg.descripcion
+                ORDER BY tg.orden, g.tipo
+                """,
+                (f, local)
+            )
+            rows = cur.fetchall() or []
+            for r in rows:
+                tipo_codigo = r[0]
+                tipo_desc = r[1]
+                monto_tipo = float(r[2] or 0)
+                gastos_detalle[tipo_codigo] = {
+                    "descripcion": tipo_desc,
+                    "monto": monto_tipo
+                }
+        except Exception as e:
+            print(f"⚠️ Error obteniendo detalle de gastos: {e}")
+            gastos_detalle = {}
 
-        # ===== TIPS TARJETAS (detalle por marca + total) =====
-        tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TIPS_TJ, f, local)
+        # ===== FACTURAS (A, B, CC) =====
+        # Helper para obtener items de facturas
+        def _fetch_facturas_items(tipo):
+            try:
+                cur.execute(
+                    f"""
+                    SELECT punto_venta, nro_factura, monto
+                    FROM {T_FACTURAS}
+                    WHERE DATE(fecha)=%s AND local=%s AND tipo=%s
+                    ORDER BY punto_venta, nro_factura
+                    """,
+                    (f, local, tipo)
+                )
+                rows = cur.fetchall() or []
+                items = []
+                for r in rows:
+                    pv = r[0]
+                    nro = r[1]
+                    monto = float(r[2] or 0)
+                    item = {
+                        "pv": str(pv) if pv is not None else "0",
+                        "punto_venta": str(pv) if pv is not None else "0",
+                        "nro_factura": str(nro),
+                        "monto": monto,
+                        "z_display": _format_z(pv, nro)
+                    }
+                    items.append(item)
+                return items, sum(i['monto'] for i in items)
+            except Exception:
+                return [], 0.0
+
+        # Facturas A y B con items
+        facturas_a_items, facturas_a = _fetch_facturas_items('A')
+        facturas_b_items, facturas_b = _fetch_facturas_items('B')
+        facturas_total = float(facturas_a or 0.0) + float(facturas_b or 0.0)
+
+        # Facturas CC (Cuenta Corriente)
+        facturas_cc = _qsum(
+            cur,
+            f"SELECT COALESCE(SUM(monto),0) FROM {T_FACTURAS} WHERE DATE(fecha)=%s AND local=%s AND tipo='CC'",
+            (f, local),
+        )
+
+        # ===== CTA CTE (legacy - si existe en cuenta_corriente_trns) =====
+        cta_cte_legacy = _sum_cuenta_corriente(conn, cur, f, local)
+        # Sumamos CC de facturas + cta cte legacy
+        cta_cte_total = float(facturas_cc or 0.0) + float(cta_cte_legacy or 0.0)
+
+        # ===== TIPS TARJETAS (detalle por marca + total) desde tarjetas_trns =====
+        tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TARJETAS, f, local)
         tips_total = float(tips_tarj_total or 0.0) + float(tips_mp or 0.0)
 
         # ===== Totales del panel =====
@@ -2911,6 +3306,7 @@ def api_resumen_local():
             mp_total or 0.0,
             rappi_total or 0.0,
             pedidosya_total or 0.0,
+            facturas_total or 0.0,
             cta_cte_total or 0.0,
         ]))
 
@@ -2920,6 +3316,7 @@ def api_resumen_local():
             mp_total or 0.0,
             rappi_total or 0.0,
             pedidosya_total or 0.0,
+            facturas_total or 0.0,
             gastos_total or 0.0,
             cta_cte_total or 0.0,
             tips_total or 0.0,
@@ -2936,7 +3333,7 @@ def api_resumen_local():
                 "diferencia": total_cobrado - float(venta_total or 0.0)
             },
 
-            "ventas": {
+            "index": {
                 "vta_z_total": float(vta_z_total or 0.0),
                 "discovery": float(discovery or 0.0),
                 "z_items": z_items  # cada item trae pv, numero_z, monto y z_display
@@ -2959,8 +3356,22 @@ def api_resumen_local():
                 },
                 "rappi": { "total": float(rappi_total or 0.0) },
                 "pedidosya": { "total": float(pedidosya_total or 0.0) },
-                "gastos": { "total": float(gastos_total or 0.0) },
-                "cuenta_cte": { "total": float(cta_cte_total or 0.0) },
+                "facturas": {
+                    "total": float(facturas_total or 0.0),
+                    "a": float(facturas_a or 0.0),
+                    "b": float(facturas_b or 0.0),
+                    "a_items": facturas_a_items,
+                    "b_items": facturas_b_items
+                },
+                "gastos": {
+                    "total": float(gastos_total or 0.0),
+                    "detalle": gastos_detalle
+                },
+                "cuenta_cte": {
+                    "total": float(cta_cte_total or 0.0),
+                    "cc": float(facturas_cc or 0.0),
+                    "legacy": float(cta_cte_legacy or 0.0)
+                },
                 "tips": {
                     "total": float(tips_total or 0.0),
                     "mp": float(tips_mp or 0.0),
@@ -2985,7 +3396,7 @@ def api_resumen_local():
         except: ...
 
 
-def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
+def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns", tipo='Z'):
     """
     Devuelve (items, total) con detección flexible de columnas:
     - Punto de venta: punto_venta | pto_venta | pv | p_venta | punto_de_venta
@@ -2994,7 +3405,7 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
     items: [{'pv': '5', 'punto_venta': '5', 'numero_z': '1691', 'monto': 1000.0, 'z_display': '00005-00001691'}, ...]
     """
     pv_cols    = ["punto_venta", "pto_venta", "pv", "p_venta", "punto_de_venta"]
-    numero_cols = ["numero_z", "nro_z", "z_numero", "num_z"]
+    numero_cols = ["nro_factura", "nro_z", "z_numero", "num_z"]
     monto_cols  = ["monto", "importe", "total"]
     last_error = None
 
@@ -3007,11 +3418,11 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
                         f"""
                         SELECT {pvcol} AS pv, {ncol} AS znum, COALESCE(SUM({mcol}),0) AS total
                         FROM {table_name}
-                        WHERE DATE(fecha)=%s AND local=%s
+                        WHERE DATE(fecha)=%s AND local=%s AND tipo=%s
                         GROUP BY {pvcol}, {ncol}
                         ORDER BY {pvcol}, {ncol}
                         """,
-                        (fecha, local),
+                        (fecha, local, tipo),
                     )
                     rows = cur.fetchall() or []
                     items = []
@@ -3040,11 +3451,11 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns"):
                     f"""
                     SELECT {ncol} AS znum, COALESCE(SUM({mcol}),0) AS total
                     FROM {table_name}
-                    WHERE DATE(fecha)=%s AND local=%s
+                    WHERE DATE(fecha)=%s AND local=%s AND tipo=%s
                     GROUP BY {ncol}
                     ORDER BY {ncol}
                     """,
-                    (fecha, local),
+                    (fecha, local, tipo),
                 )
                 rows = cur.fetchall() or []
                 items = []
@@ -3803,6 +4214,118 @@ def api_cierre_local():
         try: conn.close()
         except: ...
 
+
+## ______________________ MARCAR COMO AUDITADO _______________________
+@app.route('/api/marcar_auditado', methods=['POST'])
+@login_required
+@role_min_required(3)  # solo auditor (L3+)
+def api_marcar_auditado():
+    """
+    Marca un local como auditado para una fecha específica.
+    El local debe estar cerrado para poder ser marcado como auditado.
+    Una vez auditado, el local se vuelve inmutable (nadie puede editar).
+    """
+    data = request.get_json() or {}
+    local = data.get('local') or session.get('local')
+    fecha = data.get('fecha')
+    observaciones = data.get('observaciones', '')
+
+    if not (local and fecha):
+        return jsonify(success=False, msg='Faltan parámetros: local y fecha son requeridos'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida (formato esperado YYYY-MM-DD)'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        # Verificar que el local esté cerrado
+        cur.execute("""
+            SELECT estado FROM cierres_locales
+            WHERE local=%s AND DATE(fecha)=%s
+        """, (local, f))
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify(success=False, msg='El local no está cerrado para esta fecha'), 400
+
+        if row[0] != 0:
+            return jsonify(success=False, msg='El local debe estar cerrado (estado=0) para ser auditado'), 400
+
+        # Verificar si ya está auditado
+        cur.execute("""
+            SELECT id FROM locales_auditados
+            WHERE local=%s AND DATE(fecha)=%s
+        """, (local, f))
+
+        if cur.fetchone():
+            return jsonify(success=False, msg='Este local ya está marcado como auditado'), 409
+
+        # Marcar como auditado
+        cur.execute("""
+            INSERT INTO locales_auditados
+            (local, fecha, auditado_por, fecha_auditoria, observaciones)
+            VALUES (%s, %s, %s, NOW(), %s)
+        """, (local, f, session.get('username'), observaciones))
+
+        conn.commit()
+        return jsonify(success=True, msg=f"Local {local} marcado como auditado para {f}")
+
+    except Exception as e:
+        conn.rollback()
+        print("❌ marcar_auditado:", e)
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except: ...
+        try: conn.close()
+        except: ...
+
+
+@app.route('/api/estado_auditoria', methods=['GET'])
+@login_required
+def api_estado_auditoria():
+    """
+    Verifica si un local está auditado para una fecha específica.
+    Retorna: { auditado: bool, info: {...} }
+    """
+    local = request.args.get('local') or session.get('local')
+    fecha = request.args.get('fecha')
+
+    if not (local and fecha):
+        return jsonify(success=False, msg='Faltan parámetros: local y fecha'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT id, local, fecha, auditado_por, fecha_auditoria, observaciones
+            FROM locales_auditados
+            WHERE local=%s AND DATE(fecha)=%s
+        """, (local, f))
+
+        row = cur.fetchone()
+
+        if row:
+            return jsonify(success=True, auditado=True, info=row)
+        else:
+            return jsonify(success=True, auditado=False, info=None)
+
+    except Exception as e:
+        print("❌ estado_auditoria:", e)
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except: ...
+        try: conn.close()
+        except: ...
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}, 200
@@ -3832,10 +4355,9 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
     for tbl in (
         "snap_remesas",
         "snap_tarjetas",
-        "snap_tips_tarjetas",
         "snap_mercadopago",
         "snap_ventas",
-        "snap_ventas_z",
+        "snap_facturas",
         "snap_gastos",
         "snap_rappi",
         "snap_pedidosya",
@@ -3856,27 +4378,10 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
     # --- Tarjetas ---
     cur.execute("""
         INSERT INTO snap_tarjetas
-        (snapshot_id, id_src, usuario, local, caja, turno, fecha, tarjeta, terminal, lote, monto, estado)
-        SELECT %s, t.id, t.usuario, t.local, t.caja, t.turno, DATE(t.fecha), t.tarjeta, t.terminal, t.lote, t.monto, t.estado
+        (snapshot_id, id_src, usuario, local, caja, turno, fecha, tarjeta, terminal, lote, monto, monto_tip, estado)
+        SELECT %s, t.id, t.usuario, t.local, t.caja, t.turno, DATE(t.fecha), t.tarjeta, t.terminal, t.lote, t.monto, t.monto_tip, t.estado
           FROM tarjetas_trns t
          WHERE t.local=%s AND DATE(t.fecha)=%s AND t.turno=%s
-    """, (snapshot_id, local, f, turno))
-
-    # --- Tips tarjetas ---
-    cur.execute("""
-        INSERT INTO snap_tips_tarjetas
-        (snapshot_id, local, caja, turno, fecha, terminal, lote,
-         visa_tips, visa_debito_tips, visa_prepago_tips,
-         mastercard_tips, mastercard_debito_tips, mastercard_prepago_tips,
-         cabal_tips, cabal_debito_tips, amex_tips, maestro_tips,
-         naranja_tips, diners_tips, pagos_inmediatos_tips, estado)
-        SELECT %s, tt.local, tt.caja, tt.turno, DATE(tt.fecha), tt.terminal, tt.lote,
-               tt.visa_tips, tt.visa_debito_tips, tt.visa_prepago_tips,
-               tt.mastercard_tips, tt.mastercard_debito_tips, tt.mastercard_prepago_tips,
-               tt.cabal_tips, tt.cabal_debito_tips, tt.amex_tips, tt.maestro_tips,
-               tt.naranja_tips, tt.diners_tips, tt.pagos_inmediatos_tips, tt.estado
-          FROM tips_tarjetas tt
-         WHERE tt.local=%s AND DATE(tt.fecha)=%s AND tt.turno=%s
     """, (snapshot_id, local, f, turno))
 
     # --- Mercado Pago ---
@@ -3898,13 +4403,13 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
          WHERE v.local=%s AND DATE(v.fecha)=%s AND v.turno=%s
     """, (snapshot_id, local, f, turno))
 
-    # --- Ventas Z ---
+    # --- Facturas (Z, A, B, CC) ---
     cur.execute("""
-        INSERT INTO snap_ventas_z
-        (snapshot_id, id_src, local, caja, turno, fecha, punto_venta, numero_z, monto, estado)
-        SELECT %s, vz.id, vz.local, vz.caja, vz.turno, DATE(vz.fecha), vz.punto_venta, vz.numero_z, vz.monto, vz.estado
-          FROM ventas_z_trns vz
-         WHERE vz.local=%s AND DATE(vz.fecha)=%s AND vz.turno=%s
+        INSERT INTO snap_facturas
+        (snapshot_id, id_src, local, caja, turno, fecha, tipo, punto_venta, nro_factura, monto, estado)
+        SELECT %s, f.id, f.local, f.caja, f.turno, DATE(f.fecha), f.tipo, f.punto_venta, f.nro_factura, f.monto, f.estado
+          FROM facturas_trns f
+         WHERE f.local=%s AND DATE(f.fecha)=%s AND f.turno=%s
     """, (snapshot_id, local, f, turno))
 
     # --- Gastos ---

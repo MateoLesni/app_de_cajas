@@ -56,7 +56,9 @@
   const tipoSelect      = $('#tipoFacturaSelect');
   const puntoVentaInput = $('#puntoVentaInput');
   const numeroDocInput  = $('#numeroDocInput');
-  const numeroDocLabel  = $('#numeroDocLabel'); // queda fijo “Número de Factura”
+  const numeroDocLabel  = $('#numeroDocLabel'); // cambia según tipo
+  const comentarioGroup = $('#comentarioGroup');
+  const comentarioInput = $('#comentarioInput');
   const montoDocInput   = $('#montoDocInput');
   const btnGuardarFac   = $('#btnGuardarFactura');
   const msgFactura      = $('#msgFactura');
@@ -82,14 +84,41 @@
     document.head.appendChild(st);
   })();
 
-  // Fijar rótulos “Factura”
-  if (numeroDocLabel) numeroDocLabel.textContent = 'Número de Factura';
-  if (thNumDoc) thNumDoc.textContent = 'N° Factura';
+  // Función para actualizar UI según tipo seleccionado
+  function updateTipoUI() {
+    const tipo = tipoSelect?.value?.toUpperCase() || 'Z';
+    const grid = $('#facturasGrid');
+
+    if (tipo === 'CC') {
+      if (numeroDocLabel) numeroDocLabel.textContent = 'N° de Comanda';
+      if (comentarioGroup) comentarioGroup.style.display = '';
+      // Cambiar a grid de 5 columnas cuando se muestra comentario
+      if (grid) {
+        grid.classList.remove('grid-4');
+        grid.classList.add('grid-5');
+      }
+    } else {
+      if (numeroDocLabel) numeroDocLabel.textContent = 'Número de Factura';
+      if (comentarioGroup) comentarioGroup.style.display = 'none';
+      if (comentarioInput) comentarioInput.value = '';
+      // Volver a grid de 4 columnas
+      if (grid) {
+        grid.classList.remove('grid-5');
+        grid.classList.add('grid-4');
+      }
+    }
+  }
+
+  // Event listener para cambio de tipo
+  tipoSelect?.addEventListener('change', updateTipoUI);
+
+  // Inicializar UI según tipo por defecto
+  updateTipoUI();
 
   // ===== Estado / permisos =====
   let cajaCerrada=false, localCerrado=false;
   let _bdBase=null;
-  let _bdFact=[]; // {id,tipo,fecha,caja,punto_venta,nro_factura,monto}
+  let _bdFact=[]; // {id,tipo,fecha,caja,punto_venta,nro_factura,comentario,monto}
 
   function canActUI(){
     const {role}=getCtx();
@@ -123,7 +152,7 @@
     if (_bdBase && puede) uiMsg(msgBase,'Ya existe una venta base para esta fecha/caja/turno.','#b45309');
 
     // Facturas
-    [tipoSelect,puntoVentaInput,numeroDocInput,montoDocInput,btnGuardarFac].forEach(el=>{ if(el) el.disabled=!puede; });
+    [tipoSelect,puntoVentaInput,numeroDocInput,comentarioInput,montoDocInput,btnGuardarFac].forEach(el=>{ if(el) el.disabled=!puede; });
     if (btnGuardarFac) btnGuardarFac.classList.toggle('disabled', !puede);
     if (!puede){
       const {role}=getCtx(); const motivo=(role>=2 && localCerrado)?'Local cerrado':'Caja cerrada';
@@ -133,7 +162,7 @@
 
   // ===== Guardar: Base (Sistema) =====
   btnGuardarBase?.addEventListener('click', async ()=>{
-    const { caja,fecha,turno }=getCtx();
+    const { local,caja,fecha,turno }=getCtx();
     if (!caja||!fecha) return uiMsg(msgBase,'Seleccione caja y fecha.','#b00020');
     await refrescarEstadoCaja(false);
     if (!canActUI()) return uiMsg(msgBase,'No tenés permisos para guardar.','#b00020');
@@ -143,7 +172,7 @@
     if (!(venta_total>0)) return uiMsg(msgBase,'Ingrese un monto válido.','#b00020');
 
     try{
-      const r=await fetch('/ventas_base',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fecha,caja,turno,venta_total})});
+      const r=await fetch('/ventas_base',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({local,fecha,caja,turno,venta_total})});
       const data=await r.json();
       if (data.success){
         uiMsg(msgBase,'✅ Venta guardada'); if (ventaTotalInput) ventaTotalInput.value='';
@@ -154,7 +183,7 @@
 
   // ===== Guardar: Factura =====
   btnGuardarFac?.addEventListener('click', async ()=>{
-    const { caja,fecha,turno }=getCtx();
+    const { local,caja,fecha,turno }=getCtx();
     if (!caja||!fecha) return uiMsg(msgFactura,'Seleccione caja y fecha.','#b00020');
 
     await refrescarEstadoCaja(false);
@@ -163,22 +192,28 @@
     const tipo=(tipoSelect?.value||'Z').toUpperCase();
     const punto_venta=(puntoVentaInput?.value||'').trim();
     const nro_factura=(numeroDocInput?.value||'').trim();
+    const comentario=(comentarioInput?.value||'').trim();
     const monto=parseMoneda(montoDocInput?.value||'0');
 
     if (!punto_venta || !nro_factura || !(monto>0)) {
-      return uiMsg(msgFactura,'Complete Punto de venta, Número de Factura y Monto.','#b00020');
+      const label = tipo === 'CC' ? 'Número de Comanda' : 'Número de Factura';
+      return uiMsg(msgFactura,`Complete Punto de venta, ${label} y Monto.`,'#b00020');
     }
 
     try{
+      const payload = { local, fecha, caja, turno, tipo, punto_venta, nro_factura, monto };
+      if (comentario) payload.comentario = comentario;
+
       const r=await fetch('/facturas',{
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ fecha, caja, turno, tipo, punto_venta, nro_factura, monto })
+        body: JSON.stringify(payload)
       });
       const data=await r.json();
       if (data.success){
         uiMsg(msgFactura,'✅ Comprobante guardado');
         if (puntoVentaInput) puntoVentaInput.value='';
         if (numeroDocInput)  numeroDocInput.value='';
+        if (comentarioInput) comentarioInput.value='';
         if (montoDocInput)   montoDocInput.value='';
         if (window.OrqTabs?.reload) OrqTabs.reload('ventasTab'); else await fallbackReload();
       }else uiMsg(msgFactura,'❌ '+(data.msg||'Error'),'#b00020');
@@ -232,6 +267,10 @@
           <input class="f-edit-num" type="text" style="display:none;width:100px" value="${row.nro_factura||''}">
         </td>
         <td>
+          <span class="f-text-com">${row.comentario||'-'}</span>
+          <input class="f-edit-com" type="text" style="display:none;width:120px" value="${row.comentario||''}">
+        </td>
+        <td>
           <span class="f-text-m">${formatMoneda(row.monto||0)}</span>
           <input class="f-edit-m" type="text" style="display:none;width:120px" value="${String(row.monto??0).replace('.',',')}">
         </td>
@@ -260,7 +299,7 @@
   tablaBaseBody?.addEventListener('click', async (ev)=>{
     const btn=ev.target.closest('button'); if(!btn) return;
     if(!canActUI()) return;
-    const {caja,fecha,turno}=getCtx();
+    const {local,caja,fecha,turno}=getCtx();
     const tr=btn.closest('tr'), txt=tr.querySelector('.base-text'), inp=tr.querySelector('.base-edit');
     const btnEd=tr.querySelector('.base-edit-btn'), btnOk=tr.querySelector('.base-acc-btn'), btnNo=tr.querySelector('.base-cancel-btn');
 
@@ -274,7 +313,7 @@
     if (btn.classList.contains('base-acc-btn')){
       const venta_total=parseMoneda(inp.value||'0');
       try{
-        const r=await fetch('/ventas_base',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({fecha,caja,turno,venta_total})});
+        const r=await fetch('/ventas_base',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({local,fecha,caja,turno,venta_total})});
         const data=await r.json();
         if (data.success){ if (window.OrqTabs?.reload) OrqTabs.reload('ventasTab'); else await fallbackReload(); }
         else alert(data.msg||'No se pudo actualizar');
@@ -284,7 +323,7 @@
     if (btn.classList.contains('base-del-btn')){
       if (!confirm('¿Eliminar la venta base de esta fecha/caja/turno?')) return;
       try{
-        const r=await fetch('/ventas_base',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({fecha,caja,turno})});
+        const r=await fetch('/ventas_base',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({local,fecha,caja,turno})});
         const data=await r.json();
         if (data.success){ if (window.OrqTabs?.reload) OrqTabs.reload('ventasTab'); else await fallbackReload(); }
         else alert(data.msg||'No se pudo borrar');
@@ -299,13 +338,13 @@
     if(!canActUI()) return;
 
     const tr=btn.closest('tr'); const id=btn.dataset.id;
-    const txtPV=tr.querySelector('.f-text-pv'), txtNum=tr.querySelector('.f-text-num'), txtM=tr.querySelector('.f-text-m');
-    const inpPV=tr.querySelector('.f-edit-pv'), inpNum=tr.querySelector('.f-edit-num'), inpM=tr.querySelector('.f-edit-m');
+    const txtPV=tr.querySelector('.f-text-pv'), txtNum=tr.querySelector('.f-text-num'), txtCom=tr.querySelector('.f-text-com'), txtM=tr.querySelector('.f-text-m');
+    const inpPV=tr.querySelector('.f-edit-pv'), inpNum=tr.querySelector('.f-edit-num'), inpCom=tr.querySelector('.f-edit-com'), inpM=tr.querySelector('.f-edit-m');
     const btnEd=tr.querySelector('.f-edit-btn'), btnOk=tr.querySelector('.f-acc-btn'), btnNo=tr.querySelector('.f-cancel-btn');
 
     if (btn.classList.contains('f-edit-btn')){
-      [txtPV,txtNum,txtM].forEach(x=>x.style.display='none');
-      [inpPV,inpNum,inpM].forEach(x=>x.style.display='inline-block');
+      [txtPV,txtNum,txtCom,txtM].forEach(x=>x.style.display='none');
+      [inpPV,inpNum,inpCom,inpM].forEach(x=>x.style.display='inline-block');
       btnEd.style.display='none'; btnOk.style.display='inline-block'; btnNo.style.display='inline-block'; return;
     }
     if (btn.classList.contains('f-cancel-btn')){
@@ -315,9 +354,10 @@
       const payload={
         punto_venta:(inpPV.value||'').trim(),
         nro_factura:(inpNum.value||'').trim(),
+        comentario:(inpCom.value||'').trim(),
         monto:parseMoneda(inpM.value||'0')
       };
-      if (!payload.punto_venta || !payload.nro_factura || !(payload.monto>0)) return alert('Punto de venta, Número de Factura y monto válidos.');
+      if (!payload.punto_venta || !payload.nro_factura || !(payload.monto>0)) return alert('Punto de venta, Número de Factura/Comanda y monto válidos.');
       try{
         const r=await fetch(`/facturas/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
         const data=await r.json();
@@ -361,24 +401,21 @@
       tipo:(r.tipo||'').toUpperCase(),
       punto_venta:r.punto_venta,
       nro_factura:r.nro_factura,
+      comentario:r.comentario||'',
       monto:Number(r.monto||0)
     })).filter(r => (!fecha || r.fecha===fecha) && (!caja || r.caja===caja));
-
-    // reforzamos rótulos fijos
-    if (numeroDocLabel) numeroDocLabel.textContent = 'Número de Factura';
-    if (thNumDoc) thNumDoc.textContent = 'N° Factura';
 
     render();
   };
 
   // ===== Fallback sin orquestador =====
   async function fallbackReload(){
-    const { caja,fecha,turno }=getCtx();
+    const { local,caja,fecha,turno }=getCtx();
     if (!caja||!fecha){ _bdBase=null; _bdFact=[]; return render(); }
     try{
       const [b,f]=await Promise.all([
-        fetch(`/ventas_cargadas?caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`).then(r=>r.json()),
-        fetch(`/facturas_cargadas?caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`).then(r=>r.json())
+        fetch(`/ventas_cargadas?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`).then(r=>r.json()),
+        fetch(`/facturas_cargadas?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`).then(r=>r.json())
       ]);
       const toArray=(x)=>Array.isArray(x)?x:(x?.datos||[]);
       const baseRows=toArray(b), facRows=toArray(f);
@@ -387,7 +424,7 @@
       _bdFact = facRows.map(r=>({
         id:r.id, fecha:normalizeDateLike(r.fecha,fecha), caja:r.caja,
         tipo:(r.tipo||'').toUpperCase(), punto_venta:r.punto_venta,
-        nro_factura:r.nro_factura, monto:Number(r.monto||0)
+        nro_factura:r.nro_factura, comentario:r.comentario||'', monto:Number(r.monto||0)
       }));
     }catch{ _bdBase=null; _bdFact=[]; }
     render();
