@@ -2411,8 +2411,8 @@ def cierre_resumen():
         cur_check = conn.cursor()
         cur_check.execute("""
             SELECT COUNT(*) FROM cierres_locales
-            WHERE local=%s AND DATE(fecha)=%s AND turno=%s AND estado=0
-        """, (local, _normalize_fecha(fecha), turno))
+            WHERE local=%s AND DATE(fecha)=%s AND estado=0
+        """, (local, _normalize_fecha(fecha)))
         row = cur_check.fetchone()
         cur_check.close()
         if not row or row[0] == 0:

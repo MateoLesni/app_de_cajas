@@ -438,17 +438,56 @@
   async function loadLocalesIfNeeded(){
     const sel = document.getElementById('rl-local-select');
     if (!sel) return;
-    sel.innerHTML = '<option>Cargando…</option>';
-    const res = await fetch('/api/locales_options', {credentials:'same-origin'});
-    const data = await res.json();
-    const locales = (data && data.locales) || [window.SESSION_LOCAL];
-    sel.innerHTML='';
-    locales.forEach(l=>{
-      const opt = el('option', {value:l}, l);
-      if (l === window.SESSION_LOCAL) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    document.getElementById('rl-local-display').textContent = sel.value || window.SESSION_LOCAL;
+
+    // Intentar recuperar local guardado en localStorage
+    const localGuardado = localStorage.getItem('rl_local_selected');
+
+    sel.innerHTML = '<option value="">Seleccione un local</option>';
+
+    try {
+      const res = await fetch('/api/locales_options', {credentials:'same-origin'});
+      const data = await res.json();
+      const locales = (data && data.locales) || [];
+
+      console.log('🔍 Locales recibidos del servidor:', locales);
+      console.log('🔍 Local guardado en localStorage:', localGuardado);
+      console.log('🔍 SESSION_LOCAL:', window.SESSION_LOCAL);
+
+      // Si no hay locales y tenemos SESSION_LOCAL, usarlo como fallback
+      if (locales.length === 0 && window.SESSION_LOCAL) {
+        locales.push(window.SESSION_LOCAL);
+      }
+
+      locales.forEach(l=>{
+        if (!l) return; // Saltar valores null/undefined/vacíos
+        const opt = el('option', {value:l}, l);
+        // Prioridad: 1) localStorage, 2) SESSION_LOCAL
+        if (localGuardado && l === localGuardado) {
+          opt.selected = true;
+        } else if (!localGuardado && l === window.SESSION_LOCAL) {
+          opt.selected = true;
+        }
+        sel.appendChild(opt);
+      });
+
+      // Si hay un valor seleccionado, actualizar display
+      if (sel.value && sel.value !== '') {
+        document.getElementById('rl-local-display').textContent = sel.value;
+      } else {
+        document.getElementById('rl-local-display').textContent = 'Seleccione un local';
+      }
+
+      console.log('🔍 Local seleccionado final:', sel.value);
+    } catch (err) {
+      console.error('❌ Error cargando locales:', err);
+      // Fallback: si hay SESSION_LOCAL, agregarlo
+      if (window.SESSION_LOCAL) {
+        const opt = el('option', {value: window.SESSION_LOCAL}, window.SESSION_LOCAL);
+        opt.selected = true;
+        sel.appendChild(opt);
+        document.getElementById('rl-local-display').textContent = window.SESSION_LOCAL;
+      }
+    }
   }
 
   /* ===== Render de Documentos con DESCARGAS ===== */
@@ -631,14 +670,33 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
-    // Fecha por defecto hoy si está vacía
+    // Fecha: intentar cargar desde localStorage, sino usar hoy
     const inFecha = document.getElementById('rl-fecha');
-    if (!inFecha.value){
+    const fechaGuardada = localStorage.getItem('rl_fecha_selected');
+    if (fechaGuardada) {
+      inFecha.value = fechaGuardada;
+    } else if (!inFecha.value) {
       const d = new Date(); const p=n=>String(n).padStart(2,'0');
       inFecha.value = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
     }
+
+    // Cargar locales primero
     await loadLocalesIfNeeded();
-    await loadMedia();
+
+    // Solo cargar datos si hay un local válido seleccionado
+    const sel = document.getElementById('rl-local-select');
+    const localSeleccionado = sel?.value;
+    if (localSeleccionado && localSeleccionado !== '') {
+      console.log('🔍 Local válido detectado, cargando datos:', localSeleccionado);
+      await loadMedia();
+
+      // Si es nivel 3 y hay local válido, también actualizar botones de auditoría
+      if (window.ROLE_LEVEL >= 3 && window.actualizarBotonesAuditoria) {
+        await window.actualizarBotonesAuditoria();
+      }
+    } else {
+      console.log('⚠️ No hay local seleccionado, esperando selección del usuario');
+    }
 
     document.getElementById('rl-actualizar')?.addEventListener('click', async () => {
       await loadMedia();
@@ -647,24 +705,40 @@
         await window.actualizarBotonesAuditoria();
       }
     });
-    document.getElementById('rl-fecha')?.addEventListener('change', refreshAll);
-    const sel = document.getElementById('rl-local-select');
-    if (sel) sel.addEventListener('change', refreshAll);
+    document.getElementById('rl-fecha')?.addEventListener('change', (e) => {
+      // Guardar fecha en localStorage para persistencia
+      localStorage.setItem('rl_fecha_selected', e.target.value);
+      refreshAll();
+    });
+    // Usar la misma variable sel declarada arriba
+    if (sel) sel.addEventListener('change', (e) => {
+      // Guardar local en localStorage para persistencia
+      localStorage.setItem('rl_local_selected', e.target.value);
+      refreshAll();
+    });
 
-    // Manejar botones de Auditado y Carga Masiva (solo nivel 3)
+    // Definir función de auditoría globalmente (para que esté disponible antes del if)
     if (window.ROLE_LEVEL >= 3) {
-      const btnAuditado = document.getElementById('rl-marcar-auditado');
-      const btnCargaMasiva = document.getElementById('rl-carga-masiva');
-
-      // Hacer la función global para poder llamarla desde otros event listeners
       window.actualizarBotonesAuditoria = async function() {
         const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
         const fecha = document.getElementById('rl-fecha')?.value;
 
         console.log('🔍 Actualizando botones auditoría:', { local, fecha });
 
+        const btnAuditado = document.getElementById('rl-marcar-auditado');
+        const btnCargaMasiva = document.getElementById('rl-carga-masiva');
+
         if (!local || !fecha) {
           console.log('⚠️ Falta local o fecha');
+          // Deshabilitar botón de marcar como auditado si faltan datos
+          if (btnAuditado) {
+            btnAuditado.disabled = true;
+            btnAuditado.style.display = 'inline-block';
+            btnAuditado.title = 'Seleccione local y fecha';
+          }
+          if (btnCargaMasiva) {
+            btnCargaMasiva.style.display = 'none';
+          }
           return;
         }
 
@@ -692,33 +766,74 @@
             existeBtnCargaMasiva: !!btnCargaMasiva
           });
 
-          if (localCerrado && !auditado && btnAuditado) {
-            console.log('✅ Mostrando botón AUDITADO');
+          // Botón "Marcar como Auditado": SIEMPRE VISIBLE
+          if (btnAuditado) {
             btnAuditado.style.display = 'inline-block';
-          } else if (btnAuditado) {
-            console.log('❌ Ocultando botón AUDITADO');
-            btnAuditado.style.display = 'none';
+
+            if (auditado) {
+              // Si ya está auditado, ocultar el botón (se mostrará Carga Masiva en su lugar)
+              console.log('❌ Ocultando botón AUDITADO (ya está auditado)');
+              btnAuditado.style.display = 'none';
+            } else if (localCerrado) {
+              // Si está cerrado pero no auditado, habilitar
+              console.log('✅ Habilitando botón AUDITADO (local cerrado)');
+              btnAuditado.disabled = false;
+              btnAuditado.title = 'Marcar local como auditado';
+            } else {
+              // Si no está cerrado, mostrar pero deshabilitar
+              console.log('⚠️ Deshabilitando botón AUDITADO (local no cerrado)');
+              btnAuditado.disabled = true;
+              btnAuditado.title = 'El local debe estar cerrado para marcarlo como auditado';
+            }
           }
 
-          if (auditado && btnCargaMasiva) {
-            console.log('✅ Mostrando botón CARGA MASIVA');
-            btnCargaMasiva.style.display = 'inline-block';
-          } else if (btnCargaMasiva) {
-            console.log('❌ Ocultando botón CARGA MASIVA (auditado:', auditado, ')');
-            btnCargaMasiva.style.display = 'none';
+          // Botón "Carga Masiva": Solo si está auditado
+          if (btnCargaMasiva) {
+            if (auditado) {
+              console.log('✅ Mostrando botón CARGA MASIVA');
+              btnCargaMasiva.style.display = 'inline-block';
+            } else {
+              console.log('❌ Ocultando botón CARGA MASIVA (no auditado)');
+              btnCargaMasiva.style.display = 'none';
+            }
           }
         } catch (e) {
           console.error('❌ Error verificando estado de auditoría:', e);
+          // En caso de error, mostrar botón de auditado pero deshabilitado
+          if (btnAuditado) {
+            btnAuditado.style.display = 'inline-block';
+            btnAuditado.disabled = true;
+            btnAuditado.title = 'Error al verificar estado del local';
+          }
+          if (btnCargaMasiva) {
+            btnCargaMasiva.style.display = 'none';
+          }
         }
       };
 
-      // Ejecutar al cargar
-      await window.actualizarBotonesAuditoria();
+      // Botones de auditoría
+      const btnAuditado = document.getElementById('rl-marcar-auditado');
+      const btnCargaMasiva = document.getElementById('rl-carga-masiva');
 
       // Botón Marcar Auditado
       btnAuditado?.addEventListener('click', async () => {
         const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
         const fecha = document.getElementById('rl-fecha')?.value;
+
+        // Verificar primero si el local está cerrado
+        try {
+          const resEstado = await fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`);
+          const dataEstado = await resEstado.json();
+          const localCerrado = dataEstado.ok && dataEstado.estado === 0;
+
+          if (!localCerrado) {
+            alert('❌ Error: El local debe estar CERRADO para poder marcarlo como auditado.');
+            return;
+          }
+        } catch (e) {
+          alert('❌ Error verificando estado del local: ' + e.message);
+          return;
+        }
 
         if (!confirm(`¿Confirmar que el local "${local}" para la fecha ${fecha} está AUDITADO?\n\nDespués de esto NO se podrán realizar más cambios.`)) {
           return;
@@ -735,7 +850,7 @@
 
           if (data.success) {
             alert('✅ Local marcado como AUDITADO');
-            await actualizarBotonesAuditoria();
+            await window.actualizarBotonesAuditoria();
             await loadMedia(); // Refrescar datos
           } else {
             alert('❌ Error: ' + (data.msg || 'No se pudo marcar como auditado'));
@@ -771,12 +886,12 @@
         // Redirigir a /auditoria con parámetros
         const url = `/auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`;
         console.log('🔗 Redirigiendo a:', url);
-
-        // Confirmar antes de redirigir (temporal para debugging)
-        if (confirm(`¿Ir a Carga Masiva?\nLocal: ${local}\nFecha: ${fecha}\nURL: ${url}`)) {
-          window.location.href = url;
-        }
+        window.location.href = url;
       });
+
+      // Llamada inicial para actualizar el estado de los botones
+      console.log('🔄 Llamando a actualizarBotonesAuditoria() inicialmente');
+      window.actualizarBotonesAuditoria();
     }
   });
   </script>
