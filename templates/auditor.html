@@ -22,16 +22,17 @@
 
   <div class="toolbar">
     <div>
-      <label for="sel-local">Local</label><br />
-      <select id="sel-local"></select>
+      <label>Local</label><br />
+      <strong id="display-local">{{ local }}</strong>
     </div>
     <div>
-      <label for="inp-fecha">Fecha</label><br />
-      <input id="inp-fecha" type="date" />
+      <label>Fecha</label><br />
+      <strong id="display-fecha">{{ fecha }}</strong>
     </div>
     <div style="align-self: end;">
       <button id="btn-recargar">Recargar</button>
       <button id="btn-copiar">Copiar (TSV 8 columnas)</button>
+      <a href="/resumen-local" style="padding: 8px 10px; text-decoration: none; background: #f5f5f5; border-radius: 4px; display: inline-block;">← Volver</a>
     </div>
     <div class="muted" id="status"></div>
   </div>

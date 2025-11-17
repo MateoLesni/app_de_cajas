@@ -3016,6 +3016,36 @@ def resumen_local():
     return render_template("resumen_local.html")
 
 
+@app.route("/auditoria")
+@login_required
+@role_min_required(3)  # Solo auditor
+def auditoria():
+    """
+    Página de carga masiva para auditoría.
+    Recibe local y fecha como query params desde resumen_local.
+    Los filtros están deshabilitados - solo se usan los parámetros de URL.
+    """
+    import sys
+    local = request.args.get('local') or session.get('local')
+    fecha = request.args.get('fecha')
+
+    print(f"🔍 /auditoria - Parámetros recibidos: local={local}, fecha={fecha}", file=sys.stderr, flush=True)
+    print(f"🔍 /auditoria - Session: {session.get('local')}", file=sys.stderr, flush=True)
+    print(f"🔍 /auditoria - Query args: {dict(request.args)}", file=sys.stderr, flush=True)
+
+    # Si no hay parámetros, usar valores de sesión/defaults
+    if not local:
+        local = session.get('local', '')
+    if not fecha:
+        from datetime import date
+        fecha = date.today().isoformat()
+
+    print(f"🔍 /auditoria - Valores finales: local='{local}', fecha='{fecha}'", file=sys.stderr, flush=True)
+    print(f"🔍 /auditoria - Renderizando template", file=sys.stderr, flush=True)
+
+    return render_template("auditor.html", local=local, fecha=fecha)
+
+
 # ========= Helpers =========
 from flask import request, jsonify, session, make_response
 
@@ -4447,7 +4477,7 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
 @app.get("/estado_local")
 @login_required
 def estado_local():
-    local = session.get("local")
+    local = request.args.get("local") or session.get("local")
     fecha = request.args.get("fecha") or session.get('fecha')
     if not (local and fecha):
         return jsonify(ok=False, msg="Faltan parámetros"), 400
