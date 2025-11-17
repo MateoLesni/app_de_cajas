@@ -78,8 +78,31 @@ def _n0(v) -> str:
 @auditoria_bp.route("/auditoria")
 @login_required
 def auditor_view():
-    """Página del auditor (HTML)."""
-    return render_template("auditor.html")
+    """
+    Página del auditor (HTML).
+    Recibe local y fecha como query params desde resumen_local.
+    Los filtros están deshabilitados - solo se usan los parámetros de URL.
+    """
+    import sys
+    from flask import session
+
+    local = request.args.get('local') or session.get('local')
+    fecha = request.args.get('fecha')
+
+    print(f"🔍 /auditoria - Parámetros recibidos: local={local}, fecha={fecha}", file=sys.stderr, flush=True)
+    print(f"🔍 /auditoria - Session: {session.get('local')}", file=sys.stderr, flush=True)
+    print(f"🔍 /auditoria - Query args: {dict(request.args)}", file=sys.stderr, flush=True)
+
+    # Si no hay parámetros, usar valores de sesión/defaults
+    if not local:
+        local = session.get('local', '')
+    if not fecha:
+        from datetime import date
+        fecha = date.today().isoformat()
+
+    print(f"🔍 /auditoria - Valores finales: local='{local}', fecha='{fecha}'", file=sys.stderr, flush=True)
+
+    return render_template("auditor.html", local=local, fecha=fecha)
 
 @auditoria_bp.route("/api/auditoria/resumen")
 @login_required

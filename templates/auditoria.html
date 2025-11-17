@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carga Masiva - Auditoría</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    .audit-container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .audit-header {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .audit-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .info-label {
+      font-weight: bold;
+      color: #666;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+    }
+    .info-value {
+      font-size: 1.1em;
+      color: #333;
+    }
+    .tsv-section {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .tsv-section h3 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #4caf50;
+      padding-bottom: 10px;
+    }
+    .tsv-textarea {
+      width: 100%;
+      min-height: 150px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+    }
+    .tsv-instructions {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .tsv-instructions h4 {
+      margin-top: 0;
+      color: #856404;
+    }
+    .tsv-instructions code {
+      background: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid #ddd;
+    }
+    .btn-procesar {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    .btn-procesar:hover {
+      background: #45a049;
+    }
+    .btn-limpiar {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .btn-limpiar:hover {
+      background: #da190b;
+    }
+    .btn-volver {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-volver:hover {
+      background: #0b7dda;
+    }
+    .resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      display: none;
+    }
+    .resultado.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      display: block;
+    }
+    .resultado.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="audit-container">
+    <div class="audit-header">
+      <h1>🔒 Carga Masiva - Auditoría</h1>
+      <div class="audit-info">
+        <div class="info-item">
+          <span class="info-label">Local:</span>
+          <span class="info-value" id="audit-local">{{ local }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Fecha:</span>
+          <span class="info-value" id="audit-fecha">{{ fecha }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Usuario:</span>
+          <span class="info-value">{{ session.username }}</span>
+        </div>
+      </div>
+      <a href="/resumen-local" class="btn-volver">← Volver a Resumen Local</a>
+    </div>
+
+    <!-- Sección Gastos -->
+    <div class="tsv-section">
+      <h3>📋 Gastos - Formato TSV</h3>
+      <div class="tsv-instructions">
+        <h4>Instrucciones:</h4>
+        <p>Pegá los datos copiados desde el software contable. El formato debe ser TSV (Tab Separated Values):</p>
+        <code>CODIGO_CUENTA&lt;TAB&gt;MONTO&lt;TAB&gt;OBSERVACIONES</code>
+        <p><strong>Ejemplo:</strong></p>
+        <code>SEGURIDAD&lt;TAB&gt;15000.50&lt;TAB&gt;Servicio de vigilancia</code><br>
+        <code>VPERSONAL&lt;TAB&gt;8500.00&lt;TAB&gt;Viáticos del personal</code>
+      </div>
+      <textarea id="tsv-gastos" class="tsv-textarea" placeholder="Pegá aquí los datos TSV de gastos..."></textarea>
+      <div style="margin-top: 15px;">
+        <button id="btn-procesar-gastos" class="btn-procesar">✅ Procesar Gastos</button>
+        <button id="btn-limpiar-gastos" class="btn-limpiar">🗑️ Limpiar</button>
+      </div>
+      <div id="resultado-gastos" class="resultado"></div>
+    </div>
+
+    <!-- Puedes agregar más secciones TSV aquí para otros tipos de datos -->
+  </div>
+
+  <script>
+    const local = "{{ local }}";
+    const fecha = "{{ fecha }}";
+
+    // Procesar Gastos
+    document.getElementById('btn-procesar-gastos').addEventListener('click', async () => {
+      const textarea = document.getElementById('tsv-gastos');
+      const resultadoDiv = document.getElementById('resultado-gastos');
+      const text = textarea.value.trim();
+
+      if (!text) {
+        resultadoDiv.className = 'resultado error';
+        resultadoDiv.textContent = 'Error: No hay datos para procesar';
+        return;
+      }
+
+      // Parsear TSV
+      const lines = text.split('\n').filter(l => l.trim());
+      const gastos = [];
+
+      for (let line of lines) {
+        const parts = line.split('\t');
+        if (parts.length < 2) {
+          resultadoDiv.className = 'resultado error';
+          resultadoDiv.textContent = `Error: Línea inválida: ${line}`;
+          return;
+        }
+
+        const codigo = parts[0].trim();
+        const monto = parseFloat(parts[1].replace(/[,.]/g, match => match === ',' ? '.' : ''));
+        const observaciones = parts.length > 2 ? parts[2].trim() : '';
+
+        if (isNaN(monto)) {
+          resultadoDiv.className = 'resultado error';
+          resultadoDiv.textContent = `Error: Monto inválido en línea: ${line}`;
+          return;
+        }
+
+        gastos.push({
+          tipo: codigo,
+          monto: monto,
+          observaciones: observaciones
+        });
+      }
+
+      // Enviar al backend
+      try {
+        resultadoDiv.className = 'resultado';
+        resultadoDiv.textContent = 'Procesando...';
+        resultadoDiv.style.display = 'block';
+
+        const response = await fetch('/guardar_gastos_lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            local: local,
+            fecha: fecha,
+            caja: 'Caja 1', // Puedes ajustar esto según necesites
+            turno: 'Turno día', // Puedes ajustar esto según necesites
+            transacciones: gastos
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultadoDiv.className = 'resultado success';
+          resultadoDiv.textContent = `✅ ${gastos.length} gastos procesados correctamente`;
+          textarea.value = '';
+        } else {
+          resultadoDiv.className = 'resultado error';
+          resultadoDiv.textContent = `❌ Error: ${data.msg || 'No se pudieron procesar los gastos'}`;
+        }
+      } catch (e) {
+        resultadoDiv.className = 'resultado error';
+        resultadoDiv.textContent = `❌ Error de red: ${e.message}`;
+      }
+    });
+
+    // Limpiar
+    document.getElementById('btn-limpiar-gastos').addEventListener('click', () => {
+      document.getElementById('tsv-gastos').value = '';
+      document.getElementById('resultado-gastos').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

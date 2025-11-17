@@ -110,6 +110,15 @@
 
           <div class="form-group"><button id="rl-actualizar" class="btn">Actualizar</button></div>
           <div class="form-group"><button id="rl-imprimir" class="btn btn-ghost">Imprimir</button></div>
+
+          {% if session.get('role_level',1) | int >= 3 %}
+          <div class="form-group">
+            <button id="rl-marcar-auditado" class="btn" style="display:none; background-color:#ff9800;">🔒 Marcar Auditado</button>
+          </div>
+          <div class="form-group">
+            <button id="rl-carga-masiva" class="btn" style="display:none; background-color:#4caf50;">📋 Carga Masiva</button>
+          </div>
+          {% endif %}
         </div>
 
         <!-- 2 columnas -->
@@ -343,7 +352,7 @@
               </footer>
             </section>
 
-            {% if session.get('role_level', 1) >= 2 %}
+            {% if session.get('role_level', 1) == 2 %}
             <div class="sl-danger-wrap" style="margin-top:14px; display:flex; justify-content:flex-end;">
               <button id="rl-cerrar-local" class="btn btn-ghost" title="Cerrar el Local del día">🔒 Cerrar Local</button>
             </div>
@@ -615,6 +624,10 @@
     document.getElementById('rl-local-display').textContent = selectedLocal;
     document.getElementById('rl-actualizar')?.dispatchEvent(new Event('click'));
     await loadMedia();
+    // Actualizar botones de auditoría si es nivel 3
+    if (window.ROLE_LEVEL >= 3 && window.actualizarBotonesAuditoria) {
+      await window.actualizarBotonesAuditoria();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
@@ -627,10 +640,144 @@
     await loadLocalesIfNeeded();
     await loadMedia();
 
-    document.getElementById('rl-actualizar')?.addEventListener('click', loadMedia);
+    document.getElementById('rl-actualizar')?.addEventListener('click', async () => {
+      await loadMedia();
+      // Actualizar botones de auditoría después de cargar datos
+      if (window.ROLE_LEVEL >= 3 && window.actualizarBotonesAuditoria) {
+        await window.actualizarBotonesAuditoria();
+      }
+    });
     document.getElementById('rl-fecha')?.addEventListener('change', refreshAll);
     const sel = document.getElementById('rl-local-select');
     if (sel) sel.addEventListener('change', refreshAll);
+
+    // Manejar botones de Auditado y Carga Masiva (solo nivel 3)
+    if (window.ROLE_LEVEL >= 3) {
+      const btnAuditado = document.getElementById('rl-marcar-auditado');
+      const btnCargaMasiva = document.getElementById('rl-carga-masiva');
+
+      // Hacer la función global para poder llamarla desde otros event listeners
+      window.actualizarBotonesAuditoria = async function() {
+        const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+        const fecha = document.getElementById('rl-fecha')?.value;
+
+        console.log('🔍 Actualizando botones auditoría:', { local, fecha });
+
+        if (!local || !fecha) {
+          console.log('⚠️ Falta local o fecha');
+          return;
+        }
+
+        try {
+          // Verificar si el local está cerrado
+          const resEstado = await fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`);
+          const dataEstado = await resEstado.json();
+          const localCerrado = dataEstado.ok && dataEstado.estado === 0;
+          console.log('📊 Estado local:', dataEstado, 'localCerrado:', localCerrado);
+
+          // Verificar si está auditado
+          const urlAudit = `/api/estado_auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`;
+          console.log('🔗 URL auditoría:', urlAudit);
+
+          const resAudit = await fetch(urlAudit);
+          const dataAudit = await resAudit.json();
+          const auditado = dataAudit.success && dataAudit.auditado;
+          console.log('✅ Estado auditoría:', dataAudit, 'auditado:', auditado);
+
+          // Mostrar botones según estado
+          console.log('🎯 Evaluando botones:', {
+            localCerrado,
+            auditado,
+            existeBtnAuditado: !!btnAuditado,
+            existeBtnCargaMasiva: !!btnCargaMasiva
+          });
+
+          if (localCerrado && !auditado && btnAuditado) {
+            console.log('✅ Mostrando botón AUDITADO');
+            btnAuditado.style.display = 'inline-block';
+          } else if (btnAuditado) {
+            console.log('❌ Ocultando botón AUDITADO');
+            btnAuditado.style.display = 'none';
+          }
+
+          if (auditado && btnCargaMasiva) {
+            console.log('✅ Mostrando botón CARGA MASIVA');
+            btnCargaMasiva.style.display = 'inline-block';
+          } else if (btnCargaMasiva) {
+            console.log('❌ Ocultando botón CARGA MASIVA (auditado:', auditado, ')');
+            btnCargaMasiva.style.display = 'none';
+          }
+        } catch (e) {
+          console.error('❌ Error verificando estado de auditoría:', e);
+        }
+      };
+
+      // Ejecutar al cargar
+      await window.actualizarBotonesAuditoria();
+
+      // Botón Marcar Auditado
+      btnAuditado?.addEventListener('click', async () => {
+        const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+        const fecha = document.getElementById('rl-fecha')?.value;
+
+        if (!confirm(`¿Confirmar que el local "${local}" para la fecha ${fecha} está AUDITADO?\n\nDespués de esto NO se podrán realizar más cambios.`)) {
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/marcar_auditado', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ local, fecha })
+          });
+          const data = await res.json();
+          console.log('🔒 Respuesta marcar_auditado:', data);
+
+          if (data.success) {
+            alert('✅ Local marcado como AUDITADO');
+            await actualizarBotonesAuditoria();
+            await loadMedia(); // Refrescar datos
+          } else {
+            alert('❌ Error: ' + (data.msg || 'No se pudo marcar como auditado'));
+          }
+        } catch (e) {
+          alert('❌ Error de red: ' + e.message);
+        }
+      });
+
+      // Botón Carga Masiva
+      btnCargaMasiva?.addEventListener('click', () => {
+        const localSelect = document.getElementById('rl-local-select');
+        const fechaInput = document.getElementById('rl-fecha');
+
+        const local = localSelect?.value || window.SESSION_LOCAL;
+        const fecha = fechaInput?.value;
+
+        console.log('🔍 Carga Masiva - Elementos:', {
+          localSelect,
+          fechaInput,
+          'localSelect.value': localSelect?.value,
+          'fechaInput.value': fechaInput?.value,
+          'window.SESSION_LOCAL': window.SESSION_LOCAL,
+          'local final': local,
+          'fecha final': fecha
+        });
+
+        if (!local || !fecha) {
+          alert(`⚠️ Error: Faltan parámetros\nLocal: "${local}"\nFecha: "${fecha}"`);
+          return;
+        }
+
+        // Redirigir a /auditoria con parámetros
+        const url = `/auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`;
+        console.log('🔗 Redirigiendo a:', url);
+
+        // Confirmar antes de redirigir (temporal para debugging)
+        if (confirm(`¿Ir a Carga Masiva?\nLocal: ${local}\nFecha: ${fecha}\nURL: ${url}`)) {
+          window.location.href = url;
+        }
+      });
+    }
   });
   </script>
 

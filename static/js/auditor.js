@@ -1,25 +1,31 @@
 (async function () {
-  const selLocal = document.getElementById("sel-local");
-  const inpFecha = document.getElementById("inp-fecha");
+  // Los valores de local y fecha vienen del template (son read-only)
+  const displayLocal = document.getElementById("display-local");
+  const displayFecha = document.getElementById("display-fecha");
   const btnRecargar = document.getElementById("btn-recargar");
   const btnCopiar = document.getElementById("btn-copiar");
   const tbody = document.querySelector("#tabla tbody");
   const statusEl = document.getElementById("status");
 
-  // ---- helpers ----
-  const storage = {
-    getLocal() { return localStorage.getItem("auditor_local") || ""; },
-    setLocal(v) { localStorage.setItem("auditor_local", v || ""); },
-    getFecha() { return localStorage.getItem("auditor_fecha") || ""; },
-    setFecha(v) { localStorage.setItem("auditor_fecha", v || ""); },
-  };
-
-  function todayISO() {
-    const d = new Date();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${d.getFullYear()}-${m}-${day}`;
+  // Obtener valores desde el HTML renderizado
+  function getLocal() {
+    const value = (displayLocal?.textContent || "").trim();
+    console.log('🔍 getLocal() retorna:', value);
+    return value;
   }
+
+  function getFecha() {
+    const value = (displayFecha?.textContent || "").trim();
+    console.log('🔍 getFecha() retorna:', value);
+    return value;
+  }
+
+  // Debug inicial
+  console.log('🔍 auditor.js cargado');
+  console.log('🔍 displayLocal element:', displayLocal);
+  console.log('🔍 displayFecha element:', displayFecha);
+  console.log('🔍 displayLocal.textContent:', displayLocal?.textContent);
+  console.log('🔍 displayFecha.textContent:', displayFecha?.textContent);
 
   // Sin separadores de miles en "Pagado"
   function toPlainNumber(n) {
@@ -77,31 +83,11 @@
     return out;
   }
 
-  async function fetchLocales() {
-    // Cambiá este endpoint si ya tenés uno propio que liste los locales
-    // Esperado: [{nombre:"Fabric Sushi"}, {nombre:"CochinChina"}, ...]
-    try {
-      const res = await fetch("/api/locales");
-      if (!res.ok) throw new Error("No se pudo obtener locales");
-      const data = await res.json();
-      const locals = Array.isArray(data) ? data : data.locales || [];
-      selLocal.innerHTML = locals.map(x =>
-        `<option value="${x.nombre}">${x.nombre}</option>`
-      ).join("");
-    } catch (e) {
-      // fallback manual si no hay endpoint
-      const fallback = ["Fabric Sushi", "CochinChina", "Alma Café"];
-      selLocal.innerHTML = fallback.map(x =>
-        `<option value="${x}">${x}</option>`
-      ).join("");
-    }
-  }
-
   async function recargar() {
-    const local = selLocal.value;
-    const fecha = inpFecha.value;
+    const local = getLocal();
+    const fecha = getFecha();
     if (!local || !fecha) {
-      statusEl.textContent = "Elegí local y fecha.";
+      statusEl.textContent = "Faltan parámetros de local o fecha en la URL.";
       return;
     }
     statusEl.textContent = "Cargando...";
@@ -111,9 +97,6 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Error al cargar datos");
       fillTable(data.rows || []);
-      // Guarda la selección para persistir entre páginas
-      storage.setLocal(local);
-      storage.setFecha(fecha);
       statusEl.textContent = `Filtrado: ${local} – ${fecha} (${(data.rows||[]).length} filas)`;
     } catch (err) {
       console.error(err);
@@ -155,18 +138,10 @@
   }
 
   // ---- init ----
-  await fetchLocales();
-
-  // restaurar última selección persistida
-  const lastLocal = storage.getLocal();
-  if (lastLocal) selLocal.value = lastLocal;
-  const lastFecha = storage.getFecha() || todayISO();
-  inpFecha.value = lastFecha;
-
   // eventos
   btnRecargar.addEventListener("click", recargar);
   btnCopiar.addEventListener("click", copiar);
 
-  // recarga inicial
+  // recarga inicial automática con los valores de la URL
   recargar();
 })();
