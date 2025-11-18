@@ -23,8 +23,11 @@ document.addEventListener("DOMContentLoaded", function () {
   window.cajaCerrada = window.cajaCerrada ?? false;
   const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
   let localCerrado = false;
+  let localAuditado = false;
 
   function canActUI(){
+    // Si el local está auditado, NADIE puede editar
+    if (localAuditado) return false;
     if (ROLE >= 3) return true;          // L3: siempre
     if (ROLE >= 2) return !localCerrado; // L2: mientras el local esté abierto
     return !window.cajaCerrada;          // L1: sólo con caja abierta
@@ -114,22 +117,27 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!caja || !fecha || !turno) {
       window.cajaCerrada = false;
       localCerrado = false;
+      localAuditado = false;
       toggleUI();
       if (reRender) renderizarTabla();
       return;
     }
     try {
-      const [rCaja, rLocal] = await Promise.all([
+      const [rCaja, rLocal, rAudit] = await Promise.all([
         fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
           .then(r => r.ok ? r.json() : { estado: 1 }),
         fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
-          .then(r => r.ok ? r.json() : { estado: 1 })
+          .then(r => r.ok ? r.json() : { estado: 1 }),
+        fetch(`/api/estado_auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+          .then(r => r.ok ? r.json() : { success: false, auditado: false })
       ]);
       window.cajaCerrada = ((rCaja.estado ?? 1) === 0);
       localCerrado = ((rLocal.estado ?? 1) === 0);
+      localAuditado = (rAudit.success && rAudit.auditado) || false;
     } catch {
       window.cajaCerrada = false;
       localCerrado = false;
+      localAuditado = false;
     }
     toggleUI();
     if (reRender) renderizarTabla();

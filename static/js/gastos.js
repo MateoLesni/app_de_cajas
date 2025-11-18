@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
   window.cajaCerrada = window.cajaCerrada ?? false;
   let localCerrado = false;
+  let localAuditado = false;
 
   let gastosBD = [];       // vienen del backend a través de OrqTabs
   let gastosLocal = [];    // buffer local antes de guardar
@@ -125,6 +126,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function canActUI() {
+    // Si el local está auditado, NADIE puede editar
+    if (localAuditado) return false;
     if (ROLE >= 3) return true;          // auditor
     if (ROLE >= 2) return !localCerrado; // encargado
     return !window.cajaCerrada;          // cajero
@@ -135,22 +138,28 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!local || !caja || !fecha || !turno) {
       window.cajaCerrada = false;
       localCerrado = false;
+      localAuditado = false;
       toggleUIByEstado();
       if (reRender) renderTabla();
       return;
     }
     try {
-      const [rCaja, rLocal] = await Promise.all([
+      const [rCaja, rLocal, rAudit] = await Promise.all([
         fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
           .then(r => r.ok ? r.json() : { estado: 1 }).catch(() => ({ estado: 1 })),
-        fetch(`/estado_local?fecha=${encodeURIComponent(fecha)}`)
-          .then(r => r.ok ? r.json() : { ok: true, estado: 1 }).catch(() => ({ ok: true, estado: 1 }))
+        fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+          .then(r => r.ok ? r.json() : { ok: true, estado: 1 }).catch(() => ({ ok: true, estado: 1 })),
+        fetch(`/api/estado_auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+          .then(r => r.ok ? r.json() : { success: false, auditado: false }).catch(() => ({ success: false, auditado: false }))
       ]);
       window.cajaCerrada = ((rCaja.estado ?? 1) === 0);
       localCerrado = ((rLocal.estado ?? 1) === 0);
+      localAuditado = (rAudit.success && rAudit.auditado) || false;
+      console.log('🔍 GASTOS estado actualizado - cajaCerrada:', window.cajaCerrada, 'localCerrado:', localCerrado, 'localAuditado:', localAuditado);
     } catch {
       window.cajaCerrada = false;
       localCerrado = false;
+      localAuditado = false;
     }
     toggleUIByEstado();
     if (reRender) renderTabla();
@@ -181,6 +190,7 @@ document.addEventListener("DOMContentLoaded", function () {
     tablaPreview.innerHTML = "";
 
     const bloqueada = !canActUI();
+    console.log('🔍 GASTOS renderTabla - localAuditado:', localAuditado, 'bloqueada:', bloqueada, 'canActUI():', canActUI());
     const todas = [...gastosBD, ...gastosLocal];
 
     todas.forEach((g) => {

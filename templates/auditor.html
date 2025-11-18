@@ -15,6 +15,19 @@
     th { background: #f5f5f5; text-align: left; }
     .right { text-align: right; }
     .muted { color: #777; }
+    /* Ocultar columnas vacías en tabla de recibos (solo visualmente) */
+    #tabla-formas th:nth-child(3),
+    #tabla-formas th:nth-child(4),
+    #tabla-formas th:nth-child(5),
+    #tabla-formas th:nth-child(6),
+    #tabla-formas th:nth-child(7),
+    #tabla-formas td:nth-child(3),
+    #tabla-formas td:nth-child(4),
+    #tabla-formas td:nth-child(5),
+    #tabla-formas td:nth-child(6),
+    #tabla-formas td:nth-child(7) {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -31,13 +44,34 @@
     </div>
     <div style="align-self: end;">
       <button id="btn-recargar">Recargar</button>
-      <button id="btn-copiar">Copiar (TSV 8 columnas)</button>
       <a href="/resumen-local" style="padding: 8px 10px; text-decoration: none; background: #f5f5f5; border-radius: 4px; display: inline-block;">← Volver</a>
     </div>
     <div class="muted" id="status"></div>
   </div>
 
-  <table id="tabla">
+  <!-- TABLA 1: Facturas -->
+  <h3 style="margin-top: 24px; margin-bottom: 8px;">Facturas</h3>
+  <div style="margin-bottom: 12px;">
+    <button id="btn-copiar-facturas">Copiar Facturas (TSV 4 columnas)</button>
+  </div>
+  <table id="tabla-facturas">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>Id/Comentario</th>
+        <th>Importe</th>
+        <th>Comentario</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- TABLA 2: Creación de Recibo -->
+  <h3 style="margin-top: 24px; margin-bottom: 8px;">Creación de Recibo</h3>
+  <div style="margin-bottom: 12px;">
+    <button id="btn-copiar-formas">Copiar Creación de Recibo (TSV 8 columnas)</button>
+  </div>
+  <table id="tabla-formas">
     <thead>
       <tr>
         <th>Forma de Pago</th>
@@ -48,6 +82,22 @@
         <th>Nro de Lote</th>
         <th>Cheque/Cupón</th>
         <th>Pagado</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- TABLA 3: Creación Factura de Compra (Propinas) -->
+  <h3 style="margin-top: 24px; margin-bottom: 8px;">Creación Factura de Compra</h3>
+  <div style="margin-bottom: 12px;">
+    <button id="btn-copiar-propinas">Copiar Propinas (TSV 3 columnas)</button>
+  </div>
+  <table id="tabla-propinas">
+    <thead>
+      <tr>
+        <th>Cuenta</th>
+        <th>Descripción</th>
+        <th>Monto</th>
       </tr>
     </thead>
     <tbody></tbody>

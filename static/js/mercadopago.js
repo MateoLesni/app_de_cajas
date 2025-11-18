@@ -26,8 +26,11 @@ document.addEventListener("DOMContentLoaded", function () {
   window.cajaCerrada = window.cajaCerrada ?? false;
   const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
   let localCerrado = false;
+  let localAuditado = false;
 
   function canActUI(){
+    // Si el local está auditado, NADIE puede editar
+    if (localAuditado) return false;
     if (ROLE >= 3) return true;          // Auditor
     if (ROLE >= 2) return !localCerrado; // Encargado/Adm: local debe estar abierto
     return !window.cajaCerrada;          // Cajero: caja abierta
@@ -111,22 +114,27 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!caja || !fecha || !turno) {
       window.cajaCerrada = false;
       localCerrado = false;
+      localAuditado = false;
       toggleUIByEstado();
       if (reRender) renderTabla();
       return;
     }
     try {
-      const [rc, rl] = await Promise.all([
+      const [rc, rl, ra] = await Promise.all([
         fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`),
-        fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
+        fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`),
+        fetch(`/api/estado_auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
       ]);
       const dc = await rc.json();
       const dl = await rl.json().catch(() => ({ estado: 1 }));
+      const da = await ra.json().catch(() => ({ success: false, auditado: false }));
       window.cajaCerrada = ((dc.estado ?? 1) === 0);
       localCerrado       = ((dl.estado ?? 1) === 0);
+      localAuditado      = (da.success && da.auditado) || false;
     } catch {
       window.cajaCerrada = false;
       localCerrado = false;
+      localAuditado = false;
     }
     toggleUIByEstado();
     if (reRender) renderTabla();

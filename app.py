@@ -143,15 +143,40 @@ def is_local_closed(conn, local:str, fecha) -> bool:
     return (row is not None and int(row[0]) == 0)
 
 
+def is_local_auditado(conn, local: str, fecha) -> bool:
+    """
+    Verifica si un local está marcado como auditado para una fecha específica.
+    Retorna True si existe un registro en locales_auditados.
+    """
+    f = _normalize_fecha(fecha)
+    if not f:
+        return False
+
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT COUNT(*) FROM locales_auditados
+            WHERE local=%s AND DATE(fecha)=%s
+        """, (local, f))
+        row = cur.fetchone()
+        return row and row[0] > 0
+    finally:
+        cur.close()
+
 def can_edit(conn, local: str, caja: str, turno: str, fecha, user_level: int) -> bool:
     """
     Reglas:
+    - Si el LOCAL está AUDITADO: NADIE puede modificar (ni siquiera nivel 3).
     - Si el LOCAL está cerrado (por día): sólo nivel 3 puede modificar.
     - Si el LOCAL está abierto:
         * Nivel 2 (o más) puede modificar aunque la CAJA esté cerrada.
         * Nivel 1 sólo puede modificar con CAJA abierta (por turno).
     """
     f = _normalize_fecha(fecha)
+
+    # NUEVA REGLA: Si está auditado, NADIE puede editar
+    if is_local_auditado(conn, local, f):
+        return False
 
     # Cierre de local es global por fecha (ignora turno)
     if is_local_closed(conn, local, f):
@@ -200,6 +225,16 @@ CLOSED_LOCAL_SUBQUERY = """
     WHERE cl.local = {a}.local
       AND DATE(cl.fecha) = DATE({a}.fecha)
       AND cl.estado = 0  -- 0 = cerrado
+  )
+"""
+
+# --- Subquery: "local auditado" (usa tabla locales_auditados) ---
+AUDITED_LOCAL_SUBQUERY = """
+  EXISTS (
+    SELECT 1
+    FROM locales_auditados la
+    WHERE la.local = {a}.local
+      AND DATE(la.fecha) = DATE({a}.fecha)
   )
 """
 
@@ -271,6 +306,9 @@ def require_edit_ctx(fn):
             return jsonify(success=False, msg='falta local/caja/fecha/turno'), 400
         conn = get_db_connection()
         try:
+            # Verificar primero si está auditado para mensaje más claro
+            if is_local_auditado(conn, ctx['local'], ctx['fecha']):
+                return jsonify(success=False, msg='❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones.'), 403
             ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], get_user_level())
         finally:
             conn.close()
@@ -2403,7 +2441,7 @@ def cierre_resumen():
         if not row or row[0] == 0:
             # Caja no cerrada, retornar resumen vacío
             conn.close()
-            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b','facturas_cc',
+            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b',
                 'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','discovery','total_cobrado']})
 
     # Nivel 3 (auditor): solo puede ver si el local está cerrado
@@ -2418,7 +2456,7 @@ def cierre_resumen():
         if not row or row[0] == 0:
             # Local no cerrado, retornar resumen vacío
             conn.close()
-            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b','facturas_cc',
+            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b',
                 'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','discovery','total_cobrado']})
 
     cur  = conn.cursor()
@@ -2463,18 +2501,10 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['facturas_b'] = float(row[0]) if row and row[0] is not None else 0.0
 
-        # facturas_cc (cuenta corriente - suma como medio de cobro)
-        cur.execute("""
-            SELECT COALESCE(SUM(monto),0)
-              FROM facturas_trns
-             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'
-        """, (fecha, local, caja, turno))
-        row = cur.fetchone()
-        resumen['facturas_cc'] = float(row[0]) if row and row[0] is not None else 0.0
-
-        # Sumatoria de todas las facturas (Z + A + B) para calcular discovery
-        total_facturas = resumen['venta_z'] + resumen['facturas_a'] + resumen['facturas_b']
-        resumen['discovery'] = float(resumen['venta_total'] - total_facturas)
+        # DISCOVERY = venta_total - (Z + A + B)
+        # Es la plata en negro (ventas no facturadas)
+        total_facturas_zab = resumen['venta_z'] + resumen['facturas_a'] + resumen['facturas_b']
+        resumen['discovery'] = float(resumen['venta_total'] - total_facturas_zab)
 
         # ===== Ingresos / medios de cobro =====
         # efectivo (remesas)
@@ -2504,11 +2534,11 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['mercadopago'] = float(row[0]) if row and row[0] is not None else 0.0
 
-        # cuenta corriente (si hoy usás MP como placeholder, se respeta)
+        # cuenta corriente (facturas CC - suma como medio de cobro)
         cur.execute("""
-            SELECT COALESCE(SUM(importe),0)
-              FROM mercadopago_trns
-             WHERE TIPO = 'NADA' AND DATE(fecha)=%s AND local=%s AND tipo='NORMAL' AND caja=%s AND turno=%s
+            SELECT COALESCE(SUM(monto),0)
+              FROM facturas_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['cuenta_cte'] = float(row[0]) if row and row[0] is not None else 0.0
@@ -2552,7 +2582,7 @@ def cierre_resumen():
 
         resumen['tips'] = tips_tarjeta + tips_mp
 
-        # ===== Total cobrado (medios de cobro + facturas CC)
+        # ===== Total cobrado (medios de cobro)
         # Las facturas A, B, Z son informativas y NO suman al cobrado
         # Las facturas CC sí suman porque son cuenta corriente (medio de cobro)
         resumen['total_cobrado'] = sum([
@@ -2561,8 +2591,7 @@ def cierre_resumen():
             resumen.get('mercadopago',0.0),
             resumen.get('rappi',0.0),
             resumen.get('pedidosya',0.0),
-            resumen.get('cuenta_cte',0.0),
-            resumen.get('facturas_cc',0.0),  # CC suma como medio de cobro
+            resumen.get('cuenta_cte',0.0),  # Cuenta corriente (facturas CC)
         ])
 
         # ===== Estado de caja (por turno)
@@ -2864,7 +2893,14 @@ def guardar_gastos_lote():
         conn = get_db_connection()
 
         user_level = get_user_level()
-        if not can_edit(conn, local, caja, turno, _normalize_fecha(fecha), user_level):
+        fecha_norm = _normalize_fecha(fecha)
+
+        # Verificar si está auditado primero para dar mensaje más claro
+        if is_local_auditado(conn, local, fecha_norm):
+            conn.close()
+            return jsonify(success=False, msg="❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones."), 403
+
+        if not can_edit(conn, local, caja, turno, fecha_norm, user_level):
             conn.close()
             return jsonify(success=False, msg="No tenés permisos para guardar (caja/local cerrados para tu rol)."), 409
 
@@ -2927,6 +2963,12 @@ def actualizar_gasto(gasto_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         user_level = get_user_level()
+
+        # Verificar si está auditado primero para dar mensaje más claro
+        if is_local_auditado(conn, row['local'], row['fecha']):
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones."), 403
+
         if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], user_level):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No tenés permisos para actualizar (caja/local cerrados para tu rol)."), 409
@@ -2966,6 +3008,12 @@ def borrar_gasto(gasto_id):
             return jsonify(success=False, msg="Registro no encontrado"), 404
 
         user_level = get_user_level()
+
+        # Verificar si está auditado primero para dar mensaje más claro
+        if is_local_auditado(conn, row['local'], row['fecha']):
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones."), 403
+
         if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], user_level):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No tenés permisos para borrar (caja/local cerrados para tu rol)."), 409

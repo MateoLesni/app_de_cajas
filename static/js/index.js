@@ -86,6 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
   window.cajaCerrada = window.cajaCerrada ?? false;
   let localCerrado = false; // (reservado p/uso L2)
+  let localAuditado = false;
 
   // Estado en memoria
   const remesasPorCaja       = {}; // nuevas en memoria
@@ -110,6 +111,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // === NUEVO: centraliza si el usuario puede actuar en UI
   function canActUI() {
+    // Si el local está auditado, NADIE puede editar
+    if (localAuditado) return false;
     if (ROLE >= 3) return true;           // auditor: siempre
     if (ROLE >= 2) return !localCerrado;  // encargado: mientras el local NO esté cerrado
     return !window.cajaCerrada;           // cajero: sólo con caja abierta
@@ -130,13 +133,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function refrescarEstadoCaja({reRender=true} = {}) {
     const { local, caja, fecha, turno } = getCtx();
-    if (!caja || !fecha || !turno) { window.cajaCerrada = false; toggleAccionesVisibles(canActUI()); return; }
+    if (!caja || !fecha || !turno) {
+      window.cajaCerrada = false;
+      localCerrado = false;
+      localAuditado = false;
+      toggleAccionesVisibles(canActUI());
+      return;
+    }
     try {
-      const r = await fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`);
-      const d = await r.json();
-      window.cajaCerrada = ((d.estado ?? 1) === 0);
+      const [rCaja, rLocal, rAudit] = await Promise.all([
+        fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`),
+        fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`),
+        fetch(`/api/estado_auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+      ]);
+      const dCaja = await rCaja.json();
+      const dLocal = await rLocal.json().catch(() => ({ estado: 1 }));
+      const dAudit = await rAudit.json().catch(() => ({ success: false, auditado: false }));
+      window.cajaCerrada = ((dCaja.estado ?? 1) === 0);
+      localCerrado = ((dLocal.estado ?? 1) === 0);
+      localAuditado = (dAudit.success && dAudit.auditado) || false;
+      console.log('🔍 REMESAS estado actualizado - cajaCerrada:', window.cajaCerrada, 'localCerrado:', localCerrado, 'localAuditado:', localAuditado);
     } catch {
-      window.cajaCerrada = false; // backend valida igual
+      window.cajaCerrada = false;
+      localCerrado = false;
+      localAuditado = false;
     }
     toggleAccionesVisibles(canActUI());
     if (reRender) mostrarVistaPrevia(cajaSelect.value);
@@ -169,6 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ];
 
     const puedeActuar = canActUI();
+    console.log('🔍 REMESAS mostrarVistaPrevia - localAuditado:', localAuditado, 'puedeActuar:', puedeActuar, 'canActUI():', canActUI());
 
     todas.forEach(r => {
       const fila = document.createElement("tr");
