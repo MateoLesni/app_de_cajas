@@ -391,7 +391,7 @@ def auditor_resumen_api():
                     SELECT COALESCE(SUM(t.monto), 0) AS total
                     FROM facturas_trns t
                     WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
-                    AND t.tipo IN ('Z', 'A', 'B')
+                    AND t.tipo IN ('Z', 'A', 'B', 'CC')
                     {g.read_scope}
                 """, (local, fecha))
                 row_facturas = cur.fetchone()
@@ -448,6 +448,15 @@ def auditor_resumen_api():
                 """, (local, fecha))
                 pedidosya_total = float(cur.fetchone()['total'] or 0.0)
 
+            # gastos
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM gastos_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    {g.read_scope}
+                """, (local, fecha))
+                gastos_total = float(cur.fetchone()['total'] or 0.0)
+
                 # cuenta corriente (facturas CC - suma como medio de cobro)
                 cur.execute(f"""
                     SELECT COALESCE(SUM(t.monto), 0) AS total
@@ -466,6 +475,7 @@ def auditor_resumen_api():
                     tarjeta_total,
                     mp_total,
                     rappi_total,
+                    gastos_total,
                     pedidosya_total,
                     cta_cte_total,  # Solo CC suma (cuenta corriente)
                 ]))

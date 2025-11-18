@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTextIf(id, formatMoneda(safeNum(resumen[k])));
     }
 
-    // 2) Total cobrado
+    // 2) Total cobrado (incluye gastos)
     let totalCobrado = safeNum(resumen.total_cobrado);
     if (!totalCobrado) {
       totalCobrado =
@@ -99,7 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
         safeNum(resumen.rappi) +
         safeNum(resumen.pedidosya) +
         safeNum(resumen.cuenta_cte) +
-        safeNum(resumen.facturas_cc);
+        safeNum(resumen.facturas_cc) +
+        safeNum(resumen.gastos);
     }
     setTextIf('totalCobrado', formatMoneda(totalCobrado));
     setTextIf('resTotalCobradoVentas', formatMoneda(totalCobrado));
