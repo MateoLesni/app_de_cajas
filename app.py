@@ -189,6 +189,32 @@ def can_edit(conn, local: str, caja: str, turno: str, fecha, user_level: int) ->
     # L1: sólo si la caja (para ese turno) está abierta
     return is_caja_abierta(conn, local, caja, f, turno)
 
+
+def can_edit_remesa_retirada(conn, local: str, caja: str, turno: str, fecha, user_level: int) -> bool:
+    """
+    Permisos especiales para editar 'retirada_por' y 'fecha_retirada' de remesas NO RETIRADAS:
+    - Nivel 1 (cajero): Puede editar estos campos incluso con CAJA CERRADA y LOCAL CERRADO (solo bloqueado si está auditado)
+    - Nivel 2 (encargado): Puede editar mientras local NO esté cerrado NI auditado
+    - Nivel 3 (auditor): Puede editar mientras local NO esté auditado (puede estar cerrado)
+    """
+    f = _normalize_fecha(fecha)
+
+    # Si está auditado, NADIE puede editar
+    if is_local_auditado(conn, local, f):
+        return False
+
+    # Nivel 3: puede editar si local NO está auditado (puede estar cerrado)
+    if user_level >= 3:
+        return True
+
+    # Nivel 2 (encargado): puede editar solo si local está abierto
+    if user_level == 2:
+        return not is_local_closed(conn, local, f)
+
+    # Nivel 1 (cajero): puede editar siempre que NO esté auditado
+    # (puede estar cerrado el local y/o la caja)
+    return True
+
 # ==== RBAC Lectura/Escritura común ====
 from flask import g, request, session, jsonify
 from functools import wraps
@@ -772,28 +798,56 @@ def remesas_guardar_lote():
 def remesas_actualizar_retirada():
     """
     Body: { "id": 123, "retirada": "Sí"|"No", "retirada_por": "...", "fecha_retirada": "YYYY-MM-DD" (opcional) }
+
+    Permisos especiales: Este endpoint permite editar 'retirada_por' y 'fecha_retirada'
+    incluso con caja cerrada para nivel 1 (cajero), siempre que el local esté abierto.
     """
-    data = request.get_json() or {}
-    remesa_id        = data.get('id')
-    nueva_retirada   = (data.get('retirada') or '').strip() or None
-    retirada_por     = (data.get('retirada_por') or '').strip()
-    fecha_retirada_s = data.get('fecha_retirada')
-
-    if not remesa_id:
-        return jsonify(success=False, msg="Falta id"), 400
-    if nueva_retirada not in ('Sí', 'No'):
-        return jsonify(success=False, msg="Valor de 'retirada' inválido"), 400
-
-    conn = get_db_connection()
-    cur  = conn.cursor(dictionary=True)
     try:
-        cur.execute("SELECT id, local, caja, fecha, turno FROM remesas_trns WHERE id=%s", (remesa_id,))
+        data = request.get_json() or {}
+        print(f"📨 actualizar_retirada recibió: {data}")
+
+        remesa_id        = data.get('id')
+        nueva_retirada   = data.get('retirada')
+        retirada_por     = (data.get('retirada_por') or '').strip()
+        fecha_retirada_s = data.get('fecha_retirada')
+
+        if not remesa_id:
+            return jsonify(success=False, msg="Falta id"), 400
+
+        # Validar nueva_retirada si se proporciona
+        if nueva_retirada and nueva_retirada not in ('Sí', 'No'):
+            return jsonify(success=False, msg=f"Valor de 'retirada' inválido: {nueva_retirada}"), 400
+
+        conn = get_db_connection()
+        cur  = conn.cursor(dictionary=True)
+
+        cur.execute("SELECT id, local, caja, fecha, turno, retirada FROM remesas_trns WHERE id=%s", (remesa_id,))
         row = cur.fetchone()
         if not row:
+            cur.close()
+            conn.close()
             return jsonify(success=False, msg="No existe la remesa"), 404
 
-        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+        # Si no se proporciona nueva_retirada, usar la actual
+        if not nueva_retirada:
+            nueva_retirada = row['retirada']
+
+        # Usar permisos especiales para editar campos de retirada
+        lvl = get_user_level()
+        f_norm = _normalize_fecha(row['fecha'])
+
+        # Debug: verificar estados
+        is_auditado = is_local_auditado(conn, row['local'], f_norm)
+        is_cerrado = is_local_closed(conn, row['local'], f_norm)
+
+        print(f"🔍 Verificando permisos: nivel={lvl}, auditado={is_auditado}, cerrado={is_cerrado}, local={row['local']}, fecha={f_norm}")
+
+        if not can_edit_remesa_retirada(conn, row['local'], row['caja'], row['turno'], row['fecha'], lvl):
+            msg = f"No permitido (nivel={lvl}, auditado={is_auditado}, cerrado={is_cerrado})"
+            print(f"❌ Permisos rechazados: {msg}")
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=msg), 403
 
         fecha_retirada = _normalize_fecha(fecha_retirada_s) if fecha_retirada_s else None
 
@@ -807,15 +861,24 @@ def remesas_actualizar_retirada():
              WHERE id=%s
         """, (nueva_retirada, retirada_por, fecha_retirada, remesa_id))
         conn.commit()
-        return jsonify(success=True, updated=cur2.rowcount)
-    except Exception as e:
-        conn.rollback()
-        print("❌ actualizar_retirada:", e)
-        return jsonify(success=False, msg=str(e)), 500
-    finally:
-        try: cur.close()
-        except: ...
+
+        print(f"✅ Remesa {remesa_id} actualizada correctamente")
+
+        cur.close()
+        cur2.close()
         conn.close()
+        return jsonify(success=True, updated=cur2.rowcount)
+
+    except Exception as e:
+        print(f"❌ ERROR actualizar_retirada: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            conn.rollback()
+            conn.close()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
 
 
 @app.route('/remesas/<int:remesa_id>', methods=['PUT'])
@@ -886,6 +949,18 @@ def remesas_update(remesa_id):
 @app.route('/remesas/<int:remesa_id>', methods=['DELETE'])
 @login_required
 def remesas_delete(remesa_id):
+    """
+    Eliminar remesa:
+    - Nivel 1 (cajero): NO puede eliminar remesas
+    - Nivel 2 (encargado): Puede eliminar mientras local esté abierto
+    - Nivel 3 (auditor): Puede eliminar mientras local NO esté auditado
+    """
+    lvl = get_user_level()
+
+    # Nivel 1 (cajero) NO puede eliminar remesas
+    if lvl < 2:
+        return jsonify(success=False, msg="Los cajeros no pueden eliminar remesas"), 403
+
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
@@ -894,8 +969,8 @@ def remesas_delete(remesa_id):
         if not row:
             return jsonify(success=False, msg="No existe la remesa"), 404
 
-        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], lvl):
+            return jsonify(success=False, msg="No permitido (local cerrado/auditado para tu rol)"), 403
 
         cur2 = conn.cursor()
         cur2.execute("DELETE FROM remesas_trns WHERE id=%s", (remesa_id,))
@@ -3378,14 +3453,16 @@ def api_resumen_local():
         tips_total = float(tips_tarj_total or 0.0) + float(tips_mp or 0.0)
 
         # ===== Totales del panel =====
+        # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
+        # Los TIPS tampoco suman al total cobrado
+        # Solo suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC)
         total_cobrado = float(sum([
             efectivo_neto or 0.0,
             tarjeta_total or 0.0,
             mp_total or 0.0,
             rappi_total or 0.0,
             pedidosya_total or 0.0,
-            facturas_total or 0.0,
-            cta_cte_total or 0.0,
+            cta_cte_total or 0.0,  # Solo cuenta corriente (facturas CC)
         ]))
 
         info_total = float(sum([
