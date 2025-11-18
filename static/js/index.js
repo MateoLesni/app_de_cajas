@@ -202,18 +202,26 @@ document.addEventListener("DOMContentLoaded", function () {
       // === NUEVO: sólo pintamos acciones si puede actuar
       if (puedeActuar) {
         if (r.tipo === "no_retirada") {
-          // Remesas NO RETIRADAS: siempre muestran lápiz para editar retirador
-          // El cesto solo aparece si es la caja original Y cumple permisos de eliminación
+          // Remesas NO RETIRADAS: lógica según nivel de usuario
           const esMismaCaja = (r.caja === caja);
           const cajaEstaAbierta = !window.cajaCerrada;
 
-          // Lápiz para editar retirador (SIEMPRE)
-          acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar retirada / editar retirador">✏️</button>`;
+          // NIVEL 1 (cajero): Solo botón ELIMINAR si es su caja Y está abierta
+          if (ROLE === 1) {
+            if (esMismaCaja && cajaEstaAbierta) {
+              acciones = `<button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+            }
+            // Si la caja está cerrada o es otra caja: sin botones
+          }
+          // NIVEL 2+ (encargado/auditor): Lápiz para marcar retirada + Cesto para eliminar
+          else {
+            // Lápiz: marca como retirada="Sí" (encargado/auditor)
+            acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar quién y cuándo retiró">✏️</button>`;
 
-          // Cesto para eliminar (SOLO si es la misma caja Y está abierta)
-          // El backend validará los permisos exactos según nivel
-          if (esMismaCaja && cajaEstaAbierta) {
-            acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+            // Cesto: eliminar (si es la misma caja Y cumplen permisos)
+            if (esMismaCaja && cajaEstaAbierta) {
+              acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+            }
           }
         } else if (r.tipo === "local") {
           acciones = `
@@ -310,7 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id,
-            retirada: "No",  // Mantener como NO RETIRADA, solo actualizar quién y cuándo
+            retirada: "Sí",  // Marcar como RETIRADA (la saca de NO RETIRADAS)
             retirada_por: nuevoValor,
             fecha_retirada: fechaRet
           })
