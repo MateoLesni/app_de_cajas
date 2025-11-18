@@ -116,26 +116,33 @@
   updateTipoUI();
 
   // ===== Estado / permisos =====
-  let cajaCerrada=false, localCerrado=false;
+  let cajaCerrada=false, localCerrado=false, localAuditado=false;
   let _bdBase=null;
   let _bdFact=[]; // {id,tipo,fecha,caja,punto_venta,nro_factura,comentario,monto}
 
   function canActUI(){
     const {role}=getCtx();
+    // Si el local está auditado, NADIE puede editar
+    if (localAuditado) return false;
     if (role>=3) return true;
     if (role>=2) return !localCerrado;
     return !cajaCerrada;
   }
   async function refrescarEstadoLocal(){
-    const { fecha } = getCtx();
+    const { local, fecha } = getCtx();
     try{
-      const r=await fetch(`/estado_local?fecha=${encodeURIComponent(fecha)}`);
-      const d=await r.json(); localCerrado=((d.estado??1)===0);
-    }catch{ localCerrado=false; }
+      const [rLocal, rAudit] = await Promise.all([
+        fetch(`/estado_local?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`),
+        fetch(`/api/estado_auditoria?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+      ]);
+      const dLocal = await rLocal.json(); localCerrado=((dLocal.estado??1)===0);
+      const dAudit = await rAudit.json().catch(()=>({success:false,auditado:false}));
+      localAuditado = (dAudit.success && dAudit.auditado) || false;
+    }catch{ localCerrado=false; localAuditado=false; }
   }
   async function refrescarEstadoCaja(reRender=false){
     const { local,caja,fecha,turno }=getCtx();
-    if (!caja||!fecha||!turno){ cajaCerrada=false; toggleUI(); return; }
+    if (!caja||!fecha||!turno){ cajaCerrada=false; localAuditado=false; toggleUI(); return; }
     try{
       const r=await fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`);
       const d=await r.json(); cajaCerrada=((d.estado??1)===0);

@@ -20,12 +20,18 @@ FP_CODE_MAP = {
     "AMEX": "AMEX",
     "MASTERCARD": "MASTE",
     "MASTERCARD DEBITO": "MASTED",
+    "MASTERCARD PREPAGO": "MASTE",  # Se suma con MASTERCARD
     "VISA": "VISA",
     "VISA DEBITO": "VISAD",
+    "VISA PREPAGO": "VISA",  # Se suma con VISA
     "CABAL": "CABAL",
     "CABAL DEBITO": "CABALD",
     "NARANJA": "NARAN",
-    "DISCOVERY": "DISCO",
+    "DISCOVERY": "DISCOVERY",
+    "DINERS": "DINER",
+    "MAESTRO": "MAEST",  # Nueva tarjeta
+    "DECIDIR": "MASDL",  # MAS DELIVERY
+    "MAS DELIVERY": "MASDL",
 
     # Agregadores / links
     "PAGOS INMEDIATOS": "PAGOINMED",
@@ -129,22 +135,58 @@ def auditor_resumen_api():
 
     try:
         with conn.cursor(dictionary=True) as cur:
-            # -------- TARJETAS --------
-            # Se asume: tarjetas_trns(local, fecha, estado, tarjeta, terminal, lote, monto, turno, caja, ...)
+            # -------- TARJETAS (con propinas sumadas por lote/terminal) --------
+            # Primero, obtener ventas de tarjetas agrupadas por marca, terminal y lote
             sql_tar = f"""
-                SELECT t.tarjeta AS marca, t.terminal, t.lote, t.monto
+                SELECT t.tarjeta AS marca, t.terminal, t.lote, SUM(t.monto) AS total_venta
                 FROM tarjetas_trns t
                 WHERE t.local = %s
                   AND DATE(t.fecha) = DATE(%s)
                   AND t.estado = 'ok'
                   {g.read_scope}
+                GROUP BY t.tarjeta, t.terminal, t.lote
             """
             cur.execute(sql_tar, (local, fecha))
-            for r in cur.fetchall():
-                marca = (r.get("marca") or "").strip().upper()
-                code = _fp_to_code(marca)
+            ventas_tarjetas = cur.fetchall()
+
+            # Segundo, obtener propinas de tarjetas agrupadas por marca, terminal y lote
+            sql_tips = f"""
+                SELECT t.tarjeta AS marca, t.terminal, t.lote, SUM(t.monto_tip) AS total_tips
+                FROM tarjetas_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  {g.read_scope}
+                GROUP BY t.tarjeta, t.terminal, t.lote
+            """
+            cur.execute(sql_tips, (local, fecha))
+            tips_tarjetas = {(r["marca"], r["terminal"], r["lote"]): r["total_tips"] for r in cur.fetchall()}
+
+            # Crear un diccionario para agrupar por código (para unificar VISA+VISA PREPAGO, etc.)
+            # Clave: (code, terminal, lote)
+            agrupado = {}
+
+            for r in ventas_tarjetas:
+                marca_orig = (r.get("marca") or "").strip().upper()
+
+                # Reemplazar DECIDIR por MAS DELIVERY antes de mapear
+                if marca_orig == "DECIDIR":
+                    marca_orig = "MAS DELIVERY"
+
+                code = _fp_to_code(marca_orig)
                 terminal = (r.get("terminal") or "").strip()
                 lote = (r.get("lote") or "").strip()
+                venta = r.get("total_venta") or 0
+
+                # Obtener propinas para este lote/terminal/marca original
+                tips = tips_tarjetas.get((r.get("marca"), terminal, lote), 0)
+
+                key = (code, terminal, lote)
+                if key not in agrupado:
+                    agrupado[key] = 0
+                agrupado[key] += venta + tips
+
+            # Generar filas finales
+            for (code, terminal, lote), total in sorted(agrupado.items()):
                 desc = f"{terminal} / {lote}".strip(" /")
                 rows.append({
                     "forma_pago": code,
@@ -154,7 +196,7 @@ def auditor_resumen_api():
                     "cuotas": "",
                     "nro_lote": "",
                     "cheque_cupon": "",
-                    "pagado": _n0(r.get("monto")),
+                    "pagado": _n0(total),
                 })
 
             # -------- MERCADO PAGO --------
@@ -250,29 +292,6 @@ def auditor_resumen_api():
                     "pagado": _n0(rrem.get("monto")),
                 })
 
-            # -------- PROPINAS (tips tarjetas / mp) --------
-            # Se asume: tips_tarjetas(local, fecha, visa_tips, ...)
-            sql_tips = f"""
-                SELECT SUM(monto) AS total
-                FROM facturas_trns t
-                WHERE t.local = %s
-                  AND DATE(t.fecha) = DATE(%s)
-                  {g.read_scope}
-            """
-            cur.execute(sql_tips, (local, fecha))
-            tips = cur.fetchone()
-            if tips and tips["total"]:
-                rows.append({
-                    "forma_pago": _fp_to_code("PROPINAS"),
-                    "descripcion": "PROPINAS",
-                    "tarjeta_credito": "",
-                    "plan": "",
-                    "cuotas": "",
-                    "nro_lote": "",
-                    "cheque_cupon": "",
-                    "pagado": _n0(tips["total"]),
-                })
-
             # -------- GASTOS --------
             # Se asume: gastos_trns(local, fecha, tipo, monto, ...)
             sql_gastos = f"""
@@ -328,8 +347,352 @@ def auditor_resumen_api():
             except Exception:
                 pass
 
+            # -------- PROPINAS (en negativo) --------
+            # 1) PROPINAS de tarjetas (suma de monto_tip de tarjetas_trns)
+            sql_tips_tarjetas = f"""
+                SELECT SUM(t.monto_tip) AS total
+                FROM tarjetas_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  {g.read_scope}
+            """
+            cur.execute(sql_tips_tarjetas, (local, fecha))
+            tips_tarj = cur.fetchone()
+            total_tips_tarjetas = tips_tarj.get("total") if tips_tarj else 0
+
+            if total_tips_tarjetas and total_tips_tarjetas > 0:
+                rows.append({
+                    "forma_pago": "PROPINAS",
+                    "descripcion": "PROPINAS",
+                    "tarjeta_credito": "",
+                    "plan": "",
+                    "cuotas": "",
+                    "nro_lote": "",
+                    "cheque_cupon": "",
+                    "pagado": _n0(-1 * total_tips_tarjetas),  # NEGATIVO
+                })
+
+            # 2) PROPINAS de Mercado Pago (tipo='TIP' en mercadopago_trns)
+            sql_tips_mp = f"""
+                SELECT SUM(t.importe) AS total
+                FROM mercadopago_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  AND UPPER(t.tipo) = 'TIP'
+                  {g.read_scope}
+            """
+            cur.execute(sql_tips_mp, (local, fecha))
+            tips_mp = cur.fetchone()
+            total_tips_mp = tips_mp.get("total") if tips_mp else 0
+
+            if total_tips_mp and total_tips_mp > 0:
+                rows.append({
+                    "forma_pago": "PROPINAS",
+                    "descripcion": "PROPINASMP",
+                    "tarjeta_credito": "",
+                    "plan": "",
+                    "cuotas": "",
+                    "nro_lote": "",
+                    "cheque_cupon": "",
+                    "pagado": _n0(-1 * total_tips_mp),  # NEGATIVO
+                })
+
+            # -------- DISCOVERY y DIFERENCIA (calculados directamente) --------
+            # DISCOVERY = venta_total_sistema - (facturas_Z + facturas_A + facturas_B)
+            # DIFERENCIA = total_cobrado - venta_total_sistema
+
+            try:
+                # 1. Obtener venta_total_sistema
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.venta_total_sistema), 0) AS total
+                    FROM ventas_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    {g.read_scope}
+                """, (local, fecha))
+                row_venta = cur.fetchone()
+                venta_total_sistema = float(row_venta['total']) if row_venta else 0.0
+
+                # 2. Obtener suma de facturas Z, A, B
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM facturas_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    AND t.tipo IN ('Z', 'A', 'B')
+                    {g.read_scope}
+                """, (local, fecha))
+                row_facturas = cur.fetchone()
+                total_facturas_zab = float(row_facturas['total']) if row_facturas else 0.0
+
+                # 3. Calcular DISCOVERY (venta_total - facturas Z+A+B)
+                # El valor se invierte de signo para el recibo (lógica contable)
+                discovery_val = venta_total_sistema - total_facturas_zab
+
+                # 4. Calcular total_cobrado para DIFERENCIA
+                # efectivo (remesas)
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM remesas_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    {g.read_scope}
+                """, (local, fecha))
+                efectivo_total = float(cur.fetchone()['total'] or 0.0)
+
+                # tarjetas
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM tarjetas_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    {g.read_scope}
+                """, (local, fecha))
+                tarjeta_total = float(cur.fetchone()['total'] or 0.0)
+
+                # mercadopago (tipo='NORMAL')
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.importe), 0) AS total
+                    FROM mercadopago_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    AND UPPER(t.tipo) = 'NORMAL'
+                    {g.read_scope}
+                """, (local, fecha))
+                mp_total = float(cur.fetchone()['total'] or 0.0)
+
+                # rappi
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM rappi_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    {g.read_scope}
+                """, (local, fecha))
+                rappi_total = float(cur.fetchone()['total'] or 0.0)
+
+                # pedidosya
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM pedidosya_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    {g.read_scope}
+                """, (local, fecha))
+                pedidosya_total = float(cur.fetchone()['total'] or 0.0)
+
+                # facturas A y B
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM facturas_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    AND t.tipo IN ('A', 'B')
+                    {g.read_scope}
+                """, (local, fecha))
+                facturas_ab_total = float(cur.fetchone()['total'] or 0.0)
+
+                # cuenta corriente (facturas CC)
+                cur.execute(f"""
+                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    FROM facturas_trns t
+                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                    AND t.tipo = 'CC'
+                    {g.read_scope}
+                """, (local, fecha))
+                cta_cte_total = float(cur.fetchone()['total'] or 0.0)
+
+                # 5. Calcular total_cobrado y DIFERENCIA
+                total_cobrado = float(sum([
+                    efectivo_total,
+                    tarjeta_total,
+                    mp_total,
+                    rappi_total,
+                    pedidosya_total,
+                    facturas_ab_total,
+                    cta_cte_total,
+                ]))
+
+                diferencia_val = total_cobrado - venta_total_sistema
+
+                # 6. Agregar DISCOVERY (siempre, invertido en signo para lógica contable)
+                rows.append({
+                    "forma_pago": "DISCOVERY",
+                    "descripcion": "DISCOVERY",
+                    "tarjeta_credito": "",
+                    "plan": "",
+                    "cuotas": "",
+                    "nro_lote": "",
+                    "cheque_cupon": "",
+                    "pagado": _n0(-1 * discovery_val),  # Invertir signo
+                })
+
+                # 7. Agregar DIFERENCIA (siempre, invertido en signo para lógica contable)
+                rows.append({
+                    "forma_pago": "DIFRECAU",
+                    "descripcion": "DIFERENCIA DE CAJA",
+                    "tarjeta_credito": "",
+                    "plan": "",
+                    "cuotas": "",
+                    "nro_lote": "",
+                    "cheque_cupon": "",
+                    "pagado": _n0(-1 * diferencia_val),  # Invertir signo
+                })
+
+            except Exception as e:
+                # Si hay error, simplemente no agregar estos items
+                print(f"⚠️ Error al calcular DISCOVERY/DIFERENCIA: {e}", file=__import__('sys').stderr)
+                pass
+
         # orden estable para visual
         rows.sort(key=lambda x: (str(x.get("descripcion") or "").upper()))
+
+        return jsonify({"rows": rows, "success": True})
+
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+@auditoria_bp.route("/api/auditoria/facturas")
+@login_required
+@with_read_scope(alias="t")
+def auditor_facturas_api():
+    """
+    Devuelve facturas para la tabla del Auditor (4 columnas):
+    tipo, id_comentario, importe, comentario
+
+    Reglas:
+    - Z/A/B: id_comentario = "punto_venta-nro_factura" (ej: "55555-88888888"), comentario = "-"
+    - CC: id_comentario = nro_factura, comentario = comentario de DB
+    """
+    local = (request.args.get("local") or "").strip()
+    fecha = (request.args.get("fecha") or "").strip()  # YYYY-MM-DD
+
+    if not local or not fecha:
+        return jsonify(success=False, msg="Faltan parámetros 'local' y/o 'fecha'"), 400
+
+    conn = get_db_connection()
+    rows = []
+
+    try:
+        with conn.cursor(dictionary=True) as cur:
+            # Consultar facturas_trns
+            sql = f"""
+                SELECT t.tipo, t.punto_venta, t.nro_factura,
+                 t.monto, t.comentario
+                FROM facturas_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  {g.read_scope}
+                ORDER BY t.tipo, t.nro_factura
+            """
+            cur.execute(sql, (local, fecha))
+
+            for r in cur.fetchall():
+                tipo = (r.get("tipo") or "").strip().upper()
+                monto = r.get("monto") or 0
+
+                if tipo in ("Z", "A", "B"):
+                    # Formato: "punto_venta-nro_factura"
+                    pv = str(r.get("punto_venta") or "0").zfill(5)
+                    nf = str(r.get("nro_factura") or "0").zfill(8)
+                    id_comentario = f"{pv}-{nf}"
+                    comentario_col = "-"
+                elif tipo == "CC":
+                    # Id = nro_factura, comentario = comentario de DB
+                    id_comentario = str(r.get("nro_factura") or "")
+                    comentario_col = (r.get("comentario") or "").strip()
+                else:
+                    # Tipo desconocido (por si acaso)
+                    id_comentario = ""
+                    comentario_col = ""
+
+                rows.append({
+                    "tipo": tipo,
+                    "id_comentario": id_comentario,
+                    "importe": _n0(monto),
+                    "comentario": comentario_col,
+                })
+
+        return jsonify({"rows": rows, "success": True})
+
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+@auditoria_bp.route("/api/auditoria/propinas")
+@login_required
+@with_read_scope(alias="t")
+def auditor_propinas_api():
+    """
+    Devuelve filas con propinas y discovery:
+    - PROPINAS/PROPINAS: suma de tips de tarjetas + tips de MP (tipo='TIP')
+    - DISCOVERY/DISCOVERY: monto de discovery desde resumen
+
+    Formato: [{"cuenta": "...", "descripcion": "...", "monto": "..."}, ...]
+    """
+    local = (request.args.get("local") or "").strip()
+    fecha = (request.args.get("fecha") or "").strip()
+
+    if not local or not fecha:
+        return jsonify(success=False, msg="Faltan parámetros 'local' y/o 'fecha'"), 400
+
+    conn = get_db_connection()
+    rows = []
+
+    try:
+        with conn.cursor(dictionary=True) as cur:
+            # 1) Sumar tips de tarjetas
+            sql_tips_tarjetas = f"""
+                SELECT SUM(monto_tip) AS total
+                FROM tarjetas_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  {g.read_scope}
+            """
+            cur.execute(sql_tips_tarjetas, (local, fecha))
+            result_tarjetas = cur.fetchone()
+            tips_tarjetas = result_tarjetas.get("total") if result_tarjetas else 0
+
+            # 2) Sumar tips de Mercado Pago (tipo='TIP')
+            sql_tips_mp = f"""
+                SELECT SUM(importe) AS total
+                FROM mercadopago_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  AND t.tipo = 'TIP'
+                  {g.read_scope}
+            """
+            cur.execute(sql_tips_mp, (local, fecha))
+            result_mp = cur.fetchone()
+            tips_mp = result_mp.get("total") if result_mp else 0
+
+            # Suma total de propinas
+            total_propinas = (tips_tarjetas or 0) + (tips_mp or 0)
+
+            if total_propinas > 0:
+                rows.append({
+                    "cuenta": "PROPINAS",
+                    "descripcion": "PROPINAS",
+                    "monto": _n0(total_propinas),
+                })
+
+            # 3) DISCOVERY desde resumen
+            # Buscar en la tabla que guarda los importes por tarjeta (agrupado)
+            sql_discovery = f"""
+                SELECT SUM(t.monto) AS total
+                FROM tarjetas_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  AND UPPER(t.tarjeta) = 'DISCOVERY'
+                  {g.read_scope}
+            """
+            cur.execute(sql_discovery, (local, fecha))
+            result_discovery = cur.fetchone()
+            total_discovery = result_discovery.get("total") if result_discovery else 0
+
+            if total_discovery and total_discovery > 0:
+                rows.append({
+                    "cuenta": "DISCOVERY",
+                    "descripcion": "DISCOVERY",
+                    "monto": _n0(total_discovery),
+                })
 
         return jsonify({"rows": rows, "success": True})
 
