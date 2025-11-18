@@ -321,32 +321,6 @@ def auditor_resumen_api():
                         "pagado": _n0(total),
                     })
 
-            # -------- DIFERENCIA DE CAJA (opcional) --------
-            # (dejé tu bloque como estaba apuntando a remesas_trns si así lo usás)
-            sql_dif = f"""
-                SELECT SUM(t.monto) AS total
-                FROM remesas_trns t
-                WHERE t.local = %s
-                  AND DATE(t.fecha) = DATE(%s)
-                  {g.read_scope}
-            """
-            try:
-                cur.execute(sql_dif, (local, fecha))
-                dif = cur.fetchone()
-                if dif and dif["total"]:
-                    rows.append({
-                        "forma_pago": "DIFRECAU",
-                        "descripcion": "DIFERENCIA DE CAJA",
-                        "tarjeta_credito": "",
-                        "plan": "",
-                        "cuotas": "",
-                        "nro_lote": "",
-                        "cheque_cupon": "",
-                        "pagado": _n0(dif["total"]),
-                    })
-            except Exception:
-                pass
-
             # -------- PROPINAS (en negativo) --------
             # 1) PROPINAS de tarjetas (suma de monto_tip de tarjetas_trns)
             sql_tips_tarjetas = f"""
