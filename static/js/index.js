@@ -202,7 +202,19 @@ document.addEventListener("DOMContentLoaded", function () {
       // === NUEVO: sólo pintamos acciones si puede actuar
       if (puedeActuar) {
         if (r.tipo === "no_retirada") {
-          acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar enviada / editar retirador">✏️</button>`;
+          // Remesas NO RETIRADAS: siempre muestran lápiz para editar retirador
+          // El cesto solo aparece si es la caja original Y cumple permisos de eliminación
+          const esMismaCaja = (r.caja === caja);
+          const cajaEstaAbierta = !window.cajaCerrada;
+
+          // Lápiz para editar retirador (SIEMPRE)
+          acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar retirada / editar retirador">✏️</button>`;
+
+          // Cesto para eliminar (SOLO si es la misma caja Y está abierta)
+          // El backend validará los permisos exactos según nivel
+          if (esMismaCaja && cajaEstaAbierta) {
+            acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+          }
         } else if (r.tipo === "local") {
           acciones = `
             <button class="btn-editar-local" data-idx="${r.idx}" data-tipo="local" title="Editar">✏️</button>
@@ -298,7 +310,7 @@ document.addEventListener("DOMContentLoaded", function () {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id,
-            retirada: "Sí",
+            retirada: "No",  // Mantener como NO RETIRADA, solo actualizar quién y cuándo
             retirada_por: nuevoValor,
             fecha_retirada: fechaRet
           })
