@@ -474,17 +474,7 @@ def auditor_resumen_api():
                 """, (local, fecha))
                 pedidosya_total = float(cur.fetchone()['total'] or 0.0)
 
-                # facturas A y B
-                cur.execute(f"""
-                    SELECT COALESCE(SUM(t.monto), 0) AS total
-                    FROM facturas_trns t
-                    WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
-                    AND t.tipo IN ('A', 'B')
-                    {g.read_scope}
-                """, (local, fecha))
-                facturas_ab_total = float(cur.fetchone()['total'] or 0.0)
-
-                # cuenta corriente (facturas CC)
+                # cuenta corriente (facturas CC - suma como medio de cobro)
                 cur.execute(f"""
                     SELECT COALESCE(SUM(t.monto), 0) AS total
                     FROM facturas_trns t
@@ -495,14 +485,15 @@ def auditor_resumen_api():
                 cta_cte_total = float(cur.fetchone()['total'] or 0.0)
 
                 # 5. Calcular total_cobrado y DIFERENCIA
+                # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
+                # Solo las facturas CC (cuenta corriente) suman como medio de cobro
                 total_cobrado = float(sum([
                     efectivo_total,
                     tarjeta_total,
                     mp_total,
                     rappi_total,
                     pedidosya_total,
-                    facturas_ab_total,
-                    cta_cte_total,
+                    cta_cte_total,  # Solo CC suma (cuenta corriente)
                 ]))
 
                 diferencia_val = total_cobrado - venta_total_sistema
