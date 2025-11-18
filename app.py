@@ -2619,6 +2619,17 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['rappi'] = float(row[0]) if row and row[0] is not None else 0.0
 
+
+        # GASTOS
+        cur.execute("""
+            SELECT COALESCE(SUM(monto),0)
+              FROM gastos_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+        """, (fecha, local, caja, turno))
+        row = cur.fetchone()
+        resumen['gastos'] = float(row[0]) if row and row[0] is not None else 0.0
+
+
         # pedidosya
         cur.execute("""
             SELECT COALESCE(SUM(monto),0)
@@ -2649,9 +2660,10 @@ def cierre_resumen():
 
         resumen['tips'] = tips_tarjeta + tips_mp
 
-        # ===== Total cobrado (medios de cobro)
+        # ===== Total cobrado (medios de cobro + gastos)
         # Las facturas A, B, Z son informativas y NO suman al cobrado
         # Las facturas CC sí suman porque son cuenta corriente (medio de cobro)
+        # Los gastos SÍ suman al total cobrado (justifican la venta)
         resumen['total_cobrado'] = sum([
             resumen.get('efectivo',0.0),
             resumen.get('tarjeta',0.0),
@@ -2659,6 +2671,7 @@ def cierre_resumen():
             resumen.get('rappi',0.0),
             resumen.get('pedidosya',0.0),
             resumen.get('cuenta_cte',0.0),  # Cuenta corriente (facturas CC)
+            resumen.get('gastos',0.0),      # Gastos justifican la venta
         ])
 
         # ===== Estado de caja (por turno)
@@ -3447,14 +3460,15 @@ def api_resumen_local():
         # ===== Totales del panel =====
         # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
         # Los TIPS tampoco suman al total cobrado
-        # Solo suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC)
+        # Suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC), gastos
         total_cobrado = float(sum([
             efectivo_neto or 0.0,
             tarjeta_total or 0.0,
             mp_total or 0.0,
             rappi_total or 0.0,
             pedidosya_total or 0.0,
-            cta_cte_total or 0.0,  # Solo cuenta corriente (facturas CC)
+            cta_cte_total or 0.0,  # Cuenta corriente (facturas CC)
+            gastos_total or 0.0,   # Gastos justifican la venta
         ]))
 
         info_total = float(sum([
