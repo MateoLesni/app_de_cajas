@@ -194,7 +194,7 @@ def can_edit_remesa_retirada(conn, local: str, caja: str, turno: str, fecha, use
     """
     Permisos especiales para editar 'retirada_por' y 'fecha_retirada' de remesas NO RETIRADAS:
     - Nivel 1 (cajero): Puede editar estos campos incluso con CAJA CERRADA y LOCAL CERRADO (solo bloqueado si está auditado)
-    - Nivel 2 (encargado): Puede editar mientras local NO esté cerrado NI auditado
+    - Nivel 2 (encargado): Puede editar SIEMPRE mientras local NO esté auditado (INCLUSO con local cerrado)
     - Nivel 3 (auditor): Puede editar mientras local NO esté auditado (puede estar cerrado)
     """
     f = _normalize_fecha(fecha)
@@ -203,13 +203,10 @@ def can_edit_remesa_retirada(conn, local: str, caja: str, turno: str, fecha, use
     if is_local_auditado(conn, local, f):
         return False
 
-    # Nivel 3: puede editar si local NO está auditado (puede estar cerrado)
-    if user_level >= 3:
+    # Niveles 2 y 3: pueden editar siempre que NO esté auditado
+    # (pueden estar cerrados el local y/o la caja)
+    if user_level >= 2:
         return True
-
-    # Nivel 2 (encargado): puede editar solo si local está abierto
-    if user_level == 2:
-        return not is_local_closed(conn, local, f)
 
     # Nivel 1 (cajero): puede editar siempre que NO esté auditado
     # (puede estar cerrado el local y/o la caja)
@@ -645,18 +642,8 @@ def remesas_no_retiradas():
         extra_sql = ""
         params = [caja, local]
 
-        # L3: solo locales cerrados (por fecha/turno de cada fila)
-        if lvl >= 3:
-            extra_sql = """
-              AND EXISTS (
-                SELECT 1 FROM cierres_locales cl
-                WHERE cl.local = t.local
-                  AND DATE(cl.fecha) = DATE(t.fecha)
-                  AND LOWER(cl.turno) = LOWER(t.turno)
-                  AND cl.estado = 0
-              )
-            """
-        # L2: sin filtro extra (debe verlas para poder marcarlas)
+        # L3: sin filtro extra (el auditor ve TODAS las remesas no retiradas, incluso de locales cerrados)
+        # L2: sin filtro extra (debe verlas para poder marcarlas, incluso con local cerrado)
         # L1: sin filtro extra (pero backend/JS le bloquean edición si caja cerrada)
 
         # (opcional) si querés además filtrar por turno de selección actual:
@@ -665,7 +652,7 @@ def remesas_no_retiradas():
         #     params.append(turno)
 
         sql = f"""
-          SELECT t.id, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno
+          SELECT t.id, t.caja, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno
           FROM remesas_trns t
           WHERE t.retirada='No'
             AND t.caja=%s
@@ -951,15 +938,11 @@ def remesas_update(remesa_id):
 def remesas_delete(remesa_id):
     """
     Eliminar remesa:
-    - Nivel 1 (cajero): NO puede eliminar remesas
+    - Nivel 1 (cajero): Puede eliminar solo si es su caja Y está abierta
     - Nivel 2 (encargado): Puede eliminar mientras local esté abierto
     - Nivel 3 (auditor): Puede eliminar mientras local NO esté auditado
     """
     lvl = get_user_level()
-
-    # Nivel 1 (cajero) NO puede eliminar remesas
-    if lvl < 2:
-        return jsonify(success=False, msg="Los cajeros no pueden eliminar remesas"), 403
 
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
@@ -967,23 +950,32 @@ def remesas_delete(remesa_id):
         cur.execute("SELECT id, local, caja, fecha, turno FROM remesas_trns WHERE id=%s", (remesa_id,))
         row = cur.fetchone()
         if not row:
+            cur.close()
+            conn.close()
             return jsonify(success=False, msg="No existe la remesa"), 404
 
+        # Verificar permisos según nivel
         if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], lvl):
+            cur.close()
+            conn.close()
             return jsonify(success=False, msg="No permitido (local cerrado/auditado para tu rol)"), 403
 
         cur2 = conn.cursor()
         cur2.execute("DELETE FROM remesas_trns WHERE id=%s", (remesa_id,))
         conn.commit()
+        cur.close()
+        cur2.close()
+        conn.close()
         return jsonify(success=True, deleted=cur2.rowcount)
     except Exception as e:
         conn.rollback()
         print("❌ remesas_delete:", e)
+        try:
+            cur.close()
+            conn.close()
+        except:
+            pass
         return jsonify(success=False, msg=str(e)), 500
-    finally:
-        try: cur.close()
-        except: ...
-        conn.close()
 
 
     # _________________________________________ tarjetas ____________________-
