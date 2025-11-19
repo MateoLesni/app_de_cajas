@@ -97,6 +97,12 @@ document.addEventListener("DOMContentLoaded", function () {
   let editBDId = null;
 
   function getLocalActual() {
+    // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
+    const localSelect = document.getElementById("localSelect");
+    if (localSelect) {
+      const val = (localSelect.value || "").trim();
+      return val || (document.getElementById("userLocal")?.innerText || "").trim();
+    }
     return (document.getElementById("userLocal")?.innerText || "").trim();
   }
   function getCtx() {

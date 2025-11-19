@@ -16,7 +16,15 @@
     return (v1 && v1 !== '%Y-%m-%d') ? v1 : (document.body?.dataset?.fecha?.trim() || '');
   }
   function readTurno(){ return $('#turnoSelect')?.value?.trim() || document.body?.dataset?.turno?.trim() || 'UNI'; }
-  function getLocal(){ return $('#userLocal')?.innerText?.trim() || document.body?.dataset?.local?.trim() || ''; }
+  function getLocal(){
+    // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
+    const localSelect = $('#localSelect');
+    if (localSelect) {
+      const val = localSelect.value?.trim();
+      return val || $('#userLocal')?.innerText?.trim() || document.body?.dataset?.local?.trim() || '';
+    }
+    return $('#userLocal')?.innerText?.trim() || document.body?.dataset?.local?.trim() || '';
+  }
   function getCtx(){ return { local:getLocal(), caja:readCaja(), fecha:readFecha(), turno:readTurno(), role:getRoleLevel() }; }
 
   function normalizeDateLike(d, fallback){

@@ -39,7 +39,15 @@ document.addEventListener("DOMContentLoaded", function () {
   let idxEdicionActual = -1;
 
   // ===== helpers =====
-  const getLocal = () => (document.getElementById("userLocal")?.innerText || "").trim();
+  const getLocal = () => {
+    // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
+    const localSelect = document.getElementById("localSelect");
+    if (localSelect) {
+      const val = (localSelect.value || "").trim();
+      return val || (document.getElementById("userLocal")?.innerText || "").trim();
+    }
+    return (document.getElementById("userLocal")?.innerText || "").trim();
+  };
   const getCtx = () => ({
     local: getLocal(),
     caja:  selCaja?.value || "",

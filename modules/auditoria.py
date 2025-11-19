@@ -690,7 +690,7 @@ def auditoria_locales():
         # 1) intenta tabla 'locales' si la tenés
         with conn.cursor(dictionary=True) as cur:
             try:
-                cur.execute("SELECT nombre FROM locales ORDER BY nombre")
+                cur.execute("SELECT DISTINCT local AS nombre FROM locales ORDER BY local")
                 locales = [{"nombre": r["nombre"]} for r in cur.fetchall()]
             except Exception:
                 # 2) fallback: distintos locales desde alguna tabla operativa

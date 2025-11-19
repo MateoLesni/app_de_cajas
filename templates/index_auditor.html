@@ -81,6 +81,12 @@
           Carga de Datos
         </a>
 
+      <!-- Terminales -->
+      <a class="nav-item" href="/terminales">
+        <span class="nav-dot" aria-hidden="true"></span>
+        Terminales
+      </a>
+
       <!-- Grupo: Reportería (desplegable) -->
       <div class="nav-group {% if request.path.startswith('/reporteria') %}is-open{% endif %}">
         <!-- Toggle con el MISMO look de .nav-item -->
@@ -134,8 +140,6 @@
           <div class="header-info">
             <div class="info-item"><span class="label">Fecha:</span> <span id="currentDate" class="value"></span></div>
             <div class="info-item"><span class="label">Usuario:</span> <span id="currentUser" class="value">{{ session['username'] }}</span></div>
-            <div class="info-item"><span class="label">Local:</span> <span id="userLocal" class="value">{{ session['local'] }}</span></div>
-            <div class="info-item"><span class="label">Sociedad:</span> <span id="userSociedad" class="value">{{ session['society']}}</span></div>
           </div>
           <div class="header-buttons">
             <a href="{{ url_for('index') }}" class="btn-header">Inicio</a>
@@ -144,11 +148,18 @@
         </div>
 
         <div class="form-group">
+          <label for="localSelect">Seleccioná un local:</label>
+          <select id="localSelect" class="form-control" required>
+            <option value="">-- Seleccionar Local --</option>
+            <!-- Los locales se cargarán dinámicamente desde el backend -->
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="turnoSelect">Seleccioná un turno:</label>
           <select id="turnoSelect" class="form-control" required>
-            {% for t in turnos %}
-              <option value="{{ t|trim|e }}">{{ t|trim|e }}</option>
-            {% endfor %}
+            <option value="">-- Seleccionar Turno --</option>
+            <!-- Los turnos se cargarán dinámicamente según el local seleccionado -->
           </select>
         </div>
 
@@ -819,6 +830,182 @@
         const open = grp.classList.toggle('is-open');
         tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
+    }
+
+    // ========== GESTIÓN DE FILTROS PARA AUDITORES ==========
+    const localSelect = document.getElementById('localSelect');
+    const turnoSelect = document.getElementById('turnoSelect');
+    const cajaSelect = document.getElementById('cajaSelect');
+    const fechaGlobal = document.getElementById('fechaGlobal');
+
+    // Clave para localStorage
+    const STORAGE_KEY = 'auditor_filtros';
+
+    // Función para guardar filtros en localStorage
+    function guardarFiltros() {
+      const filtros = {
+        local: localSelect?.value || '',
+        turno: turnoSelect?.value || '',
+        caja: cajaSelect?.value || '',
+        fecha: fechaGlobal?.value || ''
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtros));
+    }
+
+    // Función para cargar filtros guardados
+    function cargarFiltrosGuardados() {
+      try {
+        const guardado = localStorage.getItem(STORAGE_KEY);
+        return guardado ? JSON.parse(guardado) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    if (localSelect) {
+      // Función para cargar turnos según el local seleccionado
+      async function cargarTurnos(local, turnoPreseleccionado = null) {
+        if (!local || !turnoSelect) return;
+
+        try {
+          const response = await fetch(`/api/turnos?local=${encodeURIComponent(local)}`);
+          const turnos = await response.json();
+
+          // Limpiar opciones actuales
+          turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
+
+          // Agregar los turnos del local seleccionado
+          turnos.forEach(turno => {
+            const option = document.createElement('option');
+            option.value = turno;
+            option.textContent = turno;
+            turnoSelect.appendChild(option);
+          });
+
+          // Si hay un turno preseleccionado, restaurarlo
+          if (turnoPreseleccionado && turnos.includes(turnoPreseleccionado)) {
+            turnoSelect.value = turnoPreseleccionado;
+          } else if (turnos.length > 0) {
+            // Seleccionar el primer turno si no hay preselección
+            turnoSelect.value = turnos[0];
+          }
+
+          guardarFiltros();
+        } catch (err) {
+          console.error('Error cargando turnos:', err);
+        }
+      }
+
+      // Función para cargar cajas según el local seleccionado
+      async function cargarCajas(local, cajaPreseleccionada = null, dispatchChange = true) {
+        if (!local || !cajaSelect) return;
+
+        try {
+          const response = await fetch(`/api/cajas?local=${encodeURIComponent(local)}`);
+          const cajas = await response.json();
+
+          // Limpiar opciones actuales
+          cajaSelect.innerHTML = '<option value="">-- Seleccionar Caja --</option>';
+
+          // Agregar las cajas del local seleccionado
+          cajas.forEach(caja => {
+            const option = document.createElement('option');
+            option.value = caja;
+            option.textContent = caja;
+            cajaSelect.appendChild(option);
+          });
+
+          // Si hay una caja preseleccionada, restaurarla
+          if (cajaPreseleccionada && cajas.includes(cajaPreseleccionada)) {
+            cajaSelect.value = cajaPreseleccionada;
+          } else if (cajas.length > 0) {
+            // Seleccionar la primera caja si no hay preselección
+            cajaSelect.value = cajas[0];
+          }
+
+          guardarFiltros();
+
+          // Solo disparar evento change si se solicita explícitamente
+          if (dispatchChange) {
+            cajaSelect.dispatchEvent(new Event('change'));
+          }
+        } catch (err) {
+          console.error('Error cargando cajas:', err);
+        }
+      }
+
+      // Listener para cuando cambie el local
+      localSelect.addEventListener('change', async (e) => {
+        const local = e.target.value;
+
+        // Actualizar el span #userLocal para que OrqTabs lo detecte
+        const userLocalSpan = document.getElementById('userLocal');
+        if (userLocalSpan) {
+          userLocalSpan.textContent = local;
+        }
+
+        if (local) {
+          await cargarTurnos(local);
+          // NO disparar evento change automáticamente, lo haremos manualmente después
+          await cargarCajas(local, null, false);
+        } else {
+          // Si no hay local, limpiar turnos y cajas
+          turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
+          cajaSelect.innerHTML = '<option value="">-- Seleccionar Caja --</option>';
+        }
+
+        guardarFiltros();
+
+        // Notificar a OrqTabs que los filtros cambiaron (esto hará el refetch con el local correcto)
+        if (window.OrqTabs && window.OrqTabs.notifyFiltersChanged) {
+          console.log('🔔 Notificando cambio de filtros a OrqTabs. Local:', local, 'Caja:', cajaSelect.value);
+          window.OrqTabs.notifyFiltersChanged();
+        }
+      });
+
+      // Listeners para guardar cambios en otros filtros
+      turnoSelect?.addEventListener('change', guardarFiltros);
+      cajaSelect?.addEventListener('change', guardarFiltros);
+      fechaGlobal?.addEventListener('change', guardarFiltros);
+
+      // Cargar locales al inicio
+      fetch('/api/locales')
+        .then(r => r.json())
+        .then(data => {
+          // El endpoint de auditoria devuelve {locales: [{nombre: "..."}, ...]}
+          const locales = data.locales || [];
+
+          locales.forEach(local => {
+            const option = document.createElement('option');
+            const nombreLocal = local.nombre || local;
+            option.value = nombreLocal;
+            option.textContent = nombreLocal;
+            localSelect.appendChild(option);
+          });
+
+          // Restaurar filtros guardados
+          const filtrosGuardados = cargarFiltrosGuardados();
+
+          if (filtrosGuardados && filtrosGuardados.local) {
+            // Si hay filtros guardados, restaurarlos
+            const nombresLocales = locales.map(l => l.nombre || l);
+            if (nombresLocales.includes(filtrosGuardados.local)) {
+              localSelect.value = filtrosGuardados.local;
+
+              // Cargar turnos y cajas con valores preseleccionados
+              cargarTurnos(filtrosGuardados.local, filtrosGuardados.turno).then(() => {
+                cargarCajas(filtrosGuardados.local, filtrosGuardados.caja);
+              });
+
+              // Restaurar fecha si existe
+              if (filtrosGuardados.fecha && fechaGlobal) {
+                fechaGlobal.value = filtrosGuardados.fecha;
+              }
+            }
+          }
+          // Si no hay filtros guardados, dejar "-- Seleccionar Local --" por defecto
+        })
+        .catch(err => console.error('❌ Error cargando locales:', err));
     }
   });
   </script>
