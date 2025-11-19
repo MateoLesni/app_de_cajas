@@ -222,10 +222,13 @@ document.addEventListener("DOMContentLoaded", function () {
           // NIVEL 2+ (encargado/auditor): Lápiz para marcar retirada + Cesto para eliminar
           else {
             // Lápiz: marca como retirada="Sí" (encargado/auditor)
+            // Siempre disponible para nivel 2+ mientras el local no esté cerrado
             acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar quién y cuándo retiró">✏️</button>`;
 
-            // Cesto: eliminar (si es la misma caja Y cumplen permisos)
-            if (esMismaCaja && cajaEstaAbierta) {
+            // Cesto: eliminar
+            // Para nivel 2+ (encargado): disponible aunque la caja esté cerrada (mientras el local esté abierto)
+            // Para nivel 1 (cajero): solo si la caja está abierta
+            if (esMismaCaja && !localCerrado) {
               acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
             }
           }

@@ -156,6 +156,7 @@ def upload():
         return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
 
     ctx = {k: (request.form.get(k, "").strip()) for k in ("tab", "local", "caja", "turno", "fecha")}
+    current_app.logger.info(f"[Upload] Contexto recibido: tab='{ctx['tab']}' (len={len(ctx['tab'])}), local='{ctx['local']}', caja='{ctx['caja']}', turno='{ctx['turno']}', fecha='{ctx['fecha']}'")
     if not all(ctx.values()):
         return jsonify(success=False, msg="Faltan tab/local/caja/turno/fecha"), 400
 

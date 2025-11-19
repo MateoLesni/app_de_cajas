@@ -236,6 +236,7 @@
         fecha: document.getElementById('fechaGlobal')?.value || '',
         tab:   container.dataset.tab || tabForThis
       };
+      console.log(`[Adjuntador] Subir imágenes - tab: ${ctx.tab}, local: ${ctx.local}, caja: ${ctx.caja}, turno: ${ctx.turno}, fecha: ${ctx.fecha}`);
       if (!ctx.local || !ctx.caja || !ctx.turno || !ctx.fecha) {
         toast('Completa Local/Caja/Turno/Fecha');
         return;
@@ -290,6 +291,7 @@
       turno: document.getElementById('turnoSelect')?.value || '',
       fecha: document.getElementById('fechaGlobal')?.value || ''
     };
+    console.log(`[Adjuntador] refreshTabGallery - tab: ${ctx.tab}, local: ${ctx.local}, caja: ${ctx.caja}, turno: ${ctx.turno}, fecha: ${ctx.fecha}`);
     if (!ctx.local || !ctx.caja || !ctx.turno || !ctx.fecha) {
       rgrid.innerHTML = '<div style="grid-column:1/-1;color:#64748b">Seleccioná Local/Caja/Turno/Fecha</div>';
       return;
