@@ -3396,6 +3396,8 @@ def api_resumen_local():
         local_cerrado = (row is not None and row[0] is not None and int(row[0]) == 0)
 
         # Tablas según estado del local
+        # IMPORTANTE: Facturas siempre se leen de facturas_trns porque los auditores
+        # pueden agregar/editar facturas incluso después del cierre del local
         if local_cerrado:
             T_REMESAS    = "snap_remesas"
             T_TARJETAS   = "snap_tarjetas"
@@ -3404,7 +3406,7 @@ def api_resumen_local():
             T_PEDIDOSYA  = "snap_pedidosya"
             T_GASTOS     = "snap_gastos"
             T_VENTAS     = "snap_ventas"
-            T_FACTURAS   = "snap_facturas"  # Contiene Z, A, B, CC
+            T_FACTURAS   = "facturas_trns"  # SIEMPRE leer de facturas_trns (auditores editan post-cierre)
         else:
             T_REMESAS    = "remesas_trns"
             T_TARJETAS   = "tarjetas_trns"
@@ -3415,7 +3417,7 @@ def api_resumen_local():
             T_VENTAS     = "ventas_trns"
             T_FACTURAS   = "facturas_trns"  # Contiene Z, A, B, CC
 
-        # ===== RESUMEN: venta total, Z y discovery =====
+        # ===== RESUMEN: venta total, facturas y discovery =====
         venta_total = _qsum(
             cur,
             f"SELECT COALESCE(SUM(venta_total_sistema),0) FROM {T_VENTAS} WHERE DATE(fecha)=%s AND local=%s",
@@ -3424,7 +3426,18 @@ def api_resumen_local():
 
         # Breakdown Z por PV + Número (tabla facturas con tipo='Z')
         z_items, vta_z_total = _fetch_ventas_z_dyn(cur, f, local, T_FACTURAS, tipo='Z')
-        discovery = max((venta_total or 0.0) - (vta_z_total or 0.0), 0.0)
+
+        # Total de todas las facturas (Z + A + B + CC)
+        total_facturas = _qsum(
+            cur,
+            f"""SELECT COALESCE(SUM(monto),0)
+                FROM {T_FACTURAS}
+                WHERE DATE(fecha)=%s AND local=%s AND tipo IN ('Z','A','B','CC')""",
+            (f, local),
+        )
+
+        # Discovery = Venta Total - (Z + A + B + CC)
+        discovery = max((venta_total or 0.0) - (total_facturas or 0.0), 0.0)
 
         # ===== EFECTIVO (Remesas) =====
         efectivo_remesas = _qsum(
