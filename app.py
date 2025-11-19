@@ -4798,6 +4798,64 @@ def crear_snapshot_local(conn, local, fecha, usuario):
     # >>> Agregá aquí otras fuentes (MP, Rappi, Gastos, etc.) con el mismo patrón.
 
 
+# ========================================================================
+# ENDPOINT TEMPORAL: Aumentar tamaño de columna 'tab' en imagenes_adjuntos
+# ========================================================================
+@app.route('/admin/fix-tab-column', methods=['GET'])
+@login_required
+def admin_fix_tab_column():
+    """
+    Endpoint temporal para ejecutar ALTER TABLE y aumentar la columna 'tab'.
+    Solo accesible para nivel 3 (admin/auditor).
+    Eliminar este endpoint después de ejecutarlo una vez.
+    """
+    if get_user_level() < 3:
+        return jsonify(success=False, msg="Solo administradores pueden ejecutar este endpoint"), 403
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Primero verificamos el estado actual
+        cur.execute("DESCRIBE imagenes_adjuntos")
+        current_def = None
+        for row in cur.fetchall():
+            if row[0] == 'tab':
+                current_def = row[1]
+                break
+
+        if not current_def:
+            return jsonify(success=False, msg="Columna 'tab' no encontrada en imagenes_adjuntos"), 404
+
+        # Ejecutar ALTER TABLE
+        cur.execute("ALTER TABLE imagenes_adjuntos MODIFY COLUMN tab VARCHAR(50)")
+        conn.commit()
+
+        # Verificar el cambio
+        cur.execute("DESCRIBE imagenes_adjuntos")
+        new_def = None
+        for row in cur.fetchall():
+            if row[0] == 'tab':
+                new_def = row[1]
+                break
+
+        cur.close()
+        conn.close()
+
+        return jsonify(
+            success=True,
+            msg="Columna 'tab' actualizada exitosamente",
+            before=current_def,
+            after=new_def
+        )
+
+    except Exception as e:
+        import traceback
+        return jsonify(
+            success=False,
+            msg=f"Error al actualizar columna: {str(e)}",
+            traceback=traceback.format_exc()
+        ), 500
 
 
 
