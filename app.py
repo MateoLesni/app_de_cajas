@@ -192,24 +192,23 @@ def can_edit(conn, local: str, caja: str, turno: str, fecha, user_level: int) ->
 
 def can_edit_remesa_retirada(conn, local: str, caja: str, turno: str, fecha, user_level: int) -> bool:
     """
-    Permisos especiales para editar 'retirada_por' y 'fecha_retirada' de remesas NO RETIRADAS:
-    - Nivel 1 (cajero): Puede editar estos campos incluso con CAJA CERRADA y LOCAL CERRADO (solo bloqueado si está auditado)
-    - Nivel 2 (encargado): Puede editar SIEMPRE mientras local NO esté auditado (INCLUSO con local cerrado)
-    - Nivel 3 (auditor): Puede editar mientras local NO esté auditado (puede estar cerrado)
+    Permisos especiales para editar 'retirada_por' y 'fecha_retirada' de remesas:
+    - Nivel 3 (auditor/admin): Puede editar SIEMPRE (es solo informativo para flujo de dinero)
+    - Nivel 2 (encargado): Puede editar SIEMPRE (es solo informativo para flujo de dinero)
+    - Nivel 1 (cajero): Puede editar mientras local NO esté auditado (puede estar cerrado el local y/o la caja)
     """
-    f = _normalize_fecha(fecha)
-
-    # Si está auditado, NADIE puede editar
-    if is_local_auditado(conn, local, f):
-        return False
-
-    # Niveles 2 y 3: pueden editar siempre que NO esté auditado
-    # (pueden estar cerrados el local y/o la caja)
+    # Niveles 2 y 3 (encargado/admin/auditor): SIEMPRE pueden actualizar retirada, sin importar estado
+    # Ya que es solo informativo para flujo de dinero, no afecta datos contables
     if user_level >= 2:
         return True
 
-    # Nivel 1 (cajero): puede editar siempre que NO esté auditado
-    # (puede estar cerrado el local y/o la caja)
+    f = _normalize_fecha(fecha)
+
+    # Nivel 1 (cajero): solo puede editar si NO está auditado
+    if is_local_auditado(conn, local, f):
+        return False
+
+    # Nivel 1: puede editar si no está auditado
     return True
 
 # ==== RBAC Lectura/Escritura común ====
