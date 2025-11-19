@@ -30,6 +30,15 @@
   const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const debounce = (fn, ms) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
 
+  // Helper para leer el valor de un elemento (select usa .value, span usa .textContent)
+  const getElementValue = (el) => {
+    if (!el) return '';
+    if (el.tagName === 'SELECT' || el.tagName === 'INPUT') {
+      return (el.value || '').trim();
+    }
+    return (el.textContent || '').trim();
+  };
+
   // Overlay de carga no destructivo (no toca el HTML del pane)
   function setOverlay(tabKey, on) {
     const pane = state.panes[tabKey] || document.getElementById(tabKey);
@@ -258,14 +267,14 @@
       });
 
       // Valores iniciales
-      state.local = (document.querySelector(state.selLocal)?.textContent || '').trim();
+      state.local = getElementValue(document.querySelector(state.selLocal));
       state.caja  = document.querySelector(state.selCaja )?.value || '';
       state.fecha = document.querySelector(state.selFecha)?.value || '';
       state.turno = document.querySelector(state.selTurno)?.value || 'UNI';
 
       // Cortafuegos para filtros globales (CAPTURING) + pipeline
       const onFiltersChange = debounce(() => {
-        state.local = (document.querySelector(state.selLocal)?.textContent || '').trim();
+        state.local = getElementValue(document.querySelector(state.selLocal));
         state.caja  = document.querySelector(state.selCaja )?.value || '';
         state.fecha = document.querySelector(state.selFecha)?.value || '';
         state.turno = document.querySelector(state.selTurno)?.value || 'UNI';
@@ -273,6 +282,7 @@
         refreshActive(true); // refetch de la pestaña activa
       }, state.debounceMs);
 
+      installFirewallFor(document.querySelector(state.selLocal), onFiltersChange); // <- AGREGADO para auditor
       installFirewallFor(document.querySelector(state.selCaja),  onFiltersChange);
       installFirewallFor(document.querySelector(state.selFecha), onFiltersChange);
       installFirewallFor(document.querySelector(state.selTurno), onFiltersChange);
@@ -290,7 +300,7 @@
 
     // Forzar pipeline cuando cambiás filtros por JS
     notifyFiltersChanged() {
-      state.local = (document.querySelector(state.selLocal)?.textContent || '').trim();
+      state.local = getElementValue(document.querySelector(state.selLocal));
       state.caja  = document.querySelector(state.selCaja )?.value || '';
       state.fecha = document.querySelector(state.selFecha)?.value || '';
       state.turno = document.querySelector(state.selTurno)?.value || 'UNI';

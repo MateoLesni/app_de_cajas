@@ -220,8 +220,17 @@
     btnClr.addEventListener('click', () => { container._queue = []; redrawQueue(); toggleActions(); });
 
     btnUp.addEventListener('click', async () => {
+      // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
+      const getLocal = () => {
+        const localSelect = document.getElementById('localSelect');
+        if (localSelect) {
+          const val = (localSelect.value || '').trim();
+          return val || (document.getElementById('userLocal')?.innerText || '').trim();
+        }
+        return (document.getElementById('userLocal')?.innerText || '').trim();
+      };
       const ctx = {
-        local: (document.getElementById('userLocal')?.innerText || '').trim(),
+        local: getLocal(),
         caja:  document.getElementById('cajaSelect')?.value || '',
         turno: document.getElementById('turnoSelect')?.value || '',
         fecha: document.getElementById('fechaGlobal')?.value || '',
@@ -265,9 +274,18 @@
     const rgrid  = container.querySelector('.iu-remote-grid');
     if (!rgrid) return;
     rgrid.innerHTML = '<div style="grid-column:1/-1;color:#64748b">Cargando...</div>';
+    // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
+    const getLocal = () => {
+      const localSelect = document.getElementById('localSelect');
+      if (localSelect) {
+        const val = (localSelect.value || '').trim();
+        return val || (document.getElementById('userLocal')?.innerText || '').trim();
+      }
+      return (document.getElementById('userLocal')?.innerText || '').trim();
+    };
     const ctx = {
       tab:   container.dataset.tab || tabSlugFromContainer(container),
-      local: (document.getElementById('userLocal')?.innerText || '').trim(),
+      local: getLocal(),
       caja:  document.getElementById('cajaSelect')?.value || '',
       turno: document.getElementById('turnoSelect')?.value || '',
       fecha: document.getElementById('fechaGlobal')?.value || ''

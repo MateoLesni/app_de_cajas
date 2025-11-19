@@ -271,6 +271,21 @@ def _ctx_from_request():
         'turno': request.args.get('turno') or data.get('turno'),
     }
 
+def get_local_param():
+    """
+    Obtiene el local según el nivel del usuario:
+    - Nivel 3 (auditor): Usa request.args.get('local') si existe y no está vacío, sino session
+    - Nivel 1-2: Usa session['local'] siempre (no pueden cambiar de local)
+    """
+    lvl = get_user_level()
+    if lvl >= 3:
+        # Auditor: prioridad al parámetro si no está vacío, fallback a session
+        local_param = (request.args.get('local') or '').strip()
+        return local_param if local_param else session.get('local')
+    else:
+        # Cajero/Encargado: solo su local de sesión
+        return session.get('local')
+
 def read_scope_sql(alias: str = 't') -> str:
     """
     Qué filas puede VER cada rol en endpoints de lectura (SELECT):
@@ -476,6 +491,7 @@ files_gcs.inject_dependencies(
     can_edit=can_edit,
     get_user_level=get_user_level,
     _normalize_fecha_fn=_normalize_fecha,
+    get_local_param=get_local_param,
 )
 
 from modules.files_gcs import bp_files     # ← importa el blueprint
@@ -628,7 +644,7 @@ def encargado():
 @login_required
 def remesas_no_retiradas():
     caja   = request.args.get("caja")
-    local  = session.get("local") or request.args.get("local")
+    local  = get_local_param()
     turno  = request.args.get("turno")  # opcional (si lo querés usar)
     lvl    = get_user_level()
 
@@ -676,7 +692,7 @@ def remesas_no_retiradas():
 @with_read_scope('t')
 def remesas_hoy():
     caja  = request.args.get("caja")
-    local = session.get("local") or request.args.get("local")
+    local = get_local_param()
     fecha = request.args.get("fecha")
     turno = request.args.get("turno")
     if not (caja and local and fecha and turno):
@@ -1092,7 +1108,7 @@ def tarjetas_cargadas_hoy():
     caja      = request.args.get("caja")
     fecha_str = request.args.get("fecha")
     turno     = request.args.get("turno")
-    local     = session.get('local') or request.args.get('local')
+    local     = get_local_param()
 
     if not (caja and fecha_str and turno and local):
         return jsonify([])
@@ -1270,7 +1286,7 @@ def guardar_rappi_lote():
 @login_required
 @with_read_scope('t')  # agrega g.read_scope acorde al nivel (L2: cajas cerradas; L3: locales cerrados)
 def rappi_cargadas():
-    local = session.get('local') or request.args.get('local')
+    local = get_local_param()
     caja  = request.args.get('caja')
     fecha = request.args.get('fecha')
     turno = request.args.get('turno')
@@ -1487,7 +1503,7 @@ def pedidosya_cargadas():
     Query params: ?caja=Caja%201&fecha=YYYY-MM-DD&turno=DIA|NOCHE|UNI
     Respuesta: { success:true, datos:[{id, transaccion, monto, fecha, turno}, ...] }
     """
-    local = session.get('local') or request.args.get('local')
+    local = get_local_param()
     caja  = request.args.get('caja')
     fecha = request.args.get('fecha')
     turno = (request.args.get('turno') or 'UNI').upper()
@@ -1695,7 +1711,7 @@ def mercado_pago_cargadas():
     caja  = request.args.get('caja')
     fecha = request.args.get('fecha')
     turno = request.args.get('turno')
-    local = session.get('local') or request.args.get('local')
+    local = get_local_param()
 
     if not (caja and fecha and turno and local):
         return jsonify(success=True, datos=[])
@@ -1953,7 +1969,7 @@ def ventas_cargadas():
     GET -> Devuelve la BASE (única) de la fecha/caja/turno/local.
     resp: { success:true, datos:[ { id, fecha:'YYYY-MM-DD', caja, turno, venta_total:<decimal> } ] }
     """
-    local = session.get('local')
+    local = get_local_param()  # Nivel 3 puede filtrar por cualquier local
     fecha = request.args.get('fecha')
     caja  = request.args.get('caja')
     turno = request.args.get('turno') or 'UNI'
@@ -2484,7 +2500,7 @@ def facturas_delete(fid: int):
 @app.route('/api/cierre/resumen')
 @login_required
 def cierre_resumen():
-    local = session.get('local')
+    local = get_local_param()
     caja  = request.args.get('caja')
     fecha = request.args.get('fecha')
     turno = request.args.get('turno') or 'UNI'  # <-- TURNO
@@ -2739,7 +2755,7 @@ def extract_context_from_request():
     """
     Extrae (local, caja, fecha, turno) de la request/sesión.
     """
-    local = session.get('local') or request.args.get('local')
+    local = get_local_param()
     caja  = request.args.get('caja')
     fecha = request.args.get('fecha')
     turno = request.args.get('turno') or "UNI"
@@ -2910,7 +2926,7 @@ def api_tipos_gastos():
 @app.route('/gastos_cargadas')
 @login_required
 def gastos_cargadas():
-    local = session.get('local')
+    local = get_local_param()
     caja  = request.args.get('caja')
     fecha = request.args.get('fecha')
     turno = request.args.get('turno')
@@ -3130,6 +3146,99 @@ def borrar_gasto(gasto_id):
 
 
 
+
+
+# ========= API LOCALES =========
+@app.route('/api/locales', methods=['GET'])
+@login_required
+def api_locales():
+    """
+    Endpoint para obtener la lista de todos los locales.
+    Usado por auditores para filtrar en Carga de Datos.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
+        locales = cur.fetchall()
+        resultado = [l['local'] for l in locales if l['local']]
+        print(f"📍 API /api/locales devolviendo: {resultado}")
+        return jsonify(resultado)
+    except Exception as e:
+        print(f"❌ Error en /api/locales: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(error=str(e)), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+# ========= API CAJAS POR LOCAL =========
+@app.route('/api/cajas', methods=['GET'])
+@login_required
+def api_cajas():
+    """
+    Endpoint para obtener las cajas de un local específico.
+    Usado por auditores para filtrar en Carga de Datos.
+    Query param: local
+    """
+    local = request.args.get('local')
+    if not local:
+        return jsonify([])
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT DISTINCT caja
+            FROM (
+                SELECT DISTINCT caja FROM ventas_trns WHERE local = %s
+                UNION
+                SELECT DISTINCT caja FROM remesas_trns WHERE local = %s
+                UNION
+                SELECT DISTINCT caja FROM tarjetas_trns WHERE local = %s
+            ) AS todas_cajas
+            ORDER BY caja
+        """, (local, local, local))
+        cajas = cur.fetchall()
+        return jsonify([c['caja'] for c in cajas if c['caja']])
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+# ========= API TURNOS POR LOCAL =========
+@app.route('/api/turnos', methods=['GET'])
+@login_required
+def api_turnos():
+    """
+    Endpoint para obtener los turnos de un local específico.
+    Usado por auditores para filtrar en Carga de Datos.
+    Query param: local
+    """
+    local = request.args.get('local')
+    if not local:
+        return jsonify([])
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT DISTINCT turnos
+            FROM locales
+            WHERE local = %s
+            ORDER BY turnos
+        """, (local,))
+        turnos = cur.fetchall()
+        return jsonify([t['turnos'] for t in turnos if t['turnos']])
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+    finally:
+        cur.close()
+        conn.close()
 
 
 # ___________ RESUMEN_LOCAL.HTML _____________________________-#
@@ -4451,7 +4560,7 @@ def api_estado_auditoria():
     Verifica si un local está auditado para una fecha específica.
     Retorna: { auditado: bool, info: {...} }
     """
-    local = request.args.get('local') or session.get('local')
+    local = get_local_param()
     fecha = request.args.get('fecha')
 
     if not (local and fecha):
@@ -4608,7 +4717,7 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
 @app.get("/estado_local")
 @login_required
 def estado_local():
-    local = request.args.get("local") or session.get("local")
+    local = get_local_param()
     fecha = request.args.get("fecha") or session.get('fecha')
     if not (local and fecha):
         return jsonify(ok=False, msg="Faltan parámetros"), 400

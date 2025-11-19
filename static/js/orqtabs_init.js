@@ -29,8 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // Detectar si existe #localSelect (auditor) o usar #userLocal (cajero/encargado)
+  const localSelector = document.getElementById('localSelect') ? '#localSelect' : '#userLocal';
+
   OrqTabs.init({
-    selLocal:'#userLocal',
+    selLocal: localSelector,
     selCaja:'#cajaSelect',
     selFecha:'#fechaGlobal',
     tabSelector: '.tab-btn',

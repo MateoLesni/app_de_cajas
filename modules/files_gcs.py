@@ -34,14 +34,16 @@ _get_db_connection  = None
 _can_edit           = None
 _get_user_level     = None
 _normalize_fecha    = None
+_get_local_param    = None
 
-def inject_dependencies(*, login_required, get_db_connection, can_edit, get_user_level, _normalize_fecha_fn):
-    global _login_required, _get_db_connection, _can_edit, _get_user_level, _normalize_fecha
+def inject_dependencies(*, login_required, get_db_connection, can_edit, get_user_level, _normalize_fecha_fn, get_local_param=None):
+    global _login_required, _get_db_connection, _can_edit, _get_user_level, _normalize_fecha, _get_local_param
     _login_required    = login_required
     _get_db_connection = get_db_connection
     _can_edit          = can_edit
     _get_user_level    = get_user_level
     _normalize_fecha   = _normalize_fecha_fn
+    _get_local_param   = get_local_param
     _wrap_endpoint_with_login("files.upload")
     _wrap_endpoint_with_login("files.list_files")
     _wrap_endpoint_with_login("files.delete_item")
@@ -377,7 +379,8 @@ def delete_item():
     if not all([_get_db_connection, _can_edit, _get_user_level, _normalize_fecha]):
         return jsonify(success=False, msg="Dependencias no inicializadas"), 500
 
-    local_ses = (session.get('local') or '').strip()
+    # Para auditores (nivel 3): usa parámetro 'local', para otros niveles: usa session
+    local_ses = (_get_local_param() if _get_local_param else session.get('local') or '').strip()
     user      = (session.get('username') or '').strip()
     if not local_ses or not user:
         return jsonify(success=False, msg="Faltan datos de sesión (usuario/local)."), 401
