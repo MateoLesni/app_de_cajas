@@ -865,45 +865,65 @@
     if (localSelect) {
       // Función para cargar turnos según el local seleccionado
       async function cargarTurnos(local, turnoPreseleccionado = null) {
-        if (!local || !turnoSelect) return;
+        console.log(`🎯 [cargarTurnos] Llamada con local='${local}', turnoPreseleccionado='${turnoPreseleccionado}'`);
+
+        if (!local) {
+          console.warn('⚠️ [cargarTurnos] No hay local, saliendo');
+          return;
+        }
+
+        if (!turnoSelect) {
+          console.error('❌ [cargarTurnos] No existe el elemento #turnoSelect');
+          return;
+        }
 
         try {
-          console.log(`🔍 Cargando turnos para local: ${local}`);
-          const response = await fetch(`/api/turnos?local=${encodeURIComponent(local)}`);
+          const url = `/api/turnos?local=${encodeURIComponent(local)}`;
+          console.log(`🔍 [cargarTurnos] Haciendo fetch a: ${url}`);
+
+          const response = await fetch(url);
+          console.log(`📡 [cargarTurnos] Response status: ${response.status}`);
 
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
 
           const turnos = await response.json();
-          console.log(`✅ Turnos recibidos:`, turnos);
+          console.log(`✅ [cargarTurnos] Turnos recibidos:`, turnos);
 
           // Limpiar opciones actuales
           turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
+          console.log(`🧹 [cargarTurnos] Select limpiado`);
 
           // Agregar los turnos del local seleccionado
           if (Array.isArray(turnos) && turnos.length > 0) {
-            turnos.forEach(turno => {
+            console.log(`➕ [cargarTurnos] Agregando ${turnos.length} turnos al select`);
+
+            turnos.forEach((turno, index) => {
               const option = document.createElement('option');
               option.value = turno;
               option.textContent = turno;
               turnoSelect.appendChild(option);
+              console.log(`   ${index + 1}. Agregado: "${turno}"`);
             });
 
             // Si hay un turno preseleccionado, restaurarlo
             if (turnoPreseleccionado && turnos.includes(turnoPreseleccionado)) {
               turnoSelect.value = turnoPreseleccionado;
+              console.log(`✓ [cargarTurnos] Turno preseleccionado restaurado: ${turnoPreseleccionado}`);
             } else {
               // Seleccionar el primer turno si no hay preselección
               turnoSelect.value = turnos[0];
+              console.log(`✓ [cargarTurnos] Primer turno seleccionado: ${turnos[0]}`);
             }
           } else {
-            console.warn('⚠️ No se recibieron turnos para el local:', local);
+            console.warn('⚠️ [cargarTurnos] Array de turnos vacío o inválido');
           }
 
           guardarFiltros();
+          console.log(`💾 [cargarTurnos] Filtros guardados`);
         } catch (err) {
-          console.error('❌ Error cargando turnos:', err);
+          console.error('❌ [cargarTurnos] Error:', err);
           // En caso de error, cargar turnos por defecto
           turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
           ['UNI', 'DIA', 'NOCHE'].forEach(turno => {
@@ -913,6 +933,7 @@
             turnoSelect.appendChild(option);
           });
           turnoSelect.value = 'UNI';
+          console.log(`🔧 [cargarTurnos] Turnos por defecto cargados`);
         }
       }
 
@@ -955,33 +976,38 @@
       }
 
       // Listener para cuando cambie el local
+      // IMPORTANTE: Usar CAPTURING (true) para ejecutar ANTES del firewall del orquestador
       localSelect.addEventListener('change', async (e) => {
         const local = e.target.value;
+        console.log(`🔄 [localSelect.change CAPTURING] Cambio de local detectado: "${local}"`);
 
         // Actualizar el span #userLocal para que OrqTabs lo detecte
         const userLocalSpan = document.getElementById('userLocal');
         if (userLocalSpan) {
           userLocalSpan.textContent = local;
+          console.log(`📝 [localSelect.change] Span #userLocal actualizado a: "${local}"`);
         }
 
         if (local) {
+          console.log(`🚀 [localSelect.change] Llamando a cargarTurnos('${local}')`);
           await cargarTurnos(local);
-          // NO disparar evento change automáticamente, lo haremos manualmente después
+          console.log(`✓ [localSelect.change] cargarTurnos completado`);
+
+          console.log(`🚀 [localSelect.change] Llamando a cargarCajas('${local}')`);
           await cargarCajas(local, null, false);
+          console.log(`✓ [localSelect.change] cargarCajas completado`);
         } else {
-          // Si no hay local, limpiar turnos y cajas
+          console.warn(`⚠️ [localSelect.change] Local vacío, limpiando selectores`);
           turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
           cajaSelect.innerHTML = '<option value="">-- Seleccionar Caja --</option>';
         }
 
         guardarFiltros();
+        console.log(`💾 [localSelect.change] Filtros guardados`);
 
-        // Notificar a OrqTabs que los filtros cambiaron (esto hará el refetch con el local correcto)
-        if (window.OrqTabs && window.OrqTabs.notifyFiltersChanged) {
-          console.log('🔔 Notificando cambio de filtros a OrqTabs. Local:', local, 'Caja:', cajaSelect.value);
-          window.OrqTabs.notifyFiltersChanged();
-        }
-      });
+        // NO llamar a notifyFiltersChanged aquí porque el firewall del orquestador lo hará
+        console.log(`✓ [localSelect.change] Dejando que el orquestador maneje el refetch`);
+      }, true); // ← CAPTURING = true para ejecutar ANTES del firewall
 
       // Listeners para guardar cambios en otros filtros
       turnoSelect?.addEventListener('change', guardarFiltros);
