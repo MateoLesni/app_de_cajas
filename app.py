@@ -3222,42 +3222,64 @@ def api_turnos():
     if not local:
         return jsonify([])
 
+    # Mapeo hardcodeado de turnos por local (para salir del apuro)
+    # Podés agregar o modificar locales acá según necesites
+    TURNOS_POR_LOCAL = {
+        'Alma Cerrito': ['Turno día', 'Turno noche'],
+        'La Mala': ['Turno día', 'Turno noche', 'Turno tarde'],
+        'Fabric Sushi': ['Turno día'],
+    }
+
+    # Si el local está en el mapeo hardcodeado, usar esos turnos directamente
+    if local in TURNOS_POR_LOCAL:
+        print(f"[/api/turnos] Usando turnos hardcodeados para '{local}': {TURNOS_POR_LOCAL[local]}")
+        return jsonify(TURNOS_POR_LOCAL[local])
+
+    # Si no está hardcodeado, intentar obtener desde la BD
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
     try:
-        # Intentar obtener los turnos desde la tabla locales
+        # Obtener los turnos desde la tabla locales
         cur.execute("""
             SELECT DISTINCT turnos
             FROM locales
-            WHERE local = %s
+            WHERE local = %s AND turnos IS NOT NULL AND turnos != ''
             ORDER BY turnos
         """, (local,))
         rows = cur.fetchall()
 
         # Parsear los turnos (puede venir como string separado por comas o como valor único)
-        turnos_set = set()
+        turnos_list = []
         for row in rows:
             val = row.get('turnos')
             if val:
-                # Si viene como "DIA,NOCHE" o "DIA, NOCHE", separar
-                if ',' in str(val):
-                    turnos_set.update([t.strip() for t in str(val).split(',') if t.strip()])
+                val_str = str(val).strip()
+                # Si viene como "Turno día,Turno noche", separar por comas
+                if ',' in val_str:
+                    for t in val_str.split(','):
+                        t_clean = t.strip()
+                        if t_clean and t_clean not in turnos_list:
+                            turnos_list.append(t_clean)
                 else:
-                    turnos_set.add(str(val).strip())
+                    if val_str and val_str not in turnos_list:
+                        turnos_list.append(val_str)
 
-        # Si no hay turnos configurados en la tabla locales, devolver los estándar
-        if not turnos_set:
-            # Devolver los turnos por defecto basados en la configuración estándar
-            turnos_set = {'UNI', 'DIA', 'NOCHE'}
+        # Si no hay turnos en la BD, usar turnos por defecto
+        if not turnos_list:
+            print(f"[/api/turnos] No se encontraron turnos en BD para '{local}', usando defaults")
+            turnos_list = ['Turno día', 'Turno noche']
 
-        # Ordenar: UNI primero, luego DIA, luego NOCHE, resto alfabético
-        orden_custom = {'UNI': 0, 'DIA': 1, 'NOCHE': 2}
-        turnos_list = sorted(turnos_set, key=lambda t: (orden_custom.get(t, 999), t))
+        # Ordenar alfabéticamente para consistencia
+        turnos_list.sort()
 
+        print(f"[/api/turnos] Turnos para '{local}': {turnos_list}")
         return jsonify(turnos_list)
     except Exception as e:
-        # En caso de error, devolver los turnos por defecto
-        return jsonify(['UNI', 'DIA', 'NOCHE'])
+        # En caso de error, devolver turnos por defecto
+        print(f"Error en /api/turnos: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(['Turno día', 'Turno noche'])
     finally:
         cur.close()
         conn.close()
