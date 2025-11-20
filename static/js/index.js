@@ -238,10 +238,27 @@ document.addEventListener("DOMContentLoaded", function () {
             <button class="btn-borrar-local" data-idx="${r.idx}" data-tipo="local" title="Borrar">🗑️</button>
           `;
         } else if (r.tipo === "bd") {
-          acciones = `
-            <button class="btn-editar-bd" data-id="${r.id}" title="Editar (BD)">✏️</button>
-            <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar (BD)">🗑️</button>
-          `;
+          // Remesas YA RETIRADAS del día (desde BD)
+          const esMismaCaja = (r.caja === caja);
+          const cajaEstaAbierta = !window.cajaCerrada;
+
+          // NIVEL 1 (cajero): Solo puede borrar si es su caja Y está abierta
+          if (ROLE === 1) {
+            // Editar: siempre disponible si es su caja y está abierta
+            if (esMismaCaja && cajaEstaAbierta) {
+              acciones = `
+                <button class="btn-editar-bd" data-id="${r.id}" title="Editar (BD)">✏️</button>
+                <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar (BD)">🗑️</button>
+              `;
+            }
+          }
+          // NIVEL 2+ (encargado/auditor): puede editar y borrar aunque la caja esté cerrada (mientras el local esté abierto)
+          else {
+            acciones = `<button class="btn-editar-bd" data-id="${r.id}" title="Editar (BD)">✏️</button>`;
+            if (esMismaCaja && !localCerrado) {
+              acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar (BD)">🗑️</button>`;
+            }
+          }
         }
       }
 
