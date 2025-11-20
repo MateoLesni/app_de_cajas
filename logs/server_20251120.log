@@ -865,3 +865,366 @@
 2025-11-20 10:32:04,520 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:32:04] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
 2025-11-20 10:32:05,130 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:32:05] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
 2025-11-20 10:32:05,188 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:32:05] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:33:38,952 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-20 10:33:38,953 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-20 10:33:38,955 - werkzeug - INFO -  * Restarting with stat
+2025-11-20 10:33:40,405 - werkzeug - WARNING -  * Debugger is active!
+2025-11-20 10:33:40,407 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-20 10:33:42,241 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:42] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-20 10:33:42,452 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-20 10:33:42,453 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-20 10:33:42,455 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-20 10:33:42,983 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:42] "GET /auditor HTTP/1.1" 200 -
+2025-11-20 10:33:43,000 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,002 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,006 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,010 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,012 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,012 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,015 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,016 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,025 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,026 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,028 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,030 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,369 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:33:43,436 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:33:43,437 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-11-20 10:33:43,439 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:43] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:33:44,050 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /estado_caja?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:33:44,051 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:33:44,052 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /api/locales HTTP/1.1" 200 -
+2025-11-20 10:33:44,054 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:33:44,054 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:33:44,138 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:33:44,754 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:33:44,756 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:33:44,757 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:44] "GET /api/turnos?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:33:45,383 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:45] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:33:45,462 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:45] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:33:45,463 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:45] "GET /api/cajas?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:33:46,372 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:46] "GET /facturas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:33:46,428 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:46] "GET /estado_caja?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:33:46,469 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:46] "GET /ventas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:33:47,146 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:47] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:33:47,815 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:47] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:33:47,816 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:33:47] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:06,872 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:06] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:34:06,886 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:06] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:34:18,804 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:18] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-11-20 10:34:18,812 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:18] "GET /login HTTP/1.1" 200 -
+2025-11-20 10:34:18,856 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:18] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-20 10:34:18,864 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:18] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:34:26,875 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:26] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-20 10:34:27,587 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "GET /auditor HTTP/1.1" 200 -
+2025-11-20 10:34:27,642 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:34:27,646 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,651 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,651 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,653 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,656 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,660 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,664 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,667 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,672 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,675 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,676 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,678 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,843 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:34:27,864 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-11-20 10:34:27,865 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:34:27,866 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:27] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:34:28,495 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:28] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:34:28,547 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:28] "GET /estado_caja?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:34:28,548 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:28] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:34:28,548 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:28] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:34:28,555 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:28] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:34:28,555 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:28] "GET /api/locales HTTP/1.1" 200 -
+2025-11-20 10:34:29,167 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:29] "GET /estado_caja?local=&caja=Caja%201&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:34:29,168 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:29] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:34:29,305 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:29] "GET /api/turnos?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:34:29,952 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:29] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:29,954 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:29] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:30,041 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:30] "GET /api/cajas?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:34:30,910 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:30] "GET /ventas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:31,001 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:31] "GET /estado_caja?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:31,002 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:31] "GET /facturas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:31,615 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:31] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:34:32,223 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:32] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:32,304 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:32] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:36,162 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:36] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:36,229 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:36] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:36,229 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:36] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:36,842 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:36] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:34:37,528 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:37] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:37,570 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:37] "GET /estado_local?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:42,599 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:42] "GET /estado_caja?local=Heladeria+AT+LOVE&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:42,600 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:42] "GET /facturas_cargadas?local=Heladeria+AT+LOVE&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:42,695 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:42] "GET /ventas_cargadas?local=Heladeria+AT+LOVE&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:34:43,371 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:43] "GET /estado_caja?local=Heladeria%20AT%20LOVE&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:34:43,991 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:43] "GET /estado_local?local=Heladeria%20AT%20LOVE&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:34:44,118 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:34:44] "GET /api/estado_auditoria?local=Heladeria%20AT%20LOVE&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:35:25,324 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:25] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-11-20 10:35:25,329 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:25] "GET /login HTTP/1.1" 200 -
+2025-11-20 10:35:25,395 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:25] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-20 10:35:25,399 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:25] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:35:33,569 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:33] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-20 10:35:34,340 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "GET / HTTP/1.1" 200 -
+2025-11-20 10:35:34,411 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:35:34,417 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,418 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,421 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,424 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,435 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,438 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,440 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/ventas.js?v=20251114002 HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,447 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,451 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,454 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,458 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,460 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,683 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:34,708 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:35:34,710 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[31m[1mGET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=&turno=Turno%20noche HTTP/1.1[0m" 400 -
+2025-11-20 10:35:34,712 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:34] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:35:34,722 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:34,750 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:35,333 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:35] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-20 10:35:35,364 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:35] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-20&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:35,379 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:35] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-20&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:35,413 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:35] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-20&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:35,414 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:35] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:35:36,185 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:36,186 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:36] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:36,189 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:36,193 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:37,039 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-20 10:35:37,242 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-11-20 10:35:37,248 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "GET /login HTTP/1.1" 200 -
+2025-11-20 10:35:37,321 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:35:37,322 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-20 10:35:37,383 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:37,383 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:37,387 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:37,390 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:37,412 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:37] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-20&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:35:38,429 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:38] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-20&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:35:38,606 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:38,606 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:38] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:38,610 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:38,613 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:39,762 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:39,762 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:39] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:39,766 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:39,769 - app - INFO - files.list prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Fabric Sushi', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:41,028 - app - INFO - files.list found=0 prefix=fabric-sushi/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:41,028 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:41] "GET /files/list?tab=ventas_z&local=Fabric+Sushi&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:46,653 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:46] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-20 10:35:48,528 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "GET / HTTP/1.1" 200 -
+2025-11-20 10:35:48,611 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:35:48,617 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,635 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,636 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,638 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,640 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,643 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,649 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/ventas.js?v=20251114002 HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,651 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,653 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,656 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,658 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,659 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,821 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:35:48,841 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[31m[1mGET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=&turno=Turno%20noche HTTP/1.1[0m" 400 -
+2025-11-20 10:35:48,844 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:35:48,848 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:48] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:35:48,851 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:48,863 - app - INFO - files.list prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Alma Cerrito', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:49,536 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:49] "GET /estado_caja?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-20&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:49,537 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:49] "GET /ventas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-20&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:49,562 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:49] "GET /api/terminales?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:35:49,562 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:49] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:35:49,730 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:49] "GET /facturas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-20&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:50,042 - app - INFO - files.list found=0 prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:50,043 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:50] "GET /files/list?tab=ventas_z&local=Alma+Cerrito&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:50,047 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:50,051 - app - INFO - files.list prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Alma Cerrito', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:50,296 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:50] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-20&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:35:50,374 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:50] "GET /api/terminales?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:35:51,328 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:51] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-20&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:35:51,409 - app - INFO - files.list found=0 prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:51,410 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:51] "GET /files/list?tab=ventas_z&local=Alma+Cerrito&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:51,413 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:51,416 - app - INFO - files.list prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Alma Cerrito', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:52,095 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:52] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-20 HTTP/1.1" 200 -
+2025-11-20 10:35:52,167 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:52] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-20 HTTP/1.1" 200 -
+2025-11-20 10:35:52,612 - app - INFO - files.list found=0 prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:52,613 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:52] "GET /files/list?tab=ventas_z&local=Alma+Cerrito&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:52,617 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:52,619 - app - INFO - files.list prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Alma Cerrito', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:53,903 - app - INFO - files.list found=0 prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:53,904 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:53] "GET /files/list?tab=ventas_z&local=Alma+Cerrito&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:35:53,907 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-20 10:35:53,910 - app - INFO - files.list prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'Alma Cerrito', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-20'}
+2025-11-20 10:35:55,088 - app - INFO - files.list found=0 prefix=alma-cerrito/ventas-z/2025/11/20/caja-1/turno-noche/
+2025-11-20 10:35:55,089 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:35:55] "GET /files/list?tab=ventas_z&local=Alma+Cerrito&fecha=2025-11-20&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:36:44,969 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:36:44] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-11-20 10:36:44,976 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:36:44] "GET /login HTTP/1.1" 200 -
+2025-11-20 10:36:45,089 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:36:45] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:36:45,090 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:36:45] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,007 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-20 10:37:02,708 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "GET /auditor HTTP/1.1" 200 -
+2025-11-20 10:37:02,804 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:37:02,805 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,813 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,816 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,819 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,821 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,824 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,827 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,829 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,837 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,840 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,840 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:02,841 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:02] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:03,011 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:37:03,033 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-11-20 10:37:03,034 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:37:03,036 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:37:03,657 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /estado_caja?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:37:03,658 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:37:03,658 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /api/locales HTTP/1.1" 200 -
+2025-11-20 10:37:03,736 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:37:03,736 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:37:03,781 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:03] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:37:04,250 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:04] "GET /api/turnos?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:37:04,331 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:04] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:37:04,370 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:04] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:37:04,860 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:04] "GET /api/cajas?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:37:04,935 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:04] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:37:04,937 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:04] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:37:05,727 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:05] "GET /facturas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:37:05,737 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:05] "GET /estado_caja?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:37:05,738 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:05] "GET /ventas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:37:06,349 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:06] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:37:07,032 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:07] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:37:07,033 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:07] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:37:08,725 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:08] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:37:08,773 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:08] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:37:08,775 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:08] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:37:09,468 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:09] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:37:10,091 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:10] "GET /estado_local?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:37:10,092 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:37:10] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:01,362 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "GET /auditor HTTP/1.1" 200 -
+2025-11-20 10:42:01,384 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,387 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,391 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,393 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,397 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,401 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,403 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,406 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,409 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,412 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,414 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:42:01,415 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,419 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,606 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:42:01,620 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:42:01,621 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-11-20 10:42:01,622 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:01] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:42:02,249 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /api/locales HTTP/1.1" 200 -
+2025-11-20 10:42:02,253 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:42:02,285 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:42:02,285 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:42:02,305 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /estado_caja?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:42:02,370 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:42:02,939 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /api/turnos?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:42:02,981 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:02] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:42:03,021 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:03] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:42:03,565 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:03] "GET /api/cajas?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:42:03,641 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:03] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:03,692 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:03] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:04,436 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:04] "GET /ventas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:04,451 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:04] "GET /estado_caja?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:04,452 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:04] "GET /facturas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:05,052 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:05] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:42:05,682 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:05] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:05,758 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:05] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:06,686 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:06] "GET /estado_caja?local=Heladeria+AT+LOVE&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:06,686 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:06] "GET /facturas_cargadas?local=Heladeria+AT+LOVE&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:06,739 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:06] "GET /ventas_cargadas?local=Heladeria+AT+LOVE&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:07,444 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:07] "GET /estado_caja?local=Heladeria%20AT%20LOVE&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:42:08,127 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:08] "GET /estado_local?local=Heladeria%20AT%20LOVE&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:08,128 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:08] "GET /api/estado_auditoria?local=Heladeria%20AT%20LOVE&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:17,974 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:17] "GET /estado_caja?local=Tostado&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:18,030 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:18] "GET /ventas_cargadas?local=Tostado&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:18,031 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:18] "GET /facturas_cargadas?local=Tostado&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:18,705 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:18] "GET /estado_caja?local=Tostado&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:42:19,339 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:19] "GET /estado_local?local=Tostado&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:19,394 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:19] "GET /api/estado_auditoria?local=Tostado&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:38,612 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:38] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:38,613 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:38] "GET /estado_caja?caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:38,614 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:38] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:42:39,339 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:39] "GET /estado_caja?local=&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:42:39,982 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:39] "GET /estado_local?local=&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:42:40,123 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:42:40] "GET /api/estado_auditoria?local=&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:43:12,805 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:43:12] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:43:12,848 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:43:12] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:43:12,849 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:43:12] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:43:13,546 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:43:13] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:43:14,168 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:43:14] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:43:14,243 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:43:14] "GET /estado_local?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:47:49,827 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "GET /auditor HTTP/1.1" 200 -
+2025-11-20 10:47:49,857 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,859 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,862 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,866 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,868 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,870 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,872 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,877 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,880 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,883 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,883 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,886 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:49,891 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:49] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-20 10:47:50,073 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-20 10:47:50,106 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:47:50,107 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-11-20 10:47:50,109 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-20 10:47:50,771 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:47:50,771 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-20 10:47:50,772 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:47:50,814 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /estado_caja?caja=Caja+1&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:47:50,814 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /api/locales HTTP/1.1" 200 -
+2025-11-20 10:47:50,875 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:50] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:47:51,428 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:51] "GET /estado_caja?local=&caja=Caja%201&fecha=2025-11-20&turno=UNI HTTP/1.1" 200 -
+2025-11-20 10:47:51,428 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:51] "GET /api/turnos?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:47:51,500 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:51] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-20 10:47:52,053 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:52] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:47:52,054 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:52] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:47:52,113 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:52] "GET /api/cajas?local=Alma%20Cerrito HTTP/1.1" 200 -
+2025-11-20 10:47:53,001 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:53] "GET /estado_caja?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:47:53,011 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:53] "GET /ventas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:47:53,056 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:53] "GET /facturas_cargadas?local=Alma+Cerrito&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:47:53,707 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:53] "GET /estado_caja?local=Alma%20Cerrito&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:47:54,340 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:54] "GET /estado_local?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:47:54,410 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:54] "GET /api/estado_auditoria?local=Alma%20Cerrito&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:47:58,420 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:58] "GET /api/turnos?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-20 10:47:58,650 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:58] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:47:58,651 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:58] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:47:58,654 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:58] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:47:59,089 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:59] "GET /api/cajas?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-11-20 10:47:59,284 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:59] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-20 10:47:59,977 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:47:59] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:48:00,048 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:00] "GET /estado_local?local=Fabric%20Sushi&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:48:03,844 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:03] "GET /api/turnos?local=La%20Mala HTTP/1.1" 200 -
+2025-11-20 10:48:04,157 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:04] "GET /estado_caja?local=La+Mala&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:48:04,158 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:04] "GET /ventas_cargadas?local=La+Mala&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:48:04,158 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:04] "GET /facturas_cargadas?local=La+Mala&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-20 10:48:04,450 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:04] "GET /api/cajas?local=La%20Mala HTTP/1.1" 200 -
+2025-11-20 10:48:04,762 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:04] "GET /estado_caja?local=La%20Mala&caja=Caja%201&fecha=2025-11-18&turno=Turno%20tarde HTTP/1.1" 200 -
+2025-11-20 10:48:05,411 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:05] "GET /estado_local?local=La%20Mala&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-20 10:48:05,411 - werkzeug - INFO - 127.0.0.1 - - [20/Nov/2025 10:48:05] "GET /api/estado_auditoria?local=La%20Mala&fecha=2025-11-18 HTTP/1.1" 200 -
