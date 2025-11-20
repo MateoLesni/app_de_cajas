@@ -3225,16 +3225,39 @@ def api_turnos():
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
     try:
+        # Intentar obtener los turnos desde la tabla locales
         cur.execute("""
             SELECT DISTINCT turnos
             FROM locales
             WHERE local = %s
             ORDER BY turnos
         """, (local,))
-        turnos = cur.fetchall()
-        return jsonify([t['turnos'] for t in turnos if t['turnos']])
+        rows = cur.fetchall()
+
+        # Parsear los turnos (puede venir como string separado por comas o como valor único)
+        turnos_set = set()
+        for row in rows:
+            val = row.get('turnos')
+            if val:
+                # Si viene como "DIA,NOCHE" o "DIA, NOCHE", separar
+                if ',' in str(val):
+                    turnos_set.update([t.strip() for t in str(val).split(',') if t.strip()])
+                else:
+                    turnos_set.add(str(val).strip())
+
+        # Si no hay turnos configurados en la tabla locales, devolver los estándar
+        if not turnos_set:
+            # Devolver los turnos por defecto basados en la configuración estándar
+            turnos_set = {'UNI', 'DIA', 'NOCHE'}
+
+        # Ordenar: UNI primero, luego DIA, luego NOCHE, resto alfabético
+        orden_custom = {'UNI': 0, 'DIA': 1, 'NOCHE': 2}
+        turnos_list = sorted(turnos_set, key=lambda t: (orden_custom.get(t, 999), t))
+
+        return jsonify(turnos_list)
     except Exception as e:
-        return jsonify(error=str(e)), 500
+        # En caso de error, devolver los turnos por defecto
+        return jsonify(['UNI', 'DIA', 'NOCHE'])
     finally:
         cur.close()
         conn.close()
