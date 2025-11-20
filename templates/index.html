@@ -790,9 +790,46 @@
     }
 
     window.addEventListener('DOMContentLoaded', refrescarBadge);
-    document.getElementById('cajaSelect')?.addEventListener('change', refrescarBadge);
-    document.getElementById('fechaGlobal')?.addEventListener('change', refrescarBadge);
-    document.getElementById('turnoSelect')?.addEventListener('change', refrescarBadge);
+
+    // Listeners para refrescar badge Y galerías de imágenes cuando cambian los filtros
+    document.getElementById('cajaSelect')?.addEventListener('change', () => {
+      refrescarBadge();
+      // Recargar galerías cuando cambia la caja
+      setTimeout(() => {
+        const tabs = ['ventasTab', 'mercadopago', 'tarjetas', 'rappiTab', 'pedidosyaTab', 'remesas', 'gastos'];
+        tabs.forEach(tabKey => {
+          if (window.Adjuntador && window.Adjuntador.refreshTabImages) {
+            window.Adjuntador.refreshTabImages(tabKey);
+          }
+        });
+      }, 300);
+    });
+
+    document.getElementById('fechaGlobal')?.addEventListener('change', () => {
+      refrescarBadge();
+      // Recargar galerías cuando cambia la fecha
+      setTimeout(() => {
+        const tabs = ['ventasTab', 'mercadopago', 'tarjetas', 'rappiTab', 'pedidosyaTab', 'remesas', 'gastos'];
+        tabs.forEach(tabKey => {
+          if (window.Adjuntador && window.Adjuntador.refreshTabImages) {
+            window.Adjuntador.refreshTabImages(tabKey);
+          }
+        });
+      }, 300);
+    });
+
+    document.getElementById('turnoSelect')?.addEventListener('change', () => {
+      refrescarBadge();
+      // Recargar galerías cuando cambia el turno
+      setTimeout(() => {
+        const tabs = ['ventasTab', 'mercadopago', 'tarjetas', 'rappiTab', 'pedidosyaTab', 'remesas', 'gastos'];
+        tabs.forEach(tabKey => {
+          if (window.Adjuntador && window.Adjuntador.refreshTabImages) {
+            window.Adjuntador.refreshTabImages(tabKey);
+          }
+        });
+      }, 300);
+    });
   })();
   </script>
 
