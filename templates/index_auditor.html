@@ -868,31 +868,51 @@
         if (!local || !turnoSelect) return;
 
         try {
+          console.log(`🔍 Cargando turnos para local: ${local}`);
           const response = await fetch(`/api/turnos?local=${encodeURIComponent(local)}`);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
           const turnos = await response.json();
+          console.log(`✅ Turnos recibidos:`, turnos);
 
           // Limpiar opciones actuales
           turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
 
           // Agregar los turnos del local seleccionado
-          turnos.forEach(turno => {
+          if (Array.isArray(turnos) && turnos.length > 0) {
+            turnos.forEach(turno => {
+              const option = document.createElement('option');
+              option.value = turno;
+              option.textContent = turno;
+              turnoSelect.appendChild(option);
+            });
+
+            // Si hay un turno preseleccionado, restaurarlo
+            if (turnoPreseleccionado && turnos.includes(turnoPreseleccionado)) {
+              turnoSelect.value = turnoPreseleccionado;
+            } else {
+              // Seleccionar el primer turno si no hay preselección
+              turnoSelect.value = turnos[0];
+            }
+          } else {
+            console.warn('⚠️ No se recibieron turnos para el local:', local);
+          }
+
+          guardarFiltros();
+        } catch (err) {
+          console.error('❌ Error cargando turnos:', err);
+          // En caso de error, cargar turnos por defecto
+          turnoSelect.innerHTML = '<option value="">-- Seleccionar Turno --</option>';
+          ['UNI', 'DIA', 'NOCHE'].forEach(turno => {
             const option = document.createElement('option');
             option.value = turno;
             option.textContent = turno;
             turnoSelect.appendChild(option);
           });
-
-          // Si hay un turno preseleccionado, restaurarlo
-          if (turnoPreseleccionado && turnos.includes(turnoPreseleccionado)) {
-            turnoSelect.value = turnoPreseleccionado;
-          } else if (turnos.length > 0) {
-            // Seleccionar el primer turno si no hay preselección
-            turnoSelect.value = turnos[0];
-          }
-
-          guardarFiltros();
-        } catch (err) {
-          console.error('Error cargando turnos:', err);
+          turnoSelect.value = 'UNI';
         }
       }
 
