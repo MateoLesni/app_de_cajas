@@ -346,6 +346,11 @@ def require_edit_ctx(fn):
             # Verificar primero si está auditado para mensaje más claro
             if is_local_auditado(conn, ctx['local'], ctx['fecha']):
                 return jsonify(success=False, msg='❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones.'), 403
+
+            # Asegurar que existe el registro de estado de caja (abierta por defecto)
+            # Esto permite que cajeros puedan trabajar sin tener que "abrir" explícitamente la caja
+            ensure_estado_row(conn, ctx['local'], ctx['caja'], ctx['fecha'], ctx['turno'])
+
             ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], get_user_level())
         finally:
             conn.close()
