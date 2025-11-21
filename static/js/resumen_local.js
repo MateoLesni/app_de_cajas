@@ -13,6 +13,11 @@
   if (window.__RL_INITED__) return;
   window.__RL_INITED__ = true;
 
+  // ----------------- Estado del Toggle -----------------
+  // Para nivel 2: "operacion" (por defecto) = tablas snap_ (lo que envió el encargado)
+  // Para nivel 3: "admin" (por defecto) = tablas normales (datos de auditoría)
+  let dataSource = null; // Se inicializa en DOMContentLoaded según el nivel
+
   // ----------------- Utils -----------------
   const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const money = (v) => fmt.format(Number(v ?? 0));
@@ -312,7 +317,7 @@
 
   // ----------------- Fetch & estado local -----------------
   async function fetchResumenLocal(params) {
-    const url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}`;
+    const url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}&source=${encodeURIComponent(dataSource)}`;
     const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
@@ -515,6 +520,47 @@
     ensureGlobalDownloadButton();
   }
 
+  // ----------------- Toggle Source (Niveles 2 y 3) -----------------
+  function updateToggleUI() {
+    // Actualizar el botón según el estado actual
+    const btn = $("#rl-toggle-source");
+    const label = $("#rl-toggle-label");
+
+    if (dataSource === "admin") {
+      if (label) label.textContent = "📊 Administración";
+      if (btn) btn.style.backgroundColor = "#6366f1"; // Índigo
+    } else {
+      if (label) label.textContent = "🏭 Operación";
+      if (btn) btn.style.backgroundColor = "#10b981"; // Verde
+    }
+  }
+
+  function toggleDataSource() {
+    // Alternar entre "admin" y "operacion"
+    dataSource = (dataSource === "admin") ? "operacion" : "admin";
+    updateToggleUI();
+    // Recargar datos con la nueva fuente
+    refreshAll();
+  }
+
+  function initializeToggleState() {
+    // Inicializar estado según el nivel del usuario
+    const btn = $("#rl-toggle-source");
+    if (!btn) return; // No hay botón toggle (nivel 1)
+
+    const roleLevel = parseInt(btn.getAttribute("data-role-level") || "3");
+
+    if (roleLevel === 2) {
+      // Nivel 2 (encargado): por defecto en "operacion" (ve lo que envió)
+      dataSource = "operacion";
+    } else {
+      // Nivel 3+ (auditor): por defecto en "admin" (ve datos de auditoría)
+      dataSource = "admin";
+    }
+
+    updateToggleUI();
+  }
+
   // ----------------- Boot -----------------
   document.addEventListener("DOMContentLoaded", () => {
     setTodayIfEmpty($("#rl-fecha"));
@@ -525,9 +571,13 @@
     bindGeneralAccordions();
     bindSubAccordions();
 
+    // Inicializar estado del toggle ANTES de hacer el primer fetch
+    initializeToggleState();
+
     $("#rl-actualizar")?.addEventListener("click", () => refreshAll());
     $("#rl-fecha")?.addEventListener("change", () => refreshAll());
     $("#rl-cerrar-local")?.addEventListener("click", () => cerrarLocal());
+    $("#rl-toggle-source")?.addEventListener("click", () => toggleDataSource());
 
     $("#imgClose")?.addEventListener("click", closeModal);
     $("#imgModal")?.addEventListener("click", (e) => { if (e.target.id === "imgModal") closeModal(); });

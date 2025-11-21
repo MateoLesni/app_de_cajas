@@ -111,6 +111,14 @@
           <div class="form-group"><button id="rl-actualizar" class="btn">Actualizar</button></div>
           <div class="form-group"><button id="rl-imprimir" class="btn btn-ghost">Imprimir</button></div>
 
+          {% if session.get('role_level',1) | int >= 2 %}
+          <div class="form-group">
+            <button id="rl-toggle-source" class="btn" data-role-level="{{ session.get('role_level',1) }}" style="background-color:#6366f1;" title="Alternar entre vista de Operación (snap) y Administración (tablas reales)">
+              <span id="rl-toggle-label">📊 Administración</span>
+            </button>
+          </div>
+          {% endif %}
+
           {% if session.get('role_level',1) | int >= 3 %}
           <div class="form-group">
             <button id="rl-marcar-auditado" class="btn" style="display:none; background-color:#ff9800;">🔒 Marcar Auditado</button>

@@ -346,11 +346,6 @@ def require_edit_ctx(fn):
             # Verificar primero si está auditado para mensaje más claro
             if is_local_auditado(conn, ctx['local'], ctx['fecha']):
                 return jsonify(success=False, msg='❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones.'), 403
-
-            # Asegurar que existe el registro de estado de caja (abierta por defecto)
-            # Esto permite que cajeros puedan trabajar sin tener que "abrir" explícitamente la caja
-            ensure_estado_row(conn, ctx['local'], ctx['caja'], ctx['fecha'], ctx['turno'])
-
             ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], get_user_level())
         finally:
             conn.close()
@@ -3381,9 +3376,16 @@ def api_resumen_local():
     """
     Resumen global por local+fecha (suma todas las cajas/turnos).
     Si el local está CERRADO ese día, lee de SNAPSHOTS (tablas snap_*).
+
+    Parámetro adicional 'source' (solo para nivel 3):
+    - 'operacion': Forzar lectura de tablas snap_* (datos de operación/cierre nivel 2)
+    - 'admin': Forzar lectura de tablas normales (datos de administración/auditoría)
+    Si no se especifica 'source', usa la lógica por defecto (cerrado=snap, abierto=normal)
     """
     local = (request.args.get('local') or session.get('local') or '').strip()
     fecha_s = (request.args.get('fecha') or '').strip()
+    source = (request.args.get('source') or '').strip().lower()  # 'operacion' o 'admin'
+
     if not local or not fecha_s:
         return jsonify(error="Parámetros insuficientes: fecha y local son requeridos"), 400
 
@@ -3394,7 +3396,7 @@ def api_resumen_local():
     conn = get_db_connection()
     cur  = conn.cursor()
     try:
-        # ¿Local cerrado ese día? -> snapshots
+        # Verificar si el local está cerrado (siempre necesitamos este dato para el payload)
         cur.execute("""
             SELECT COALESCE(MIN(estado), 1) AS min_estado
             FROM cierres_locales
@@ -3403,10 +3405,20 @@ def api_resumen_local():
         row = cur.fetchone()
         local_cerrado = (row is not None and row[0] is not None and int(row[0]) == 0)
 
-        # Tablas según estado del local
+        # Determinar si usar tablas snap o normales
+        usar_snap = False
+
+        if source:
+            # Si se especifica 'source', usar ese valor (para niveles 2 y 3)
+            usar_snap = (source == 'operacion')
+        else:
+            # Lógica por defecto: si el local está cerrado, usar snapshots
+            usar_snap = local_cerrado
+
+        # Tablas según el flag usar_snap
         # IMPORTANTE: Facturas siempre se leen de facturas_trns porque los auditores
         # pueden agregar/editar facturas incluso después del cierre del local
-        if local_cerrado:
+        if usar_snap:
             T_REMESAS    = "snap_remesas"
             T_TARJETAS   = "snap_tarjetas"
             T_MP         = "snap_mercadopago"
