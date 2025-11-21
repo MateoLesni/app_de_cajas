@@ -536,3 +536,184 @@
 2025-11-21 15:04:16,091 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:04:16] "GET /estado_local?fecha=2025-11-20 HTTP/1.1" 200 -
 2025-11-21 15:04:18,116 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
 2025-11-21 15:04:18,657 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:04:18] "GET /files/summary_media?fecha=2025-11-20&local=Alma+Cerrito HTTP/1.1" 200 -
+2025-11-21 15:58:32,778 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-21 15:58:32,779 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-21 15:58:32,781 - werkzeug - INFO -  * Restarting with stat
+2025-11-21 15:58:34,572 - werkzeug - WARNING -  * Debugger is active!
+2025-11-21 15:58:34,575 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-21 15:58:37,611 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:37] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-21 15:58:37,865 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-21 15:58:37,865 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-21 15:58:37,868 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-21 15:58:38,568 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "GET /auditor HTTP/1.1" 200 -
+2025-11-21 15:58:38,584 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,586 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,590 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,592 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,593 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,598 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,599 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,602 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,605 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,608 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,611 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,612 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,946 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-21 15:58:38,960 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-21 15:58:38,960 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-11-21 15:58:38,960 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:38] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-11-21 15:58:39,749 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:39] "GET /estado_caja?caja=Caja+1&fecha=2025-11-21&turno=UNI HTTP/1.1" 200 -
+2025-11-21 15:58:39,757 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:39] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-21 15:58:39,787 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:39] "GET /api/locales HTTP/1.1" 200 -
+2025-11-21 15:58:39,809 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:39] "GET /ventas_cargadas?caja=Caja+1&fecha=2025-11-21&turno=UNI HTTP/1.1" 200 -
+2025-11-21 15:58:39,847 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:39] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-21 15:58:39,900 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:39] "GET /facturas_cargadas?caja=Caja+1&fecha=2025-11-21&turno=UNI HTTP/1.1" 200 -
+2025-11-21 15:58:40,590 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:40] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-11-21 15:58:40,598 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:40] "GET /api/turnos?local=Local_Test HTTP/1.1" 200 -
+2025-11-21 15:58:40,697 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:40] "GET /estado_caja?local=Local_Test&caja=Caja%201&fecha=2025-11-18&turno=UNI HTTP/1.1" 200 -
+2025-11-21 15:58:41,456 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:41] "GET /api/cajas?local=Local_Test HTTP/1.1" 200 -
+2025-11-21 15:58:41,548 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:41] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:41,564 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:41] "GET /estado_local?local=Local_Test&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:42,511 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:42] "GET /ventas_cargadas?local=Local_Test&caja=Caja+1&fecha=2025-11-18&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:58:42,524 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:42] "GET /facturas_cargadas?local=Local_Test&caja=Caja+1&fecha=2025-11-18&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:58:42,546 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:42] "GET /estado_caja?local=Local_Test&caja=Caja+1&fecha=2025-11-18&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:58:43,423 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:43] "GET /estado_caja?local=Local_Test&caja=Caja%201&fecha=2025-11-18&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-21 15:58:44,197 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:44] "GET /estado_local?local=Local_Test&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:44,221 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:44] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:48,224 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:48] "GET /api/turnos?local=W%20Infanta HTTP/1.1" 200 -
+2025-11-21 15:58:48,504 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:48] "GET /ventas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:58:48,511 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:48] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:58:48,536 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:48] "GET /facturas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:58:49,010 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:49] "GET /api/cajas?local=W%20Infanta HTTP/1.1" 200 -
+2025-11-21 15:58:49,464 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:49] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-18&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-21 15:58:50,262 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:50] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:50,311 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:50] "GET /estado_local?local=W%20Infanta&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:54,299 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:54] "GET /ventas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:54,356 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:54] "GET /facturas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:54,364 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:54] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:54,819 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:58:54,843 - app - INFO - files.list prefix=w-infanta/mercadopago/2025/11/18/caja-1/turno-noche/ scope=day ctx={'tab': 'mercadopago', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-18'}
+2025-11-21 15:58:55,143 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:55] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:58:55,639 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:55] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:55,680 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:55] "GET /mercadopago_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-18&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:55,941 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:55] "GET /estado_local?local=W%20Infanta&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:55,999 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:55] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:56,260 - app - INFO - files.list found=0 prefix=w-infanta/mercadopago/2025/11/18/caja-1/turno-noche/
+2025-11-21 15:58:56,261 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:56] "GET /files/list?tab=mercadopago&local=W+Infanta&fecha=2025-11-18&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:56,264 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:58:56,268 - app - INFO - files.list prefix=w-infanta/mercadopago/2025/11/18/caja-1/turno-noche/ scope=day ctx={'tab': 'mercadopago', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-18'}
+2025-11-21 15:58:56,487 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:56] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:58:56,499 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:56] "GET /estado_local?local=W%20Infanta&fecha=2025-11-18&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:58:56,825 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:56] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-18 HTTP/1.1" 200 -
+2025-11-21 15:58:57,554 - app - INFO - files.list found=0 prefix=w-infanta/mercadopago/2025/11/18/caja-1/turno-noche/
+2025-11-21 15:58:57,554 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:57] "GET /files/list?tab=mercadopago&local=W+Infanta&fecha=2025-11-18&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:58:58,089 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:58:58,092 - app - INFO - files.list prefix=w-infanta/mercadopago/2025/11/18/caja-1/turno-noche/ scope=day ctx={'tab': 'mercadopago', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-18'}
+2025-11-21 15:58:59,206 - app - INFO - files.list found=0 prefix=w-infanta/mercadopago/2025/11/18/caja-1/turno-noche/
+2025-11-21 15:58:59,207 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:58:59] "GET /files/list?tab=mercadopago&local=W+Infanta&fecha=2025-11-18&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:06,700 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:06] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:06,704 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:06] "GET /mercadopago_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:07,480 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:07] "GET /estado_local?local=W%20Infanta&fecha=2025-11-21&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:59:07,535 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:07] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-21&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:59:07,610 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:07] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 15:59:08,893 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:08,896 - app - INFO - files.list prefix=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/ scope=day ctx={'tab': 'mercadopago', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-21'}
+2025-11-21 15:59:09,920 - app - INFO - files.list found=1 prefix=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/
+2025-11-21 15:59:09,921 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:09] "GET /files/list?tab=mercadopago&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:12,545 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:13,636 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:13] "[31m[1mDELETE /files/item?id=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/918c8460a3ea4070bd520f0562903ab6__17636987874706657599098261203204.jpg HTTP/1.1[0m" 403 -
+2025-11-21 15:59:16,133 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:16] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-21 15:59:16,148 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:16] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-21 15:59:20,421 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:21,618 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:21] "[31m[1mDELETE /files/item?id=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/918c8460a3ea4070bd520f0562903ab6__17636987874706657599098261203204.jpg HTTP/1.1[0m" 403 -
+2025-11-21 15:59:27,286 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:27] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-11-21 15:59:27,297 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:27] "GET /login HTTP/1.1" 200 -
+2025-11-21 15:59:27,352 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:27] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-11-21 15:59:27,361 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:27] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-21 15:59:34,939 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:34] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-11-21 15:59:35,772 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "GET / HTTP/1.1" 200 -
+2025-11-21 15:59:35,829 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-21 15:59:35,830 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,843 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,844 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,847 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,858 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,860 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,864 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,864 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/ventas.js?v=20251114002 HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,869 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,872 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,875 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:35,876 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:35] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:36,040 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-21 15:59:36,090 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "[31m[1mGET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1[0m" 400 -
+2025-11-21 15:59:36,092 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-21 15:59:36,095 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-21 15:59:36,102 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:36,113 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-21'}
+2025-11-21 15:59:36,941 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-21 15:59:36,947 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "GET /facturas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:36,947 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "GET /ventas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:36,948 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:36] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:37,004 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:37] "GET /api/terminales?local=W%20Infanta HTTP/1.1" 200 -
+2025-11-21 15:59:37,391 - app - INFO - files.list found=0 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/
+2025-11-21 15:59:37,392 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:37] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:37,395 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:37,398 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-21'}
+2025-11-21 15:59:37,905 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:37] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-21&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-21 15:59:37,941 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:37] "GET /api/terminales?local=W%20Infanta HTTP/1.1" 200 -
+2025-11-21 15:59:38,589 - app - INFO - files.list found=0 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/
+2025-11-21 15:59:38,590 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:38] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:38,594 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:38,596 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-21'}
+2025-11-21 15:59:38,733 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:38] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-21&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-21 15:59:39,535 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:39] "GET /estado_local?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 15:59:39,642 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:39] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 15:59:39,778 - app - INFO - files.list found=0 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/
+2025-11-21 15:59:39,779 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:39] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:39,782 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:39,787 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-21'}
+2025-11-21 15:59:41,035 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:41,039 - app - INFO - files.list prefix=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/ scope=day ctx={'tab': 'mercadopago', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-21'}
+2025-11-21 15:59:41,131 - app - INFO - files.list found=0 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/
+2025-11-21 15:59:41,131 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:41] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:41,135 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:41,138 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-21'}
+2025-11-21 15:59:41,239 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:41] "GET /facturas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:41,263 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:41] "GET /ventas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:41,339 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:41] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:41,875 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:41] "GET /mercadopago_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:42,137 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:42] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:42,146 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:42] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-21&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:59:42,534 - app - INFO - files.list found=0 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-dia/
+2025-11-21 15:59:42,534 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:42] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-21 15:59:42,575 - app - INFO - files.list found=1 prefix=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/
+2025-11-21 15:59:42,575 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:42] "GET /files/list?tab=mercadopago&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:42,578 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:42,581 - app - INFO - files.list prefix=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/ scope=day ctx={'tab': 'mercadopago', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-21'}
+2025-11-21 15:59:42,973 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:42] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-21&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:59:43,000 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:43] "GET /estado_local?local=W%20Infanta&fecha=2025-11-21&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 15:59:43,050 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:43] "GET /estado_local?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 15:59:43,051 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:43] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 15:59:44,081 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:44] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 15:59:44,171 - app - INFO - files.list found=1 prefix=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/
+2025-11-21 15:59:44,171 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:44] "GET /files/list?tab=mercadopago&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 15:59:51,459 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:53,971 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 15:59:53] "DELETE /files/item?id=w-infanta/mercadopago/2025/11/21/caja-1/turno-noche/918c8460a3ea4070bd520f0562903ab6__17636987874706657599098261203204.jpg HTTP/1.1" 200 -
+2025-11-21 15:59:59,790 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 15:59:59,798 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-21'}
+2025-11-21 16:00:00,572 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:00] "GET /ventas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 16:00:00,607 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:00] "GET /facturas_cargadas?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 16:00:00,659 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:00] "GET /estado_caja?local=W+Infanta&caja=Caja+1&fecha=2025-11-21&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 16:00:00,991 - app - INFO - files.list found=1 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-noche/
+2025-11-21 16:00:00,991 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:00] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 16:00:00,995 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 16:00:00,998 - app - INFO - files.list prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-noche/ scope=day ctx={'tab': 'ventas_z', 'local': 'W Infanta', 'caja': 'Caja 1', 'turno': 'Turno noche', 'fecha': '2025-11-21'}
+2025-11-21 16:00:01,544 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:01] "GET /estado_caja?local=W%20Infanta&caja=Caja%201&fecha=2025-11-21&turno=Turno%20noche HTTP/1.1" 200 -
+2025-11-21 16:00:02,269 - app - INFO - files.list found=1 prefix=w-infanta/ventas-z/2025/11/21/caja-1/turno-noche/
+2025-11-21 16:00:02,270 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:02] "GET /files/list?tab=ventas_z&local=W+Infanta&fecha=2025-11-21&scope=day&caja=Caja+1&turno=Turno+noche HTTP/1.1" 200 -
+2025-11-21 16:00:02,512 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:02] "GET /api/estado_auditoria?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 16:00:02,617 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:02] "GET /estado_local?local=W%20Infanta&fecha=2025-11-21 HTTP/1.1" 200 -
+2025-11-21 16:00:03,945 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-21 16:00:06,494 - werkzeug - INFO - 127.0.0.1 - - [21/Nov/2025 16:00:06] "DELETE /files/item?id=w-infanta/ventas-z/2025/11/21/caja-1/turno-noche/907ced8f3f994df2b208119f6c3dd58d__17636984984606301846065376733765.jpg HTTP/1.1" 200 -

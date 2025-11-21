@@ -417,15 +417,25 @@ def delete_item():
         if local_ses.strip().lower() != local_b.strip().lower():
             return jsonify(success=False, msg="No permitido para este local"), 403
 
+        # Validar permisos para eliminar imágenes
+        user_level = _get_user_level()
+
+        # Nivel 3 (auditor) NO puede eliminar imágenes
+        if user_level >= 3:
+            return jsonify(success=False, msg="Los auditores no pueden eliminar imágenes"), 403
+
+        # Para niveles 1 y 2, validar con can_edit
         conn = _get_db_connection()
         try:
-            allowed = _can_edit(conn, _get_user_level(), local_b, caja_b, nfecha, turno_b)
+            # Firma correcta: can_edit(conn, local, caja, turno, fecha, user_level)
+            allowed = _can_edit(conn, local_b, caja_b, turno_b, nfecha, user_level)
         finally:
             try: conn.close()
             except Exception: pass
 
         if not allowed:
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+            msg = "No permitido (caja cerrada)" if user_level == 1 else "No permitido (local cerrado)"
+            return jsonify(success=False, msg=msg), 403
 
         blob.delete()
         return jsonify(success=True)
