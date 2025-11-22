@@ -752,6 +752,53 @@
       }catch(e){ /* no-op */ }
     }
 
+    // Función auxiliar para mostrar modal de descargo
+    function mostrarModalDescargo() {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('modalDescargoCierre');
+        const input = document.getElementById('modalDescargoInput');
+        const btnConfirmar = document.getElementById('modalDescargoConfirmar');
+        const btnCancelar = document.getElementById('modalDescargoCancelar');
+
+        // Resetear y mostrar modal
+        input.value = '';
+        modal.style.display = 'flex';
+        setTimeout(() => input.focus(), 100);
+
+        // Handlers
+        const confirmar = () => {
+          cleanup();
+          resolve({ confirmed: true, value: input.value.trim() });
+        };
+
+        const cancelar = () => {
+          cleanup();
+          resolve({ confirmed: false, value: null });
+        };
+
+        const handleKeydown = (e) => {
+          if (e.key === 'Escape') cancelar();
+          if (e.key === 'Enter' && e.ctrlKey) confirmar();
+        };
+
+        const cleanup = () => {
+          modal.style.display = 'none';
+          btnConfirmar.removeEventListener('click', confirmar);
+          btnCancelar.removeEventListener('click', cancelar);
+          document.removeEventListener('keydown', handleKeydown);
+        };
+
+        btnConfirmar.addEventListener('click', confirmar);
+        btnCancelar.addEventListener('click', cancelar);
+        document.addEventListener('keydown', handleKeydown);
+
+        // Cerrar modal al hacer click fuera
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) cancelar();
+        });
+      });
+    }
+
     const btn = document.getElementById('btnCerrarCaja');
     if(btn){
       btn.addEventListener('click', async () => {
@@ -761,14 +808,14 @@
           return;
         }
 
-        // Pedir observación/descargo
-        const observacion = prompt('Ingresá una Observación/Descargo para el cierre de caja (opcional):');
-        if(observacion === null){ return; } // Canceló el prompt
+        // Pedir observación/descargo con modal personalizado
+        const resultado = await mostrarModalDescargo();
+        if(!resultado.confirmed){ return; } // Canceló el modal
 
         try{
           const payload = {local, caja, fecha, turno};
-          if(observacion && observacion.trim()){
-            payload.observacion = observacion.trim();
+          if(resultado.value){
+            payload.observacion = resultado.value;
           }
 
           const r = await fetch('/cerrar_caja', {
@@ -925,9 +972,160 @@
     .img-uploader .iu-remove{position:absolute;top:6px;right:6px;border:none;background:#ef4444;color:#fff;border-radius:999px;width:22px;height:22px;line-height:22px;text-align:center;cursor:pointer}
   </style>
 
+  <!-- Modal para descargo/observación al cerrar caja -->
+  <div id="modalDescargoCierre" class="modal-descargo-overlay" style="display:none;">
+    <div class="modal-descargo-content">
+      <h3 class="modal-descargo-title">Descargo / Observación</h3>
+      <p class="modal-descargo-subtitle">Ingresá una observación para el cierre de caja (opcional)</p>
+      <textarea id="modalDescargoInput" class="modal-descargo-textarea"
+                placeholder="Ej: Faltó un billete de $1000, sobraron $500 en monedas, etc."
+                rows="4"></textarea>
+      <div class="modal-descargo-actions">
+        <button id="modalDescargoCancelar" class="modal-descargo-btn modal-descargo-btn-secondary">Cancelar</button>
+        <button id="modalDescargoConfirmar" class="modal-descargo-btn modal-descargo-btn-primary">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .modal-descargo-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-descargo-content {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      max-width: 500px;
+      width: 100%;
+      padding: 24px;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-descargo-title {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .modal-descargo-subtitle {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .modal-descargo-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+
+    .modal-descargo-textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .modal-descargo-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .modal-descargo-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-descargo-btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .modal-descargo-btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .modal-descargo-btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .modal-descargo-btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .modal-descargo-btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* Responsive para móviles */
+    @media (max-width: 768px) {
+      .modal-descargo-content {
+        padding: 20px;
+        max-width: 100%;
+      }
+
+      .modal-descargo-title {
+        font-size: 18px;
+      }
+
+      .modal-descargo-textarea {
+        font-size: 16px; /* Evita zoom en iOS */
+      }
+
+      .modal-descargo-actions {
+        flex-direction: column-reverse;
+      }
+
+      .modal-descargo-btn {
+        width: 100%;
+        padding: 12px;
+      }
+    }
+  </style>
+
   <!-- Adjuntador externo (nuevo) -->
   <script>window.ADJ_ALLOW_DELETE = true;</script>
-  <script src="{{ url_for('static', filename='js/fecha_hoy_index.js') }}"></script>   
+  <script src="{{ url_for('static', filename='js/fecha_hoy_index.js') }}"></script>
   <script src="{{ url_for('static', filename='js/adjuntador.js') }}"></script>
   <script src="{{ url_for('static', filename='js/orqtabs_init.js') }}" defer></script>
 
