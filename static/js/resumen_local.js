@@ -14,9 +14,11 @@
   window.__RL_INITED__ = true;
 
   // ----------------- Estado del Toggle -----------------
-  // Para nivel 2: "operacion" (por defecto) = tablas snap_ (lo que envió el encargado)
+  // Para nivel 2: "operacion" (por defecto cuando local cerrado) = tablas snap_ (lo que envió el encargado)
+  //               Si local abierto: no usa botón, consulta tablas normales (dataSource = null)
   // Para nivel 3: "admin" (por defecto) = tablas normales (datos de auditoría)
   let dataSource = null; // Se inicializa en DOMContentLoaded según el nivel
+  let localCerrado = false; // Estado del local (se actualiza en cada refresh)
 
   // ----------------- Utils -----------------
   const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -317,10 +319,19 @@
 
   // ----------------- Fetch & estado local -----------------
   async function fetchResumenLocal(params) {
-    const url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}&source=${encodeURIComponent(dataSource)}`;
+    let url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}`;
+    // Solo agregar 'source' si dataSource tiene valor (nivel 2 con local cerrado o nivel 3)
+    if (dataSource) {
+      url += `&source=${encodeURIComponent(dataSource)}`;
+    }
     const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    const data = await r.json();
+
+    // Actualizar estado del local
+    localCerrado = data.local_cerrado || false;
+
+    return data;
   }
 
   async function updateResumen() {
@@ -330,6 +341,7 @@
     const data = await fetchResumenLocal({ local, fecha });
     renderResumen(data);
     await refreshEstadoLocalBadge();
+    updateToggleButtonVisibility(); // Actualizar visibilidad del botón según estado del local
   }
 
   async function refreshEstadoLocalBadge() {
@@ -543,6 +555,33 @@
     refreshAll();
   }
 
+  function updateToggleButtonVisibility() {
+    // Controlar visibilidad del botón según nivel y estado del local
+    const btn = $("#rl-toggle-source");
+    if (!btn) return;
+
+    const roleLevel = parseInt(btn.getAttribute("data-role-level") || "3");
+
+    if (roleLevel === 2) {
+      // Nivel 2: solo mostrar botón si el local está cerrado
+      if (localCerrado) {
+        btn.style.display = "block";
+        // Asegurar que dataSource tenga valor (operacion por defecto)
+        if (!dataSource) {
+          dataSource = "operacion";
+          updateToggleUI();
+        }
+      } else {
+        // Local abierto: ocultar botón y usar tablas normales
+        btn.style.display = "none";
+        dataSource = null; // No enviar parámetro source
+      }
+    } else {
+      // Nivel 3+: siempre mostrar el botón
+      btn.style.display = "block";
+    }
+  }
+
   function initializeToggleState() {
     // Inicializar estado según el nivel del usuario
     const btn = $("#rl-toggle-source");
@@ -551,14 +590,14 @@
     const roleLevel = parseInt(btn.getAttribute("data-role-level") || "3");
 
     if (roleLevel === 2) {
-      // Nivel 2 (encargado): por defecto en "operacion" (ve lo que envió)
-      dataSource = "operacion";
+      // Nivel 2 (encargado): se configurará en updateToggleButtonVisibility según estado del local
+      // Por ahora, inicializar como null hasta obtener el estado del local
+      dataSource = null;
     } else {
       // Nivel 3+ (auditor): por defecto en "admin" (ve datos de auditoría)
       dataSource = "admin";
+      updateToggleUI();
     }
-
-    updateToggleUI();
   }
 
   // ----------------- Boot -----------------

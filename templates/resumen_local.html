@@ -88,6 +88,11 @@
 
     <!-- Main -->
     <main class="main">
+      <!-- Botón hamburguesa flotante para mobile -->
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú">
+        <span class="hamburger-icon"></span>
+      </button>
+
       <div class="container">
         <!-- Filtros -->
         <div class="filters" style="margin-bottom:16px;">
@@ -900,6 +905,42 @@
       // Llamada inicial para actualizar el estado de los botones
       console.log('🔄 Llamando a actualizarBotonesAuditoria() inicialmente');
       window.actualizarBotonesAuditoria();
+    }
+  });
+  </script>
+
+  <!-- Toggle del menú móvil -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const layout = document.querySelector('.layout');
+    const sidebar = document.querySelector('.sidebar');
+
+    if (mobileMenuBtn && layout) {
+      mobileMenuBtn.addEventListener('click', () => {
+        layout.classList.toggle('sidebar-open');
+      });
+
+      // Cerrar sidebar al hacer click en un enlace (solo en mobile)
+      if (sidebar && window.innerWidth <= 768) {
+        sidebar.querySelectorAll('a.nav-item').forEach(link => {
+          link.addEventListener('click', () => {
+            setTimeout(() => {
+              layout.classList.remove('sidebar-open');
+            }, 200);
+          });
+        });
+      }
+
+      // Cerrar sidebar al hacer click fuera de ella
+      document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768 &&
+            layout.classList.contains('sidebar-open') &&
+            !sidebar.contains(e.target) &&
+            !mobileMenuBtn.contains(e.target)) {
+          layout.classList.remove('sidebar-open');
+        }
+      });
     }
   });
   </script>
