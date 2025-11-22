@@ -820,3 +820,97 @@
 2025-11-22 12:23:08,431 - werkzeug - INFO -  * Restarting with stat
 2025-11-22 12:23:11,374 - werkzeug - WARNING -  * Debugger is active!
 2025-11-22 12:23:11,379 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-22 13:57:09,379 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-11-22 13:57:09,380 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-22 13:57:09,385 - werkzeug - INFO -  * Restarting with stat
+2025-11-22 13:57:13,258 - werkzeug - WARNING -  * Debugger is active!
+2025-11-22 13:57:13,264 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-11-22 13:58:04,547 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:04] "[32mGET / HTTP/1.1[0m" 302 -
+2025-11-22 13:58:04,857 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-11-22 13:58:04,857 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-11-22 13:58:04,863 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-11-22 13:58:05,670 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "GET /encargado HTTP/1.1" 200 -
+2025-11-22 13:58:05,714 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,717 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,717 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,725 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,730 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,736 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,737 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,742 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,753 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,759 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,762 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:05,763 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:05] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:06,537 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:06] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-11-22 13:58:06,700 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:06] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:06,701 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:06] "[31m[1mGET /estado_caja?local=Local_Test&caja=Caja%201&fecha=&turno=Turno%20día HTTP/1.1[0m" 400 -
+2025-11-22 13:58:06,703 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:06] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-11-22 13:58:06,748 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-22 13:58:06,797 - app - INFO - files.list prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Local_Test', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-22'}
+2025-11-22 13:58:07,583 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:07] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-11-22 13:58:07,629 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:07] "GET /facturas_cargadas?local=Local_Test&caja=Caja+1&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:07,639 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:07] "GET /api/terminales?local=Local_Test HTTP/1.1" 200 -
+2025-11-22 13:58:07,732 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:07] "GET /estado_caja?local=Local_Test&caja=Caja+1&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:07,733 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:07] "GET /ventas_cargadas?local=Local_Test&caja=Caja+1&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:08,492 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:08] "GET /estado_caja?local=Local_Test&caja=Caja%201&fecha=2025-11-22&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:09,103 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:09] "GET /api/terminales?local=Local_Test HTTP/1.1" 200 -
+2025-11-22 13:58:09,387 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:09] "GET /estado_caja?local=Local_Test&caja=Caja%201&fecha=2025-11-22&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:09,439 - app - INFO - files.list found=0 prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/
+2025-11-22 13:58:09,440 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:09] "GET /files/list?tab=ventas_z&local=Local_Test&fecha=2025-11-22&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:09,447 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-22 13:58:09,455 - app - INFO - files.list prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Local_Test', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-22'}
+2025-11-22 13:58:10,295 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:10] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-22 HTTP/1.1" 200 -
+2025-11-22 13:58:10,313 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:10] "GET /estado_local?local=Local_Test&fecha=2025-11-22 HTTP/1.1" 200 -
+2025-11-22 13:58:11,685 - app - INFO - files.list found=0 prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/
+2025-11-22 13:58:11,686 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:11] "GET /files/list?tab=ventas_z&local=Local_Test&fecha=2025-11-22&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:11,694 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-22 13:58:11,704 - app - INFO - files.list prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Local_Test', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-22'}
+2025-11-22 13:58:12,554 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:12] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-11-22 13:58:12,596 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:12] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-11-22 13:58:14,290 - app - INFO - files.list found=0 prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/
+2025-11-22 13:58:14,291 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:14] "GET /files/list?tab=ventas_z&local=Local_Test&fecha=2025-11-22&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:14,297 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-22 13:58:14,308 - app - INFO - files.list prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Local_Test', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-22'}
+2025-11-22 13:58:16,734 - app - INFO - files.list found=0 prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/
+2025-11-22 13:58:16,736 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:16] "GET /files/list?tab=ventas_z&local=Local_Test&fecha=2025-11-22&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:16,745 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:\Users\mateo\GESTION COMPARTIDA Dropbox\Departamento Gestion\0001 - Control de Gestion (1)\Desarrollo\app cajas github\app_de_cajas\sa-cajas.json
+2025-11-22 13:58:16,755 - app - INFO - files.list prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/ scope=day ctx={'tab': 'ventas_z', 'local': 'Local_Test', 'caja': 'Caja 1', 'turno': 'Turno día', 'fecha': '2025-11-22'}
+2025-11-22 13:58:19,161 - app - INFO - files.list found=0 prefix=local-test/ventas-z/2025/11/22/caja-1/turno-dia/
+2025-11-22 13:58:19,162 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:19] "GET /files/list?tab=ventas_z&local=Local_Test&fecha=2025-11-22&scope=day&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:23,748 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:23] "GET /facturas_cargadas?local=Local_Test&caja=Caja+2&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:23,762 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:23] "GET /estado_caja?local=Local_Test&caja=Caja+2&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:23,795 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:23] "GET /ventas_cargadas?local=Local_Test&caja=Caja+2&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:24,713 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:24] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-22&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:25,575 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:25] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-22 HTTP/1.1" 200 -
+2025-11-22 13:58:25,653 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:25] "GET /estado_local?local=Local_Test&fecha=2025-11-22 HTTP/1.1" 200 -
+2025-11-22 13:58:28,544 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:28] "GET /estado_caja?local=Local_Test&caja=Caja+2&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:29,596 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:29] "GET /api/cierre/resumen?local=Local_Test&caja=Caja+2&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:34,021 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:34] "GET /estado_caja?local=Local_Test&caja=Caja+1&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:34,873 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:34] "GET /api/cierre/resumen?local=Local_Test&caja=Caja+1&fecha=2025-11-22&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:41,439 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:41] "GET /estado_caja?local=Local_Test&caja=Caja+1&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:42,489 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:42] "GET /api/cierre/resumen?local=Local_Test&caja=Caja+1&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:47,298 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:47] "GET /api/cierre/resumen?local=Local_Test&caja=Caja+2&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:47,343 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:47] "GET /estado_caja?local=Local_Test&caja=Caja+2&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:53,231 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:53] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:53,289 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:53] "GET /estado_local?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:53,290 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:53] "GET /estado_caja?local=Local_Test&caja=Caja+2&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:53,302 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:53] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:53,318 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:53] "GET /api/cierre/resumen?local=Local_Test&caja=Caja+2&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:58:53,330 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:53] "GET /estado_local?local=Local_Test&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:54,063 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:54] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:54,149 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:54] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:54,176 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:54] "GET /estado_local?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:54,196 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:54] "GET /estado_local?local=Local_Test&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:54,919 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:54] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:55,019 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:55] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:55,033 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:55] "GET /estado_local?local=Local_Test&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:55,859 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:55] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:55,922 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:55] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:58:56,742 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:56] "GET /api/estado_auditoria?local=Local_Test&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-11-22 13:58:56,816 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:58:56] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:59:19,877 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:59:19] "POST /cerrar_caja HTTP/1.1" 200 -
+2025-11-22 13:59:20,787 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:59:20] "GET /estado_caja?local=Local_Test&caja=Caja%202&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-11-22 13:59:20,862 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:59:20] "GET /estado_caja?local=Local_Test&caja=Caja+2&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-11-22 13:59:21,890 - werkzeug - INFO - 127.0.0.1 - - [22/Nov/2025 13:59:21] "GET /api/cierre/resumen?local=Local_Test&caja=Caja+2&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
