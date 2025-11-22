@@ -1385,6 +1385,86 @@ tr.fila-no-retirada {
   .main{ padding: 16px; }
 }
 
+/* ===== Botón hamburguesa flotante para mobile ===== */
+.mobile-menu-btn {
+  display: none; /* Oculto por defecto (desktop) */
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.mobile-menu-btn:active {
+  transform: scale(0.95);
+}
+
+/* Icono hamburguesa animado */
+.hamburger-icon,
+.hamburger-icon::before,
+.hamburger-icon::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-icon {
+  position: relative;
+  margin: 0 auto;
+}
+
+.hamburger-icon::before,
+.hamburger-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+
+.hamburger-icon::before {
+  top: -6px;
+}
+
+.hamburger-icon::after {
+  top: 6px;
+}
+
+/* Cuando el sidebar está abierto, el icono se transforma en X */
+.sidebar-open .hamburger-icon {
+  background: transparent;
+}
+
+.sidebar-open .hamburger-icon::before {
+  transform: rotate(45deg);
+  top: 0;
+}
+
+.sidebar-open .hamburger-icon::after {
+  transform: rotate(-45deg);
+  top: 0;
+}
+
+/* Mostrar solo en mobile */
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: block;
+  }
+}
 
 /* ===== Grupo desplegable en la sidebar ===== */
 .nav-group { width: 100%; }
