@@ -3369,6 +3369,156 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
     return breakdown, total_tarjetas
 
 
+def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
+    """
+    Calcula las diferencias por caja/turno para mostrar en el acordeón.
+    Solo devuelve las cajas/turnos donde diferencia != 0.
+
+    Retorna: lista de dicts [{'caja': 'Caja 1', 'turno': 'MAÑANA', 'diferencia': -100.50, 'descargo': 'Faltó...'}]
+    """
+    f = _normalize_fecha(fecha)
+    resultado = []
+
+    # Primero, obtener todas las cajas/turnos del local ese día
+    if usar_snap:
+        # Si está cerrado, usar snap_*
+        cur.execute("""
+            SELECT DISTINCT caja, turno
+            FROM (
+                SELECT caja, turno FROM snap_ventas WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM snap_remesas WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM snap_tarjetas WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM snap_mercadopago WHERE local=%s AND DATE(fecha)=%s
+            ) AS todas
+            ORDER BY caja, turno
+        """, (local, f) * 4)
+    else:
+        # Si está abierto, usar tablas normales
+        cur.execute("""
+            SELECT DISTINCT caja, turno
+            FROM (
+                SELECT caja, turno FROM ventas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM remesas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM tarjetas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM mercadopago_trns WHERE local=%s AND DATE(fecha)=%s
+            ) AS todas
+            ORDER BY caja, turno
+        """, (local, f) * 4)
+
+    cajas_turnos = cur.fetchall()
+
+    for ct in cajas_turnos:
+        caja = ct[0]
+        turno = ct[1]
+
+        # Calcular venta_total para esta caja/turno
+        if usar_snap:
+            cur.execute("""
+                SELECT COALESCE(SUM(venta_total_sistema),0)
+                FROM snap_ventas
+                WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+            """, (f, local, caja, turno))
+        else:
+            cur.execute("""
+                SELECT COALESCE(SUM(venta_total_sistema),0)
+                FROM ventas_trns
+                WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+            """, (f, local, caja, turno))
+
+        row = cur.fetchone()
+        venta_total = float(row[0] or 0.0) if row else 0.0
+
+        # Calcular total_cobrado (efectivo + tarjeta + mp + rappi + pedidosya + cuenta_cte + gastos)
+        total_cobrado = 0.0
+
+        # Efectivo (remesas)
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_remesas WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM remesas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # Tarjetas
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_tarjetas WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM tarjetas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # MercadoPago (NORMAL)
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(importe),0) FROM snap_mercadopago WHERE DATE(fecha)=%s AND local=%s AND tipo='NORMAL' AND caja=%s AND turno=%s", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(importe),0) FROM mercadopago_trns WHERE DATE(fecha)=%s AND local=%s AND tipo='NORMAL' AND caja=%s AND turno=%s", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # Rappi
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_rappi WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM rappi_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # PedidosYa
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_pedidosya WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM pedidosya_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # Cuenta corriente (facturas CC)
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_facturas WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM facturas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # Gastos
+        if usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_gastos WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        else:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM gastos_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # Calcular diferencia
+        diferencia = total_cobrado - venta_total
+
+        # Solo incluir si diferencia != 0
+        if abs(diferencia) > 0.01:  # Tolerancia de 1 centavo
+            # Buscar descargo desde cajas_estado
+            cur.execute("""
+                SELECT observacion
+                FROM cajas_estado
+                WHERE local=%s AND caja=%s AND turno=%s AND DATE(fecha_operacion)=%s
+                ORDER BY id DESC
+                LIMIT 1
+            """, (local, caja, turno, f))
+            row_obs = cur.fetchone()
+            descargo = (row_obs[0] or '').strip() if row_obs else ''
+
+            resultado.append({
+                'caja': caja,
+                'turno': turno,
+                'diferencia': round(diferencia, 2),
+                'descargo': descargo
+            })
+
+    return resultado
+
+
 # ========= API GLOBAL =========
 @app.route('/api/resumen_local', methods=['GET'])
 @login_required
@@ -3624,6 +3774,9 @@ def api_resumen_local():
             tips_total or 0.0,
         ]))
 
+        # ===== Diferencias detalladas por caja/turno =====
+        diferencias_detalle = _get_diferencias_detalle(cur, fecha_s, local, usar_snap)
+
         payload = {
             "fecha": fecha_s,
             "local": local,
@@ -3632,7 +3785,8 @@ def api_resumen_local():
             "resumen": {
                 "venta_total": float(venta_total or 0.0),
                 "total_cobrado": total_cobrado,
-                "diferencia": total_cobrado - float(venta_total or 0.0)
+                "diferencia": total_cobrado - float(venta_total or 0.0),
+                "diferencias_detalle": diferencias_detalle
             },
 
             "index": {
@@ -4439,8 +4593,175 @@ def create_snapshot_for_local_by_day(conn, local: str, fecha, made_by: str):
 
 
 
+def _validar_imagenes_antes_cierre_local(conn, local, fecha):
+    """
+    Valida que para cada caja/turno que tenga datos cargados,
+    exista al menos una imagen adjuntada en la pestaña correspondiente.
+
+    NOTA: Rappi y PedidosYa NO son obligatorios (a veces no hay).
+
+    Retorna (ok: bool, msg: str, faltantes: list)
+    """
+    cur = conn.cursor(dictionary=True)
+    f = _normalize_fecha(fecha)
+    faltantes = []
+
+    try:
+        # Obtener todas las cajas/turnos del local ese día
+        cur.execute("""
+            SELECT DISTINCT caja, turno
+            FROM (
+                SELECT caja, turno FROM remesas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM mercadopago_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM tarjetas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM gastos_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM facturas_trns WHERE local=%s AND DATE(fecha)=%s
+            ) AS all_data
+            ORDER BY caja, turno
+        """, (local, f) * 5)
+
+        cajas_turnos = cur.fetchall() or []
+
+        # Para cada caja/turno, validar cada pestaña (EXCEPTO rappi y pedidosya)
+        for ct in cajas_turnos:
+            caja = ct['caja']
+            turno = ct['turno']
+
+            # Mapeo: tabla -> config de pestaña
+            # IMPORTANTE: Rappi y PedidosYa NO están aquí (no son obligatorios)
+            pestanas = {
+                'remesas_trns': {'tabs': ['remesas'], 'nombre': 'Remesas'},
+                'mercadopago_trns': {'tabs': ['mercadopago'], 'nombre': 'Mercado Pago'},
+                'tarjetas_trns': {'tabs': ['tarjetas'], 'nombre': 'Tarjetas'},
+                'gastos_trns': {'tabs': ['gastos'], 'nombre': 'Gastos'},
+                'facturas_trns': {'tabs': ['ventas_z'], 'nombre': 'Facturas'}
+            }
+
+            for tabla, config in pestanas.items():
+                # Verificar si hay datos en esta tabla
+                cur.execute(f"""
+                    SELECT COUNT(*) as cnt
+                    FROM {tabla}
+                    WHERE local=%s AND caja=%s AND turno=%s AND DATE(fecha)=%s
+                """, (local, caja, turno, f))
+
+                row = cur.fetchone()
+                tiene_datos = row and row['cnt'] > 0
+
+                if tiene_datos:
+                    # Verificar si hay imágenes adjuntadas (buscar con cualquiera de las variaciones del tab)
+                    tab_variants = config['tabs']
+                    placeholders = ','.join(['%s'] * len(tab_variants))
+
+                    cur.execute(f"""
+                        SELECT COUNT(*) as cnt
+                        FROM imagenes_adjuntos
+                        WHERE tab IN ({placeholders})
+                          AND local=%s AND caja=%s AND turno=%s AND DATE(fecha)=%s
+                          AND estado='active'
+                    """, (*tab_variants, local, caja, turno, f))
+
+                    row_img = cur.fetchone()
+                    tiene_imagenes = row_img and row_img['cnt'] > 0
+
+                    if not tiene_imagenes:
+                        faltantes.append({
+                            'caja': caja,
+                            'turno': turno,
+                            'pestana': config['nombre'],
+                            'tab': tab_variants[0]  # usar el primero como referencia
+                        })
+
+        if faltantes:
+            # Construir mensaje amigable
+            msgs = []
+            for f in faltantes:
+                msgs.append(f"{f['pestana']} (Caja: {f['caja']}, Turno: {f['turno']})")
+
+            msg = "Falta subir imágenes en:\n• " + "\n• ".join(msgs)
+            return False, msg, faltantes
+
+        return True, "", []
+
+    finally:
+        cur.close()
 
 
+## ______________________ ACTUALIZAR OBSERVACIÓN DE DIFERENCIA _______________________
+@app.route('/api/actualizar_observacion_diferencia', methods=['POST'])
+@login_required
+@role_min_required(2)  # Solo nivel 2 (encargado)
+def api_actualizar_observacion_diferencia():
+    """
+    Permite a nivel 2 editar la observación de una diferencia
+    SOLO cuando el local está abierto.
+    """
+    data = request.get_json() or {}
+    local = session.get('local')
+    fecha = data.get('fecha')
+    caja = data.get('caja')
+    turno = data.get('turno')
+    observacion = data.get('observacion', '').strip()
+
+    if not (local and fecha and caja and turno):
+        return jsonify(success=False, msg='Faltan parámetros (local, fecha, caja, turno)'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Verificar que el local NO esté cerrado
+        cur.execute("""
+            SELECT COUNT(*) as cnt
+            FROM cierres_locales
+            WHERE local=%s AND DATE(fecha)=%s AND estado=0
+        """, (local, f))
+        row = cur.fetchone()
+        if row and row['cnt'] > 0:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='❌ El local está cerrado. No se puede editar la observación.'), 403
+
+        # Actualizar la observación en cajas_estado
+        cur.execute("""
+            UPDATE cajas_estado
+            SET observacion = %s
+            WHERE local=%s AND caja=%s AND turno=%s AND DATE(fecha_operacion)=%s
+        """, (observacion, local, caja, turno, f))
+
+        conn.commit()
+        affected = cur.rowcount
+
+        cur.close()
+        conn.close()
+
+        if affected > 0:
+            return jsonify(success=True, msg='Observación actualizada')
+        else:
+            return jsonify(success=False, msg='No se encontró el registro de caja para actualizar'), 404
+
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        try:
+            cur.close()
+        except:
+            pass
+        try:
+            conn.close()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
 
 
 ## ______________________ CIERRE LOCAL _______________________
@@ -4471,6 +4792,11 @@ def api_cierre_local():
         abiertas = [r['caja'] for r in (cur.fetchall() or [])]
         if abiertas:
             return jsonify(success=False, msg='Hay cajas abiertas', detalle=abiertas), 409
+
+        # (1.5) Validar que existan imágenes para cada pestaña con datos
+        ok_imgs, msg_imgs, faltantes_imgs = _validar_imagenes_antes_cierre_local(conn, local, fecha)
+        if not ok_imgs:
+            return jsonify(success=False, msg=msg_imgs, faltantes=faltantes_imgs), 400
 
         # (2) Marcar/crear cierre de local (sin columna turno)
         cur.execute("""
