@@ -135,13 +135,21 @@
   color:var(--panel-text);
   background:#fff;
 }
-.sl-table td{
+.sl-table td, .sl-table th{
   padding:11px 14px;
   border-bottom:1px solid var(--border);
 
   /* Tipografía uniforme */
   font-size:var(--font-size-base);
   font-weight:var(--font-weight-base);
+}
+.sl-table th{
+  text-align:left;
+  background:#f8fafc;
+  font-weight:600;
+}
+.sl-table th.r{
+  text-align:right;
 }
 .sl-table td:first-child{ color:#374151; width:60%; }
 .sl-table .r{ text-align:right; font-variant-numeric:tabular-nums; }
@@ -178,13 +186,14 @@
   transform:translateY(-50%) rotate(180deg);
 }
 
-/* === NUEVO: Estado ABIERTO del sub-acordeón colorea TODO el bloque === */
+/* === Estado ABIERTO del sub-acordeón: solo el CONTENIDO tiene fondo gris === */
+/* El título (sl-row) mantiene fondo blanco */
 .sub-acc[aria-expanded="true"] .sl-row{
-  background:var(--acc-sub-open-bg);
+  background:var(--acc-sub-closed-bg); /* Mantiene blanco */
   border-bottom:1px solid var(--acc-sub-open-border);
 }
 
-/* Cuerpo del sub-acordeón cuando está abierto */
+/* Cuerpo del sub-acordeón cuando está abierto: ESTE sí tiene fondo gris */
 .sub-acc[aria-expanded="true"] .acc-body{
   background:var(--acc-sub-open-bg);
 }
@@ -193,7 +202,8 @@
 .sub-acc[aria-expanded="true"] .acc-body .sl-table{
   background:var(--acc-sub-open-bg);
 }
-.sub-acc[aria-expanded="true"] .acc-body .sl-table td{
+.sub-acc[aria-expanded="true"] .acc-body .sl-table td,
+.sub-acc[aria-expanded="true"] .acc-body .sl-table th{
   background:var(--acc-sub-open-bg);
   border-bottom:1px solid var(--acc-sub-open-border);
 }

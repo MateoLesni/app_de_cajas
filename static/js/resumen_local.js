@@ -123,6 +123,62 @@
     setMoneyWithCopy("rl-diferencia", r.diferencia);
     $("#rl-diferencia")?.classList.toggle("negative-amount", Number(r.diferencia ?? 0) < 0);
 
+    // --- DIFERENCIAS DETALLADAS (Acordeón) ---
+    const divDescargos = $("#rl-diferencias-descargos");
+    if (divDescargos) {
+      divDescargos.innerHTML = "";
+      const diferencias = Array.isArray(r.diferencias_detalle) ? r.diferencias_detalle : [];
+
+      if (!diferencias.length) {
+        divDescargos.innerHTML = '<div style="padding: 12px 14px; color: #6b7280; font-style: italic;">Sin diferencias</div>';
+      } else {
+        // Detectar nivel de usuario y estado del local
+        const btnToggle = $("#rl-toggle-source");
+        const userLevel = btnToggle ? parseInt(btnToggle.getAttribute("data-role-level") || "1") : 1;
+        const canEdit = userLevel === 2 && !localCerrado;
+
+        diferencias.forEach((item, idx) => {
+          const difTxt = money(item.diferencia ?? 0);
+          const descargo = (item.descargo || '').trim();
+
+          const bloque = document.createElement("div");
+          bloque.className = "diferencia-bloque";
+          bloque.style.cssText = "padding: 10px 14px; margin-bottom: 8px; background: #eef1f5; border-left: 3px solid #6c757d; border-radius: 4px; position: relative;";
+
+          // Título con diferencia
+          const titulo = document.createElement("div");
+          titulo.style.cssText = "font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;";
+
+          const tituloTexto = document.createElement("span");
+          tituloTexto.innerHTML = `${item.caja} - ${item.turno}: <span style="color: ${Number(item.diferencia ?? 0) < 0 ? '#b91c1c' : '#059669'};">(Diferencia: ${difTxt})</span>`;
+          titulo.appendChild(tituloTexto);
+
+          // Lápiz editable solo para nivel 2 con local abierto
+          if (canEdit) {
+            const btnEdit = document.createElement("button");
+            btnEdit.innerHTML = "✏️";
+            btnEdit.style.cssText = "background: none; border: none; cursor: pointer; font-size: 16px; padding: 2px 6px; opacity: 0.7; transition: opacity 0.2s;";
+            btnEdit.title = "Editar observación";
+            btnEdit.onmouseover = () => btnEdit.style.opacity = "1";
+            btnEdit.onmouseout = () => btnEdit.style.opacity = "0.7";
+            btnEdit.onclick = () => editarObservacionDiferencia(item.caja, item.turno, descargo);
+            titulo.appendChild(btnEdit);
+          }
+
+          bloque.appendChild(titulo);
+
+          // Descargo
+          const descargoDiv = document.createElement("div");
+          descargoDiv.style.cssText = "color: #495057; font-style: italic; font-size: 13px; line-height: 1.5;";
+          descargoDiv.textContent = descargo || "Sin observación";
+          descargoDiv.id = `descargo-${item.caja}-${item.turno}`.replace(/\s+/g, '-');
+          bloque.appendChild(descargoDiv);
+
+          divDescargos.appendChild(bloque);
+        });
+      }
+    }
+
     // --- FACTURAS (Ventas Z, A, B) ---
     const index = data?.index || {};
     const facturas = data?.info?.facturas || {};
@@ -626,4 +682,46 @@
     refreshAll().catch(console.error);
     $("#rl-imprimir")?.addEventListener("click", () => window.print());
   });
+
+  // ========= EDITAR OBSERVACIÓN DE DIFERENCIA =========
+  window.editarObservacionDiferencia = async function(caja, turno, observacionActual) {
+    const fecha = $("#rl-fecha")?.value;
+    if (!fecha) {
+      alert("No se pudo obtener la fecha.");
+      return;
+    }
+
+    const nuevaObs = prompt(`Editar observación para ${caja} - ${turno}:`, observacionActual || "");
+    if (nuevaObs === null) return; // Canceló
+
+    try {
+      const response = await fetch("/api/actualizar_observacion_diferencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fecha: fecha,
+          caja: caja,
+          turno: turno,
+          observacion: nuevaObs.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Actualizar el DOM directamente
+        const descargoId = `descargo-${caja}-${turno}`.replace(/\s+/g, '-');
+        const descargoDiv = document.getElementById(descargoId);
+        if (descargoDiv) {
+          descargoDiv.textContent = nuevaObs.trim() || "Sin observación";
+        }
+        alert("✅ Observación actualizada correctamente");
+      } else {
+        alert(`❌ Error: ${data.msg || "No se pudo actualizar la observación"}`);
+      }
+    } catch (error) {
+      console.error("Error al actualizar observación:", error);
+      alert("❌ Error de red al actualizar la observación");
+    }
+  };
 })();
