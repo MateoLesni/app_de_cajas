@@ -71,6 +71,9 @@
       <nav class="sidebar__nav">
         <a class="nav-item is-active" href="{{ url_for('resumen_local') }}"><span class="nav-dot"></span>Resumen Local</a>
         <a class="nav-item" href="{{ url_for('index') }}"><span class="nav-dot"></span>Carga de Datos</a>
+        {% if session.get('role_level', 1)|int >= 2 %}
+        <a class="nav-item" href="{{ url_for('gestion_usuarios') }}"><span class="nav-dot"></span>Gestión de Usuarios</a>
+        {% endif %}
         <div class="nav-group">
           <a href="javascript:void(0)" id="navReportes" class="nav-item nav-toggle">
             <span class="nav-dot"></span>Reportería
