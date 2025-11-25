@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cambiar Contraseña - Primer Login</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 450px;
+      width: 100%;
+      padding: 40px;
+    }
+    h1 {
+      color: #1f2937;
+      margin-bottom: 12px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    .form-group {
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+    .input-wrapper {
+      position: relative;
+    }
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .btn-toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .btn-toggle-password:hover {
+      opacity: 1;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .alert.error {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    .alert.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .requirements {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+    .requirements li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Cambiar Contraseña</h1>
+    <p class="subtitle">
+      Bienvenido/a <strong>{{ session.username }}</strong>!
+      <br>Por favor, cambiá tu contraseña temporal por una nueva.
+    </p>
+
+    <div id="alert" class="alert"></div>
+
+    <form id="formCambiarPassword" onsubmit="cambiarPassword(event)">
+      <div class="form-group">
+        <label for="nueva_password">Nueva Contraseña *</label>
+        <div class="input-wrapper">
+          <input type="password" id="nueva_password" required>
+          <button type="button" class="btn-toggle-password" onclick="togglePassword('nueva_password')">
+            👁️
+          </button>
+        </div>
+        <ul class="requirements">
+          <li>Mínimo 6 caracteres</li>
+          <li>Se recomienda usar letras, números y símbolos</li>
+        </ul>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmar_password">Confirmar Contraseña *</label>
+        <div class="input-wrapper">
+          <input type="password" id="confirmar_password" required>
+          <button type="button" class="btn-toggle-password" onclick="togglePassword('confirmar_password')">
+            👁️
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Cambiar Contraseña</button>
+    </form>
+  </div>
+
+  <script>
+    function togglePassword(inputId) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+      } else {
+        input.type = 'password';
+      }
+    }
+
+    async function cambiarPassword(event) {
+      event.preventDefault();
+
+      const alert = document.getElementById('alert');
+      const nueva = document.getElementById('nueva_password').value;
+      const confirmar = document.getElementById('confirmar_password').value;
+
+      if (nueva !== confirmar) {
+        alert.className = 'alert error';
+        alert.textContent = '❌ Las contraseñas no coinciden';
+        alert.style.display = 'block';
+        return;
+      }
+
+      if (nueva.length < 6) {
+        alert.className = 'alert error';
+        alert.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
+        alert.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/cambiar_password_primer_login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nueva_password: nueva })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert.className = 'alert success';
+          alert.textContent = '✅ Contraseña cambiada correctamente. Redirigiendo...';
+          alert.style.display = 'block';
+
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        } else {
+          alert.className = 'alert error';
+          alert.textContent = `❌ ${data.msg || 'Error al cambiar contraseña'}`;
+          alert.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert.className = 'alert error';
+        alert.textContent = '❌ Error de red al cambiar contraseña';
+        alert.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

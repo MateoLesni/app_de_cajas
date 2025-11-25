@@ -48,7 +48,7 @@
 
       <div class="form-group">
         <label for="password">Contraseña</label>
-        <div class="input-wrap">
+        <div class="input-wrap" style="position: relative; display: block;">
           <input
             type="password"
             id="password"
@@ -56,7 +56,19 @@
             required
             placeholder="Ingrese su contraseña"
             autocomplete="current-password"
+            style="width: 100%; padding-right: 45px; box-sizing: border-box;"
           />
+          <button
+            type="button"
+            id="togglePassword"
+            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; opacity: 0.6; transition: opacity 0.2s; padding: 5px; z-index: 10; pointer-events: auto; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;"
+            onmouseover="this.style.opacity='1'"
+            onmouseout="this.style.opacity='0.6'"
+            aria-label="Mostrar/ocultar contraseña"
+            tabindex="-1"
+          >
+            👁️
+          </button>
         </div>
       </div>
 
@@ -66,5 +78,17 @@
 
     <div class="footer-note">© {{  now().year  if false  }} NuevoGastro • Acceso restringido</div>
   </div>
+
+  <script>
+    // Toggle password visibility
+    document.getElementById('togglePassword')?.addEventListener('click', function() {
+      const passwordInput = document.getElementById('password');
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+      } else {
+        passwordInput.type = 'password';
+      }
+    });
+  </script>
 </body>
 </html>

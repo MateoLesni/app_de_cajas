@@ -122,12 +122,18 @@ def get_user_level() -> int:
     Devuelve el nivel del rol desde sesión.
     Asume que guardaste 'role_level' en session en el login.
     Si no, mapeá role -> level acá.
+
+    Niveles:
+    1 = cajero
+    2 = encargado/administrativo
+    3 = auditor
+    4 = jefe_auditor
     """
     lvl = session.get('role_level')
     if lvl is not None:
         return int(lvl)
     role = (session.get('role') or '').strip().lower()
-    MAP = {'cajero': 1, 'encargado': 2, 'administrativo': 2, 'auditor': 3}
+    MAP = {'cajero': 1, 'encargado': 2, 'administrativo': 2, 'auditor': 3, 'jefe_auditor': 4}
     return MAP.get(role, 0)
 
 def is_local_closed(conn, local:str, fecha) -> bool:
@@ -3162,7 +3168,7 @@ def api_locales():
         locales = cur.fetchall()
         resultado = [l['local'] for l in locales if l['local']]
         print(f"📍 API /api/locales devolviendo: {resultado}")
-        return jsonify(resultado)
+        return jsonify(locales=resultado)
     except Exception as e:
         print(f"❌ Error en /api/locales: {e}")
         import traceback
@@ -4375,7 +4381,7 @@ def _fetch_user_by_username(username):
     try:
         cur = conn.cursor(dictionary=True)
         cur.execute("""
-            SELECT u.id, u.username, u.password, u.local, u.society, u.status,
+            SELECT u.id, u.username, u.password, u.local, u.society, u.status, u.first_login,
                    r.id AS role_id, r.name AS role_name, r.level AS role_level
             FROM users u
             JOIN roles r ON u.role_id = r.id
@@ -4438,16 +4444,42 @@ def login():
             return render_template('login.html', error=msg), 401
         return jsonify(ok=False, msg=msg), 401
 
+    # Verificar que el usuario esté activo
     if not user or user.get('status') != 'active':
         return _fail()
 
-    # Verificación de contraseña
-    try:
-        hashed = (user.get('password') or '').encode('utf-8')
-        if not bcrypt.checkpw(password.encode('utf-8'), hashed):
+    # LÓGICA ESPECIAL PARA PRIMER LOGIN:
+    # Si first_login=FALSE, cualquier contraseña es válida y se guarda como la definitiva
+    is_first_login = (user.get('first_login') == 0 or user.get('first_login') == False)
+
+    if is_first_login:
+        # Primer login: aceptar cualquier contraseña ingresada y guardarla
+        if not password or len(password) < 4:
+            return _fail('La contraseña debe tener al menos 4 caracteres')
+
+        # Hashear y guardar la contraseña que el usuario ingresó
+        try:
+            pw_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE users
+                SET password=%s, first_login=TRUE
+                WHERE id=%s
+            """, (pw_hash, user['id']))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            return _fail(f'Error al guardar contraseña: {str(e)}')
+    else:
+        # Login normal: verificar contraseña
+        try:
+            hashed = (user.get('password') or '').encode('utf-8')
+            if not bcrypt.checkpw(password.encode('utf-8'), hashed):
+                return _fail()
+        except Exception:
             return _fail()
-    except Exception:
-        return _fail()
 
     # Sesión (mismas claves que usa tu app)
     session.clear()
@@ -4455,8 +4487,8 @@ def login():
     session['username']   = user['username']
     session['local']      = user.get('local')
     session['society']    = user.get('society')
-    session['role']       = user.get('role_name')                 # 'cajero'|'encargado'|'auditor'
-    session['role_level'] = int(user.get('role_level') or 1)      # 1|2|3
+    session['role']       = user.get('role_name')                 # 'cajero'|'encargado'|'auditor'|'jefe_auditor'
+    session['role_level'] = int(user.get('role_level') or 1)      # 1|2|3|4
     session['pages']      = user.get('pages') or []
     _update_last_access(user['id'])
 
@@ -4466,6 +4498,13 @@ def login():
 
     # Si vino por API -> sugerir destino
     return jsonify(ok=True, redirect=route_for_current_role())
+
+
+@app.route('/primer-login')
+@login_required
+def primer_login():
+    """Página para cambiar contraseña en el primer login"""
+    return render_template('primer_login.html')
 
 
 @app.route('/logout')
@@ -5202,6 +5241,322 @@ def admin_fix_tab_column():
             msg=f"Error al actualizar columna: {str(e)}",
             traceback=traceback.format_exc()
         ), 500
+
+
+## ______________________ GESTIÓN DE USUARIOS _______________________
+
+@app.route('/gestion-usuarios')
+@login_required
+@role_min_required(2)  # Mínimo nivel 2 (encargado)
+def gestion_usuarios():
+    """Página de gestión de usuarios"""
+    return render_template('gestion_usuarios.html')
+
+
+@app.route('/api/mi_nivel', methods=['GET'])
+@login_required
+def api_mi_nivel():
+    """Devuelve el nivel y local del usuario actual"""
+    return jsonify(
+        level=get_user_level(),
+        local=session.get('local', '')
+    )
+
+
+@app.route('/api/usuarios/listar', methods=['GET'])
+@login_required
+@role_min_required(2)
+def api_usuarios_listar():
+    """
+    Lista usuarios que el usuario actual puede ver:
+    - Nivel 2 (encargado): ve cajeros de su local
+    - Nivel 3 (auditor): ve encargados
+    - Nivel 4 (jefe_auditor): ve auditores
+    """
+    user_level = get_user_level()
+    user_local = session.get('local')
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Determinar qué roles puede ver según el nivel
+        if user_level == 2:
+            # Encargado ve cajeros de su local
+            cur.execute("""
+                SELECT u.id, u.username, r.name as role, u.local, u.society, u.first_login,
+                       CASE r.name
+                           WHEN 'cajero' THEN 1
+                           WHEN 'encargado' THEN 2
+                           WHEN 'auditor' THEN 3
+                           WHEN 'jefe_auditor' THEN 4
+                           ELSE 0
+                       END as role_level
+                FROM users u
+                JOIN roles r ON u.role_id = r.id
+                WHERE r.name = 'cajero' AND u.local = %s
+                ORDER BY u.username
+            """, (user_local,))
+        elif user_level == 3:
+            # Auditor ve encargados
+            cur.execute("""
+                SELECT u.id, u.username, r.name as role, u.local, u.society, u.first_login,
+                       CASE r.name
+                           WHEN 'cajero' THEN 1
+                           WHEN 'encargado' THEN 2
+                           WHEN 'auditor' THEN 3
+                           WHEN 'jefe_auditor' THEN 4
+                           ELSE 0
+                       END as role_level
+                FROM users u
+                JOIN roles r ON u.role_id = r.id
+                WHERE r.name = 'encargado'
+                ORDER BY u.username
+            """)
+        elif user_level >= 4:
+            # Jefe Auditor ve auditores
+            cur.execute("""
+                SELECT u.id, u.username, r.name as role, u.local, u.society, u.first_login,
+                       CASE r.name
+                           WHEN 'cajero' THEN 1
+                           WHEN 'encargado' THEN 2
+                           WHEN 'auditor' THEN 3
+                           WHEN 'jefe_auditor' THEN 4
+                           ELSE 0
+                       END as role_level
+                FROM users u
+                JOIN roles r ON u.role_id = r.id
+                WHERE r.name = 'auditor'
+                ORDER BY u.username
+            """)
+        else:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='Sin permisos'), 403
+
+        users = cur.fetchall() or []
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, users=users)
+
+    except Exception as e:
+        try:
+            cur.close()
+        except:
+            pass
+        try:
+            conn.close()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/usuarios/crear', methods=['POST'])
+@login_required
+@role_min_required(2)
+def api_usuarios_crear():
+    """
+    Crea un nuevo usuario según los permisos:
+    - Nivel 2 crea cajeros
+    - Nivel 3 crea encargados
+    - Nivel 4 crea auditores
+    """
+    data = request.get_json() or {}
+    username = data.get('username', '').strip()
+    rol = data.get('rol', '').strip()
+    local = data.get('local', '').strip()
+
+    # Validación básica
+    if not (username and rol):
+        return jsonify(success=False, msg='Faltan datos requeridos'), 400
+
+    user_level = get_user_level()
+
+    # Validar que el usuario puede crear ese rol
+    if user_level == 2 and rol != 'cajero':
+        return jsonify(success=False, msg='Solo podés crear cajeros'), 403
+    elif user_level == 3 and rol != 'encargado':
+        return jsonify(success=False, msg='Solo podés crear encargados'), 403
+    elif user_level >= 4 and rol != 'auditor':
+        return jsonify(success=False, msg='Solo podés crear auditores'), 403
+
+    # Si se está creando un auditor y no hay local, asignar "OFICINA CENTRAL"
+    if rol == 'auditor' and not local:
+        local = 'OFICINA CENTRAL'
+
+    # Para otros roles, el local es obligatorio
+    if not local:
+        return jsonify(success=False, msg='El local es requerido'), 400
+
+    # Obtener society del local desde la tabla locales
+    conn_temp = get_db_connection()
+    cur_temp = conn_temp.cursor(dictionary=True)
+    try:
+        cur_temp.execute("SELECT society FROM locales WHERE local = %s LIMIT 1", (local,))
+        local_info = cur_temp.fetchone()
+        society = local_info['society'] if local_info and local_info.get('society') else ''
+        cur_temp.close()
+        conn_temp.close()
+    except:
+        society = ''
+        try:
+            cur_temp.close()
+        except:
+            pass
+        try:
+            conn_temp.close()
+        except:
+            pass
+
+    try:
+        # Crear usuario con contraseña dummy (será reemplazada en el primer login)
+        # El usuario establecerá su propia contraseña la primera vez que se logee
+        dummy_password = '__PRIMER_LOGIN_PENDIENTE__'  # Contraseña temporal que nunca se usará
+        pages_slugs = ['index', 'resumen_local']  # Páginas por defecto
+        result = create_user(username, dummy_password, rol, local, society, pages_slugs, status='active')
+
+        # Marcar como primer login pendiente
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET first_login=FALSE WHERE id=%s", (result['user_id'],))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, user_id=result['user_id'], username=username)
+
+    except ValueError as ve:
+        return jsonify(success=False, msg=str(ve)), 400
+    except Exception as e:
+        return jsonify(success=False, msg=f'Error al crear usuario: {str(e)}'), 500
+
+
+@app.route('/api/usuarios/eliminar/<user_id>', methods=['DELETE'])
+@login_required
+@role_min_required(2)
+def api_usuarios_eliminar(user_id):
+    """
+    Elimina un usuario.
+    Solo nivel 2+ puede eliminar usuarios de nivel inferior.
+    """
+    user_level = get_user_level()
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Obtener información del usuario a eliminar
+        cur.execute("""
+            SELECT u.id, u.username, r.level AS role_level
+            FROM users u
+            JOIN roles r ON u.role_id = r.id
+            WHERE u.id = %s
+        """, (user_id,))
+        user_to_delete = cur.fetchone()
+
+        if not user_to_delete:
+            return jsonify(success=False, msg='Usuario no encontrado'), 404
+
+        target_level = int(user_to_delete['role_level'])
+
+        # Verificar permisos: solo puedo eliminar usuarios de nivel inferior
+        if target_level >= user_level:
+            return jsonify(success=False, msg='No tenés permisos para eliminar este usuario'), 403
+
+        # No permitir eliminar al usuario actual
+        if user_id == session.get('user_id'):
+            return jsonify(success=False, msg='No podés eliminarte a vos mismo'), 400
+
+        # Eliminar relaciones en user_pages
+        cur.execute("DELETE FROM user_pages WHERE user_id = %s", (user_id,))
+
+        # Eliminar usuario
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg=f'Usuario "{user_to_delete["username"]}" eliminado correctamente')
+
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify(success=False, msg=f'Error al eliminar usuario: {str(e)}'), 500
+
+
+## ______________________ PRIMER LOGIN Y CAMBIO DE CONTRASEÑA _______________________
+
+@app.route('/api/cambiar_password_primer_login', methods=['POST'])
+@login_required
+def api_cambiar_password_primer_login():
+    """
+    Permite al usuario cambiar su contraseña en el primer login.
+    Solo funciona si el usuario tiene status='pending_first_login'.
+    """
+    data = request.get_json() or {}
+    nueva_password = data.get('nueva_password', '').strip()
+
+    if not nueva_password:
+        return jsonify(success=False, msg='La contraseña no puede estar vacía'), 400
+
+    if len(nueva_password) < 6:
+        return jsonify(success=False, msg='La contraseña debe tener al menos 6 caracteres'), 400
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify(success=False, msg='Sesión inválida'), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Verificar que el usuario esté en primer login (first_login=FALSE)
+        cur.execute("SELECT id, first_login FROM users WHERE id=%s", (user_id,))
+        user = cur.fetchone()
+
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='Usuario no encontrado'), 404
+
+        if user.get('first_login') == 1 or user.get('first_login') == True:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='Este usuario ya realizó su primer login'), 400
+
+        # Hashear nueva contraseña
+        pw_hash = bcrypt.hashpw(nueva_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # Actualizar contraseña y marcar first_login como TRUE
+        cur.execute("""
+            UPDATE users
+            SET password=%s, first_login=TRUE
+            WHERE id=%s
+        """, (pw_hash, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg='Contraseña actualizada correctamente')
+
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        try:
+            cur.close()
+        except:
+            pass
+        try:
+            conn.close()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
 
 
 

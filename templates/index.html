@@ -69,7 +69,7 @@
       </div>
 
       <nav class="sidebar__nav">
-        <!-- Botones pedidos: “Resumen Local”, “Reportes” -->
+        <!-- Botones pedidos: "Resumen Local", "Reportes" -->
         <a class="nav-item" href="{{ url_for('resumen_local') }}">
           <span class="nav-dot" aria-hidden="true"></span>
           Resumen Local
@@ -80,6 +80,14 @@
           <span class="nav-dot" aria-hidden="true"></span>
           Carga de Datos
         </a>
+
+        {% if session.get('role_level', 1)|int >= 2 %}
+        <a class="nav-item" href="{{ url_for('gestion_usuarios') }}">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Gestión de Usuarios
+        </a>
+        {% endif %}
+      </nav>
 
       <div class="sidebar__footer">
         <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
