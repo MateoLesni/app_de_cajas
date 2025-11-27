@@ -31,8 +31,28 @@
   const debounce = (fn, ms) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
 
   // Helper para leer el valor de un elemento (select usa .value, span usa .textContent)
+  // MODIFICADO: Ahora considera localStorage para persistencia de selecciones
   const getElementValue = (el) => {
     if (!el) return '';
+
+    // Para fechaGlobal, cajaSelect y turnoSelect, intentar restaurar desde localStorage primero
+    const id = el.id;
+    if (id === 'fechaGlobal' || id === 'cajaSelect' || id === 'turnoSelect') {
+      const savedValue = localStorage.getItem(id);
+      if (savedValue && el.value !== savedValue) {
+        // Restaurar el valor guardado al elemento antes de leerlo
+        if (el.tagName === 'SELECT') {
+          // Verificar que la opción existe antes de seleccionarla
+          const optionExists = Array.from(el.options).some(opt => opt.value === savedValue);
+          if (optionExists) {
+            el.value = savedValue;
+          }
+        } else if (el.tagName === 'INPUT') {
+          el.value = savedValue;
+        }
+      }
+    }
+
     if (el.tagName === 'SELECT' || el.tagName === 'INPUT') {
       return (el.value || '').trim();
     }
@@ -76,6 +96,16 @@
   function installFirewallFor(el, handler) {
     if (!el) return;
     const guard = (ev) => {
+      // PRIMERO: Guardar en localStorage para persistencia (antes de stopPropagation)
+      const id = el?.id;
+      if (id === 'fechaGlobal' || id === 'cajaSelect' || id === 'turnoSelect') {
+        const newValue = el.value;
+        if (newValue) {
+          localStorage.setItem(id, newValue);
+          console.log('[OrqTabs-Firewall] Guardado en localStorage:', id, '=', newValue);
+        }
+      }
+
       ev.stopImmediatePropagation?.();
       ev.stopPropagation?.();
       handler(); // pipeline del orquestador
