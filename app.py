@@ -1826,6 +1826,220 @@ def borrar_mercadopago(mp_id):
 
 
 
+# ===============================
+# ANTICIPOS CONSUMIDOS
+# ===============================
+
+# ===============================
+# Anticipos – CREATE (POST)
+# ===============================
+@app.route('/guardar_anticipos_lote', methods=['POST'])
+@login_required
+@require_edit_ctx  # usa local/caja/fecha/turno del body y valida can_edit
+def guardar_anticipos_lote():
+    """
+    Carga de anticipos consumidos en lote.
+    Body esperado:
+    {
+      "local": "...",
+      "caja": "...",
+      "fecha": "...",
+      "turno": "...",
+      "transacciones": [
+        {
+          "fecha_anticipo_recibido": "2025-11-20",
+          "medio_pago": "MercadoPago",
+          "comentario": "Reserva mesa 5",
+          "monto": 5000
+        },
+        ...
+      ]
+    }
+    """
+    data = request.get_json() or {}
+    transacciones = data.get('transacciones', []) or []
+
+    if not transacciones:
+        return jsonify(success=False, msg="No se recibieron transacciones"), 400
+
+    # Contexto validado por el decorador
+    ctx     = g.ctx
+    local   = ctx['local']
+    caja    = ctx['caja']
+    fecha   = _normalize_fecha(ctx['fecha'])
+    turno   = ctx['turno']
+    usuario = session.get('username') or 'sistema'
+
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor()
+
+        sql = """
+            INSERT INTO anticipos_consumidos_trns
+            (local, caja, turno, fecha, fecha_anticipo_recibido, medio_pago, comentario, monto, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        inserted = 0
+        for t in transacciones:
+            fecha_anticipo_recibido = t.get('fecha_anticipo_recibido', '').strip()
+            medio_pago = (t.get('medio_pago') or '').strip()
+            comentario = (t.get('comentario') or '').strip()
+            m = t.get('monto', 0)
+
+            # Validaciones
+            if not fecha_anticipo_recibido or not medio_pago:
+                continue  # Skip invalid entries
+
+            try:
+                if isinstance(m, str):
+                    m = float(m.replace('.', '').replace(',', '.'))
+                monto = float(m or 0)
+            except Exception:
+                monto = 0.0
+
+            if monto <= 0:
+                continue  # Skip zero or negative amounts
+
+            cur.execute(sql, (local, caja, turno, fecha, fecha_anticipo_recibido, medio_pago, comentario, monto, usuario))
+            inserted += cur.rowcount
+
+        conn.commit()
+        cur.close(); conn.close()
+        return jsonify(success=True, inserted=inserted, msg=f"{inserted} anticipo(s) guardado(s) correctamente.")
+    except Exception as e:
+        print("❌ ERROR guardar_anticipos_lote:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ===============================
+# Anticipos – READ (GET)
+# ===============================
+@app.route('/anticipos_cargados')
+@login_required
+@with_read_scope('t')  # agrega g.read_scope acorde al nivel (L2: cajas cerradas; L3: locales cerrados)
+def anticipos_cargados():
+    local = get_local_param()
+    caja  = request.args.get('caja')
+    fecha = request.args.get('fecha')
+    turno = request.args.get('turno')
+
+    if not (local and caja and fecha and turno):
+        return jsonify(success=True, datos=[])
+
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor(dictionary=True)
+        sql = f"""
+            SELECT t.id, t.fecha_anticipo_recibido, t.medio_pago, t.comentario, t.monto, t.fecha, t.turno, t.created_by
+              FROM anticipos_consumidos_trns t
+             WHERE t.local=%s
+               AND t.caja=%s
+               AND t.turno=%s
+               AND DATE(t.fecha)=%s
+               {g.read_scope}   -- L2/L3 pueden ver aun con cierres
+             ORDER BY t.id ASC
+        """
+        cur.execute(sql, (local, caja, turno, _normalize_fecha(fecha)))
+        datos = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify(success=True, datos=datos)
+    except Exception as e:
+        print("❌ ERROR anticipos_cargados:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ===============================
+# Anticipos – UPDATE (PUT)
+# ===============================
+@app.route('/anticipos/<int:anticipo_id>', methods=['PUT'])
+@login_required
+def actualizar_anticipo(anticipo_id):
+    data = request.get_json() or {}
+    fecha_anticipo_recibido = (data.get('fecha_anticipo_recibido') or '').strip()
+    medio_pago = (data.get('medio_pago') or '').strip()
+    comentario = (data.get('comentario') or '').strip()
+
+    if not fecha_anticipo_recibido or not medio_pago:
+        return jsonify(success=False, msg="Fecha anticipo y medio de pago son requeridos"), 400
+
+    try:
+        imp = data.get('monto', 0)
+        if isinstance(imp, str):
+            imp = float(imp.replace('.', '').replace(',', '.'))
+        importe = float(imp or 0)
+    except Exception:
+        return jsonify(success=False, msg="Monto inválido"), 400
+
+    if importe <= 0:
+        return jsonify(success=False, msg="El monto debe ser mayor a cero"), 400
+
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor(dictionary=True)
+        cur.execute("SELECT id, local, caja, fecha, turno FROM anticipos_consumidos_trns WHERE id=%s", (anticipo_id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="Registro no encontrado"), 404
+
+        # Permisos por nivel/estado (L1/L2/L3)
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+
+        cur2 = conn.cursor()
+        cur2.execute("""
+            UPDATE anticipos_consumidos_trns
+               SET fecha_anticipo_recibido=%s, medio_pago=%s, comentario=%s, monto=%s
+             WHERE id=%s
+        """, (fecha_anticipo_recibido, medio_pago, comentario, importe, anticipo_id))
+        conn.commit()
+        cur2.close(); cur.close(); conn.close()
+        return jsonify(success=True, msg="Anticipo actualizado correctamente")
+    except Exception as e:
+        print("❌ ERROR actualizar_anticipo:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ===============================
+# Anticipos – DELETE
+# ===============================
+@app.route('/anticipos/<int:anticipo_id>', methods=['DELETE'])
+@login_required
+def borrar_anticipo(anticipo_id):
+    try:
+        conn = get_db_connection()
+        cur  = conn.cursor(dictionary=True)
+        cur.execute("SELECT id, local, caja, fecha, turno FROM anticipos_consumidos_trns WHERE id=%s", (anticipo_id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="Registro no encontrado"), 404
+
+        # Permisos por nivel/estado (L1/L2/L3)
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
+            cur.close(); conn.close()
+            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+
+        cur2 = conn.cursor()
+        cur2.execute("DELETE FROM anticipos_consumidos_trns WHERE id=%s", (anticipo_id,))
+        conn.commit()
+        cur2.close(); cur.close(); conn.close()
+        return jsonify(success=True, msg="Anticipo eliminado correctamente")
+    except Exception as e:
+        print("❌ ERROR borrar_anticipo:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
 # ─────────────────────────────────────
 # VENTA SISTEMA (única por fecha/caja/local)
 # ─────────────────────────────────────
@@ -2530,7 +2744,7 @@ def cierre_resumen():
             # Caja no cerrada, retornar resumen vacío
             conn.close()
             return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b',
-                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','discovery','total_cobrado']})
+                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','anticipos','discovery','total_cobrado']})
 
     # Nivel 3 (auditor): solo puede ver si el local está cerrado
     if lvl >= 3:
@@ -2545,7 +2759,7 @@ def cierre_resumen():
             # Local no cerrado, retornar resumen vacío
             conn.close()
             return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b',
-                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','discovery','total_cobrado']})
+                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','anticipos','discovery','total_cobrado']})
 
     cur  = conn.cursor()
 
@@ -2681,10 +2895,21 @@ def cierre_resumen():
 
         resumen['tips'] = tips_tarjeta + tips_mp
 
+        # ===== ANTICIPOS CONSUMIDOS =====
+        # Anticipos consumidos (señas usadas para justificar faltantes)
+        cur.execute("""
+            SELECT COALESCE(SUM(monto),0)
+              FROM anticipos_consumidos_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+        """, (fecha, local, caja, turno))
+        row = cur.fetchone()
+        resumen['anticipos'] = float(row[0]) if row and row[0] is not None else 0.0
+
         # ===== Total cobrado (medios de cobro + gastos)
         # Las facturas A, B, Z son informativas y NO suman al cobrado
         # Las facturas CC sí suman porque son cuenta corriente (medio de cobro)
         # Los gastos SÍ suman al total cobrado (justifican la venta)
+        # Los anticipos consumidos SÍ suman al total cobrado (justifican faltantes)
         resumen['total_cobrado'] = sum([
             resumen.get('efectivo',0.0),
             resumen.get('tarjeta',0.0),
@@ -2693,6 +2918,7 @@ def cierre_resumen():
             resumen.get('pedidosya',0.0),
             resumen.get('cuenta_cte',0.0),  # Cuenta corriente (facturas CC)
             resumen.get('gastos',0.0),      # Gastos justifican la venta
+            resumen.get('anticipos',0.0),   # Anticipos consumidos justifican faltantes
         ])
 
         # ===== Estado de caja (por turno)
@@ -3413,9 +3639,11 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                 SELECT caja, turno FROM tarjetas_trns WHERE local=%s AND DATE(fecha)=%s
                 UNION
                 SELECT caja, turno FROM mercadopago_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM anticipos_consumidos_trns WHERE local=%s AND DATE(fecha)=%s
             ) AS todas
             ORDER BY caja, turno
-        """, (local, f) * 4)
+        """), (local, f, local, f, local, f, local, f, local, f)
 
     cajas_turnos = cur.fetchall()
 
@@ -3498,6 +3726,12 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM gastos_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
         row = cur.fetchone()
         total_cobrado += float(row[0] or 0.0) if row else 0.0
+
+        # Anticipos Consumidos (solo en tablas normales, no hay snap todavía)
+        if not usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM anticipos_consumidos_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+            row = cur.fetchone()
+            total_cobrado += float(row[0] or 0.0) if row else 0.0
 
         # Calcular diferencia
         diferencia = total_cobrado - venta_total
@@ -3702,6 +3936,38 @@ def api_resumen_local():
             print(f"⚠️ Error obteniendo detalle de gastos: {e}")
             gastos_detalle = {}
 
+        # ===== ANTICIPOS CONSUMIDOS (total + detalle) =====
+        anticipos_total = 0.0
+        anticipos_items = []
+        if not usar_snap:  # Anticipos solo existen en tablas normales (no hay snap todavía)
+            # Total
+            anticipos_total = _qsum(
+                cur,
+                "SELECT COALESCE(SUM(monto),0) FROM anticipos_consumidos_trns WHERE DATE(fecha)=%s AND local=%s",
+                (f, local),
+            ) or 0.0
+
+            # Detalle (items individuales)
+            try:
+                cur.execute("""
+                    SELECT id, fecha_anticipo_recibido, medio_pago, comentario, monto, created_by
+                    FROM anticipos_consumidos_trns
+                    WHERE DATE(fecha)=%s AND local=%s
+                    ORDER BY id ASC
+                """, (f, local))
+                rows = cur.fetchall() or []
+                for r in rows:
+                    anticipos_items.append({
+                        "id": r[0],
+                        "fecha_anticipo_recibido": str(r[1]) if r[1] else "",
+                        "medio_pago": r[2] or "",
+                        "comentario": r[3] or "",
+                        "monto": float(r[4] or 0),
+                        "created_by": r[5] or ""
+                    })
+            except Exception as e:
+                print(f"⚠️ Error obteniendo detalle de anticipos: {e}")
+
         # ===== FACTURAS (A, B, CC) =====
         # Helper para obtener items de facturas
         def _fetch_facturas_items(tipo):
@@ -3757,7 +4023,7 @@ def api_resumen_local():
         # ===== Totales del panel =====
         # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
         # Los TIPS tampoco suman al total cobrado
-        # Suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC), gastos
+        # Suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC), gastos, anticipos
         total_cobrado = float(sum([
             efectivo_neto or 0.0,
             tarjeta_total or 0.0,
@@ -3766,6 +4032,7 @@ def api_resumen_local():
             pedidosya_total or 0.0,
             cta_cte_total or 0.0,  # Cuenta corriente (facturas CC)
             gastos_total or 0.0,   # Gastos justifican la venta
+            anticipos_total or 0.0,  # Anticipos consumidos
         ]))
 
         info_total = float(sum([
@@ -3778,6 +4045,7 @@ def api_resumen_local():
             gastos_total or 0.0,
             cta_cte_total or 0.0,
             tips_total or 0.0,
+            anticipos_total or 0.0,
         ]))
 
         # ===== Diferencias detalladas por caja/turno =====
@@ -3828,6 +4096,10 @@ def api_resumen_local():
                 "gastos": {
                     "total": float(gastos_total or 0.0),
                     "detalle": gastos_detalle
+                },
+                "anticipos": {
+                    "total": float(anticipos_total or 0.0),
+                    "items": anticipos_items
                 },
                 "cuenta_cte": {
                     "total": float(cta_cte_total or 0.0),

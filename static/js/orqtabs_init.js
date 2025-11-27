@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderPedidosYa   = (d,o) => window.renderPedidosYa   && window.renderPedidosYa(d,o);
   const renderRemesas     = (d,o) => window.renderRemesas     && window.renderRemesas(d,o);
   const renderGastos      = (d,o) => window.renderGastos      && window.renderGastos(d,o);
+  const renderAnticipos   = (d,o) => window.renderAnticipos   && window.renderAnticipos(d,o);
 
   // (opcionales) UI helpers
   const toggleSpinner = (tabKey, on) => {
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pedidosyaTab:   { endpoints: ['/pedidosya_cargadas'], render: renderPedidosYa },
       remesas:        { endpoints: ['/remesas_no_retiradas','/remesas_hoy'], render: renderRemesas },
       gastos:         { endpoints: ['/gastos_cargadas'], render: renderGastos },
+      anticiposTab:   { endpoints: ['/anticipos_cargados'], render: renderAnticipos },
       'cierre-caja-container': { endpoints: ['/api/cierre/resumen','/estado_caja'], render: (d,o)=>window.renderResumenCaja && window.renderResumenCaja(d,o) },
     }
   });
