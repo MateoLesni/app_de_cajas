@@ -1,0 +1,117 @@
+2025-12-01 14:16:06,253 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-01 14:16:06,254 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-01 14:16:06,257 - werkzeug - INFO -  * Restarting with stat
+2025-12-01 14:16:08,857 - werkzeug - WARNING -  * Debugger is active!
+2025-12-01 14:16:08,863 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-01 14:16:09,066 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:09] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-01 14:16:09,307 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-01 14:16:09,307 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-01 14:16:09,310 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-01 14:16:10,164 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "GET /auditor HTTP/1.1" 200 -
+2025-12-01 14:16:10,194 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "GET /static/js/tarjetas.js HTTP/1.1" 200 -
+2025-12-01 14:16:10,206 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,230 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "GET /static/js/ventas.js HTTP/1.1" 200 -
+2025-12-01 14:16:10,231 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,231 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,241 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,247 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,260 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,286 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,296 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,297 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,306 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,751 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-01 14:16:10,827 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-01 14:16:10,827 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-01 14:16:10,831 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-01 14:16:10,840 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[31m[1mGET /ventas_cargadas?caja=Caja+1&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-01 14:16:10,845 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "[31m[1mGET /estado_caja?caja=Caja+1&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-01 14:16:10,847 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:10] "GET /facturas_cargadas?caja=Caja+1&turno=UNI HTTP/1.1" 200 -
+2025-12-01 14:16:11,684 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:11] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-01 14:16:11,692 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:11] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-01 14:16:11,693 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:11] "GET /api/locales HTTP/1.1" 200 -
+2025-12-01 14:16:12,608 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:12] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-01 14:16:12,618 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:12] "GET /api/turnos?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 14:16:13,445 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:13] "GET /api/cajas?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 14:16:13,766 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:13] "[31m[1mGET /estado_caja?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 400 -
+2025-12-01 14:16:13,767 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:13] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 14:16:13,767 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:13] "[31m[1mGET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 400 -
+2025-12-01 14:16:22,235 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:22] "GET /gestion-usuarios HTTP/1.1" 200 -
+2025-12-01 14:16:22,293 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:22] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-01 14:16:22,329 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:22] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2025-12-01 14:16:22,340 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:22] "GET /static/js/gestion_usuarios.js HTTP/1.1" 200 -
+2025-12-01 14:16:22,354 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:22] "GET /api/mi_nivel HTTP/1.1" 200 -
+2025-12-01 14:16:23,323 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:23] "GET /api/locales HTTP/1.1" 200 -
+2025-12-01 14:16:24,191 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 14:16:24] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2025-12-01 15:29:58,004 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-01 15:29:58,005 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-01 15:29:58,009 - werkzeug - INFO -  * Restarting with stat
+2025-12-01 15:30:01,460 - werkzeug - WARNING -  * Debugger is active!
+2025-12-01 15:30:01,465 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-01 15:30:01,709 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:01] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-01 15:30:01,923 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-01 15:30:01,923 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-01 15:30:01,926 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-01 15:30:02,645 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "GET /auditor HTTP/1.1" 200 -
+2025-12-01 15:30:02,666 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,676 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,677 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,683 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,686 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,687 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,690 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,692 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,700 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,704 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,705 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:02,712 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:02] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:03,148 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:03,165 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-01 15:30:03,165 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-01 15:30:03,166 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-01 15:30:03,195 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "[31m[1mGET /ventas_cargadas?caja=Caja+1&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-01 15:30:03,197 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "[31m[1mGET /estado_caja?caja=Caja+1&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-01 15:30:03,199 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:03] "GET /facturas_cargadas?caja=Caja+1&turno=UNI HTTP/1.1" 200 -
+2025-12-01 15:30:04,012 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:04] "GET /api/locales HTTP/1.1" 200 -
+2025-12-01 15:30:04,029 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:04] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-01 15:30:04,061 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:04] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-01 15:30:05,072 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:05] "GET /api/turnos?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 15:30:05,122 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:05] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-01 15:30:05,935 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:05] "GET /api/cajas?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 15:30:06,235 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:06] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 15:30:06,236 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:06] "[31m[1mGET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 400 -
+2025-12-01 15:30:06,237 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:06] "[31m[1mGET /estado_caja?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 400 -
+2025-12-01 15:30:07,804 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:07] "GET /tarjetas_cargadas_hoy?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 15:30:07,806 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:07] "[31m[1mGET /estado_caja?local=Fabric+Sushi&caja=Caja+1&turno=Turno+día HTTP/1.1[0m" 400 -
+2025-12-01 15:30:08,702 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:08] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 15:30:14,457 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:14] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-01&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 15:30:14,458 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:14] "GET /tarjetas_cargadas_hoy?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-01&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 15:30:15,363 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:15] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-01&turno=Turno%20día HTTP/1.1" 200 -
+2025-12-01 15:30:15,364 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:15] "GET /estado_local?local=Fabric%20Sushi&fecha=2025-11-01 HTTP/1.1" 200 -
+2025-12-01 15:30:15,402 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:15] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2025-11-01 HTTP/1.1" 200 -
+2025-12-01 15:30:16,292 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:16] "GET /lotes_auditados?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-01&turno=Turno%20día HTTP/1.1" 200 -
+2025-12-01 15:30:17,040 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:17] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 15:30:17,085 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:17] "GET /tarjetas_cargadas_hoy?local=Fabric+Sushi&caja=Caja+1&fecha=2025-11-23&turno=Turno+día HTTP/1.1" 200 -
+2025-12-01 15:30:17,149 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:17] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 15:30:17,969 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:17] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-12-01 15:30:17,976 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:17] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-12-01 15:30:17,987 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:17] "GET /estado_local?local=Fabric%20Sushi&fecha=2025-11-23 HTTP/1.1" 200 -
+2025-12-01 15:30:18,884 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:18] "GET /lotes_auditados?local=Fabric%20Sushi&caja=Caja%201&fecha=2025-11-23&turno=Turno%20día HTTP/1.1" 200 -
+2025-12-01 15:30:19,778 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:19] "GET /api/terminales?local=Fabric%20Sushi HTTP/1.1" 200 -
+2025-12-01 15:30:47,798 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:47] "GET /gestion-usuarios HTTP/1.1" 200 -
+2025-12-01 15:30:47,843 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:47] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-01 15:30:47,845 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:47] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-01 15:30:47,850 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:47] "GET /static/js/gestion_usuarios.js HTTP/1.1" 200 -
+2025-12-01 15:30:47,964 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:47] "GET /api/mi_nivel HTTP/1.1" 200 -
+2025-12-01 15:30:48,918 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:48] "GET /api/locales HTTP/1.1" 200 -
+2025-12-01 15:30:49,795 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:30:49] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2025-12-01 15:31:13,580 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:31:13] "POST /api/usuarios/crear HTTP/1.1" 200 -
+2025-12-01 15:31:26,785 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:31:26] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2025-12-01 15:32:04,384 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:32:04] "DELETE /api/usuarios/eliminar/0fddaf1d-f4e4-4657-9ba0-e0a704a5298f HTTP/1.1" 200 -
+2025-12-01 15:32:06,451 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:32:06] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2025-12-01 15:32:20,173 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:32:20] "POST /api/usuarios/crear HTTP/1.1" 200 -
+2025-12-01 15:32:22,364 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:32:22] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2025-12-01 15:32:35,652 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:32:35] "POST /api/usuarios/crear HTTP/1.1" 200 -
+2025-12-01 15:32:38,807 - werkzeug - INFO - 127.0.0.1 - - [01/Dec/2025 15:32:38] "GET /api/usuarios/listar HTTP/1.1" 200 -
