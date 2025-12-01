@@ -265,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Guardar lote
     if (btn?.id === "guardarPedidosYaBD") {
       if (transaccionesNuevas.length === 0) { respuestaDiv.textContent = "No hay transacciones nuevas para guardar."; return; }
-      const { caja, fecha, turno } = getCtx();
+      const { local, caja, fecha, turno } = getCtx();
 
       try {
         setLoading(true);
@@ -273,7 +273,7 @@ document.addEventListener("DOMContentLoaded", function () {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            caja, fecha, turno,
+            local, caja, fecha, turno,
             transacciones: transaccionesNuevas.map(t => ({ transaccion: t.transaccion, monto: Number(t.monto) }))
           }),
         });

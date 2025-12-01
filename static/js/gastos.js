@@ -310,7 +310,7 @@ document.addEventListener("DOMContentLoaded", function () {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            caja: ctx.caja, fecha: ctx.fecha, turno: ctx.turno,
+            local: ctx.local, caja: ctx.caja, fecha: ctx.fecha, turno: ctx.turno,
             transacciones: gastosLocal.map(g => ({
               tipo: g.tipo, monto: g.monto, observaciones: g.observaciones
             }))

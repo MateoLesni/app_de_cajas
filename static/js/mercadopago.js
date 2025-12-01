@@ -482,7 +482,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ---------- Guardar lote ----------
   btnGuardar?.addEventListener("click", async function () {
     if (!canActUI()) { mostrarAlerta("No podés guardar (caja/local cerrados para tu rol)."); return; }
-    const { caja, fecha, turno } = getCtx();
+    const { local, caja, fecha, turno } = getCtx();
     if (!fecha) { mostrarAlerta("Debe seleccionar una fecha válida para guardar."); return; }
 
     const nuevos = registrosNuevosPorCaja[caja] || [];
@@ -492,7 +492,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const res = await fetch("/guardar_mercadopago_lote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caja, fecha, turno, registros: nuevos })
+        body: JSON.stringify({ local, caja, fecha, turno, registros: nuevos })
       });
       if (!res.ok) {
         const txt = await res.text();

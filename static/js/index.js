@@ -536,14 +536,14 @@ document.addEventListener("DOMContentLoaded", function () {
     await refrescarEstadoCaja({ reRender: false });
     if (!canActUI()) { alert("No tenés permisos para guardar en esta caja."); return; }
 
-    const { caja, fecha, turno } = getCtx();
+    const { local, caja, fecha, turno } = getCtx();
     const nuevas = remesasPorCaja[caja] || [];
     if (nuevas.length === 0) { respuestaDiv.innerText = "No hay remesas nuevas para guardar."; return; }
 
     fetch("/guardar_remesas_lote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caja, remesas: nuevas, fecha, turno })
+      body: JSON.stringify({ local, caja, remesas: nuevas, fecha, turno })
     })
     .then(res => res.json())
     .then(async data => {

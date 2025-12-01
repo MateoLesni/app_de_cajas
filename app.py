@@ -269,8 +269,17 @@ AUDITED_LOCAL_SUBQUERY = """
 def _ctx_from_request():
     """Extrae contexto (local/caja/fecha/turno) desde args/JSON + session.local."""
     data = request.get_json(silent=True) or {}
+
+    # Para auditores: priorizar local del request/body, sino usar get_local_param()
+    # Para otros roles: usar get_local_param() que devuelve session['local']
+    local_from_request = request.args.get('local') or data.get('local')
+    if local_from_request:
+        local_value = local_from_request
+    else:
+        local_value = get_local_param()
+
     return {
-        'local': session.get('local') or request.args.get('local') or data.get('local'),
+        'local': local_value,
         'caja':  request.args.get('caja')  or data.get('caja'),
         'fecha': request.args.get('fecha') or data.get('fecha'),
         'turno': request.args.get('turno') or data.get('turno'),
@@ -2440,7 +2449,8 @@ def ventas_base():
     from modules.tabla_auditoria import registrar_auditoria, obtener_registro_anterior
 
     data   = request.get_json() or {}
-    local  = session.get('local')
+    # Para auditores: usar local del body o del request, sino usar get_local_param()
+    local  = data.get('local') or get_local_param()
     user   = session.get('username')
 
     if not local or not user:
@@ -3727,7 +3737,8 @@ def guardar_gastos_lote():
     turno  = payload.get('turno')
     items  = payload.get('transacciones', []) or []
 
-    local   = session.get('local')
+    # Para auditores: usar local del payload o del request, sino usar get_local_param()
+    local   = payload.get('local') or get_local_param()
     usuario = session.get('username') or 'sistema'
 
     if not (local and caja and fecha and turno):
@@ -5630,7 +5641,8 @@ def api_actualizar_observacion_diferencia():
 @role_min_required(2)  # mínimo L2
 def api_cierre_local():
     data  = request.get_json() or {}
-    local = session.get('local')
+    # Para auditores: usar local del body, sino usar get_local_param()
+    local = data.get('local') or get_local_param()
     fecha = data.get('fecha')
 
     if not (local and fecha):
@@ -5714,7 +5726,8 @@ def api_marcar_auditado():
     Una vez auditado, el local se vuelve inmutable (nadie puede editar).
     """
     data = request.get_json() or {}
-    local = data.get('local') or session.get('local')
+    # Para auditores: usar local del body, sino usar get_local_param()
+    local = data.get('local') or get_local_param()
     fecha = data.get('fecha')
     observaciones = data.get('observaciones', '')
 
