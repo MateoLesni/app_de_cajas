@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 import os, re, uuid, mimetypes, unicodedata, logging
 import datetime as dt
+import io
+import zipfile
 from flask import Blueprint, request, jsonify, session, current_app, redirect, Response
 from werkzeug.utils import secure_filename
 from urllib.parse import quote
@@ -48,6 +50,7 @@ def inject_dependencies(*, login_required, get_db_connection, can_edit, get_user
     _wrap_endpoint_with_login("files.list_files")
     _wrap_endpoint_with_login("files.delete_item")
     _wrap_endpoint_with_login("files.view_item")
+    _wrap_endpoint_with_login("files.download_all_media")
 
 def _wrap_endpoint_with_login(endpoint_name: str):
     if _login_required is None:
@@ -552,6 +555,129 @@ def files_summary_media():
 
     except Exception as e:
         current_app.logger.exception("files.summary_media falló")
+        try: conn.rollback()
+        except: ...
+        return jsonify(error=str(e)), 500
+    finally:
+        try: cur.close()
+        except: ...
+        try: conn.close()
+        except: ...
+
+
+@bp_files.route("/download_all_media", methods=["GET"])
+def download_all_media():
+    """
+    Descarga todas las imágenes del día en un ZIP organizado por carpetas.
+    Params: local, fecha (YYYY-MM-DD)
+
+    Estructura del ZIP:
+    {local}_{fecha}/
+        remesas/
+            imagen1.jpg
+            imagen2.jpg
+        ventas_z/
+            imagen1.jpg
+        tarjeta/
+            ...
+    """
+    if not BUCKET_NAME:
+        return jsonify(error="GCS_BUCKET no configurado"), 500
+    if _get_db_connection is None:
+        return jsonify(error="Dependencias no inicializadas"), 500
+
+    local = (request.args.get("local") or "").strip()
+    fecha_s = _norm_fecha_str(request.args.get("fecha"))
+    if not local or not fecha_s:
+        return jsonify(error="Parámetros insuficientes: local y fecha"), 400
+
+    # Seguridad por rol
+    if _lvl() < 3:
+        ses_local = (session.get("local") or "").strip()
+        if not ses_local or ses_local.lower() != local.lower():
+            return jsonify(error="No autorizado para el local solicitado"), 403
+
+    conn = _get_db_connection()
+    cur = conn.cursor()
+    try:
+        # Obtener todas las imágenes del local/fecha
+        cur.execute("""
+            SELECT tab, gcs_path, original_name
+            FROM imagenes_adjuntos
+            WHERE local=%s
+              AND DATE(fecha)=%s
+              AND estado='active'
+            ORDER BY tab, id
+        """, (local, fecha_s))
+        rows = cur.fetchall() or []
+
+        if not rows:
+            return jsonify(error="No hay imágenes para descargar"), 404
+
+        # Crear ZIP en memoria
+        zip_buffer = io.BytesIO()
+        client = _client()
+        bucket = client.bucket(BUCKET_NAME)
+
+        # Nombre de la carpeta raíz: {local}_{fecha}
+        safe_local = re.sub(r'[^\w\s-]', '', local).strip().replace(' ', '_')
+        root_folder = f"{safe_local}_{fecha_s}"
+
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Contador para evitar duplicados de nombre
+            file_counters = {}
+
+            for tab, gcs_path, original_name in rows:
+                try:
+                    # Descargar blob desde GCS
+                    blob = bucket.blob(gcs_path)
+                    if not blob.exists():
+                        logger.warning(f"Blob no existe en GCS: {gcs_path}")
+                        continue
+
+                    file_data = blob.download_as_bytes()
+
+                    # Determinar nombre de archivo
+                    safe_name = original_name or gcs_path.rsplit("__", 1)[-1]
+
+                    # Determinar carpeta
+                    folder_name = (tab or "otros").strip().lower()
+
+                    # Evitar duplicados agregando contador si es necesario
+                    base_path = f"{root_folder}/{folder_name}/{safe_name}"
+                    if base_path in file_counters:
+                        file_counters[base_path] += 1
+                        name_parts = safe_name.rsplit('.', 1)
+                        if len(name_parts) == 2:
+                            safe_name = f"{name_parts[0]}_{file_counters[base_path]}.{name_parts[1]}"
+                        else:
+                            safe_name = f"{safe_name}_{file_counters[base_path]}"
+                        base_path = f"{root_folder}/{folder_name}/{safe_name}"
+                    else:
+                        file_counters[base_path] = 0
+
+                    # Agregar al ZIP
+                    zip_file.writestr(base_path, file_data)
+
+                except Exception as e:
+                    logger.error(f"Error descargando blob {gcs_path}: {e}")
+                    continue
+
+        # Preparar respuesta
+        zip_buffer.seek(0)
+        zip_filename = f"{safe_local}_{fecha_s}.zip"
+
+        return Response(
+            zip_buffer.getvalue(),
+            mimetype='application/zip',
+            headers={
+                'Content-Disposition': f'attachment; filename="{zip_filename}"',
+                'Content-Type': 'application/zip'
+            }
+        )
+
+    except Exception as e:
+        current_app.logger.exception("files.download_all_media falló")
         try: conn.rollback()
         except: ...
         return jsonify(error=str(e)), 500

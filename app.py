@@ -505,6 +505,8 @@ from modules.auditoria import auditoria_bp
 app.register_blueprint(auditoria_bp)
 from modules.terminales import terminales_bp
 app.register_blueprint(terminales_bp)
+from modules.tabla_auditoria import tabla_auditoria_bp, registrar_auditoria, obtener_registro_anterior
+app.register_blueprint(tabla_auditoria_bp)
 
 
 app.secret_key = '8V#n*aQHYUt@7MdGBY0wE8f'  # Cambiar en producción
@@ -900,6 +902,9 @@ def remesas_update(remesa_id):
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'remesas_trns', remesa_id)
+
         # contexto real → para can_edit
         cur.execute("SELECT id, local, caja, fecha, turno FROM remesas_trns WHERE id=%s", (remesa_id,))
         row = cur.fetchone()
@@ -910,10 +915,12 @@ def remesas_update(remesa_id):
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
         sets, params = [], []
+        datos_nuevos = {}
 
         def add(col, val):
             sets.append(f"{col}=%s")
             params.append(val)
+            datos_nuevos[col] = val
 
         if 'nro_remesa' in data:
             add("nro_remesa", (data.get('nro_remesa') or "").strip())
@@ -943,6 +950,18 @@ def remesas_update(remesa_id):
         cur2 = conn.cursor()
         cur2.execute(sql, tuple(params))
         conn.commit()
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='remesas_trns',
+            registro_id=remesa_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=datos_nuevos,
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         return jsonify(success=True, updated=cur2.rowcount)
     except Exception as e:
         conn.rollback()
@@ -968,6 +987,9 @@ def remesas_delete(remesa_id):
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'remesas_trns', remesa_id)
+
         cur.execute("SELECT id, local, caja, fecha, turno FROM remesas_trns WHERE id=%s", (remesa_id,))
         row = cur.fetchone()
         if not row:
@@ -984,6 +1006,17 @@ def remesas_delete(remesa_id):
         cur2 = conn.cursor()
         cur2.execute("DELETE FROM remesas_trns WHERE id=%s", (remesa_id,))
         conn.commit()
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='remesas_trns',
+            registro_id=remesa_id,
+            datos_anteriores=datos_anteriores,
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur.close()
         cur2.close()
         conn.close()
@@ -1031,10 +1064,52 @@ def _parse_float(value):
         return float(s)
     except Exception:
         return 0.0
-def _ensure_full_brand_set(*args, **kwargs):
-    """Placeholder temporal: evitar error de referencia."""
-    return None
 
+# Lista completa de tarjetas que siempre se deben insertar
+TODAS_LAS_TARJETAS = [
+    "VISA",
+    "VISA DÉBITO",
+    "VISA PREPAGO",
+    "MASTERCARD",
+    "MASTERCARD DÉBITO",
+    "MASTERCARD PREPAGO",
+    "CABAL",
+    "CABAL DÉBITO",
+    "AMEX",
+    "MAESTRO",
+    "NARANJA",
+    "MAS DELIVERY",
+    "DINERS",
+    "PAGOS INMEDIATOS"
+]
+
+def _ensure_full_brand_set(conn, local, caja, turno, fecha, terminal, lote, usuario, tarjetas_cargadas):
+    """
+    Garantiza que TODAS las tarjetas del conjunto estándar existan para el lote.
+    Si una tarjeta no vino en tarjetas_cargadas, se inserta con monto=0 y monto_tip=0.
+    """
+    cursor = conn.cursor()
+
+    sql_upsert = """
+        INSERT INTO tarjetas_trns
+        (usuario, local, caja, turno, tarjeta, terminal, lote, monto, monto_tip, fecha, estado)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'revision')
+        ON DUPLICATE KEY UPDATE
+          usuario=VALUES(usuario),
+          estado='revision'
+    """
+
+    # Crear set de tarjetas ya cargadas
+    tarjetas_existentes = {t.upper() for t in tarjetas_cargadas}
+
+    # Insertar las que faltan en 0
+    for tarjeta in TODAS_LAS_TARJETAS:
+        if tarjeta.upper() not in tarjetas_existentes:
+            cursor.execute(sql_upsert, (
+                usuario, local, caja, turno, tarjeta, terminal, lote, 0.0, 0.0, fecha
+            ))
+
+    cursor.close()
 
 
 @app.route('/guardar_tarjetas_lote', methods=['POST'])
@@ -1062,37 +1137,53 @@ def guardar_tarjetas_lote():
 
     try:
         conn = get_db_connection()
-        cur  = conn.cursor()
+        cur  = conn.cursor(dictionary=True)
 
-        sql_upsert = """
+        # VALIDACIÓN: Verificar que ningún lote ya exista para este contexto
+        for (terminal, lote) in grupos.keys():
+            cur.execute("""
+                SELECT COUNT(*) as cnt
+                FROM tarjetas_trns
+                WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s
+                  AND terminal=%s AND lote=%s
+            """, (local, caja, fecha, turno, terminal, lote))
+            resultado = cur.fetchone()
+            if resultado and resultado['cnt'] > 0:
+                cur.close(); conn.close()
+                return jsonify(
+                    success=False,
+                    msg=f"El lote '{lote}' para la terminal '{terminal}' ya existe en esta caja/fecha/turno. No se puede duplicar."
+                ), 409
+
+        # Si pasó la validación, procedemos con el insert
+        sql_insert = """
             INSERT INTO tarjetas_trns
             (usuario, local, caja, turno, tarjeta, terminal, lote, monto, monto_tip, fecha, estado)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'revision')
-            ON DUPLICATE KEY UPDATE
-              monto=VALUES(monto),
-              monto_tip=VALUES(monto_tip),
-              usuario=VALUES(usuario),
-              estado='revision'
         """
 
         inserted = 0
         for (terminal, lote), filas in grupos.items():
-            # Primero: insert/upsert las que vinieron con datos
+            tarjetas_cargadas = []
+
+            # Primero: insert las que vinieron con datos
             for t in filas:
                 tarjeta   = (t.get('tarjeta') or "").strip()
                 if not tarjeta:
                     continue
+                tarjetas_cargadas.append(tarjeta)
                 monto     = _parse_float(t.get('monto', 0))
                 monto_tip = _parse_float(t.get('tip', 0))
-                cur.execute(sql_upsert, (
+                cur.execute(sql_insert, (
                     usuario, local, caja, turno, tarjeta, terminal, lote, monto, monto_tip, fecha
                 ))
                 inserted += cur.rowcount
 
-            # Luego: garantizar set completo de marcas con 0
+            # Luego: garantizar set completo de marcas con 0 (las que faltan)
             _ensure_full_brand_set(
                 conn, local=local, caja=caja, turno=turno, fecha=fecha,
-                terminal=terminal, lote=lote
+                terminal=terminal, lote=lote, usuario=usuario,
+                tarjetas_cargadas=tarjetas_cargadas
             )
 
         conn.commit()
@@ -1155,6 +1246,10 @@ def actualizar_tarjeta(tarjeta_id: int):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'tarjetas_trns', tarjeta_id)
+
         cur.execute("SELECT id, local, caja, fecha, turno FROM tarjetas_trns WHERE id=%s", (tarjeta_id,))
         row = cur.fetchone()
         if not row:
@@ -1167,14 +1262,18 @@ def actualizar_tarjeta(tarjeta_id: int):
 
         sets = []
         vals = []
+        datos_nuevos = {}
         if monto_raw is not None:
             monto = _parse_float(monto_raw)
             sets.append("monto=%s"); vals.append(monto)
+            datos_nuevos['monto'] = monto
         if tip_raw is not None:
             monto_tip = _parse_float(tip_raw)
             sets.append("monto_tip=%s"); vals.append(monto_tip)
+            datos_nuevos['monto_tip'] = monto_tip
         if estado_raw is not None:
             sets.append("estado=%s"); vals.append(str(estado_raw))
+            datos_nuevos['estado'] = str(estado_raw)
 
         if not sets:
             cur.close(); conn.close()
@@ -1184,6 +1283,18 @@ def actualizar_tarjeta(tarjeta_id: int):
         cur2 = conn.cursor()
         cur2.execute(f"UPDATE tarjetas_trns SET {', '.join(sets)} WHERE id=%s", tuple(vals))
         conn.commit()
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='tarjetas_trns',
+            registro_id=tarjeta_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=datos_nuevos,
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True)
     except Exception as e:
@@ -1200,6 +1311,8 @@ def borrar_tarjeta(tarjeta_id: int):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener todos los registros del grupo para auditoría
         cur.execute("""
             SELECT id, local, caja, fecha, turno, terminal, lote
               FROM tarjetas_trns
@@ -1214,6 +1327,14 @@ def borrar_tarjeta(tarjeta_id: int):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido"), 409
 
+        # 2. Obtener todos los registros del lote que se van a eliminar
+        cur.execute("""
+            SELECT * FROM tarjetas_trns
+             WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s
+               AND terminal=%s AND lote=%s
+        """, (row['local'], row['caja'], _normalize_fecha(row['fecha']), row['turno'], row['terminal'], row['lote']))
+        registros_a_eliminar = cur.fetchall()
+
         cur2 = conn.cursor()
         cur2.execute("""
             DELETE FROM tarjetas_trns
@@ -1222,11 +1343,131 @@ def borrar_tarjeta(tarjeta_id: int):
         """, (row['local'], row['caja'], _normalize_fecha(row['fecha']), row['turno'], row['terminal'], row['lote']))
         eliminadas = cur2.rowcount
         conn.commit()
+
+        # 3. Registrar auditoría para cada registro eliminado
+        for reg in registros_a_eliminar:
+            registrar_auditoria(
+                conn=conn,
+                accion='DELETE',
+                tabla='tarjetas_trns',
+                registro_id=reg['id'],
+                datos_anteriores=dict(reg),
+                descripcion=f"Eliminación de lote completo: {row['terminal']} / {row['lote']}",
+                contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+            )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True, deleted=eliminadas)
     except Exception as e:
         print("❌ ERROR al borrar tarjetas (bloque):", e)
         return jsonify(success=False, msg=f"Error al borrar: {e}"), 500
+
+
+# ------------------------------------------------------------------------------------
+#  LOTES AUDITADOS - Solo para auditores (nivel 3)
+# ------------------------------------------------------------------------------------
+@app.route("/lotes_auditados", methods=["GET"])
+@login_required
+def obtener_lotes_auditados():
+    """
+    Obtiene los lotes auditados para una fecha/caja/turno/local específico.
+    Query params: local, caja, fecha, turno
+    """
+    local = request.args.get("local")
+    caja  = request.args.get("caja")
+    fecha = request.args.get("fecha")
+    turno = request.args.get("turno")
+
+    if not all([local, caja, fecha, turno]):
+        return jsonify(success=False, msg="Faltan parámetros"), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT terminal, lote, auditado, auditado_por, fecha_auditoria
+            FROM lotes_auditados
+            WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s
+        """, (local, caja, fecha, turno))
+        resultados = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # Convertir a dict para fácil acceso desde JS
+        lotes_dict = {}
+        for r in resultados:
+            key = f"{r['terminal']}||{r['lote']}"
+            lotes_dict[key] = {
+                'auditado': bool(r['auditado']),
+                'auditado_por': r['auditado_por'],
+                'fecha_auditoria': str(r['fecha_auditoria']) if r['fecha_auditoria'] else None
+            }
+
+        return jsonify(success=True, lotes=lotes_dict)
+    except Exception as e:
+        print("❌ ERROR al obtener lotes auditados:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route("/lotes_auditados/marcar", methods=["POST"])
+@login_required
+def marcar_lote_auditado():
+    """
+    Marca o desmarca un lote como auditado.
+    Body: { local, caja, fecha, turno, terminal, lote, auditado: true/false }
+    Solo para nivel 3 (auditores)
+    """
+    if get_user_level() < 3:
+        return jsonify(success=False, msg="Solo auditores pueden marcar lotes"), 403
+
+    data = request.get_json() or {}
+    local    = data.get("local")
+    caja     = data.get("caja")
+    fecha    = data.get("fecha")
+    turno    = data.get("turno")
+    terminal = data.get("terminal")
+    lote     = data.get("lote")
+    auditado = data.get("auditado", True)
+    usuario  = session.get("username")
+
+    if not all([local, caja, fecha, turno, terminal, lote]):
+        return jsonify(success=False, msg="Faltan parámetros"), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        if auditado:
+            # Marcar como auditado
+            cur.execute("""
+                INSERT INTO lotes_auditados
+                (local, caja, fecha, turno, terminal, lote, auditado, auditado_por, fecha_auditoria)
+                VALUES (%s, %s, %s, %s, %s, %s, TRUE, %s, NOW())
+                ON DUPLICATE KEY UPDATE
+                  auditado=TRUE,
+                  auditado_por=%s,
+                  fecha_auditoria=NOW()
+            """, (local, caja, fecha, turno, terminal, lote, usuario, usuario))
+        else:
+            # Desmarcar
+            cur.execute("""
+                INSERT INTO lotes_auditados
+                (local, caja, fecha, turno, terminal, lote, auditado, auditado_por, fecha_auditoria)
+                VALUES (%s, %s, %s, %s, %s, %s, FALSE, NULL, NULL)
+                ON DUPLICATE KEY UPDATE
+                  auditado=FALSE,
+                  auditado_por=NULL,
+                  fecha_auditoria=NULL
+            """, (local, caja, fecha, turno, terminal, lote))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify(success=True)
+    except Exception as e:
+        print("❌ ERROR al marcar lote auditado:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
 
 
 
@@ -1341,6 +1582,10 @@ def actualizar_rappi(rappi_id):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'rappi_trns', rappi_id)
+
         cur.execute("SELECT id, local, caja, fecha, turno FROM rappi_trns WHERE id=%s", (rappi_id,))
         row = cur.fetchone()
         if not row:
@@ -1359,6 +1604,18 @@ def actualizar_rappi(rappi_id):
              WHERE id=%s
         """, (transaccion, importe, rappi_id))
         conn.commit()
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='rappi_trns',
+            registro_id=rappi_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos={'transaccion': transaccion, 'monto': importe},
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True)
     except Exception as e:
@@ -1375,6 +1632,10 @@ def borrar_rappi(rappi_id):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'rappi_trns', rappi_id)
+
         cur.execute("SELECT id, local, caja, fecha, turno FROM rappi_trns WHERE id=%s", (rappi_id,))
         row = cur.fetchone()
         if not row:
@@ -1389,6 +1650,17 @@ def borrar_rappi(rappi_id):
         cur2.execute("DELETE FROM rappi_trns WHERE id=%s", (rappi_id,))
         conn.commit()
         deleted = cur2.rowcount
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='rappi_trns',
+            registro_id=rappi_id,
+            datos_anteriores=datos_anteriores,
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True, deleted=deleted)
     except Exception as e:
@@ -1558,6 +1830,10 @@ def actualizar_pedidosya(py_id):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'pedidosya_trns', py_id)
+
         cur.execute("SELECT id, local, caja, fecha, turno FROM pedidosya_trns WHERE id=%s", (py_id,))
         row = cur.fetchone()
         if not row:
@@ -1576,6 +1852,18 @@ def actualizar_pedidosya(py_id):
              WHERE id=%s
         """, (transaccion, importe, py_id))
         conn.commit()
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='pedidosya_trns',
+            registro_id=py_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos={'transaccion': transaccion, 'monto': importe},
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True)
     except Exception as e:
@@ -1592,6 +1880,10 @@ def borrar_pedidosya(py_id):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'pedidosya_trns', py_id)
+
         cur.execute("SELECT id, local, caja, fecha, turno FROM pedidosya_trns WHERE id=%s", (py_id,))
         row = cur.fetchone()
         if not row:
@@ -1606,6 +1898,17 @@ def borrar_pedidosya(py_id):
         cur2.execute("DELETE FROM pedidosya_trns WHERE id=%s", (py_id,))
         conn.commit()
         deleted = cur2.rowcount
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='pedidosya_trns',
+            registro_id=py_id,
+            datos_anteriores=datos_anteriores,
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True, deleted=deleted)
     except Exception as e:
@@ -1778,6 +2081,9 @@ def actualizar_mercadopago(mp_id):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'mercadopago_trns', mp_id)
+
         cur2 = conn.cursor()
         cur2.execute("""
             UPDATE mercadopago_trns
@@ -1785,6 +2091,29 @@ def actualizar_mercadopago(mp_id):
              WHERE id=%s
         """, (tipo, terminal, comprobante, importe, mp_id))
         conn.commit()
+
+        # 2. Registrar auditoría
+        datos_nuevos = {
+            'tipo': tipo,
+            'terminal': terminal,
+            'comprobante': comprobante,
+            'importe': importe
+        }
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='mercadopago_trns',
+            registro_id=mp_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=datos_nuevos,
+            contexto_override={
+                'local': row['local'],
+                'caja': row['caja'],
+                'fecha_operacion': row['fecha'],
+                'turno': row['turno']
+            }
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True)
     except Exception as e:
@@ -1810,10 +2139,30 @@ def borrar_mercadopago(mp_id):
             cur.close(); conn.close()
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
 
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'mercadopago_trns', mp_id)
+
         cur2 = conn.cursor()
         cur2.execute("DELETE FROM mercadopago_trns WHERE id=%s", (mp_id,))
         conn.commit()
         deleted = cur2.rowcount
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='mercadopago_trns',
+            registro_id=mp_id,
+            datos_anteriores=datos_anteriores,
+            descripcion=f"Eliminación de MercadoPago: {datos_anteriores.get('terminal', '')} / {datos_anteriores.get('comprobante', '')}",
+            contexto_override={
+                'local': row['local'],
+                'caja': row['caja'],
+                'fecha_operacion': row['fecha'],
+                'turno': row['turno']
+            }
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True, deleted=deleted)
     except Exception as e:
@@ -2088,6 +2437,8 @@ def ventas_base():
     DELETE -> Borra la base.
               body: { fecha, caja, turno }
     """
+    from modules.tabla_auditoria import registrar_auditoria, obtener_registro_anterior
+
     data   = request.get_json() or {}
     local  = session.get('local')
     user   = session.get('username')
@@ -2139,8 +2490,34 @@ def ventas_base():
                 INSERT INTO ventas_trns (usuario, local, caja, turno, fecha, venta_total_sistema, estado)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (user, local, caja, turno, nfecha, vts, "revision"))
+            nuevo_id = cur2.lastrowid
             cur2.close()
             conn.commit()
+
+            # AUDITORÍA: Registrar INSERT
+            registrar_auditoria(
+                conn=conn,
+                accion='INSERT',
+                tabla='ventas_trns',
+                registro_id=nuevo_id,
+                datos_nuevos={
+                    'usuario': user,
+                    'local': local,
+                    'caja': caja,
+                    'turno': turno,
+                    'fecha': str(nfecha),
+                    'venta_total_sistema': vts,
+                    'estado': 'revision'
+                },
+                descripcion=f"Nueva venta Z creada - Monto: ${vts:,.2f}",
+                contexto_override={
+                    'local': local,
+                    'caja': caja,
+                    'fecha_operacion': str(nfecha),
+                    'turno': turno
+                }
+            )
+
             return jsonify(success=True)
 
         if request.method == 'PUT':
@@ -2154,6 +2531,9 @@ def ventas_base():
             if not row:
                 return jsonify(success=False, msg="No existe base para esa fecha/caja/turno."), 404
 
+            # AUDITORÍA: Capturar estado anterior
+            datos_anteriores = obtener_registro_anterior(conn, 'ventas_trns', row['id'])
+
             cur2 = conn.cursor()
             cur2.execute("""
                 UPDATE ventas_trns
@@ -2162,14 +2542,61 @@ def ventas_base():
             """, (vts, user, row['id']))
             cur2.close()
             conn.commit()
+
+            # AUDITORÍA: Registrar UPDATE
+            registrar_auditoria(
+                conn=conn,
+                accion='UPDATE',
+                tabla='ventas_trns',
+                registro_id=row['id'],
+                datos_anteriores=datos_anteriores,
+                datos_nuevos={
+                    'venta_total_sistema': vts,
+                    'usuario': user
+                },
+                descripcion=f"Venta Z actualizada - Monto anterior: ${datos_anteriores.get('venta_total_sistema', 0):,.2f} → Nuevo: ${vts:,.2f}",
+                contexto_override={
+                    'local': local,
+                    'caja': caja,
+                    'fecha_operacion': str(nfecha),
+                    'turno': turno
+                }
+            )
+
             return jsonify(success=True)
 
         # DELETE
+        # AUDITORÍA: Capturar estado antes de borrar
+        cur.execute("""
+            SELECT * FROM ventas_trns
+             WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s
+             LIMIT 1
+        """, (local, caja, nfecha, turno))
+        registro_a_borrar = cur.fetchone()
+
         cur.execute("""
             DELETE FROM ventas_trns
              WHERE local=%s AND caja=%s AND DATE(fecha)=%s AND turno=%s
         """, (local, caja, nfecha, turno))
         conn.commit()
+
+        # AUDITORÍA: Registrar DELETE
+        if registro_a_borrar:
+            registrar_auditoria(
+                conn=conn,
+                accion='DELETE',
+                tabla='ventas_trns',
+                registro_id=registro_a_borrar.get('id'),
+                datos_anteriores=registro_a_borrar,
+                descripcion=f"Venta Z eliminada - Monto: ${registro_a_borrar.get('venta_total_sistema', 0):,.2f}",
+                contexto_override={
+                    'local': local,
+                    'caja': caja,
+                    'fecha_operacion': str(nfecha),
+                    'turno': turno
+                }
+            )
+
         return jsonify(success=True)
 
     except Exception as e:
@@ -2466,6 +2893,8 @@ def facturas_create():
     Body JSON: { tipo, punto_venta, nro_factura, comentario?, monto, estado? }
     Requiere local/caja/fecha/turno + can_edit ok.
     """
+    from modules.tabla_auditoria import registrar_auditoria
+
     ctx = _f_ctx_from_request()
     if not all([ctx["local"], ctx["caja"], ctx["fecha"], ctx["turno"]]):
         return jsonify(success=False, msg="falta local/caja/fecha/turno"), 400
@@ -2507,6 +2936,30 @@ def facturas_create():
                 new_id = cur.lastrowid
             except mysql.connector.IntegrityError:
                 return jsonify(success=False, msg="Factura duplicada para ese contexto"), 409
+
+        # AUDITORÍA: Registrar INSERT
+        registrar_auditoria(
+            conn=conn,
+            accion='INSERT',
+            tabla='facturas_trns',
+            registro_id=new_id,
+            datos_nuevos={
+                'tipo': tipo,
+                'punto_venta': punto_venta,
+                'nro_factura': nro_factura,
+                'comentario': comentario,
+                'monto': monto,
+                'estado': estado,
+                'usuario': usuario
+            },
+            descripcion=f"Nueva factura {tipo} creada - PV: {punto_venta} / Nro: {nro_factura} / Monto: ${monto:,.2f}",
+            contexto_override={
+                'local': ctx["local"],
+                'caja': ctx["caja"],
+                'fecha_operacion': str(ctx["fecha"]),
+                'turno': ctx["turno"]
+            }
+        )
 
         with conn.cursor(dictionary=True) as cur2:
             cur2.execute(
@@ -2593,6 +3046,8 @@ def facturas_update(fid: int):
     Body JSON: cualquier subset de {tipo, punto_venta, nro_factura, comentario, monto, estado}
     Requiere can_edit ok para el contexto de esa factura.
     """
+    from modules.tabla_auditoria import registrar_auditoria, obtener_registro_anterior
+
     # 1) Traer la fila para conocer su contexto original
     conn = get_db_connection()
     try:
@@ -2604,6 +3059,9 @@ def facturas_update(fid: int):
             base = cur.fetchone()
             if not base:
                 return jsonify(success=False, msg="No encontrado"), 404
+
+        # AUDITORÍA: Capturar estado anterior
+        datos_anteriores = obtener_registro_anterior(conn, 'facturas_trns', fid)
 
         # 2) chequear permisos con el contexto de la fila (usamos turno normalizado solo para permiso)
         ctx = {
@@ -2621,21 +3079,43 @@ def facturas_update(fid: int):
         data = _f_get_json()
         sets = []
         args = []
+        datos_nuevos = {}
 
         if "tipo" in data and _f_norm(data.get("tipo")):
-            sets.append("tipo=%s"); args.append(_f_norm(data["tipo"]).upper())
+            sets.append("tipo=%s")
+            val = _f_norm(data["tipo"]).upper()
+            args.append(val)
+            datos_nuevos['tipo'] = val
         if "punto_venta" in data and _f_norm(data.get("punto_venta")):
-            sets.append("punto_venta=%s"); args.append(_f_norm(data["punto_venta"]))
+            sets.append("punto_venta=%s")
+            val = _f_norm(data["punto_venta"])
+            args.append(val)
+            datos_nuevos['punto_venta'] = val
         if "nro_factura" in data and _f_norm(data.get("nro_factura")):
-            sets.append("nro_factura=%s"); args.append(_f_norm(data["nro_factura"]))
+            sets.append("nro_factura=%s")
+            val = _f_norm(data["nro_factura"])
+            args.append(val)
+            datos_nuevos['nro_factura'] = val
         if "comentario" in data:
-            sets.append("comentario=%s"); args.append(_f_norm(data.get("comentario") or ""))
+            sets.append("comentario=%s")
+            val = _f_norm(data.get("comentario") or "")
+            args.append(val)
+            datos_nuevos['comentario'] = val
         if "monto" in data:
-            sets.append("monto=%s"); args.append(_f_parse_monto(data.get("monto")))
+            sets.append("monto=%s")
+            val = _f_parse_monto(data.get("monto"))
+            args.append(val)
+            datos_nuevos['monto'] = val
         if "estado" in data and _f_norm(data.get("estado")):
-            sets.append("estado=%s"); args.append(_f_norm(data["estado"]))
+            sets.append("estado=%s")
+            val = _f_norm(data["estado"])
+            args.append(val)
+            datos_nuevos['estado'] = val
 
-        sets.append("update_by=%s"); args.append(session.get("username") or "system")
+        usuario = session.get("username") or "system"
+        sets.append("update_by=%s")
+        args.append(usuario)
+        datos_nuevos['update_by'] = usuario
 
         if len(sets) == 1:  # solo update_by => sin cambios de negocio
             return jsonify(success=True, msg="Sin cambios")
@@ -2645,6 +3125,23 @@ def facturas_update(fid: int):
         with conn.cursor() as cur2:
             cur2.execute(f"UPDATE facturas_trns SET {', '.join(sets)} WHERE id=%s", tuple(args))
             conn.commit()
+
+        # AUDITORÍA: Registrar UPDATE
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='facturas_trns',
+            registro_id=fid,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=datos_nuevos,
+            descripcion=f"Factura {datos_anteriores.get('tipo')} actualizada - PV: {datos_anteriores.get('punto_venta')} / Nro: {datos_anteriores.get('nro_factura')}",
+            contexto_override={
+                'local': ctx["local"],
+                'caja': ctx["caja"],
+                'fecha_operacion': str(ctx["fecha"]),
+                'turno': ctx["turno"]
+            }
+        )
 
         with conn.cursor(dictionary=True) as cur3:
             cur3.execute(
@@ -2671,6 +3168,8 @@ def facturas_delete(fid: int):
     """
     Borra una factura. Requiere can_edit ok con el contexto original de la fila.
     """
+    from modules.tabla_auditoria import registrar_auditoria, obtener_registro_anterior
+
     conn = get_db_connection()
     try:
         with conn.cursor(dictionary=True) as cur:
@@ -2681,6 +3180,9 @@ def facturas_delete(fid: int):
             base = cur.fetchone()
             if not base:
                 return jsonify(success=False, msg="No encontrado"), 404
+
+        # AUDITORÍA: Capturar estado completo antes de borrar
+        datos_anteriores = obtener_registro_anterior(conn, 'facturas_trns', fid)
 
         ctx = {
             "local": base["local"],
@@ -2697,6 +3199,23 @@ def facturas_delete(fid: int):
             cur2.execute("DELETE FROM facturas_trns WHERE id=%s", (fid,))
             deleted = cur2.rowcount
             conn.commit()
+
+        # AUDITORÍA: Registrar DELETE
+        if datos_anteriores:
+            registrar_auditoria(
+                conn=conn,
+                accion='DELETE',
+                tabla='facturas_trns',
+                registro_id=fid,
+                datos_anteriores=datos_anteriores,
+                descripcion=f"Factura {datos_anteriores.get('tipo')} eliminada - PV: {datos_anteriores.get('punto_venta')} / Nro: {datos_anteriores.get('nro_factura')} / Monto: ${datos_anteriores.get('monto', 0):,.2f}",
+                contexto_override={
+                    'local': ctx["local"],
+                    'caja': ctx["caja"],
+                    'fecha_operacion': str(ctx["fecha"]),
+                    'turno': ctx["turno"]
+                }
+            )
 
         if deleted == 0:
             return jsonify(success=False, msg="No encontrado"), 404
@@ -3279,6 +3798,10 @@ def actualizar_gasto(gasto_id):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'gastos_trns', gasto_id)
+
         cur.execute("""
             SELECT id, local, caja, fecha, turno, observaciones
             FROM gastos_trns
@@ -3310,6 +3833,18 @@ def actualizar_gasto(gasto_id):
         """, (tipo, monto, final_obs, gasto_id))
 
         conn.commit()
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='gastos_trns',
+            registro_id=gasto_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos={'tipo': tipo, 'monto': monto, 'observaciones': final_obs},
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
+
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True)
 
@@ -3324,6 +3859,10 @@ def borrar_gasto(gasto_id):
     try:
         conn = get_db_connection()
         cur  = conn.cursor(dictionary=True)
+
+        # 1. Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'gastos_trns', gasto_id)
+
         cur.execute("""
             SELECT id, local, caja, fecha, turno
             FROM gastos_trns
@@ -3349,6 +3888,16 @@ def borrar_gasto(gasto_id):
         cur2.execute("DELETE FROM gastos_trns WHERE id=%s", (gasto_id,))
         conn.commit()
         deleted = cur2.rowcount
+
+        # 2. Registrar auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='gastos_trns',
+            registro_id=gasto_id,
+            datos_anteriores=datos_anteriores,
+            contexto_override={'local': row['local'], 'caja': row['caja'], 'fecha_operacion': row['fecha'], 'turno': row['turno']}
+        )
 
         cur2.close(); cur.close(); conn.close()
         return jsonify(success=True, deleted=deleted)
@@ -3643,7 +4192,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                 SELECT caja, turno FROM anticipos_consumidos_trns WHERE local=%s AND DATE(fecha)=%s
             ) AS todas
             ORDER BY caja, turno
-        """), (local, f, local, f, local, f, local, f, local, f)
+        """, (local, f, local, f, local, f, local, f, local, f))
 
     cajas_turnos = cur.fetchall()
 

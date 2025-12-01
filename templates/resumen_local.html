@@ -652,19 +652,98 @@
     };
     tick();
   }
-  function downloadAll(){
+  async function downloadAll(event){
+    // Prevenir cualquier comportamiento por defecto y propagación
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    }
+
+    // NUEVO: Descargar todas las imágenes en un ZIP organizado por carpetas
+    const fecha = document.getElementById('rl-fecha').value;
+    const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+    if (!fecha || !local) {
+      alert('Por favor seleccione fecha y local');
+      return false;
+    }
+
+    // Verificar que hay imágenes
     const all = [];
     (_lastGroups||[]).forEach(g => (g.items||[]).forEach(it => all.push(it)));
-    if (!all.length) return;
-    let i = 0;
-    const tick = () => {
-      if (i >= all.length) return;
-      downloadSingle(all[i++]);
-      setTimeout(tick, 160);
-    };
-    tick();
+    if (!all.length) {
+      alert('No hay imágenes para descargar');
+      return false;
+    }
+
+    // Mostrar indicador de carga
+    const btn = document.getElementById('dl-all');
+    const originalText = btn.textContent;
+    btn.textContent = 'Descargando...';
+    btn.disabled = true;
+
+    try {
+      // Construir URL del endpoint de descarga ZIP
+      const url = new URL('/files/download_all_media', location.origin);
+      url.searchParams.set('fecha', fecha);
+      url.searchParams.set('local', local);
+
+      console.log('[DEBUG] Descargando ZIP desde:', url.toString());
+
+      // Descargar usando fetch para evitar navegación
+      const response = await fetch(url.toString(), {
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+
+      console.log('[DEBUG] Response status:', response.status);
+      console.log('[DEBUG] Response content-type:', response.headers.get('content-type'));
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({error: 'Error desconocido'}));
+        throw new Error(errorData.error || `Error ${response.status}`);
+      }
+
+      // Verificar que sea un ZIP
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('zip')) {
+        console.error('[DEBUG] Content-Type inesperado:', contentType);
+        throw new Error(`Respuesta inesperada. Content-Type: ${contentType}. Puede que el endpoint no exista.`);
+      }
+
+      // Convertir a blob
+      const blob = await response.blob();
+      console.log('[DEBUG] Blob size:', blob.size, 'bytes');
+
+      // Crear URL temporal y descargar
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${local.replace(/\s+/g, '_')}_${fecha}.zip`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Limpiar
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        a.remove();
+      }, 100);
+
+      console.log('[DEBUG] Descarga completada exitosamente');
+
+    } catch (error) {
+      console.error('Error descargando ZIP:', error);
+      alert('Error al descargar: ' + error.message);
+    } finally {
+      // Restaurar botón
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+
+    return false;
   }
-  document.getElementById('dl-all').addEventListener('click', downloadAll);
+  document.getElementById('dl-all').addEventListener('click', downloadAll, true);
 
   /* ===== Fetch media ===== */
   async function loadMedia(){

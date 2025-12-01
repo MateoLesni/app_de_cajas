@@ -4,8 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ======= Estilos extras =======
   (function injectStyle() {
     const css = `
-      /* tabla base */
-      #tablaPreviewTarjetas tr:nth-child(even){ background:#f8fafc; }
+      /* tabla base - removemos el zebra stripe para controlarlo por lote */
       #tablaPreviewTarjetas td { padding:8px 10px; border-bottom:1px solid #e5e7eb; }
       #tablaPreviewTarjetas td.montos { text-align:right; white-space:nowrap; }
       #tablaPreviewTarjetas td.montos .field { display:inline-flex; align-items:center; gap:6px; margin-left:10px; }
@@ -18,10 +17,24 @@ document.addEventListener("DOMContentLoaded", function () {
       #tablaPreviewTarjetas .btn[disabled]{ opacity:.35; cursor:not-allowed; }
 
       /* separador de lote (gris un poco más oscuro) */
-      #tablaPreviewTarjetas .group-header { background:#dde7f3; }
+      #tablaPreviewTarjetas .group-header { background:#dde7f3; font-weight:600; }
 
-      /* fila guardada en BD (verde suave) */
-      #tablaPreviewTarjetas tr.saved-row { background:#eaf7ea; }
+      /* Alternancia de colores por lote: blanco/gris clarito */
+      #tablaPreviewTarjetas tr.lote-blanco { background:#ffffff; }
+      #tablaPreviewTarjetas tr.lote-gris { background:#f8fafc; }
+
+      /* LOTES AUDITADOS: Color verde suave */
+      #tablaPreviewTarjetas tr.lote-auditado.lote-blanco { background:#e8f5e9; }
+      #tablaPreviewTarjetas tr.lote-auditado.lote-gris { background:#d4edda; }
+      #tablaPreviewTarjetas tr.lote-auditado.group-header { background:#c3e6cb; }
+      #tablaPreviewTarjetas tr.lote-auditado.subtotal-row { background:#b8ddc1; }
+
+      /* fila guardada en BD (ya no verde - usamos el color del lote) */
+      #tablaPreviewTarjetas tr.saved-row { /* removed green background */ }
+
+      /* Subtotal en negrita */
+      #tablaPreviewTarjetas tr.subtotal-row { font-weight:700; background:#e8edf5; }
+      #tablaPreviewTarjetas tr.subtotal-row td { border-top:2px solid #cbd5e1; }
 
       .txt-muted{ color:#64748b; }
 
@@ -34,6 +47,9 @@ document.addEventListener("DOMContentLoaded", function () {
       /* Indicador de lote activo */
       #loteActivoDisplay { margin-top:6px; font-size:14px; }
       #loteActivoDisplay b { font-weight:700; }
+
+      /* Checkbox de auditoría (solo auditor) */
+      .audit-checkbox { cursor:pointer; transform:scale(1.2); margin-left:8px; }
     `;
     const style = document.createElement("style");
     style.textContent = css;
@@ -107,6 +123,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const terminalActivoPorCaja        = {};
   const loteActivoPorCajaTerminal    = {};
 
+  // Estado de auditoría por lote (key: "terminal||lote")
+  let lotesAuditados = {}; // { "terminal||lote": {auditado, auditado_por, fecha_auditoria} }
+
   // ---------- Helpers ----------
   function getLocalActual() {
     // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
@@ -150,15 +169,14 @@ document.addEventListener("DOMContentLoaded", function () {
     else loteDisplay.textContent = "Lote actual: Sin lote";
   }
 
-  // Todas las tarjetas definidas en el formulario (para saber cuáles “faltan”)
+  // Todas las tarjetas que deben mostrarse siempre (14 tarjetas completas)
   function getTodasLasTarjetas() {
-    const rows = tarjetaForm?.querySelectorAll(".tarjeta-row") || [];
-    const set = new Set();
-    rows.forEach(r => {
-      const t = (r.dataset.tarjeta || "").trim();
-      if (t) set.add(t);
-    });
-    return Array.from(set); // ej. ["VISA","MASTERCARD",...]
+    return [
+      "VISA", "VISA DÉBITO", "VISA PREPAGO",
+      "MASTERCARD", "MASTERCARD DÉBITO", "MASTERCARD PREPAGO",
+      "CABAL", "CABAL DÉBITO", "AMEX", "MAESTRO",
+      "NARANJA", "MAS DELIVERY", "DINERS", "PAGOS INMEDIATOS"
+    ];
   }
 
   // ---------- Cargar terminales ----------
@@ -201,6 +219,28 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTerminales(caja);
   }
 
+  // ---------- Cargar estado de auditoría de lotes ----------
+  async function cargarEstadoAuditoria() {
+    // SIEMPRE resetear primero para evitar mezclar contextos
+    lotesAuditados = {};
+
+    if (ROLE < 3) return; // solo para auditores
+    const { local, caja, fecha, turno } = getCtx();
+    if (!local || !caja || !fecha || !turno) return;
+
+    try {
+      const url = `/lotes_auditados?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`;
+      const r = await fetch(url);
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.success && data.lotes) {
+        lotesAuditados = data.lotes; // { "terminal||lote": {auditado, auditado_por, ...} }
+      }
+    } catch (err) {
+      console.error("Error cargando estado de auditoría:", err);
+    }
+  }
+
   // ---------- Estado caja/local ----------
   async function refrescarEstadoCaja({ reRender = true } = {}) {
     const { local, caja, fecha, turno } = getCtx();
@@ -229,6 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
       localAuditado = false;
     }
     toggleUIByEstado();
+    await cargarEstadoAuditoria(); // cargar checkboxes de auditoría
     if (reRender) renderTabla(cajaSelect.value);
   }
 
@@ -321,57 +362,65 @@ document.addEventListener("DOMContentLoaded", function () {
     const ordenados = sortForRender(previas);
     const grupos = groupByTerminalLote(ordenados);
 
-    // Si hay lote activo/terminal activo, aseguramos mostrar también filas "faltantes" en 0
-    if (terminalActivo && loteActivo) {
-      const key = `${terminalActivo}||${loteActivo}`;
-      if (!grupos.has(key)) grupos.set(key, []); // grupo vacío para mostrar faltantes
-    }
+    // IMPORTANTE: NO crear grupos vacíos automáticamente
+    // Solo mostrar lo que viene del servidor para evitar mezclar fechas/contextos
 
     if (grupos.size > 0) {
       if (labelTarjetasCargadas) labelTarjetasCargadas.style.display = "block";
       const todasTarjetas = getTodasLasTarjetas();
 
+      let grupoIndex = 0; // para alternar colores entre lotes
       grupos.forEach((items, key) => {
         const [terminal, lote] = key.split("||");
+        const colorClass = (grupoIndex % 2 === 0) ? "lote-blanco" : "lote-gris"; // alternar colores
+        grupoIndex++;
 
-        // Encabezado de lote (gris divisor) + texto "Lote"
+        // Calcular sumatorias del lote (TODOS los registros en BD, incluyendo duplicados)
+        let sumatoriaMontoSinTip = 0;
+        let sumatoriaTips = 0;
+        items.forEach(r => {
+          sumatoriaMontoSinTip += parseFloat(r.monto || 0);
+          sumatoriaTips += parseFloat(r.monto_tip || 0);
+        });
+
+        // Encabezado de lote (gris divisor) + texto "Lote" con chip
+        const auditInfo = lotesAuditados[key] || {};
+        const auditado = auditInfo.auditado || false;
+        const auditadoClass = auditado ? 'lote-auditado' : '';
+        const checkboxHTML = (ROLE >= 3) ? `
+          <input type="checkbox"
+                 class="audit-checkbox"
+                 data-terminal="${terminal}"
+                 data-lote="${lote}"
+                 ${auditado ? 'checked' : ''}
+                 title="${auditado ? `Auditado por ${auditInfo.auditado_por || '?'}` : 'Marcar como auditado'}">
+        ` : '';
+
         const gh = document.createElement("tr");
-        gh.className = "group-header";
+        gh.className = `group-header ${auditadoClass}`;
         gh.innerHTML = `
           <td class="grp">Lote</td>
-          <td class="grp"><span class="chip">${terminal || '—'} / ${lote || '—'}</span></td>
-          <td class="actions" colspan="2">
-            ${puedeActuar ? `<button class="btn btn-borrar-grupo" data-terminal="${terminal}" data-lote="${lote}" title="Borrar grupo completo">🗑️</button>` : `<span class="txt-muted">—</span>`}
+          <td class="grp">
+            <span class="chip">${terminal || '—'} / ${lote || '—'}</span>
+            ${checkboxHTML}
+          </td>
+          <td class="montos"></td>
+          <td class="montos" style="text-align:right;">
+            ${puedeActuar ? `<button class="btn btn-borrar-grupo" data-terminal="${terminal}" data-lote="${lote}" title="Borrar grupo completo">🗑️</button>` : ``}
           </td>
         `;
         tablaBody.appendChild(gh);
 
-        // Mapa por tarjeta de las que existen en BD
-        const porTarjeta = new Map();
-        items.forEach(r => porTarjeta.set((r.tarjeta || '').toUpperCase(), r));
-
-        // Conjunto de tarjetas a renderizar = (ya guardadas) ∪ (todas si es el grupo activo para “completar en 0”)
-        let tarjetasARender = Array.from(porTarjeta.keys());
-        const esGrupoActivo = (terminal === terminalActivo && lote === loteActivo);
-        if (esGrupoActivo) {
-          const faltantes = todasTarjetas
-            .map(t => t.toUpperCase())
-            .filter(t => !porTarjeta.has(t));
-          tarjetasARender = Array.from(new Set([...tarjetasARender, ...faltantes]));
-        }
-
-        // Pintamos todas
-        tarjetasARender.forEach(tKey => {
-          const r = porTarjeta.get(tKey); // si existe en BD
-          const isSaved = !!r;            // para color verde
-
-          const tarjetaName = r ? (r.tarjeta || tKey) : tKey;
-          const idAttr = r ? `data-id="${r.id}"` : `data-id=""`;
-          const montoVal = r ? parseFloat(r.monto || 0) : 0;
-          const tipVal   = r ? parseFloat(r.monto_tip || 0) : 0;
+        // NUEVO: Renderizar TODOS los registros de BD (incluyendo duplicados históricos)
+        const tarjetasEnBD = new Set();
+        items.forEach(r => {
+          const tarjetaName = r.tarjeta || '—';
+          tarjetasEnBD.add(tarjetaName.toUpperCase());
 
           const tr = document.createElement("tr");
-          if (isSaved) tr.classList.add("saved-row"); // verde
+          tr.classList.add(colorClass);
+          tr.classList.add("saved-row");
+          if (auditado) tr.classList.add("lote-auditado");
 
           tr.innerHTML = `
             <td>${tarjetaName}</td>
@@ -379,11 +428,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <td class="montos">
               <div class="field" data-type="monto"
-                   ${idAttr}
+                   data-id="${r.id}"
                    data-tarjeta="${tarjetaName}"
                    data-terminal="${terminal || ''}"
                    data-lote="${lote || ''}">
-                <span class="view monto-text-bd">${fmt(montoVal)}</span>
+                <span class="view monto-text-bd">${fmt(r.monto)}</span>
                 ${puedeActuar ? `
                   <input class="edit monto-edit-bd" type="text" style="display:none" />
                   <button class="btn btn-edit" title="Editar">✏️</button>
@@ -395,11 +444,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <td class="montos">
               <div class="field" data-type="tip"
-                   ${idAttr}
+                   data-id="${r.id}"
                    data-tarjeta="${tarjetaName}"
                    data-terminal="${terminal || ''}"
                    data-lote="${lote || ''}">
-                <span class="view tip-text-bd">${fmt(tipVal)}</span>
+                <span class="view tip-text-bd">${fmt(r.monto_tip)}</span>
                 ${puedeActuar ? `
                   <input class="edit tip-edit-bd" type="text" style="display:none" />
                   <button class="btn btn-edit" title="Editar">✏️</button>
@@ -411,8 +460,65 @@ document.addEventListener("DOMContentLoaded", function () {
           `;
           tablaBody.appendChild(tr);
 
-          totalPrevios += montoVal + tipVal;
+          totalPrevios += parseFloat(r.monto || 0) + parseFloat(r.monto_tip || 0);
         });
+
+        // Agregar tarjetas faltantes en $0 (solo las que NO están en BD)
+        todasTarjetas.forEach(tKey => {
+          if (!tarjetasEnBD.has(tKey.toUpperCase())) {
+            const tr = document.createElement("tr");
+            tr.classList.add(colorClass);
+            if (auditado) tr.classList.add("lote-auditado");
+
+            tr.innerHTML = `
+              <td>${tKey}</td>
+              <td>${(terminal || '—')} / ${(lote || '—')}</td>
+
+              <td class="montos">
+                <div class="field" data-type="monto"
+                     data-id=""
+                     data-tarjeta="${tKey}"
+                     data-terminal="${terminal || ''}"
+                     data-lote="${lote || ''}">
+                  <span class="view monto-text-bd">${fmt(0)}</span>
+                  ${puedeActuar ? `
+                    <input class="edit monto-edit-bd" type="text" style="display:none" />
+                    <button class="btn btn-edit" title="Editar">✏️</button>
+                    <button class="btn btn-ok"   style="display:none" title="Guardar">✅</button>
+                    <button class="btn btn-cancel" style="display:none" title="Cancelar">❌</button>
+                  ` : ``}
+                </div>
+              </td>
+
+              <td class="montos">
+                <div class="field" data-type="tip"
+                     data-id=""
+                     data-tarjeta="${tKey}"
+                     data-terminal="${terminal || ''}"
+                     data-lote="${lote || ''}">
+                  <span class="view tip-text-bd">${fmt(0)}</span>
+                  ${puedeActuar ? `
+                    <input class="edit tip-edit-bd" type="text" style="display:none" />
+                    <button class="btn btn-edit" title="Editar">✏️</button>
+                    <button class="btn btn-ok"   style="display:none" title="Guardar">✅</button>
+                    <button class="btn btn-cancel" style="display:none" title="Cancelar">❌</button>
+                  ` : ``}
+                </div>
+              </td>
+            `;
+            tablaBody.appendChild(tr);
+          }
+        });
+
+        // Fila de SUBTOTAL en negrita
+        const subtotalRow = document.createElement("tr");
+        subtotalRow.className = `subtotal-row ${colorClass} ${auditadoClass}`;
+        subtotalRow.innerHTML = `
+          <td colspan="2" style="text-align:right;"><strong>Subtotal ${terminal} / ${lote}:</strong></td>
+          <td class="montos"><strong>${fmt(sumatoriaMontoSinTip)}</strong></td>
+          <td class="montos"><strong>${fmt(sumatoriaTips)}</strong></td>
+        `;
+        tablaBody.appendChild(subtotalRow);
       });
 
     } else {
@@ -423,10 +529,73 @@ document.addEventListener("DOMContentLoaded", function () {
     if (totalTarjetasNuevas)  totalTarjetasNuevas.innerText  = fmt(0);
   }
 
-  // ---------- Delegación de eventos (borrar/editar/crear) ----------
+  // ---------- Delegación de eventos (borrar/editar/crear/auditar) ----------
   tablaBody?.addEventListener("click", function (e) {
     const caja = cajaSelect.value;
     const target = e.target;
+
+    // Manejar checkbox de auditoría
+    if (target.classList.contains("audit-checkbox")) {
+      if (ROLE < 3) {
+        alert("Solo los auditores pueden marcar lotes como auditados.");
+        e.preventDefault();
+        return;
+      }
+      const terminal = target.dataset.terminal || '';
+      const lote = target.dataset.lote || '';
+      const auditado = target.checked;
+      const { local, caja, fecha, turno } = getCtx();
+
+      fetch("/lotes_auditados/marcar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ local, caja, fecha, turno, terminal, lote, auditado })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          // Actualizar estado local
+          const key = `${terminal}||${lote}`;
+          lotesAuditados[key] = lotesAuditados[key] || {};
+          lotesAuditados[key].auditado = auditado;
+          lotesAuditados[key].auditado_por = data.auditado_por;
+          lotesAuditados[key].fecha_auditoria = data.fecha_auditoria;
+          // Actualizar tooltip
+          target.title = auditado ? `Auditado por ${data.auditado_por || '?'}` : 'Marcar como auditado';
+
+          // ACTUALIZAR CLASES VISUALES: Aplicar/quitar color verde a todas las filas del lote
+          const headerRow = target.closest('tr');
+          if (headerRow) {
+            // Encontrar todas las filas del mismo lote (desde el header hasta el próximo header o fin)
+            let currentRow = headerRow;
+            const rowsToUpdate = [currentRow];
+
+            // Recorrer hermanos siguientes hasta encontrar otro group-header
+            while (currentRow.nextElementSibling && !currentRow.nextElementSibling.classList.contains('group-header')) {
+              currentRow = currentRow.nextElementSibling;
+              rowsToUpdate.push(currentRow);
+            }
+
+            // Agregar/quitar clase 'lote-auditado' a todas las filas
+            rowsToUpdate.forEach(row => {
+              if (auditado) {
+                row.classList.add('lote-auditado');
+              } else {
+                row.classList.remove('lote-auditado');
+              }
+            });
+          }
+        } else {
+          alert("❌ Error: " + (data.msg || "No se pudo actualizar"));
+          target.checked = !auditado; // revertir checkbox
+        }
+      })
+      .catch(err => {
+        alert("❌ Error de red");
+        target.checked = !auditado; // revertir checkbox
+      });
+      return;
+    }
 
     if (target.classList.contains("btn-borrar-grupo")) {
       if (!canActUI()) { alert("No tenés permisos para borrar este grupo."); return; }
@@ -562,6 +731,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const caja = cajaSelect.value;
     if (!terminalActivo) { alert("Primero seleccione/cree una Terminal."); return; }
 
+    // VALIDACIÓN: Verificar si el lote ya existe en los datos del servidor
+    const previas = tarjetasCargadasHoyPorCaja[caja] || [];
+    const loteExiste = previas.some(r =>
+      String(r.terminal).toUpperCase() === String(terminalActivo).toUpperCase() &&
+      String(r.lote).toUpperCase() === String(nuevoLote).toUpperCase()
+    );
+
+    if (loteExiste) {
+      alert(`El lote '${nuevoLote}' ya existe para la terminal '${terminalActivo}' en esta caja/fecha/turno.\n\nNo se puede duplicar. Por favor, seleccioná el lote existente o usá un número diferente.`);
+      inputNuevoLote.value = "";
+      return;
+    }
+
     (lotesPorCajaTerminal[caja] ||= {});
     (loteActivoPorCajaTerminal[caja] ||= {});
     lotesPorCajaTerminal[caja][terminalActivo] = lotesPorCajaTerminal[caja][terminalActivo] || [];
@@ -657,14 +839,28 @@ document.addEventListener("DOMContentLoaded", function () {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ caja, fecha, turno, tarjetas })
     })
-    .then(r => r.json())
+    .then(async r => {
+      const data = await r.json();
+      if (!r.ok) {
+        // Error del servidor
+        if (r.status === 409) {
+          // Lote duplicado
+          alert("❌ " + (data.msg || "El lote ya existe y no se puede duplicar"));
+        } else {
+          alert("❌ Error al guardar: " + (data.msg || r.status));
+        }
+        return null;
+      }
+      return data;
+    })
     .then(async data => {
-      if (data && data.success) {
+      if (!data) return; // Ya se mostró el error
+      if (data.success) {
         if (window.OrqTabs) OrqTabs.reload('tarjetas'); else legacyReload();
         await refrescarEstadoCaja({ reRender:false });
         loadTerminalesLocal({ mergeFromToday:true });
       } else {
-        alert("❌ Error: " + ((data && data.msg) || "No se pudo guardar"));
+        alert("❌ Error: " + (data.msg || "No se pudo guardar"));
       }
     })
     .catch(()=>alert("❌ Error de red"));
@@ -676,7 +872,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // ---------- Fallback (sin OrqTabs) ----------
-  function legacyReload() {
+  async function legacyReload() {
     const { local, caja, fecha, turno } = getCtx();
     const qTar = fetch(`/tarjetas_cargadas_hoy?caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
       .then(r=>r.json()).catch(()=>[]);
@@ -685,16 +881,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const qEL = fetch(`/estado_local?fecha=${encodeURIComponent(fecha)}`)
       .then(r=>r.json()).catch(()=>({ok:true, estado:1}));
 
-    Promise.all([qTar,qEC,qEL]).then(([arrTar, estCaja, estLocal]) => {
-      window.cajaCerrada = ((estCaja?.estado ?? 1) === 0);
-      localCerrado = ((estLocal?.estado ?? 1) === 0);
-      toggleUIByEstado();
-      applyFromServer(caja, arrTar);
-      renderTerminales(caja);
-      renderTabla(caja);
-      loadTerminalesLocal({ mergeFromToday:true });
-      setLoteDisplay(loteActivo);
-    });
+    const [arrTar, estCaja, estLocal] = await Promise.all([qTar, qEC, qEL]);
+
+    window.cajaCerrada = ((estCaja?.estado ?? 1) === 0);
+    localCerrado = ((estLocal?.estado ?? 1) === 0);
+    toggleUIByEstado();
+
+    await cargarEstadoAuditoria(); // Cargar estado de checkboxes
+
+    applyFromServer(caja, arrTar);
+    renderTerminales(caja);
+    renderTabla(caja);
+    loadTerminalesLocal({ mergeFromToday:true });
+    setLoteDisplay(loteActivo);
   }
 
   // ---------- Aplicar dataset del servidor ----------
@@ -708,31 +907,33 @@ document.addEventListener("DOMContentLoaded", function () {
       monto_tip: parseFloat(d.monto_tip || 0)
     }));
 
-    // preservamos anteriores si server viene vacío
-    const anteriores = tarjetasCargadasHoyPorCaja[caja] || [];
-    tarjetasCargadasHoyPorCaja[caja] = normalizados.length ? normalizados : anteriores;
+    // SIEMPRE sobrescribir con los datos del servidor (NO preservar datos antiguos)
+    tarjetasCargadasHoyPorCaja[caja] = normalizados;
 
-    // Construimos lotes/terminales sin borrar lo que ya había si viene vacío
+    // Reconstruir lotes/terminales SOLO desde los datos del servidor (NO mergear con anteriores)
     const termSetServer = new Set();
     const lotesMapServer = {};
-    (normalizados.length ? normalizados : anteriores).forEach(r => {
+    normalizados.forEach(r => {
       const term = r.terminal || '';
       const lote = r.lote || '';
-      if (term) { termSetServer.add(term); (lotesMapServer[term] ||= new Set()).add(lote); }
-      else if (lote) { (lotesMapServer[""] ||= new Set()).add(lote); }
+      if (term) {
+        termSetServer.add(term);
+        (lotesMapServer[term] ||= new Set()).add(lote);
+      } else if (lote) {
+        (lotesMapServer[""] ||= new Set()).add(lote);
+      }
     });
 
-    const prevTerms = new Set(terminalesPorCaja[caja] || []);
-    const mergedTerms = new Set([...prevTerms, ...termSetServer]);
-    terminalesPorCaja[caja] = Array.from(mergedTerms);
+    // Sobrescribir terminales con los del servidor (NO mergear)
+    terminalesPorCaja[caja] = Array.from(termSetServer);
 
-    lotesPorCajaTerminal[caja] = lotesPorCajaTerminal[caja] || {};
+    // Sobrescribir lotes con los del servidor (NO mergear)
+    lotesPorCajaTerminal[caja] = {};
     Object.keys(lotesMapServer).forEach(t => {
-      const arr = Array.from(lotesMapServer[t]);
-      lotesPorCajaTerminal[caja][t] = Array.from(new Set([...(lotesPorCajaTerminal[caja][t] || []), ...arr]));
+      lotesPorCajaTerminal[caja][t] = Array.from(lotesMapServer[t]);
     });
 
-    // Mantener terminal/lote activos válidos
+    // Resetear terminal/lote activos si ya no son válidos
     if (!terminalActivoPorCaja[caja] || !terminalesPorCaja[caja].includes(terminalActivoPorCaja[caja])) {
       terminalActivoPorCaja[caja] = terminalesPorCaja[caja][0] || null;
     }
@@ -752,7 +953,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ---------- Hook OrqTabs ----------
-  window.renderTarjetas = function (data, opts = {}) {
+  window.renderTarjetas = async function (data, opts = {}) {
     const caja = cajaSelect.value;
     const map = opts.datasets || {};
     const epTar = Object.keys(map).find(k => k.includes('tarjetas_cargadas_hoy')) || Object.keys(map)[0];
@@ -769,12 +970,11 @@ document.addEventListener("DOMContentLoaded", function () {
     toggleUIByEstado();
 
     applyFromServer(caja, arrTar);
-    refrescarEstadoCaja({ reRender: false }).finally(() => {
-      renderTerminales(caja);
-      renderTabla(caja);
-      loadTerminalesLocal({ mergeFromToday:true });
-      setLoteDisplay(loteActivo);
-    });
+    await refrescarEstadoCaja({ reRender: false });
+    renderTerminales(caja);
+    renderTabla(caja);
+    loadTerminalesLocal({ mergeFromToday:true });
+    setLoteDisplay(loteActivo);
   };
 
   // ---------- Init ----------
