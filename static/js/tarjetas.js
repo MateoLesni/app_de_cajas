@@ -634,7 +634,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       } else {
         // ----- No existía registro: crear uno nuevo con el campo editado y el otro en 0
-        const { caja, fecha, turno } = getCtx();
+        const { local, caja, fecha, turno } = getCtx();
         const nuevoRegistro = {
           tarjeta,
           terminal,
@@ -645,7 +645,7 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch("/guardar_tarjetas_lote", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ caja, fecha, turno, tarjetas: [nuevoRegistro] })
+          body: JSON.stringify({ local, caja, fecha, turno, tarjetas: [nuevoRegistro] })
         })
         .then(r => r.json())
         .then(async data => {
@@ -774,10 +774,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (tarjetas.length === 0) return alert("No hay datos para guardar");
 
+    const { local, caja: ctxCaja, fecha: ctxFecha, turno: ctxTurno } = getCtx();
+
     fetch("/guardar_tarjetas_lote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ caja, fecha, turno, tarjetas })
+      body: JSON.stringify({ local, caja: ctxCaja, fecha: ctxFecha, turno: ctxTurno, tarjetas })
     })
     .then(async r => {
       const data = await r.json();

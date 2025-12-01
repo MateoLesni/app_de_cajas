@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", function () {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            caja: ctx.caja, fecha: ctx.fecha, turno: ctx.turno,
+            local: ctx.local, caja: ctx.caja, fecha: ctx.fecha, turno: ctx.turno,
             transacciones: anticiposLocal.map(a => ({
               fecha_anticipo_recibido: a.fecha_anticipo_recibido,
               medio_pago: a.medio_pago,
