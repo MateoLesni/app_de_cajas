@@ -36,6 +36,7 @@
       const response = await fetch('/api/locales');
       const data = await response.json();
       localesDisponibles = data.locales || [];
+      console.log('📍 Locales cargados:', localesDisponibles);
     } catch (error) {
       console.error('Error al cargar locales:', error);
       localesDisponibles = [];
@@ -130,8 +131,15 @@
       localGroup.style.display = 'block';
     } else if (userLevel === 3) {
       // Auditor: dropdown con todos los locales para crear encargados
-      localSelect.innerHTML = '<option value="">Seleccione un local</option>' +
-        localesDisponibles.map(l => `<option value="${l}">${l}</option>`).join('');
+      console.log('🔍 Construyendo opciones de locales para auditor:', localesDisponibles);
+
+      const opciones = localesDisponibles.map(l => {
+        // Manejar tanto strings como objetos
+        const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+        return `<option value="${localNombre}">${localNombre}</option>`;
+      }).join('');
+
+      localSelect.innerHTML = '<option value="">Seleccione un local</option>' + opciones;
       localSelect.disabled = false;
       localSelect.required = true;
       localGroup.style.display = 'block';

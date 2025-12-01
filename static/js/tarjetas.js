@@ -169,16 +169,6 @@ document.addEventListener("DOMContentLoaded", function () {
     else loteDisplay.textContent = "Lote actual: Sin lote";
   }
 
-  // Todas las tarjetas que deben mostrarse siempre (14 tarjetas completas)
-  function getTodasLasTarjetas() {
-    return [
-      "VISA", "VISA DÉBITO", "VISA PREPAGO",
-      "MASTERCARD", "MASTERCARD DÉBITO", "MASTERCARD PREPAGO",
-      "CABAL", "CABAL DÉBITO", "AMEX", "MAESTRO",
-      "NARANJA", "MAS DELIVERY", "DINERS", "PAGOS INMEDIATOS"
-    ];
-  }
-
   // ---------- Cargar terminales ----------
   function normalizeTerminalList(data) {
     let arr = [];
@@ -367,7 +357,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (grupos.size > 0) {
       if (labelTarjetasCargadas) labelTarjetasCargadas.style.display = "block";
-      const todasTarjetas = getTodasLasTarjetas();
 
       let grupoIndex = 0; // para alternar colores entre lotes
       grupos.forEach((items, key) => {
@@ -411,11 +400,9 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
         tablaBody.appendChild(gh);
 
-        // NUEVO: Renderizar TODOS los registros de BD (incluyendo duplicados históricos)
-        const tarjetasEnBD = new Set();
+        // Renderizar SOLO los registros que están en BD (sin agregar tarjetas vacías)
         items.forEach(r => {
           const tarjetaName = r.tarjeta || '—';
-          tarjetasEnBD.add(tarjetaName.toUpperCase());
 
           const tr = document.createElement("tr");
           tr.classList.add(colorClass);
@@ -461,53 +448,6 @@ document.addEventListener("DOMContentLoaded", function () {
           tablaBody.appendChild(tr);
 
           totalPrevios += parseFloat(r.monto || 0) + parseFloat(r.monto_tip || 0);
-        });
-
-        // Agregar tarjetas faltantes en $0 (solo las que NO están en BD)
-        todasTarjetas.forEach(tKey => {
-          if (!tarjetasEnBD.has(tKey.toUpperCase())) {
-            const tr = document.createElement("tr");
-            tr.classList.add(colorClass);
-            if (auditado) tr.classList.add("lote-auditado");
-
-            tr.innerHTML = `
-              <td>${tKey}</td>
-              <td>${(terminal || '—')} / ${(lote || '—')}</td>
-
-              <td class="montos">
-                <div class="field" data-type="monto"
-                     data-id=""
-                     data-tarjeta="${tKey}"
-                     data-terminal="${terminal || ''}"
-                     data-lote="${lote || ''}">
-                  <span class="view monto-text-bd">${fmt(0)}</span>
-                  ${puedeActuar ? `
-                    <input class="edit monto-edit-bd" type="text" style="display:none" />
-                    <button class="btn btn-edit" title="Editar">✏️</button>
-                    <button class="btn btn-ok"   style="display:none" title="Guardar">✅</button>
-                    <button class="btn btn-cancel" style="display:none" title="Cancelar">❌</button>
-                  ` : ``}
-                </div>
-              </td>
-
-              <td class="montos">
-                <div class="field" data-type="tip"
-                     data-id=""
-                     data-tarjeta="${tKey}"
-                     data-terminal="${terminal || ''}"
-                     data-lote="${lote || ''}">
-                  <span class="view tip-text-bd">${fmt(0)}</span>
-                  ${puedeActuar ? `
-                    <input class="edit tip-edit-bd" type="text" style="display:none" />
-                    <button class="btn btn-edit" title="Editar">✏️</button>
-                    <button class="btn btn-ok"   style="display:none" title="Guardar">✅</button>
-                    <button class="btn btn-cancel" style="display:none" title="Cancelar">❌</button>
-                  ` : ``}
-                </div>
-              </td>
-            `;
-            tablaBody.appendChild(tr);
-          }
         });
 
         // Fila de SUBTOTAL en negrita
