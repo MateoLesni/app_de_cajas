@@ -6597,24 +6597,35 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
 @app.get("/estado_local")
 @login_required
 def estado_local():
-    local = get_local_param()
+    # Permitir que el auditor pase 'local' por query string
+    local = request.args.get("local") or get_local_param()
     fecha = request.args.get("fecha") or session.get('fecha')
+
     if not (local and fecha):
         return jsonify(ok=False, msg="Faltan parámetros"), 400
+
+    fecha_normalizada = _normalize_fecha(fecha)
+    app.logger.info(f"[estado_local] Consultando: local={local}, fecha={fecha_normalizada}")
 
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # Consideramos "local cerrado" si TODOS los turnos están con estado=0
-        # Si no tenés tabla de turnos por local, podés inferirlos de cajas_estado.
+        # Lógica simple: si existe un registro en cierres_locales => CERRADO (estado=0)
+        # Si NO existe registro => ABIERTO (estado=1)
         cur.execute("""
-            SELECT COALESCE(MIN(estado), 1) AS min_estado
+            SELECT COUNT(*)
             FROM cierres_locales
             WHERE local=%s AND fecha=%s
-        """, (local, _normalize_fecha(fecha)))
+        """, (local, fecha_normalizada))
         row = cur.fetchone()
-        # Si no hay filas => lo consideramos ABIERTO (estado=1)
-        estado = 1 if (row is None or row[0] is None) else int(row[0])
+        count = row[0] if row else 0
+
+        # Si existe al menos 1 registro => local CERRADO (estado=0)
+        # Si NO existe registro => local ABIERTO (estado=1)
+        estado = 0 if count > 0 else 1
+
+        app.logger.info(f"[estado_local] Resultado: count={count}, estado={estado} ({'CERRADO' if estado == 0 else 'ABIERTO'})")
+
         return jsonify(ok=True, estado=estado)
     finally:
         cur.close(); conn.close()

@@ -533,21 +533,48 @@
 
   async function refreshEstadoLocalBadge() {
     const fecha = $("#rl-fecha")?.value;
+    const selLocal = $("#rl-local-select");
+    const local = selLocal?.value || window.SESSION_LOCAL;
     const badge = $("#rl-badge-estado");
     const btn = $("#rl-cerrar-local");
-    if (!fecha) return;
+
+    if (!fecha || !local) {
+      console.warn('[refreshEstadoLocalBadge] Faltan parámetros:', { fecha, local });
+      return;
+    }
+
     try {
-      const r = await fetch(`/estado_local?fecha=${encodeURIComponent(fecha)}`, { cache: "no-store" });
+      // Agregar timestamp para evitar caché
+      const url = `/estado_local?fecha=${encodeURIComponent(fecha)}&local=${encodeURIComponent(local)}&_t=${Date.now()}`;
+      console.log('[refreshEstadoLocalBadge] Consultando estado:', { fecha, local, url });
+
+      const r = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+
       const d = r.ok ? await r.json() : { ok: false };
+      console.log('[refreshEstadoLocalBadge] Respuesta:', d);
+
       const abierto = (d?.estado ?? 1) === 1;
+      console.log('[refreshEstadoLocalBadge] Estado interpretado:', { estado: d?.estado, abierto });
+
       if (badge) {
         badge.style.display = "inline-block";
-        badge.textContent = abierto ? "Local ABIERTO" : "Local CERRADO";
-        badge.classList.toggle("sl-badge-open", abierto);
-        badge.classList.toggle("sl-badge-closed", !abierto);
+        badge.textContent = abierto ? "ABIERTO" : "CERRADO";
+        badge.classList.remove("sl-badge-open", "sl-badge-closed"); // Limpiar primero
+        badge.classList.add(abierto ? "sl-badge-open" : "sl-badge-closed");
       }
-      if (btn) { btn.disabled = !abierto; btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado"; }
-    } catch { /* noop */ }
+      if (btn) {
+        btn.disabled = !abierto;
+        btn.title = abierto ? "Cerrar el Local del día" : "El local ya está cerrado";
+      }
+    } catch (error) {
+      console.error('[refreshEstadoLocalBadge] Error:', error);
+    }
   }
 
   async function cerrarLocal() {
