@@ -2204,3 +2204,14 @@
 2025-12-02 14:08:09,192 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
 2025-12-02 14:08:11,047 - app - WARNING - Archivo en BD pero no existe en GCS: fabric-sushi/remesas/2025/12/01/caja-1/turno-dia/564210ef8a7b48228985037cfb91488b__image.jpg
 2025-12-02 14:08:11,048 - werkzeug - INFO - 127.0.0.1 - - [02/Dec/2025 14:08:11] "GET /files/summary_media?fecha=2025-12-01&local=Fabric+Sushi&_t=1764695288472 HTTP/1.1" 200 -
+2025-12-02 16:00:40,587 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-02 16:00:40,589 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-02 16:00:40,593 - werkzeug - INFO -  * Restarting with stat
+2025-12-02 16:00:43,167 - werkzeug - WARNING -  * Debugger is active!
+2025-12-02 16:00:43,172 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-02 16:00:43,531 - werkzeug - INFO - 127.0.0.1 - - [02/Dec/2025 16:00:43] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-12-02 16:00:43,577 - werkzeug - INFO - 127.0.0.1 - - [02/Dec/2025 16:00:43] "GET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-12-02 16:00:43,605 - werkzeug - INFO - 127.0.0.1 - - [02/Dec/2025 16:00:43] "GET /?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-12-02 16:00:44,108 - werkzeug - INFO - 127.0.0.1 - - [02/Dec/2025 16:00:44] "GET /?__debugger__=yes&cmd=resource&f=console.png&s=CM3WBslBgeTEOIv9t3EO HTTP/1.1" 200 -
+2025-12-02 16:00:45,017 - werkzeug - INFO - 127.0.0.1 - - [02/Dec/2025 16:00:45] "GET /?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -

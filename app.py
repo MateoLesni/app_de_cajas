@@ -3921,38 +3921,68 @@ def cierre_resumen():
     resumen = {}
 
     try:
-        # ===== Ventas base (una fila por caja/fecha/turno en ventas_trns) =====
-        # venta_total
+        # ===== DETERMINAR SI USAR SNAP TABLES =====
+        # Si el local está cerrado, leer desde snap_* (igual que resumen_local)
         cur.execute("""
+            SELECT COALESCE(MIN(estado), 1) AS min_estado
+            FROM cierres_locales
+            WHERE local=%s AND fecha=%s
+        """, (local, _normalize_fecha(fecha)))
+        row = cur.fetchone()
+        local_cerrado = (row is not None and row[0] is not None and int(row[0]) == 0)
+
+        # Determinar tablas a usar
+        if local_cerrado:
+            T_VENTAS = "snap_ventas"
+            T_REMESAS = "snap_remesas"
+            T_TARJETAS = "snap_tarjetas"
+            T_MP = "snap_mercadopago"
+            T_RAPPI = "snap_rappi"
+            T_PEDIDOSYA = "snap_pedidosya"
+            T_GASTOS = "snap_gastos"
+            T_FACTURAS = "facturas_trns"  # Siempre facturas_trns (auditores editan post-cierre)
+        else:
+            T_VENTAS = "ventas_trns"
+            T_REMESAS = "remesas_trns"
+            T_TARJETAS = "tarjetas_trns"
+            T_MP = "mercadopago_trns"
+            T_RAPPI = "rappi_trns"
+            T_PEDIDOSYA = "pedidosya_trns"
+            T_GASTOS = "gastos_trns"
+            T_FACTURAS = "facturas_trns"
+
+        # ===== Ventas base (una fila por caja/fecha/turno) =====
+        # venta_total
+        cur.execute(f"""
             SELECT COALESCE(SUM(venta_total_sistema),0)
-              FROM ventas_trns
+              FROM {T_VENTAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['venta_total'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # venta_z  (ahora desde facturas_trns con tipo='Z')
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM facturas_trns
+              FROM {T_FACTURAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='Z'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['venta_z'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # facturas_a (informativo)
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM facturas_trns
+              FROM {T_FACTURAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='A'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['facturas_a'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # facturas_b (informativo)
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM facturas_trns
+              FROM {T_FACTURAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='B'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
@@ -3965,45 +3995,45 @@ def cierre_resumen():
 
         # ===== Ingresos / medios de cobro =====
         # efectivo (remesas)
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM remesas_trns
+              FROM {T_REMESAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # tarjeta (ventas con tarjeta NO TIPS)
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM tarjetas_trns
+              FROM {T_TARJETAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['tarjeta'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # mercadopago normal
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(importe),0)
-              FROM mercadopago_trns
+              FROM {T_MP}
              WHERE DATE(fecha)=%s AND local=%s AND tipo='NORMAL' AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['mercadopago'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # cuenta corriente (facturas CC - suma como medio de cobro)
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM facturas_trns
+              FROM {T_FACTURAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['cuenta_cte'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # rappi
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM rappi_trns
+              FROM {T_RAPPI}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
@@ -4011,9 +4041,9 @@ def cierre_resumen():
 
 
         # GASTOS
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM gastos_trns
+              FROM {T_GASTOS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
@@ -4021,9 +4051,9 @@ def cierre_resumen():
 
 
         # pedidosya
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
-              FROM pedidosya_trns
+              FROM {T_PEDIDOSYA}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
@@ -4031,18 +4061,18 @@ def cierre_resumen():
 
         # ===== TIPS =====
         # Tips de tarjetas: ahora desde tarjetas_trns.monto_tip
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(monto_tip),0)
-              FROM tarjetas_trns
+              FROM {T_TARJETAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         tips_tarjeta = float(row[0]) if row and row[0] is not None else 0.0
 
         # Tips de MercadoPago (tipo TIP)
-        cur.execute("""
+        cur.execute(f"""
             SELECT COALESCE(SUM(importe),0)
-              FROM mercadopago_trns
+              FROM {T_MP}
              WHERE DATE(fecha)=%s AND local=%s AND tipo='TIP' AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
