@@ -6336,15 +6336,46 @@ def api_cierre_local():
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
-        # (1) Verificar que NO queden cajas abiertas ese día (en cualquier turno)
+        # (1) Verificar que TODAS las cajas estén cerradas (estado=0)
+        # Primero, obtener todas las cajas/turnos que tienen datos ese día
         cur.execute("""
-            SELECT DISTINCT caja
-              FROM cajas_estado
-             WHERE local=%s AND DATE(fecha_operacion)=%s AND estado=1
-        """, (local, f))
-        abiertas = [r['caja'] for r in (cur.fetchall() or [])]
-        if abiertas:
-            return jsonify(success=False, msg='Hay cajas abiertas', detalle=abiertas), 409
+            SELECT DISTINCT caja, turno
+            FROM (
+                SELECT caja, turno FROM ventas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM remesas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM tarjetas_trns WHERE local=%s AND DATE(fecha)=%s
+                UNION
+                SELECT caja, turno FROM mercadopago_trns WHERE local=%s AND DATE(fecha)=%s
+            ) AS todas_cajas
+            ORDER BY caja, turno
+        """, (local, f, local, f, local, f, local, f))
+        cajas_con_datos = cur.fetchall() or []
+
+        # Verificar cuáles están cerradas
+        cajas_sin_cerrar = []
+        for row in cajas_con_datos:
+            caja = row['caja']
+            turno = row['turno']
+
+            # Verificar si existe un cierre para esta caja/turno
+            cur.execute("""
+                SELECT estado
+                FROM cajas_estado
+                WHERE local=%s AND caja=%s AND turno=%s AND DATE(fecha_operacion)=%s
+                ORDER BY id DESC
+                LIMIT 1
+            """, (local, caja, turno, f))
+            cierre = cur.fetchone()
+
+            # Si no existe cierre o está abierta (estado=1), agregarla a la lista
+            if not cierre or cierre['estado'] == 1:
+                cajas_sin_cerrar.append(f"{caja} - {turno}")
+
+        if cajas_sin_cerrar:
+            msg = f"Todas las cajas deben estar cerradas antes de cerrar el local. Faltan cerrar: {', '.join(cajas_sin_cerrar)}"
+            return jsonify(success=False, msg=msg, cajas_sin_cerrar=cajas_sin_cerrar), 409
 
         # (1.5) Validar que existan imágenes para cada pestaña con datos
         ok_imgs, msg_imgs, faltantes_imgs = _validar_imagenes_antes_cierre_local(conn, local, fecha)

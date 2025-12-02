@@ -135,12 +135,12 @@ def auditor_resumen_api():
         with conn.cursor(dictionary=True) as cur:
             # -------- TARJETAS (con propinas sumadas por lote/terminal) --------
             # Primero, obtener ventas de tarjetas agrupadas por marca, terminal y lote
+            # IMPORTANTE: Se incluyen TODAS las transacciones (ok, revision, etc.) para que el recibo sea completo
             sql_tar = f"""
                 SELECT t.tarjeta AS marca, t.terminal, t.lote, SUM(t.monto) AS total_venta
                 FROM tarjetas_trns t
                 WHERE t.local = %s
                   AND DATE(t.fecha) = DATE(%s)
-                  AND t.estado = 'ok'
                   {g.read_scope}
                 GROUP BY t.tarjeta, t.terminal, t.lote
             """
@@ -148,6 +148,7 @@ def auditor_resumen_api():
             ventas_tarjetas = cur.fetchall()
 
             # Segundo, obtener propinas de tarjetas agrupadas por marca, terminal y lote
+            # IMPORTANTE: Se incluyen TODAS las transacciones para consistencia
             sql_tips = f"""
                 SELECT t.tarjeta AS marca, t.terminal, t.lote, SUM(t.monto_tip) AS total_tips
                 FROM tarjetas_trns t
