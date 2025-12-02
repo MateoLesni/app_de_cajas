@@ -526,6 +526,12 @@ def files_summary_media():
                 groups[key] = {"label": tab or "Otros", "items": []}
 
             blob = bucket.blob(path)
+
+            # Verificar que el archivo existe en GCS antes de incluirlo
+            if not blob.exists():
+                current_app.logger.warning(f"Archivo en BD pero no existe en GCS: {path}")
+                continue  # Saltar este archivo
+
             safe_name = orig or path.rsplit("__", 1)[-1]
 
             view_path, signed_url = _make_view_fields(blob, safe_name)
