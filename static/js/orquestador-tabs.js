@@ -159,6 +159,39 @@
     const tab = state.tabs[tabKey];
     if (!tab) return;
 
+    // Validar que todos los parámetros del contexto sean válidos
+    // No hacer fetch si hay placeholders o valores inválidos
+    const invalidPlaceholders = [
+      '-- Seleccionar Local --',
+      '-- Seleccionar Turno --',
+      'Seleccionar Local',
+      'Seleccionar Turno',
+      'dd/mm/aaaa',
+      '%Y-%m-%d',
+      '',
+    ];
+
+    const hasInvalidParam =
+      invalidPlaceholders.includes(state.local) ||
+      invalidPlaceholders.includes(state.caja) ||
+      invalidPlaceholders.includes(state.fecha) ||
+      invalidPlaceholders.includes(state.turno);
+
+    // Validar formato de fecha (debe ser YYYY-MM-DD)
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    const fechaInvalida = state.fecha && !fechaRegex.test(state.fecha);
+
+    if (hasInvalidParam || fechaInvalida) {
+      console.warn(`[OrqTabs:${tabKey}] Contexto inválido, no se hará fetch:`, {
+        local: state.local,
+        caja: state.caja,
+        fecha: state.fecha,
+        turno: state.turno
+      });
+      // No mostrar error, solo salir silenciosamente
+      return;
+    }
+
     const force = !!opts.force;
 
     // Abortar en vuelo

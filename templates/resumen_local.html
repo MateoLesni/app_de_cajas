@@ -761,8 +761,15 @@
 
   /* ===== Dispara actualización de ambos paneles ===== */
   async function refreshAll(){
-    const selectedLocal = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
-    document.getElementById('rl-local-display').textContent = selectedLocal;
+    const selLocal = document.getElementById('rl-local-select');
+    const selectedLocal = selLocal?.value || window.SESSION_LOCAL;
+
+    // Solo actualizar el display si hay un valor válido
+    const display = document.getElementById('rl-local-display');
+    if (display && selectedLocal) {
+      display.textContent = selectedLocal;
+    }
+
     document.getElementById('rl-actualizar')?.dispatchEvent(new Event('click'));
     await loadMedia();
     // Actualizar botones de auditoría si es nivel 3
@@ -790,27 +797,26 @@
     // Cargar locales primero
     await loadLocalesIfNeeded();
 
-    // Solo cargar datos si hay un local válido seleccionado
+    // Restaurar local guardado desde localStorage DESPUÉS de cargar la lista
     const sel = document.getElementById('rl-local-select');
-    const localSeleccionado = sel?.value;
-    if (localSeleccionado && localSeleccionado !== '') {
-      console.log('🔍 Local válido detectado, cargando datos:', localSeleccionado);
-      await loadMedia();
-
-      // Si es nivel 3 y hay local válido, también actualizar botones de auditoría
-      if (window.ROLE_LEVEL >= 3 && window.actualizarBotonesAuditoria) {
-        await window.actualizarBotonesAuditoria();
+    const localGuardado = localStorage.getItem('rl_local_selected');
+    if (sel && localGuardado) {
+      const opcionExiste = Array.from(sel.options).some(opt => opt.value === localGuardado);
+      if (opcionExiste) {
+        sel.value = localGuardado;
+        // También actualizar el display
+        const display = document.getElementById('rl-local-display');
+        if (display) display.textContent = localGuardado;
+        console.log('🏪 Local restaurado desde localStorage:', localGuardado);
       }
-    } else {
-      console.log('⚠️ No hay local seleccionado, esperando selección del usuario');
     }
 
+    // NOTA: La carga automática de datos se maneja en resumen_local.js (DOMContentLoaded)
+    // pero ahora el local ya está correctamente restaurado
+
     document.getElementById('rl-actualizar')?.addEventListener('click', async () => {
-      await loadMedia();
-      // Actualizar botones de auditoría después de cargar datos
-      if (window.ROLE_LEVEL >= 3 && window.actualizarBotonesAuditoria) {
-        await window.actualizarBotonesAuditoria();
-      }
+      // Usar refreshAll() para cargar TODO (resumen + imágenes + estado)
+      await refreshAll();
     });
     document.getElementById('rl-fecha')?.addEventListener('change', (e) => {
       // Guardar fecha en localStorage para persistencia
