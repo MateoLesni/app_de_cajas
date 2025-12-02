@@ -4828,11 +4828,9 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                 SELECT caja, turno FROM tarjetas_trns WHERE local=%s AND DATE(fecha)=%s
                 UNION
                 SELECT caja, turno FROM mercadopago_trns WHERE local=%s AND DATE(fecha)=%s
-                UNION
-                SELECT aec.caja, '' as turno FROM anticipos_estados_caja aec WHERE aec.local=%s AND DATE(aec.fecha)=%s AND aec.estado='consumido'
             ) AS todas
             ORDER BY caja, turno
-        """, (local, f, local, f, local, f, local, f, local, f))
+        """, (local, f, local, f, local, f, local, f))
 
     cajas_turnos = cur.fetchall()
 
