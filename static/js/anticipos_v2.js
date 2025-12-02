@@ -4,7 +4,7 @@
 
 document.addEventListener("DOMContentLoaded", function () {
   const tabKey = "anticipos";
-  const pane = document.getElementById(tabKey);
+  const pane = document.getElementById("anticiposTab");
 
   const cajaSelect = document.getElementById("cajaSelect");
   const fechaGlobal = document.getElementById("fechaGlobal");
@@ -25,28 +25,28 @@ document.addEventListener("DOMContentLoaded", function () {
     const st = document.createElement("style");
     st.id = "anticipos-v2-style";
     st.textContent = `
-      #${tabKey} { position: relative; }
-      #${tabKey} .anticipos-header {
+      #anticiposTab { position: relative; }
+      #anticiposTab .anticipos-header {
         background: #f8fafc;
         padding: 16px;
         border-radius: 8px;
         margin-bottom: 20px;
         border-left: 4px solid #2563eb;
       }
-      #${tabKey} .anticipos-header h3 {
+      #anticiposTab .anticipos-header h3 {
         margin: 0 0 8px 0;
         color: #1f2937;
         font-size: 18px;
       }
-      #${tabKey} .anticipos-header p {
+      #anticiposTab .anticipos-header p {
         margin: 0;
         color: #6b7280;
         font-size: 14px;
       }
-      #${tabKey} .section {
+      #anticiposTab .section {
         margin-bottom: 30px;
       }
-      #${tabKey} .section-title {
+      #anticiposTab .section-title {
         font-size: 16px;
         font-weight: 600;
         color: #374151;
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
         padding-bottom: 8px;
         border-bottom: 2px solid #e5e7eb;
       }
-      #${tabKey} table {
+      #anticiposTab table {
         width: 100%;
         border-collapse: collapse;
         background: white;
@@ -62,10 +62,10 @@ document.addEventListener("DOMContentLoaded", function () {
         overflow: hidden;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       }
-      #${tabKey} table thead {
+      #anticiposTab table thead {
         background: #f8fafc;
       }
-      #${tabKey} table th {
+      #anticiposTab table th {
         padding: 12px;
         text-align: left;
         font-weight: 600;
@@ -73,15 +73,15 @@ document.addEventListener("DOMContentLoaded", function () {
         font-size: 13px;
         border-bottom: 2px solid #e5e7eb;
       }
-      #${tabKey} table td {
+      #anticiposTab table td {
         padding: 12px;
         border-bottom: 1px solid #e5e7eb;
         vertical-align: middle;
       }
-      #${tabKey} table tbody tr:hover {
+      #anticiposTab table tbody tr:hover {
         background: #f9fafb;
       }
-      #${tabKey} .badge {
+      #anticiposTab .badge {
         display: inline-block;
         padding: 4px 10px;
         border-radius: 12px;
@@ -90,15 +90,15 @@ document.addEventListener("DOMContentLoaded", function () {
         background: #fef3c7;
         color: #92400e;
       }
-      #${tabKey} .badge-disponible {
+      #anticiposTab .badge-disponible {
         background: #fef3c7;
         color: #92400e;
       }
-      #${tabKey} .badge-consumido {
+      #anticiposTab .badge-consumido {
         background: #d1fae5;
         color: #065f46;
       }
-      #${tabKey} .btn-action {
+      #anticiposTab .btn-action {
         padding: 6px 12px;
         border-radius: 6px;
         border: none;
@@ -108,59 +108,59 @@ document.addEventListener("DOMContentLoaded", function () {
         transition: all 0.2s;
         margin-right: 6px;
       }
-      #${tabKey} .btn-consumir {
+      #anticiposTab .btn-consumir {
         background: #059669;
         color: white;
       }
-      #${tabKey} .btn-consumir:hover {
+      #anticiposTab .btn-consumir:hover {
         background: #047857;
       }
-      #${tabKey} .btn-eliminar {
+      #anticiposTab .btn-eliminar {
         background: #dc2626;
         color: white;
       }
-      #${tabKey} .btn-eliminar:hover {
+      #anticiposTab .btn-eliminar:hover {
         background: #991b1b;
       }
-      #${tabKey} .btn-action:disabled {
+      #anticiposTab .btn-action:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
-      #${tabKey} .empty-state {
+      #anticiposTab .empty-state {
         text-align: center;
         padding: 40px 20px;
         color: #6b7280;
         font-size: 14px;
       }
-      #${tabKey} .anticipo-card {
+      #anticiposTab .anticipo-card {
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         padding: 16px;
         margin-bottom: 12px;
       }
-      #${tabKey} .anticipo-card-header {
+      #anticiposTab .anticipo-card-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         margin-bottom: 12px;
       }
-      #${tabKey} .anticipo-cliente {
+      #anticiposTab .anticipo-cliente {
         font-weight: 600;
         color: #1f2937;
         font-size: 16px;
       }
-      #${tabKey} .anticipo-importe {
+      #anticiposTab .anticipo-importe {
         font-size: 20px;
         font-weight: 700;
         color: #059669;
       }
-      #${tabKey} .anticipo-detail {
+      #anticiposTab .anticipo-detail {
         font-size: 13px;
         color: #6b7280;
         margin-bottom: 4px;
       }
-      #${tabKey} .anticipo-observaciones {
+      #anticiposTab .anticipo-observaciones {
         background: #f8fafc;
         padding: 8px;
         border-radius: 4px;
@@ -169,7 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
         margin-top: 8px;
         font-style: italic;
       }
-      #${tabKey} .mod-overlay {
+      #anticiposTab .mod-overlay {
         position: absolute;
         inset: 0;
         display: none;
@@ -179,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
         backdrop-filter: blur(2px);
         z-index: 10;
       }
-      #${tabKey} .mod-spinner {
+      #anticiposTab .mod-spinner {
         padding: 16px 24px;
         border-radius: 8px;
         background: white;
@@ -329,33 +329,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Renderizar anticipos
   function renderAnticipos() {
-    const container = pane?.querySelector('.anticipos-content');
-    if (!container) {
-      // Si no existe el container, crear la estructura
-      if (!pane) return;
-      pane.innerHTML = `
-        <div class="anticipos-header">
-          <h3>💳 Anticipos Recibidos</h3>
-          <p>Los anticipos son señas recibidas que deben consumirse cuando el cliente viene al local.</p>
-        </div>
-        <div class="anticipos-content"></div>
-      `;
-      return renderAnticipos(); // Llamar de nuevo para renderizar
+    // Usar los contenedores del HTML
+    const disponiblesContainer = document.getElementById('anticipos-disponibles-lista');
+    const consumidosContainer = document.getElementById('anticipos-consumidos-lista');
+
+    if (!disponiblesContainer || !consumidosContainer) {
+      console.warn('Contenedores de anticipos no encontrados en el DOM');
+      return;
     }
 
     const puedeActuar = canActUI();
 
-    let html = '';
-
-    // Sección: Anticipos Disponibles
-    html += '<div class="section">';
-    html += '<div class="section-title">📋 Anticipos Disponibles para Consumir</div>';
-
+    // Renderizar anticipos disponibles
+    let htmlDisponibles = '';
     if (anticiposDisponibles.length === 0) {
-      html += '<div class="empty-state">✅ No hay anticipos pendientes para esta caja y fecha</div>';
+      htmlDisponibles = '<div class="empty-state">✅ No hay anticipos pendientes para esta caja y fecha</div>';
     } else {
       anticiposDisponibles.forEach(a => {
-        html += `
+        htmlDisponibles += `
           <div class="anticipo-card">
             <div class="anticipo-card-header">
               <div>
@@ -386,40 +377,36 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
       });
     }
-    html += '</div>';
+    disponiblesContainer.innerHTML = htmlDisponibles;
 
-    // Sección: Anticipos Consumidos en esta caja
-    html += '<div class="section">';
-    html += '<div class="section-title">✅ Anticipos Consumidos en esta Caja</div>';
-
+    // Renderizar anticipos consumidos
+    let htmlConsumidos = '';
     if (anticiposConsumidos.length === 0) {
-      html += '<div class="empty-state">No se consumieron anticipos en esta caja</div>';
+      htmlConsumidos = '<div class="empty-state">No se consumieron anticipos en esta caja</div>';
     } else {
-      html += '<table><thead><tr>';
-      html += '<th>Cliente</th>';
-      html += '<th>Fecha Pago</th>';
-      html += '<th>Importe</th>';
-      html += '<th>Medio Pago</th>';
-      html += '<th>Nº Transacción</th>';
-      html += '<th>Observaciones</th>';
-      html += '</tr></thead><tbody>';
+      htmlConsumidos += '<table><thead><tr>';
+      htmlConsumidos += '<th>Cliente</th>';
+      htmlConsumidos += '<th>Fecha Pago</th>';
+      htmlConsumidos += '<th>Importe</th>';
+      htmlConsumidos += '<th>Medio Pago</th>';
+      htmlConsumidos += '<th>Nº Transacción</th>';
+      htmlConsumidos += '<th>Observaciones</th>';
+      htmlConsumidos += '</tr></thead><tbody>';
 
       anticiposConsumidos.forEach(a => {
-        html += '<tr>';
-        html += `<td><strong>${a.cliente}</strong></td>`;
-        html += `<td>${formatDate(a.fecha_pago)}</td>`;
-        html += `<td style="text-align:right; font-weight:600;">${money(a.importe_consumido)}</td>`;
-        html += `<td>${a.medio_pago || '-'}</td>`;
-        html += `<td>${a.numero_transaccion || '-'}</td>`;
-        html += `<td style="font-size:12px; color:#6b7280;">${a.observaciones_consumo || (a.observaciones_anticipo || '-')}</td>`;
-        html += '</tr>';
+        htmlConsumidos += '<tr>';
+        htmlConsumidos += `<td><strong>${a.cliente}</strong></td>`;
+        htmlConsumidos += `<td>${formatDate(a.fecha_pago)}</td>`;
+        htmlConsumidos += `<td style="text-align:right; font-weight:600;">${money(a.importe_consumido)}</td>`;
+        htmlConsumidos += `<td>${a.medio_pago || '-'}</td>`;
+        htmlConsumidos += `<td>${a.numero_transaccion || '-'}</td>`;
+        htmlConsumidos += `<td style="font-size:12px; color:#6b7280;">${a.observaciones_consumo || (a.observaciones_anticipo || '-')}</td>`;
+        htmlConsumidos += '</tr>';
       });
 
-      html += '</tbody></table>';
+      htmlConsumidos += '</tbody></table>';
     }
-    html += '</div>';
-
-    container.innerHTML = html;
+    consumidosContainer.innerHTML = htmlConsumidos;
   }
 
   // Consumir anticipo
