@@ -31,8 +31,6 @@ FP_CODE_MAP = {
     "DINERS": "DINER",
     "MAESTRO": "MAEST",  # Nueva tarjeta
     "MAS DELIVERY": "MASDL",  # MAS DELIVERY
-    "MAS DELIVERY": "MASDL",
-
     # Agregadores / links
     "PAGOS INMEDIATOS": "PAGOINMED",
     "MERCADO PAGO": "MERPAG",
@@ -169,7 +167,7 @@ def auditor_resumen_api():
                 marca_orig = (r.get("marca") or "").strip().upper()
 
                 # Reemplazar MAS DELIVERY por MAS DELIVERY antes de mapear
-                if marca_orig == "MAS DELIVERY":
+                if marca_orig == "DECIDIR":
                     marca_orig = "MAS DELIVERY"
 
                 code = _fp_to_code(marca_orig)
