@@ -23,6 +23,11 @@
     activeTab: '',
     tabs: {},     // key -> { endpoints: string[], render: fn, watch?: string[], stale, controllers[], cache: Map, lastToken: string }
     panes: {},    // key -> HTMLElement
+
+    // Tracking de errores para detección de problemas persistentes
+    errorCount: 0,
+    lastErrorTime: null,
+    consecutiveErrors: 0,
   };
 
   // ===== Utils =====
@@ -216,25 +221,71 @@
       if (!stillValid) return;
 
       const datasets = {};
+      let erroredEndpoints = [];
       settled.forEach((res, i) => {
         const ep = eps[i];
         if (res.status === 'fulfilled') {
           datasets[ep] = res.value;
         } else {
+          erroredEndpoints.push({ ep, reason: res.reason?.message || 'error' });
           try { state.showError(tabKey, `${ep}: ${res.reason?.message || 'error'}`); } catch {}
         }
       });
 
+      // Si hay errores críticos (más del 50% de endpoints fallaron), alertar al usuario
+      if (erroredEndpoints.length > 0 && erroredEndpoints.length >= eps.length / 2) {
+        state.consecutiveErrors++;
+        state.lastErrorTime = Date.now();
+
+        const errorMsg = `⚠️ ADVERTENCIA: Error cargando datos de "${tabKey}".\n\n` +
+          `${erroredEndpoints.length} de ${eps.length} endpoints fallaron:\n` +
+          erroredEndpoints.map(e => `- ${e.ep}: ${e.reason}`).join('\n') +
+          `\n\nLos datos mostrados pueden estar incompletos o desactualizados.`;
+
+        console.error('[OrqTabs] Error crítico:', errorMsg);
+        alert(errorMsg);
+
+        // Si hay 3+ errores consecutivos en menos de 2 minutos, alertar problema persistente
+        if (state.consecutiveErrors >= 3 && (Date.now() - state.lastErrorTime) < 120000) {
+          alert(
+            `🚨 PROBLEMA PERSISTENTE DETECTADO\n\n` +
+            `Han ocurrido ${state.consecutiveErrors} errores consecutivos al cargar datos.\n\n` +
+            `Esto puede indicar:\n` +
+            `- Problemas de conexión a internet\n` +
+            `- Problemas con el servidor\n` +
+            `- Sesión expirada\n\n` +
+            `Por favor:\n` +
+            `1. Verifique su conexión a internet\n` +
+            `2. Intente recargar la página (F5)\n` +
+            `3. Si persiste, contacte al administrador`
+          );
+        }
+      } else {
+        // Éxito (al menos parcial), resetear contador
+        state.consecutiveErrors = 0;
+      }
+
       const main = datasets[eps[0]] ?? null;
       tab.cache.set(cacheKey, { main, map: datasets });
 
-      try { tab.render(main, { fromCache: false, datasets, endpoints: eps, key: cacheKey }); }
-      catch (e) { try { state.showError(tabKey, e?.message || 'Error al renderizar'); } catch {} }
+      try {
+        tab.render(main, { fromCache: false, datasets, endpoints: eps, key: cacheKey });
+      } catch (e) {
+        const renderError = `❌ Error al renderizar pestaña "${tabKey}": ${e?.message || 'Error desconocido'}`;
+        console.error('[OrqTabs]', renderError, e);
+        try { state.showError(tabKey, renderError); } catch {}
+        alert(renderError + '\n\nPor favor, recargue la página e intente nuevamente.');
+      }
 
       tab.stale = false;
 
     } catch (e) {
-      if (e.name !== 'AbortError') { try { state.showError(tabKey, e.message || 'Error de red'); } catch {} }
+      if (e.name !== 'AbortError') {
+        const netError = `❌ Error de red en pestaña "${tabKey}": ${e.message || 'Error desconocido'}`;
+        console.error('[OrqTabs]', netError, e);
+        try { state.showError(tabKey, netError); } catch {}
+        state.consecutiveErrors++;
+      }
     } finally {
       setOverlay(tabKey, false);
       try { state.showLoading(tabKey, false); } catch {}

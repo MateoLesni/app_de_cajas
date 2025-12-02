@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestión de Anticipos - Sistema de Gestión de Flujo de Cajas</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <style>
+    .anticipos-container {
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.06);
+      padding: 20px;
+    }
+    .anticipos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .anticipos-header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #1f2937;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+    .filters label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      color: #374151;
+      font-size: 13px;
+    }
+    .filters select, .filters input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .anticipos-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .anticipos-table thead {
+      background: #f8fafc;
+    }
+    .anticipos-table th, .anticipos-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .anticipos-table th {
+      font-weight: 600;
+      color: #374151;
+    }
+    .anticipos-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-pendiente { background: #fef3c7; color: #92400e; }
+    .badge-consumido { background: #d1fae5; color: #065f46; }
+    .badge-eliminado { background: #fee2e2; color: #991b1b; }
+    .btn-edit {
+      background: none;
+      border: none;
+      color: #2563eb;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 16px;
+    }
+    .btn-edit:hover {
+      color: #1d4ed8;
+    }
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #dc2626;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 16px;
+    }
+    .btn-delete:hover {
+      color: #991b1b;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #2563eb;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Barra lateral">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">NG</div>
+        <div class="brand-meta"><strong>Sistema</strong><span>Gestión de Flujo de Cajas</span></div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="nav-item is-active" href="{{ url_for('gestion_anticipos') }}"><span class="nav-dot"></span>Gestión de Anticipos</a>
+      </nav>
+
+      <div class="sidebar__footer"><a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a></div>
+      <button class="sidebar__toggle" id="toggleSidebar" aria-label="Abrir/cerrar menú">☰</button>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Botón hamburguesa flotante para mobile -->
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú">
+        <span class="hamburger-icon"></span>
+      </button>
+
+      <div class="container">
+        <div class="anticipos-container">
+          <div class="anticipos-header">
+            <h1>💳 Gestión de Anticipos Recibidos</h1>
+            <button id="btnNuevoAnticipo" class="btn-primary">+ Nuevo Anticipo</button>
+          </div>
+
+          <!-- Estadísticas -->
+          <div class="stats">
+            <div class="stat-card">
+              <div class="label">Total Pendientes</div>
+              <div class="value" id="statPendientes">-</div>
+            </div>
+            <div class="stat-card" style="border-left-color: #059669;">
+              <div class="label">Total Consumidos</div>
+              <div class="value" id="statConsumidos">-</div>
+            </div>
+            <div class="stat-card" style="border-left-color: #dc2626;">
+              <div class="label">Total Eliminados</div>
+              <div class="value" id="statEliminados">-</div>
+            </div>
+            <div class="stat-card" style="border-left-color: #7c3aed;">
+              <div class="label">Monto Pendiente</div>
+              <div class="value" id="statMontoPendiente">$0</div>
+            </div>
+          </div>
+
+          <!-- Filtros -->
+          <div class="filters">
+            <div>
+              <label for="filtroEstado">Estado</label>
+              <select id="filtroEstado">
+                <option value="">Todos</option>
+                <option value="pendiente" selected>Pendientes</option>
+                <option value="consumido">Consumidos</option>
+                <option value="eliminado_global">Eliminados</option>
+              </select>
+            </div>
+            <div>
+              <label for="filtroLocal">Local</label>
+              <select id="filtroLocal">
+                <option value="">Todos los locales</option>
+              </select>
+            </div>
+            <div>
+              <label for="filtroFechaDesde">Fecha Evento Desde</label>
+              <input type="date" id="filtroFechaDesde">
+            </div>
+            <div>
+              <label for="filtroFechaHasta">Fecha Evento Hasta</label>
+              <input type="date" id="filtroFechaHasta">
+            </div>
+          </div>
+
+          <!-- Tabla -->
+          <table class="anticipos-table">
+            <thead>
+              <tr>
+                <th>Fecha Pago</th>
+                <th>Fecha Evento</th>
+                <th>Cliente</th>
+                <th>Local</th>
+                <th>Importe</th>
+                <th>Medio Pago</th>
+                <th>Nº Transacción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="anticiposTableBody">
+              <tr><td colspan="9" style="text-align:center; color: #6b7280;">Cargando anticipos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal para crear/editar anticipo -->
+  <div id="modalAnticipo" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nuevo Anticipo</h2>
+        <button class="btn-close" onclick="cerrarModal()">&times;</button>
+      </div>
+      <form id="formAnticipo" onsubmit="guardarAnticipo(event)">
+        <input type="hidden" id="anticipoId">
+
+        <div class="form-group">
+          <label for="fechaPago">Fecha de Pago *</label>
+          <input type="date" id="fechaPago" required>
+        </div>
+
+        <div class="form-group">
+          <label for="fechaEvento">Fecha de Evento *</label>
+          <input type="date" id="fechaEvento" required>
+        </div>
+
+        <div class="form-group">
+          <label for="cliente">Cliente *</label>
+          <input type="text" id="cliente" required placeholder="Nombre del cliente">
+        </div>
+
+        <div class="form-group">
+          <label for="local">Local *</label>
+          <select id="local" required>
+            <option value="">Seleccione un local</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="importe">Importe *</label>
+          <input type="number" id="importe" step="0.01" min="0" required placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label for="medioPago">Medio de Pago</label>
+          <input type="text" id="medioPago" placeholder="Ej: Transferencia, MercadoPago, etc.">
+        </div>
+
+        <div class="form-group">
+          <label for="numeroTransaccion">Número de Transacción</label>
+          <input type="text" id="numeroTransaccion" placeholder="Número de referencia">
+        </div>
+
+        <div class="form-group">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" placeholder="Notas adicionales sobre el anticipo"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/gestion_anticipos.js') }}"></script>
+</body>
+</html>

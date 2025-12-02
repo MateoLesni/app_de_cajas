@@ -20,6 +20,11 @@
   let dataSource = null; // Se inicializa en DOMContentLoaded según el nivel
   let localCerrado = false; // Estado del local (se actualiza en cada refresh)
 
+  // ----------------- Estado de Carga y Sincronización -----------------
+  let isLoading = false;  // Flag para evitar múltiples cargas simultáneas
+  let lastSuccessfulLoad = null;  // Timestamp de última carga exitosa
+  let loadAttempts = 0;  // Contador de intentos para detectar problemas persistentes
+
   // ----------------- Utils -----------------
   const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const money = (v) => fmt.format(Number(v ?? 0));
@@ -114,7 +119,11 @@
     const inFecha = $("#rl-fecha");
     setText("rl-fecha-display", inFecha?.value || "—");
     setText("rl-hora-display", nowTime());
-    setText("rl-updated-at", new Date().toLocaleString("es-AR"));
+
+    // Mostrar timestamp del servidor y fuente de datos para transparencia
+    const serverTime = data.server_timestamp ? new Date(data.server_timestamp).toLocaleString("es-AR") : "—";
+    const dataSource = data.data_source === "snap" ? "Snapshot (Operación)" : "Datos en vivo (Administración)";
+    setText("rl-updated-at", `${serverTime} | ${dataSource}`);
 
     // --- RESUMEN ---
     const r = data?.resumen || {};
@@ -373,19 +382,107 @@
       .forEach((tbl) => { if (tbl) addCopyToLabelCellsWithin(tbl); });
   }
 
+  // ----------------- Loading State Management -----------------
+  function showLoadingOverlay(message = "Cargando datos del cierre...") {
+    let overlay = $("#rl-loading-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "rl-loading-overlay";
+      overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.85); z-index: 10000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: white; font-size: 18px; font-weight: 600;
+      `;
+      overlay.innerHTML = `
+        <div style="text-align: center;">
+          <div class="spinner" style="
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%; width: 50px; height: 50px;
+            animation: spin 1s linear infinite; margin: 0 auto 20px;
+          "></div>
+          <div id="rl-loading-message">${message}</div>
+          <div id="rl-loading-detail" style="font-size: 14px; color: #cbd5e1; margin-top: 8px;"></div>
+        </div>
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      `;
+      document.body.appendChild(overlay);
+    }
+    const msg = overlay.querySelector("#rl-loading-message");
+    if (msg) msg.textContent = message;
+    overlay.style.display = "flex";
+    return overlay;
+  }
+
+  function updateLoadingDetail(detail) {
+    const el = $("#rl-loading-detail");
+    if (el) el.textContent = detail;
+  }
+
+  function hideLoadingOverlay() {
+    const overlay = $("#rl-loading-overlay");
+    if (overlay) overlay.style.display = "none";
+  }
+
+  function showErrorAlert(message, canRetry = true) {
+    const html = canRetry
+      ? `${message}\n\n¿Desea reintentar la carga?`
+      : message;
+
+    if (canRetry) {
+      if (confirm(html)) {
+        refreshAll();
+      }
+    } else {
+      alert(html);
+    }
+  }
+
   // ----------------- Fetch & estado local -----------------
   async function fetchResumenLocal(params) {
+    updateLoadingDetail("Consultando resumen de cierres...");
     let url = `/api/resumen_local?local=${encodeURIComponent(params.local || "")}&fecha=${encodeURIComponent(params.fecha || "")}`;
     // Solo agregar 'source' si dataSource tiene valor (nivel 2 con local cerrado o nivel 3)
     if (dataSource) {
       url += `&source=${encodeURIComponent(dataSource)}`;
     }
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+    // Agregar timestamp único para forzar bypass de cualquier caché
+    url += `&_t=${Date.now()}`;
+
+    const r = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+
+    if (!r.ok) {
+      const errorText = await r.text().catch(() => "");
+      throw new Error(`Error HTTP ${r.status}: ${errorText || "Error del servidor"}`);
+    }
+
     const data = await r.json();
+
+    // Validar que los datos tienen la estructura esperada
+    if (!data || typeof data !== 'object') {
+      throw new Error("Respuesta inválida del servidor: datos corruptos");
+    }
+
+    if (!data.resumen || !data.info) {
+      throw new Error("Respuesta incompleta del servidor: faltan secciones críticas");
+    }
 
     // Actualizar estado del local
     localCerrado = data.local_cerrado || false;
+
+    // Agregar timestamp de carga
+    data._loadedAt = new Date().toISOString();
 
     return data;
   }
@@ -393,11 +490,25 @@
   async function updateResumen() {
     const local = ($("#rl-local-display")?.textContent || "").trim();
     const fecha = $("#rl-fecha")?.value;
-    if (!local || !fecha) return;
+    if (!local || !fecha) {
+      throw new Error("Falta seleccionar local o fecha");
+    }
+    updateLoadingDetail("Obteniendo datos del cierre...");
     const data = await fetchResumenLocal({ local, fecha });
+
+    updateLoadingDetail("Renderizando resumen...");
     renderResumen(data);
+
+    updateLoadingDetail("Actualizando estado del local...");
     await refreshEstadoLocalBadge();
+
     updateToggleButtonVisibility(); // Actualizar visibilidad del botón según estado del local
+
+    // Actualizar timestamp de última carga exitosa
+    lastSuccessfulLoad = new Date();
+    setText("rl-updated-at", lastSuccessfulLoad.toLocaleString("es-AR"));
+
+    return data;
   }
 
   async function refreshEstadoLocalBadge() {
@@ -568,24 +679,102 @@
   function closeModal() { document.getElementById("imgModal")?.classList.remove("is-open"); const img = document.getElementById("imgBig"); if (img) img.src = ""; _modalCurrentItem = null; }
 
   async function loadMedia() {
+    updateLoadingDetail("Cargando documentos e imágenes...");
     const fecha = $("#rl-fecha")?.value;
     const local = $("#rl-local-select")?.value || window.SESSION_LOCAL;
-    if (!fecha || !local) return;
+    if (!fecha || !local) {
+      throw new Error("Falta fecha o local para cargar medios");
+    }
     const url = new URL("/files/summary_media", location.origin);
     url.searchParams.set("fecha", fecha);
     url.searchParams.set("local", local);
-    const r = await fetch(url.toString(), { credentials: "same-origin", cache: "no-store" });
-    if (!r.ok) { renderDocs([]); return; }
+    url.searchParams.set("_t", Date.now()); // Bypass cache
+
+    const r = await fetch(url.toString(), {
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
+
+    if (!r.ok) {
+      console.warn(`Error cargando medios: HTTP ${r.status}`);
+      renderDocs([]); // Renderizar vacío en caso de error (no crítico)
+      return;
+    }
+
     const data = await r.json();
     renderDocs(data.groups || []);
   }
 
   async function refreshAll() {
-    const selLocal = $("#rl-local-select");
-    $("#rl-local-display").textContent = selLocal?.value || window.SESSION_LOCAL;
-    await updateResumen().catch(() => {});
-    await loadMedia().catch(() => {});
-    ensureGlobalDownloadButton();
+    // Evitar cargas simultáneas
+    if (isLoading) {
+      console.warn("Ya hay una carga en progreso, ignorando solicitud duplicada");
+      return;
+    }
+
+    isLoading = true;
+    loadAttempts++;
+
+    try {
+      showLoadingOverlay("Cargando datos del cierre...");
+
+      const selLocal = $("#rl-local-select");
+      const local = selLocal?.value || window.SESSION_LOCAL;
+      $("#rl-local-display").textContent = local;
+
+      updateLoadingDetail("Validando parámetros...");
+
+      // Paso 1: Actualizar resumen numérico (CRÍTICO - no puede fallar)
+      try {
+        await updateResumen();
+      } catch (error) {
+        console.error("Error crítico al actualizar resumen:", error);
+        hideLoadingOverlay();
+        showErrorAlert(
+          `❌ ERROR CRÍTICO al cargar datos del cierre:\n\n${error.message}\n\nPor favor, verifique su conexión e intente nuevamente.`,
+          true
+        );
+        throw error; // Re-throw para detener el flujo
+      }
+
+      // Paso 2: Cargar medios (no crítico - puede fallar sin detener)
+      try {
+        await loadMedia();
+      } catch (error) {
+        console.error("Error no crítico al cargar medios:", error);
+        renderDocs([]); // Renderizar vacío, continuar con el resto
+      }
+
+      // Paso 3: Asegurar botón de descarga
+      ensureGlobalDownloadButton();
+
+      // Éxito total
+      loadAttempts = 0; // Reset contador
+      updateLoadingDetail("✅ Datos cargados correctamente");
+
+      // Pequeño delay para que el usuario vea el mensaje de éxito
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+    } catch (error) {
+      console.error("Error en refreshAll:", error);
+
+      // Si hay múltiples intentos fallidos consecutivos, alertar
+      if (loadAttempts >= 3) {
+        alert(
+          `⚠️ ADVERTENCIA: Han fallado ${loadAttempts} intentos de carga consecutivos.\n\n` +
+          `Esto puede indicar un problema de conexión o del servidor.\n\n` +
+          `Por favor, contacte al administrador del sistema si el problema persiste.`
+        );
+      }
+
+    } finally {
+      isLoading = false;
+      hideLoadingOverlay();
+    }
   }
 
   // ----------------- Toggle Source (Niveles 2 y 3) -----------------
