@@ -494,8 +494,12 @@
   }
 
   async function updateResumen() {
-    const local = ($("#rl-local-display")?.textContent || "").trim();
+    // PRIORIDAD: leer del select, no del display (para evitar valores obsoletos)
+    const selLocal = $("#rl-local-select");
+    const local = (selLocal?.value || window.SESSION_LOCAL || "").trim();
     const fecha = $("#rl-fecha")?.value;
+
+    console.log('[updateResumen] Parámetros:', { local, fecha });
 
     // Validar que local y fecha existen
     if (!local || !fecha) {
@@ -749,9 +753,17 @@
     try {
       showLoadingOverlay("Cargando datos del cierre...");
 
+      // Obtener el local del select (fuente de verdad)
       const selLocal = $("#rl-local-select");
       const local = selLocal?.value || window.SESSION_LOCAL;
-      $("#rl-local-display").textContent = local;
+
+      // Actualizar el display para que refleje el local que vamos a usar
+      const display = $("#rl-local-display");
+      if (display) {
+        display.textContent = local;
+      }
+
+      console.log('[refreshAll] Local a usar:', local);
 
       updateLoadingDetail("Validando parámetros...");
 
@@ -949,4 +961,78 @@
       alert("❌ Error de red al actualizar la observación");
     }
   };
+
+  // Exponer refreshAll globalmente para que el HTML pueda llamarla
+  window.refreshAll = refreshAll;
+
+  // ===== CARGA INICIAL AUTOMÁTICA =====
+  // Función para verificar si el contexto está listo y cargar datos
+  async function checkAndLoadInitialData() {
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    // Obtener valores del contexto
+    const localDisplay = $("#rl-local-display")?.textContent?.trim();
+    const localSelect = $("#rl-local-select")?.value?.trim();
+    const fechaInput = $("#rl-fecha")?.value?.trim();
+
+    const local = localSelect || localDisplay; // PRIORIDAD al select sobre el display
+    const fecha = fechaInput;
+
+    console.log('[resumen_local.js] Verificando contexto:', {
+      localSelect,
+      localDisplay,
+      localFinal: local,
+      fecha
+    });
+
+    // Validar que tenemos contexto válido
+    if (local && fecha && fechaRegex.test(fecha)) {
+      console.log('[resumen_local.js] ✅ Contexto válido detectado, cargando datos automáticamente');
+
+      // Asegurar que rl-local-display tenga el valor correcto
+      const display = $("#rl-local-display");
+      if (display) {
+        display.textContent = local;
+        console.log('[resumen_local.js] Display actualizado a:', local);
+      }
+
+      // Cargar todos los datos automáticamente
+      try {
+        await refreshAll();
+      } catch (error) {
+        console.error('[resumen_local.js] Error al cargar datos iniciales:', error);
+      }
+
+      return true;
+    } else {
+      console.log('[resumen_local.js] ⚠️ Contexto incompleto:', {
+        local,
+        fecha,
+        fechaValida: fechaRegex.test(fecha || '')
+      });
+      return false;
+    }
+  }
+
+  // Ejecutar cuando el DOM esté listo
+  document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[resumen_local.js] DOMContentLoaded - Iniciando verificación de contexto');
+
+    // Intentar cargar inmediatamente
+    let loaded = await checkAndLoadInitialData();
+
+    // Si no se pudo cargar, reintentar después de un delay
+    if (!loaded) {
+      console.log('[resumen_local.js] Reintentando después de 200ms...');
+      setTimeout(async () => {
+        loaded = await checkAndLoadInitialData();
+
+        // Si aún no se pudo, un último intento después de 500ms más
+        if (!loaded) {
+          console.log('[resumen_local.js] Reintentando después de 500ms adicionales...');
+          setTimeout(checkAndLoadInitialData, 500);
+        }
+      }, 200);
+    }
+  });
 })();
