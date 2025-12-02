@@ -42,7 +42,13 @@
   const setTodayIfEmpty = (input) => {
     if (!input || input.value) return;
     const d = new Date(), p = (n) => String(n).padStart(2, "0");
-    input.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    const fechaHoy = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    input.value = fechaHoy;
+    // Guardar también en localStorage para que persista
+    if (input.id === 'rl-fecha') {
+      localStorage.setItem('rl_fecha_selected', fechaHoy);
+      console.log('📅 setTodayIfEmpty: Fecha establecida y guardada:', fechaHoy);
+    }
   };
 
   // copy helpers
@@ -490,9 +496,19 @@
   async function updateResumen() {
     const local = ($("#rl-local-display")?.textContent || "").trim();
     const fecha = $("#rl-fecha")?.value;
+
+    // Validar que local y fecha existen
     if (!local || !fecha) {
       throw new Error("Falta seleccionar local o fecha");
     }
+
+    // Validar que la fecha tiene formato válido (YYYY-MM-DD)
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!fechaRegex.test(fecha)) {
+      console.warn('⚠️ Fecha inválida detectada:', fecha);
+      throw new Error("Fecha inválida. Por favor, seleccione una fecha correcta.");
+    }
+
     updateLoadingDetail("Obteniendo datos del cierre...");
     const data = await fetchResumenLocal({ local, fecha });
 
@@ -682,9 +698,20 @@
     updateLoadingDetail("Cargando documentos e imágenes...");
     const fecha = $("#rl-fecha")?.value;
     const local = $("#rl-local-select")?.value || window.SESSION_LOCAL;
+
+    // Validar que fecha y local existen
     if (!fecha || !local) {
       throw new Error("Falta fecha o local para cargar medios");
     }
+
+    // Validar formato de fecha (YYYY-MM-DD)
+    const fechaRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!fechaRegex.test(fecha)) {
+      console.warn('⚠️ Fecha inválida al cargar medios:', fecha);
+      renderDocs([]); // Renderizar vacío si fecha inválida
+      return; // Salir silenciosamente
+    }
+
     const url = new URL("/files/summary_media", location.origin);
     url.searchParams.set("fecha", fecha);
     url.searchParams.set("local", local);
@@ -734,6 +761,15 @@
       } catch (error) {
         console.error("Error crítico al actualizar resumen:", error);
         hideLoadingOverlay();
+
+        // Si el error es por fecha inválida, NO mostrar alerta molesta
+        // Solo registrar en console (el usuario debe seleccionar una fecha válida)
+        if (error.message && error.message.includes("Fecha inválida")) {
+          console.warn("⚠️ No se puede cargar datos: fecha inválida. Esperando que el usuario seleccione una fecha.");
+          return; // Salir silenciosamente sin mostrar alerta
+        }
+
+        // Para otros errores (red, servidor, etc), sí mostrar alerta
         showErrorAlert(
           `❌ ERROR CRÍTICO al cargar datos del cierre:\n\n${error.message}\n\nPor favor, verifique su conexión e intente nuevamente.`,
           true

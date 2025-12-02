@@ -777,9 +777,14 @@
     const fechaGuardada = localStorage.getItem('rl_fecha_selected');
     if (fechaGuardada) {
       inFecha.value = fechaGuardada;
-    } else if (!inFecha.value) {
+      console.log('📅 Fecha restaurada desde localStorage:', fechaGuardada);
+    } else {
+      // Si NO hay fecha guardada, establecer fecha de hoy Y guardarla en localStorage
       const d = new Date(); const p=n=>String(n).padStart(2,'0');
-      inFecha.value = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      const fechaHoy = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+      inFecha.value = fechaHoy;
+      localStorage.setItem('rl_fecha_selected', fechaHoy);
+      console.log('📅 Fecha inicial establecida a hoy y guardada:', fechaHoy);
     }
 
     // Cargar locales primero
