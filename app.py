@@ -133,7 +133,14 @@ def get_user_level() -> int:
     if lvl is not None:
         return int(lvl)
     role = (session.get('role') or '').strip().lower()
-    MAP = {'cajero': 1, 'encargado': 2, 'administrativo': 2, 'auditor': 3, 'jefe_auditor': 4}
+    MAP = {
+        'cajero': 1,
+        'encargado': 2,
+        'administrativo': 2,
+        'auditor': 3,
+        'jefe_auditor': 4,
+        'admin_anticipos': 5  # Rol especial: solo gestiona anticipos
+    }
     return MAP.get(role, 0)
 
 def is_local_closed(conn, local:str, fecha) -> bool:
@@ -2196,211 +2203,830 @@ def borrar_mercadopago(mp_id):
 @require_edit_ctx  # usa local/caja/fecha/turno del body y valida can_edit
 def guardar_anticipos_lote():
     """
-    Carga de anticipos consumidos en lote.
-    Body esperado:
-    {
-      "local": "...",
-      "caja": "...",
-      "fecha": "...",
-      "turno": "...",
-      "transacciones": [
-        {
-          "fecha_anticipo_recibido": "2025-11-20",
-          "medio_pago": "MercadoPago",
-          "comentario": "Reserva mesa 5",
-          "monto": 5000
-        },
-        ...
-      ]
-    }
+    DEPRECADO: Endpoint viejo para guardar anticipos.
+    El nuevo sistema usa /api/anticipos/consumir
+
+    Retorna error para evitar uso del sistema antiguo.
     """
-    data = request.get_json() or {}
-    transacciones = data.get('transacciones', []) or []
-
-    if not transacciones:
-        return jsonify(success=False, msg="No se recibieron transacciones"), 400
-
-    # Contexto validado por el decorador
-    ctx     = g.ctx
-    local   = ctx['local']
-    caja    = ctx['caja']
-    fecha   = _normalize_fecha(ctx['fecha'])
-    turno   = ctx['turno']
-    usuario = session.get('username') or 'sistema'
-
-    try:
-        conn = get_db_connection()
-        cur  = conn.cursor()
-
-        sql = """
-            INSERT INTO anticipos_consumidos_trns
-            (local, caja, turno, fecha, fecha_anticipo_recibido, medio_pago, comentario, monto, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-
-        inserted = 0
-        for t in transacciones:
-            fecha_anticipo_recibido = t.get('fecha_anticipo_recibido', '').strip()
-            medio_pago = (t.get('medio_pago') or '').strip()
-            comentario = (t.get('comentario') or '').strip()
-            m = t.get('monto', 0)
-
-            # Validaciones
-            if not fecha_anticipo_recibido or not medio_pago:
-                continue  # Skip invalid entries
-
-            try:
-                if isinstance(m, str):
-                    m = float(m.replace('.', '').replace(',', '.'))
-                monto = float(m or 0)
-            except Exception:
-                monto = 0.0
-
-            if monto <= 0:
-                continue  # Skip zero or negative amounts
-
-            cur.execute(sql, (local, caja, turno, fecha, fecha_anticipo_recibido, medio_pago, comentario, monto, usuario))
-            inserted += cur.rowcount
-
-        conn.commit()
-        cur.close(); conn.close()
-        return jsonify(success=True, inserted=inserted, msg=f"{inserted} anticipo(s) guardado(s) correctamente.")
-    except Exception as e:
-        print("❌ ERROR guardar_anticipos_lote:", e)
-        import traceback
-        traceback.print_exc()
-        return jsonify(success=False, msg=str(e)), 500
+    return jsonify(
+        success=False,
+        msg="Este endpoint está deprecado. Use el nuevo sistema de anticipos en /api/anticipos/consumir"
+    ), 410  # 410 Gone - recurso ya no disponible
 
 
 # ===============================
-# Anticipos – READ (GET)
+# Anticipos – READ (GET) - DEPRECADO
 # ===============================
 @app.route('/anticipos_cargados')
 @login_required
 @with_read_scope('t')  # agrega g.read_scope acorde al nivel (L2: cajas cerradas; L3: locales cerrados)
 def anticipos_cargados():
-    local = get_local_param()
-    caja  = request.args.get('caja')
-    fecha = request.args.get('fecha')
-    turno = request.args.get('turno')
-
-    if not (local and caja and fecha and turno):
-        return jsonify(success=True, datos=[])
-
-    try:
-        conn = get_db_connection()
-        cur  = conn.cursor(dictionary=True)
-        sql = f"""
-            SELECT t.id, t.fecha_anticipo_recibido, t.medio_pago, t.comentario, t.monto, t.fecha, t.turno, t.created_by
-              FROM anticipos_consumidos_trns t
-             WHERE t.local=%s
-               AND t.caja=%s
-               AND t.turno=%s
-               AND DATE(t.fecha)=%s
-               {g.read_scope}   -- L2/L3 pueden ver aun con cierres
-             ORDER BY t.id ASC
-        """
-        cur.execute(sql, (local, caja, turno, _normalize_fecha(fecha)))
-        datos = cur.fetchall()
-        cur.close(); conn.close()
-        return jsonify(success=True, datos=datos)
-    except Exception as e:
-        print("❌ ERROR anticipos_cargados:", e)
-        import traceback
-        traceback.print_exc()
-        return jsonify(success=False, msg=str(e)), 500
+    """
+    DEPRECADO: Este endpoint es para compatibilidad con el sistema antiguo.
+    El nuevo sistema usa /api/anticipos/consumidos_en_caja
+    Retorna datos vacíos para evitar errores.
+    """
+    # Retornar vacío - el nuevo sistema de anticipos_v2.js no usa este endpoint
+    return jsonify(success=True, datos=[])
 
 
 # ===============================
-# Anticipos – UPDATE (PUT)
+# Anticipos – UPDATE (PUT) - DEPRECADO
 # ===============================
 @app.route('/anticipos/<int:anticipo_id>', methods=['PUT'])
 @login_required
 def actualizar_anticipo(anticipo_id):
-    data = request.get_json() or {}
-    fecha_anticipo_recibido = (data.get('fecha_anticipo_recibido') or '').strip()
-    medio_pago = (data.get('medio_pago') or '').strip()
-    comentario = (data.get('comentario') or '').strip()
-
-    if not fecha_anticipo_recibido or not medio_pago:
-        return jsonify(success=False, msg="Fecha anticipo y medio de pago son requeridos"), 400
-
-    try:
-        imp = data.get('monto', 0)
-        if isinstance(imp, str):
-            imp = float(imp.replace('.', '').replace(',', '.'))
-        importe = float(imp or 0)
-    except Exception:
-        return jsonify(success=False, msg="Monto inválido"), 400
-
-    if importe <= 0:
-        return jsonify(success=False, msg="El monto debe ser mayor a cero"), 400
-
-    try:
-        conn = get_db_connection()
-        cur  = conn.cursor(dictionary=True)
-        cur.execute("SELECT id, local, caja, fecha, turno FROM anticipos_consumidos_trns WHERE id=%s", (anticipo_id,))
-        row = cur.fetchone()
-        if not row:
-            cur.close(); conn.close()
-            return jsonify(success=False, msg="Registro no encontrado"), 404
-
-        # Permisos por nivel/estado (L1/L2/L3)
-        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
-            cur.close(); conn.close()
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
-
-        cur2 = conn.cursor()
-        cur2.execute("""
-            UPDATE anticipos_consumidos_trns
-               SET fecha_anticipo_recibido=%s, medio_pago=%s, comentario=%s, monto=%s
-             WHERE id=%s
-        """, (fecha_anticipo_recibido, medio_pago, comentario, importe, anticipo_id))
-        conn.commit()
-        cur2.close(); cur.close(); conn.close()
-        return jsonify(success=True, msg="Anticipo actualizado correctamente")
-    except Exception as e:
-        print("❌ ERROR actualizar_anticipo:", e)
-        import traceback
-        traceback.print_exc()
-        return jsonify(success=False, msg=str(e)), 500
+    """
+    DEPRECADO: Endpoint viejo para actualizar anticipos.
+    El nuevo sistema usa /api/anticipos_recibidos/editar/<id>
+    """
+    return jsonify(
+        success=False,
+        msg="Este endpoint está deprecado. Use /api/anticipos_recibidos/editar/<id>"
+    ), 410  # 410 Gone
 
 
 # ===============================
-# Anticipos – DELETE
+# Anticipos – DELETE - DEPRECADO
 # ===============================
 @app.route('/anticipos/<int:anticipo_id>', methods=['DELETE'])
 @login_required
 def borrar_anticipo(anticipo_id):
+    """
+    DEPRECADO: Endpoint viejo para eliminar anticipos.
+    El nuevo sistema usa /api/anticipos_recibidos/eliminar/<id> o /api/anticipos/eliminar_de_caja
+    """
+    return jsonify(
+        success=False,
+        msg="Este endpoint está deprecado. Use /api/anticipos_recibidos/eliminar/<id> o /api/anticipos/eliminar_de_caja"
+    ), 410  # 410 Gone
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NUEVO SISTEMA DE ANTICIPOS RECIBIDOS
+# ═══════════════════════════════════════════════════════════════════
+# Parte 1: Creación y gestión de anticipos recibidos (admin_anticipos)
+# Parte 2: Consumo de anticipos en cajas (cajeros)
+# ═══════════════════════════════════════════════════════════════════
+
+# ───────────────────────────────────────────────────────────────────
+# PARTE 1: GESTIÓN DE ANTICIPOS RECIBIDOS (admin_anticipos)
+# ───────────────────────────────────────────────────────────────────
+
+@app.route('/api/anticipos_recibidos/crear', methods=['POST'])
+@login_required
+def crear_anticipo_recibido():
+    """
+    Crear un nuevo anticipo recibido.
+    Solo accesible para admin_anticipos (nivel 5) o superiores.
+
+    Body:
+    {
+        "fecha_pago": "2025-12-01",
+        "fecha_evento": "2025-12-15",
+        "importe": 5000.00,
+        "cliente": "Juan Pérez",
+        "numero_transaccion": "TRX123456",
+        "medio_pago": "Transferencia",
+        "observaciones": "Reserva para evento...",
+        "local": "Ribs Infanta"
+    }
+    """
+    user_level = get_user_level()
+    if user_level < 5:
+        return jsonify(success=False, msg="No tenés permisos para crear anticipos recibidos"), 403
+
+    data = request.get_json() or {}
+
+    # Validar campos requeridos
+    required_fields = ['fecha_pago', 'fecha_evento', 'importe', 'cliente', 'local']
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify(success=False, msg=f"Campo requerido faltante: {field}"), 400
+
     try:
+        # Parsear y validar datos
+        fecha_pago = _normalize_fecha(data['fecha_pago'])
+        fecha_evento = _normalize_fecha(data['fecha_evento'])
+        importe = float(data['importe'])
+        cliente = data['cliente'].strip()
+        local = data['local'].strip()
+
+        numero_transaccion = data.get('numero_transaccion', '').strip() or None
+        medio_pago = data.get('medio_pago', '').strip() or None
+        observaciones = data.get('observaciones', '').strip() or None
+
+        if importe <= 0:
+            return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400
+
+        usuario = session.get('username', 'sistema')
+
         conn = get_db_connection()
-        cur  = conn.cursor(dictionary=True)
-        cur.execute("SELECT id, local, caja, fecha, turno FROM anticipos_consumidos_trns WHERE id=%s", (anticipo_id,))
-        row = cur.fetchone()
-        if not row:
-            cur.close(); conn.close()
-            return jsonify(success=False, msg="Registro no encontrado"), 404
+        cur = conn.cursor()
 
-        # Permisos por nivel/estado (L1/L2/L3)
-        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
-            cur.close(); conn.close()
-            return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
+        # Insertar anticipo recibido
+        sql = """
+            INSERT INTO anticipos_recibidos
+            (fecha_pago, fecha_evento, importe, cliente, numero_transaccion,
+             medio_pago, observaciones, local, estado, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
+        """
+        cur.execute(sql, (fecha_pago, fecha_evento, importe, cliente, numero_transaccion,
+                         medio_pago, observaciones, local, usuario))
 
-        cur2 = conn.cursor()
-        cur2.execute("DELETE FROM anticipos_consumidos_trns WHERE id=%s", (anticipo_id,))
+        anticipo_id = cur.lastrowid
         conn.commit()
-        cur2.close(); cur.close(); conn.close()
-        return jsonify(success=True, msg="Anticipo eliminado correctamente")
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='INSERT',
+            tabla='anticipos_recibidos',
+            registro_id=anticipo_id,
+            datos_nuevos={
+                'fecha_pago': str(fecha_pago),
+                'fecha_evento': str(fecha_evento),
+                'importe': importe,
+                'cliente': cliente,
+                'local': local,
+                'numero_transaccion': numero_transaccion,
+                'medio_pago': medio_pago
+            },
+            descripcion=f"Anticipo recibido creado: {cliente} - ${importe}"
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg="Anticipo recibido creado correctamente", anticipo_id=anticipo_id)
+
     except Exception as e:
-        print("❌ ERROR borrar_anticipo:", e)
+        print("❌ ERROR crear_anticipo_recibido:", e)
         import traceback
         traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
 
 
-# ─────────────────────────────────────
+@app.route('/api/anticipos_recibidos/listar', methods=['GET'])
+@login_required
+def listar_anticipos_recibidos():
+    """
+    Listar todos los anticipos recibidos.
+    Solo accesible para admin_anticipos (nivel 5) o superiores.
+
+    Params:
+    - estado: (opcional) 'pendiente', 'consumido', 'eliminado_global'
+    - local: (opcional) filtrar por local
+    - fecha_desde, fecha_hasta: (opcional) filtrar por fecha_evento
+    """
+    user_level = get_user_level()
+    if user_level < 5:
+        return jsonify(success=False, msg="No tenés permisos para ver anticipos recibidos"), 403
+
+    estado = request.args.get('estado', '').strip()
+    local = request.args.get('local', '').strip()
+    fecha_desde = request.args.get('fecha_desde', '').strip()
+    fecha_hasta = request.args.get('fecha_hasta', '').strip()
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Construir query con filtros opcionales
+        sql = """
+            SELECT
+                id, fecha_pago, fecha_evento, importe, cliente,
+                numero_transaccion, medio_pago, observaciones, local,
+                estado, created_by, created_at, updated_by, updated_at,
+                deleted_by, deleted_at
+            FROM anticipos_recibidos
+            WHERE 1=1
+        """
+        params = []
+
+        if estado:
+            sql += " AND estado = %s"
+            params.append(estado)
+
+        if local:
+            sql += " AND local = %s"
+            params.append(local)
+
+        if fecha_desde:
+            sql += " AND fecha_evento >= %s"
+            params.append(_normalize_fecha(fecha_desde))
+
+        if fecha_hasta:
+            sql += " AND fecha_evento <= %s"
+            params.append(_normalize_fecha(fecha_hasta))
+
+        sql += " ORDER BY fecha_evento DESC, created_at DESC"
+
+        cur.execute(sql, params)
+        anticipos = cur.fetchall() or []
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, anticipos=anticipos)
+
+    except Exception as e:
+        print("❌ ERROR listar_anticipos_recibidos:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos_recibidos/eliminar/<int:anticipo_id>', methods=['DELETE'])
+@login_required
+def eliminar_anticipo_recibido(anticipo_id):
+    """
+    Eliminar (marcar como eliminado_global) un anticipo recibido.
+    Solo accesible para admin_anticipos (nivel 5) o superiores.
+    """
+    user_level = get_user_level()
+    if user_level < 5:
+        return jsonify(success=False, msg="No tenés permisos para eliminar anticipos recibidos"), 403
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que existe y obtener datos para auditoría
+        cur.execute("SELECT * FROM anticipos_recibidos WHERE id = %s", (anticipo_id,))
+        anticipo = cur.fetchone()
+
+        if not anticipo:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Anticipo no encontrado"), 404
+
+        if anticipo['estado'] == 'consumido':
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="No se puede eliminar un anticipo ya consumido"), 409
+
+        usuario = session.get('username', 'sistema')
+
+        # Marcar como eliminado
+        from datetime import datetime
+        import pytz
+        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
+        ahora = datetime.now(tz_arg)
+
+        cur.execute("""
+            UPDATE anticipos_recibidos
+            SET estado = 'eliminado_global',
+                deleted_by = %s,
+                deleted_at = %s,
+                updated_by = %s,
+                updated_at = %s
+            WHERE id = %s
+        """, (usuario, ahora, usuario, ahora, anticipo_id))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='anticipos_recibidos',
+            registro_id=anticipo_id,
+            datos_anteriores={'estado': anticipo['estado']},
+            datos_nuevos={'estado': 'eliminado_global'},
+            descripcion=f"Anticipo eliminado: {anticipo['cliente']} - ${anticipo['importe']}"
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg="Anticipo eliminado correctamente")
+
+    except Exception as e:
+        print("❌ ERROR eliminar_anticipo_recibido:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos_recibidos/editar/<int:anticipo_id>', methods=['PUT'])
+@login_required
+def editar_anticipo_recibido(anticipo_id):
+    """
+    Editar un anticipo recibido.
+    Solo permite editar fecha_evento si el anticipo está pendiente.
+    Solo accesible para admin_anticipos (nivel 5) o superiores.
+    """
+    user_level = get_user_level()
+    if user_level < 5:
+        return jsonify(success=False, msg="No tenés permisos para editar anticipos recibidos"), 403
+
+    data = request.get_json() or {}
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que existe
+        cur.execute("SELECT * FROM anticipos_recibidos WHERE id = %s", (anticipo_id,))
+        anticipo = cur.fetchone()
+
+        if not anticipo:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Anticipo no encontrado"), 404
+
+        if anticipo['estado'] != 'pendiente':
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Solo se pueden editar anticipos pendientes"), 409
+
+        # Solo permitir editar fecha_evento y observaciones
+        nueva_fecha_evento = data.get('fecha_evento')
+        nuevas_observaciones = data.get('observaciones')
+
+        if not nueva_fecha_evento:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Fecha de evento requerida"), 400
+
+        fecha_evento_norm = _normalize_fecha(nueva_fecha_evento)
+        usuario = session.get('username', 'sistema')
+
+        from datetime import datetime
+        import pytz
+        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
+        ahora = datetime.now(tz_arg)
+
+        cur.execute("""
+            UPDATE anticipos_recibidos
+            SET fecha_evento = %s,
+                observaciones = %s,
+                updated_by = %s,
+                updated_at = %s
+            WHERE id = %s
+        """, (fecha_evento_norm, nuevas_observaciones, usuario, ahora, anticipo_id))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='anticipos_recibidos',
+            registro_id=anticipo_id,
+            datos_anteriores={
+                'fecha_evento': str(anticipo['fecha_evento']),
+                'observaciones': anticipo['observaciones']
+            },
+            datos_nuevos={
+                'fecha_evento': str(fecha_evento_norm),
+                'observaciones': nuevas_observaciones
+            },
+            descripcion=f"Fecha de evento actualizada para anticipo de {anticipo['cliente']}"
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg="Anticipo actualizado correctamente")
+
+    except Exception as e:
+        print("❌ ERROR editar_anticipo_recibido:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ───────────────────────────────────────────────────────────────────
+# PARTE 2: CONSUMO DE ANTICIPOS EN CAJAS (cajeros)
+# ───────────────────────────────────────────────────────────────────
+
+@app.route('/api/anticipos/disponibles', methods=['GET'])
+@login_required
+def obtener_anticipos_disponibles():
+    """
+    Obtener anticipos disponibles para una caja específica.
+
+    Un anticipo aparece si:
+    1. Su local coincide con el local de la caja
+    2. Su fecha_evento coincide con la fecha de la caja
+    3. Su estado global es 'pendiente'
+    4. NO existe un registro en anticipos_estados_caja para esta caja (ni eliminado ni consumido)
+
+    Params:
+    - local: local de la caja
+    - caja: caja
+    - fecha: fecha de operación
+    - turno: turno (informativo, no afecta disponibilidad)
+    """
+    local = get_local_param()
+    caja = request.args.get('caja', '').strip()
+    fecha = request.args.get('fecha', '').strip()
+    turno = request.args.get('turno', '').strip()
+
+    if not (local and caja and fecha):
+        return jsonify(success=True, disponibles=[])
+
+    fecha_norm = _normalize_fecha(fecha)
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener anticipos disponibles
+        sql = """
+            SELECT
+                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe,
+                ar.cliente, ar.numero_transaccion, ar.medio_pago,
+                ar.observaciones, ar.local, ar.created_by, ar.created_at
+            FROM anticipos_recibidos ar
+            WHERE ar.local = %s
+              AND ar.fecha_evento = %s
+              AND ar.estado = 'pendiente'
+              AND NOT EXISTS (
+                  SELECT 1 FROM anticipos_estados_caja aec
+                  WHERE aec.anticipo_id = ar.id
+                    AND aec.local = %s
+                    AND aec.caja = %s
+                    AND aec.fecha = %s
+              )
+            ORDER BY ar.created_at ASC
+        """
+
+        cur.execute(sql, (local, fecha_norm, local, caja, fecha_norm))
+        disponibles = cur.fetchall() or []
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, disponibles=disponibles)
+
+    except Exception as e:
+        print("❌ ERROR obtener_anticipos_disponibles:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos/consumir', methods=['POST'])
+@login_required
+@require_edit_ctx
+def consumir_anticipo():
+    """
+    Consumir un anticipo en una caja específica.
+
+    Body:
+    {
+        "local": "...",
+        "caja": "...",
+        "fecha": "...",
+        "turno": "...",
+        "anticipo_id": 123,
+        "observaciones_consumo": "Cliente consumió en mesa 5"
+    }
+    """
+    data = request.get_json() or {}
+    anticipo_id = data.get('anticipo_id')
+
+    if not anticipo_id:
+        return jsonify(success=False, msg="anticipo_id requerido"), 400
+
+    # Contexto validado por el decorador
+    ctx = g.ctx
+    local = ctx['local']
+    caja = ctx['caja']
+    fecha = _normalize_fecha(ctx['fecha'])
+    turno = ctx['turno']
+    usuario = session.get('username', 'sistema')
+
+    observaciones_consumo = data.get('observaciones_consumo', '').strip() or None
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que el anticipo existe y está disponible
+        cur.execute("""
+            SELECT * FROM anticipos_recibidos
+            WHERE id = %s AND estado = 'pendiente'
+        """, (anticipo_id,))
+        anticipo = cur.fetchone()
+
+        if not anticipo:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Anticipo no encontrado o ya fue consumido"), 404
+
+        # Verificar que corresponde al local y fecha
+        if anticipo['local'] != local or str(anticipo['fecha_evento']) != str(fecha):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Este anticipo no corresponde a este local/fecha"), 400
+
+        # Verificar que no fue ya procesado en esta caja
+        cur.execute("""
+            SELECT * FROM anticipos_estados_caja
+            WHERE anticipo_id = %s AND local = %s AND caja = %s AND fecha = %s
+        """, (anticipo_id, local, caja, fecha))
+
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Este anticipo ya fue procesado en esta caja"), 409
+
+        from datetime import datetime
+        import pytz
+        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
+        ahora = datetime.now(tz_arg)
+
+        # Registrar consumo en estados_caja
+        cur.execute("""
+            INSERT INTO anticipos_estados_caja
+            (anticipo_id, local, caja, fecha, turno, estado, usuario,
+             timestamp_accion, importe_consumido, observaciones_consumo)
+            VALUES (%s, %s, %s, %s, %s, 'consumido', %s, %s, %s, %s)
+        """, (anticipo_id, local, caja, fecha, turno, usuario, ahora,
+              anticipo['importe'], observaciones_consumo))
+
+        # Actualizar estado global del anticipo a 'consumido'
+        cur.execute("""
+            UPDATE anticipos_recibidos
+            SET estado = 'consumido',
+                updated_by = %s,
+                updated_at = %s
+            WHERE id = %s
+        """, (usuario, ahora, anticipo_id))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='anticipos_recibidos',
+            registro_id=anticipo_id,
+            datos_anteriores={'estado': 'pendiente'},
+            datos_nuevos={'estado': 'consumido', 'caja': caja, 'turno': turno},
+            descripcion=f"Anticipo consumido en caja {caja}: {anticipo['cliente']} - ${anticipo['importe']}",
+            local=local,
+            caja=caja,
+            fecha_operacion=fecha,
+            turno=turno
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg=f"Anticipo consumido correctamente (${anticipo['importe']})")
+
+    except Exception as e:
+        print("❌ ERROR consumir_anticipo:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos/eliminar_de_caja', methods=['POST'])
+@login_required
+@require_edit_ctx
+def eliminar_anticipo_de_caja():
+    """
+    Eliminar un anticipo de una caja específica (cliente no vino a esta caja).
+    El anticipo seguirá disponible para otras cajas.
+
+    Body:
+    {
+        "local": "...",
+        "caja": "...",
+        "fecha": "...",
+        "turno": "...",
+        "anticipo_id": 123
+    }
+    """
+    data = request.get_json() or {}
+    anticipo_id = data.get('anticipo_id')
+
+    if not anticipo_id:
+        return jsonify(success=False, msg="anticipo_id requerido"), 400
+
+    # Contexto validado por el decorador
+    ctx = g.ctx
+    local = ctx['local']
+    caja = ctx['caja']
+    fecha = _normalize_fecha(ctx['fecha'])
+    turno = ctx['turno']
+    usuario = session.get('username', 'sistema')
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que el anticipo existe
+        cur.execute("""
+            SELECT * FROM anticipos_recibidos
+            WHERE id = %s
+        """, (anticipo_id,))
+        anticipo = cur.fetchone()
+
+        if not anticipo:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Anticipo no encontrado"), 404
+
+        # Verificar que no fue ya procesado en esta caja
+        cur.execute("""
+            SELECT * FROM anticipos_estados_caja
+            WHERE anticipo_id = %s AND local = %s AND caja = %s AND fecha = %s
+        """, (anticipo_id, local, caja, fecha))
+
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Este anticipo ya fue procesado en esta caja"), 409
+
+        from datetime import datetime
+        import pytz
+        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
+        ahora = datetime.now(tz_arg)
+
+        # Registrar eliminación en estados_caja
+        cur.execute("""
+            INSERT INTO anticipos_estados_caja
+            (anticipo_id, local, caja, fecha, turno, estado, usuario, timestamp_accion)
+            VALUES (%s, %s, %s, %s, %s, 'eliminado_de_caja', %s, %s)
+        """, (anticipo_id, local, caja, fecha, turno, usuario, ahora))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='INSERT',
+            tabla='anticipos_estados_caja',
+            registro_id=anticipo_id,
+            datos_nuevos={'estado': 'eliminado_de_caja', 'caja': caja},
+            descripcion=f"Anticipo eliminado de caja {caja}: {anticipo['cliente']}",
+            local=local,
+            caja=caja,
+            fecha_operacion=fecha,
+            turno=turno
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg="Anticipo eliminado de esta caja correctamente")
+
+    except Exception as e:
+        print("❌ ERROR eliminar_anticipo_de_caja:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos/consumidos_en_caja', methods=['GET'])
+@login_required
+def obtener_anticipos_consumidos_en_caja():
+    """
+    Obtener anticipos que fueron consumidos en una caja específica.
+    Útil para mostrar en el resumen de la caja.
+
+    Params:
+    - local
+    - caja
+    - fecha
+    - turno
+    """
+    local = get_local_param()
+    caja = request.args.get('caja', '').strip()
+    fecha = request.args.get('fecha', '').strip()
+    turno = request.args.get('turno', '').strip()
+
+    if not (local and caja and fecha and turno):
+        return jsonify(success=True, consumidos=[])
+
+    fecha_norm = _normalize_fecha(fecha)
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        sql = """
+            SELECT
+                aec.id, aec.anticipo_id, aec.timestamp_accion,
+                aec.importe_consumido, aec.observaciones_consumo,
+                ar.cliente, ar.numero_transaccion, ar.medio_pago,
+                ar.fecha_pago, ar.observaciones as observaciones_anticipo
+            FROM anticipos_estados_caja aec
+            JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
+            WHERE aec.local = %s
+              AND aec.caja = %s
+              AND aec.fecha = %s
+              AND aec.turno = %s
+              AND aec.estado = 'consumido'
+            ORDER BY aec.timestamp_accion ASC
+        """
+
+        cur.execute(sql, (local, caja, fecha_norm, turno))
+        consumidos = cur.fetchall() or []
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, consumidos=consumidos)
+
+    except Exception as e:
+        print("❌ ERROR obtener_anticipos_consumidos_en_caja:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos/validar_cierre_local', methods=['GET'])
+@login_required
+def validar_cierre_local_anticipos():
+    """
+    Validar si quedan anticipos sin consumir antes de cerrar el local.
+
+    Params:
+    - local
+    - fecha
+
+    Returns:
+    {
+        "puede_cerrar": true/false,
+        "anticipos_pendientes": [...],  # Si hay anticipos sin consumir
+        "msg": "..."
+    }
+    """
+    local = get_local_param()
+    fecha = request.args.get('fecha', '').strip()
+
+    if not (local and fecha):
+        return jsonify(success=False, msg="Local y fecha requeridos"), 400
+
+    fecha_norm = _normalize_fecha(fecha)
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Buscar anticipos que:
+        # 1. Corresponden al local y fecha_evento
+        # 2. Estado global es 'pendiente'
+        # 3. NO fueron consumidos NI eliminados de TODAS las cajas
+        sql = """
+            SELECT
+                ar.id, ar.cliente, ar.importe, ar.numero_transaccion,
+                ar.observaciones
+            FROM anticipos_recibidos ar
+            WHERE ar.local = %s
+              AND ar.fecha_evento = %s
+              AND ar.estado = 'pendiente'
+        """
+
+        cur.execute(sql, (local, fecha_norm))
+        anticipos_pendientes = cur.fetchall() or []
+
+        cur.close()
+        conn.close()
+
+        if anticipos_pendientes:
+            return jsonify(
+                success=True,
+                puede_cerrar=False,
+                anticipos_pendientes=anticipos_pendientes,
+                msg=f"Hay {len(anticipos_pendientes)} anticipo(s) sin consumir. No se puede cerrar el local."
+            )
+        else:
+            return jsonify(
+                success=True,
+                puede_cerrar=True,
+                anticipos_pendientes=[],
+                msg="No hay anticipos pendientes. Se puede cerrar el local."
+            )
+
+    except Exception as e:
+        print("❌ ERROR validar_cierre_local_anticipos:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ═══════════════════════════════════════════════════════════════════
+# FIN NUEVO SISTEMA DE ANTICIPOS RECIBIDOS
+# ═══════════════════════════════════════════════════════════════════
+
+
+# ─────────────────────────────────────────
 # VENTA SISTEMA (única por fecha/caja/local)
-# ─────────────────────────────────────
+# ─────────────────────────────────────────
 
 # ─────────────────────────────────────
 # Helpers comunes (si ya existen, usá los tuyos)
@@ -3426,11 +4052,14 @@ def cierre_resumen():
 
         # ===== ANTICIPOS CONSUMIDOS =====
         # Anticipos consumidos (señas usadas para justificar faltantes)
+        # Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
         cur.execute("""
-            SELECT COALESCE(SUM(monto),0)
-              FROM anticipos_consumidos_trns
-             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
-        """, (fecha, local, caja, turno))
+            SELECT COALESCE(SUM(ar.importe),0)
+              FROM anticipos_recibidos ar
+              JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+             WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s
+               AND aec.estado = 'consumido'
+        """, (local, caja, fecha))
         row = cur.fetchone()
         resumen['anticipos'] = float(row[0]) if row and row[0] is not None else 0.0
 
@@ -4200,7 +4829,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                 UNION
                 SELECT caja, turno FROM mercadopago_trns WHERE local=%s AND DATE(fecha)=%s
                 UNION
-                SELECT caja, turno FROM anticipos_consumidos_trns WHERE local=%s AND DATE(fecha)=%s
+                SELECT aec.caja, '' as turno FROM anticipos_estados_caja aec WHERE aec.local=%s AND DATE(aec.fecha)=%s AND aec.estado='consumido'
             ) AS todas
             ORDER BY caja, turno
         """, (local, f, local, f, local, f, local, f, local, f))
@@ -4288,8 +4917,15 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         total_cobrado += float(row[0] or 0.0) if row else 0.0
 
         # Anticipos Consumidos (solo en tablas normales, no hay snap todavía)
+        # Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
         if not usar_snap:
-            cur.execute("SELECT COALESCE(SUM(monto),0) FROM anticipos_consumidos_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+            cur.execute("""
+                SELECT COALESCE(SUM(ar.importe),0)
+                FROM anticipos_recibidos ar
+                JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+                WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s
+                  AND aec.estado = 'consumido'
+            """, (local, caja, f))
             row = cur.fetchone()
             total_cobrado += float(row[0] or 0.0) if row else 0.0
 
@@ -4500,30 +5136,37 @@ def api_resumen_local():
         anticipos_total = 0.0
         anticipos_items = []
         if not usar_snap:  # Anticipos solo existen en tablas normales (no hay snap todavía)
-            # Total
+            # Total - Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
             anticipos_total = _qsum(
                 cur,
-                "SELECT COALESCE(SUM(monto),0) FROM anticipos_consumidos_trns WHERE DATE(fecha)=%s AND local=%s",
-                (f, local),
+                """SELECT COALESCE(SUM(ar.importe),0)
+                   FROM anticipos_recibidos ar
+                   JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+                   WHERE aec.local=%s AND DATE(aec.fecha)=%s
+                     AND aec.estado = 'consumido'""",
+                (local, f),
             ) or 0.0
 
-            # Detalle (items individuales)
+            # Detalle (items individuales) - Nuevo sistema
             try:
                 cur.execute("""
-                    SELECT id, fecha_anticipo_recibido, medio_pago, comentario, monto, created_by
-                    FROM anticipos_consumidos_trns
-                    WHERE DATE(fecha)=%s AND local=%s
-                    ORDER BY id ASC
-                """, (f, local))
+                    SELECT ar.id, ar.fecha_pago, ar.medio_pago, ar.observaciones, ar.importe, aec.usuario, ar.cliente, aec.caja
+                    FROM anticipos_recibidos ar
+                    JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+                    WHERE aec.local=%s AND DATE(aec.fecha)=%s
+                      AND aec.estado = 'consumido'
+                    ORDER BY ar.id ASC
+                """, (local, f))
                 rows = cur.fetchall() or []
                 for r in rows:
                     anticipos_items.append({
                         "id": r[0],
                         "fecha_anticipo_recibido": str(r[1]) if r[1] else "",
                         "medio_pago": r[2] or "",
-                        "comentario": r[3] or "",
+                        "comentario": f"{r[6] or ''} - {r[3] or ''}" if r[6] or r[3] else "",  # Cliente + observaciones
                         "monto": float(r[4] or 0),
-                        "created_by": r[5] or ""
+                        "created_by": r[5] or "",  # usuario que consumió
+                        "caja": r[7] or ""  # caja donde se consumió
                     })
             except Exception as e:
                 print(f"⚠️ Error obteniendo detalle de anticipos: {e}")
@@ -4611,10 +5254,18 @@ def api_resumen_local():
         # ===== Diferencias detalladas por caja/turno =====
         diferencias_detalle = _get_diferencias_detalle(cur, fecha_s, local, usar_snap)
 
+        # Agregar timestamp del servidor para validación de datos
+        from datetime import datetime
+        import pytz
+        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
+        server_timestamp = datetime.now(tz_arg).isoformat()
+
         payload = {
             "fecha": fecha_s,
             "local": local,
             "local_cerrado": bool(local_cerrado),
+            "server_timestamp": server_timestamp,  # ← Timestamp para validación de integridad
+            "data_source": "snap" if usar_snap else "normal",  # ← Indicar fuente de datos
 
             "resumen": {
                 "venta_total": float(venta_total or 0.0),
@@ -5133,7 +5784,7 @@ def create_user(username, password_plain, role_name, local, society, pages_slugs
         cur.execute("SELECT id FROM roles WHERE name=%s", (role_name,))
         row = cur.fetchone()
         if not row:
-            raise ValueError(f"Rol '{role_name}' no existe (cajero|encargado|auditor)")
+            raise ValueError(f"Rol '{role_name}' no existe (cajero|encargado|auditor|jefe_auditor|admin_anticipos)")
         role_id = row[0]
 
         # Insert user
@@ -5187,7 +5838,7 @@ def api_create_user():
         return jsonify(success=False, msg='Faltan campos obligatorios'), 400
     if len(password) < 4:
         return jsonify(success=False, msg='La contraseña debe tener al menos 4 caracteres'), 400
-    if role not in ('cajero','encargado','auditor'):
+    if role not in ('cajero','encargado','auditor','jefe_auditor','admin_anticipos'):
         return jsonify(success=False, msg='Rol inválido'), 400
     if status not in ('active','inactive'):
         return jsonify(success=False, msg='Estado inválido'), 400
@@ -6087,6 +6738,14 @@ def gestion_usuarios():
     return render_template('gestion_usuarios.html')
 
 
+@app.route('/gestion-anticipos')
+@login_required
+@role_min_required(5)  # Solo admin_anticipos (nivel 5)
+def gestion_anticipos():
+    """Página de gestión de anticipos recibidos - Solo para admin_anticipos"""
+    return render_template('gestion_anticipos.html')
+
+
 @app.route('/api/mi_nivel', methods=['GET'])
 @login_required
 def api_mi_nivel():
@@ -6195,6 +6854,7 @@ def api_usuarios_crear():
     - Nivel 2 crea cajeros
     - Nivel 3 crea encargados
     - Nivel 4 crea auditores
+    - Nivel 5 (jefe_auditor) crea admin_anticipos
     """
     data = request.get_json() or {}
     username = data.get('username', '').strip()
@@ -6212,11 +6872,13 @@ def api_usuarios_crear():
         return jsonify(success=False, msg='Solo podés crear cajeros'), 403
     elif user_level == 3 and rol != 'encargado':
         return jsonify(success=False, msg='Solo podés crear encargados'), 403
-    elif user_level >= 4 and rol != 'auditor':
+    elif user_level == 4 and rol != 'auditor':
         return jsonify(success=False, msg='Solo podés crear auditores'), 403
+    elif user_level >= 5 and rol not in ('auditor', 'admin_anticipos'):
+        return jsonify(success=False, msg='Solo podés crear auditores o administradores de anticipos'), 403
 
-    # Si se está creando un auditor y no hay local, asignar "OFICINA CENTRAL"
-    if rol == 'auditor' and not local:
+    # Si se está creando un auditor o admin_anticipos y no hay local, asignar "OFICINA CENTRAL"
+    if rol in ('auditor', 'admin_anticipos') and not local:
         local = 'OFICINA CENTRAL'
 
     # Para otros roles, el local es obligatorio
