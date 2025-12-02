@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cuenta_cte:  'rescuentaCte',
     tips:        'resTips',
     discovery:   'resDiscovery',
+    anticipos:   'resAnticipos',
   };
 
   // ====== Helpers ======

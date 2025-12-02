@@ -4057,9 +4057,9 @@ def cierre_resumen():
             SELECT COALESCE(SUM(ar.importe),0)
               FROM anticipos_recibidos ar
               JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
-             WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s
+             WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s AND aec.turno=%s
                AND aec.estado = 'consumido'
-        """, (local, caja, fecha))
+        """, (local, caja, fecha, turno))
         row = cur.fetchone()
         resumen['anticipos'] = float(row[0]) if row and row[0] is not None else 0.0
 
@@ -4765,7 +4765,8 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
         "CABAL", "CABAL DEBITO",
         "AMEX", "MAESTRO",
         "NARANJA", "DECIDIR", "DINERS",
-        "PAGOS INMEDIATOS"
+        "PAGOS INMEDIATOS",
+        "MAS DELIVERY"
     ]
 
     breakdown = {m: 0.0 for m in marcas}
@@ -4921,9 +4922,9 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                 SELECT COALESCE(SUM(ar.importe),0)
                 FROM anticipos_recibidos ar
                 JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
-                WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s
+                WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s AND aec.turno=%s
                   AND aec.estado = 'consumido'
-            """, (local, caja, f))
+            """, (local, caja, f, turno))
             row = cur.fetchone()
             total_cobrado += float(row[0] or 0.0) if row else 0.0
 
@@ -5058,7 +5059,8 @@ def api_resumen_local():
             "CABAL", "CABAL DEBITO",
             "AMEX", "MAESTRO",
             "NARANJA", "DECIDIR", "DINERS",
-            "PAGOS INMEDIATOS"
+            "PAGOS INMEDIATOS",
+            "MAS DELIVERY"
         ]
         def _sum_tarjeta_from(table_name, marca):
             return _qsum(
