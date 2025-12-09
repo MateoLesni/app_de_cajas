@@ -152,7 +152,14 @@
   text-align:right;
 }
 .sl-table td:first-child{ color:#374151; width:60%; }
-.sl-table .r{ text-align:right; font-variant-numeric:tabular-nums; }
+.sl-table .r{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  /* Normalización de fuente para todos los montos */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-base);
+}
 .sl-total{ background:#f8fafc; font-weight:600; }
 
 /* ---------- Sub-acordeones ---------- */
@@ -170,7 +177,19 @@
   font-weight:var(--font-weight-base);
 }
 .sl-row .label{ color:#374151; }
-.sl-row .amount{ font-variant-numeric:tabular-nums; color:#111827; }
+.sl-row .amount{
+  font-variant-numeric:tabular-nums;
+  color:#111827;
+  /* Normalización de fuente para todos los montos */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-base);
+}
+
+/* Números negativos en rojo */
+.negative-amount{
+  color: #dc2626 !important; /* Rojo para diferencias negativas */
+}
 
 /* Caret en sub-acordeones */
 .sub-acc .sl-row{ position:relative; }

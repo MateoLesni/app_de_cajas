@@ -350,6 +350,29 @@
     setMoneyWithCopy("rl-cta-cte-legacy", Number(cc.legacy ?? 0));
     setMoneyWithCopy("rl-cta-cte-det", Number(cc.total ?? 0));
 
+    // Anticipos
+    const ant = info?.anticipos || {};
+    setMoneyWithCopy("rl-anticipos", Number(ant.total ?? 0));
+
+    // Renderizar detalle de anticipos
+    const anticiposItems = ant.items || [];
+    const anticiposDetalleTable = document.getElementById("rl-anticipos-detalle");
+    if (anticiposDetalleTable) {
+      if (anticiposItems.length === 0) {
+        anticiposDetalleTable.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#6b7280;">No hay anticipos consumidos</td></tr>';
+      } else {
+        let html = '';
+        anticiposItems.forEach(item => {
+          const comentario = item.comentario || '-';
+          const caja = item.caja || '-';
+          const monto = money(Number(item.monto || 0));
+          html += `<tr><td>${comentario} (Caja: ${caja})</td><td class="r">${monto}</td></tr>`;
+        });
+        html += `<tr class="sl-total"><td>Total Anticipos</td><td class="r">${money(Number(ant.total ?? 0))}</td></tr>`;
+        anticiposDetalleTable.innerHTML = html;
+      }
+    }
+
     // Tips
     const tips = info?.tips || {};
     setMoneyWithCopy("rl-tips", Number(tips.total ?? 0));
@@ -496,10 +519,19 @@
   async function updateResumen() {
     // PRIORIDAD: leer del select, no del display (para evitar valores obsoletos)
     const selLocal = $("#rl-local-select");
-    const local = (selLocal?.value || window.SESSION_LOCAL || "").trim();
+
+    // Si existe el select, SOLO usar su valor (no usar SESSION_LOCAL como fallback)
+    // Solo usar SESSION_LOCAL si NO existe el select (nivel 2 sin select)
+    let local;
+    if (selLocal) {
+      local = (selLocal.value || "").trim();
+    } else {
+      local = (window.SESSION_LOCAL || "").trim();
+    }
+
     const fecha = $("#rl-fecha")?.value;
 
-    console.log('[updateResumen] Parámetros:', { local, fecha });
+    console.log('[updateResumen] Parámetros:', { local, fecha, tieneSelect: !!selLocal });
 
     // Validar que local y fecha existen
     if (!local || !fecha) {
@@ -534,7 +566,9 @@
   async function refreshEstadoLocalBadge() {
     const fecha = $("#rl-fecha")?.value;
     const selLocal = $("#rl-local-select");
-    const local = selLocal?.value || window.SESSION_LOCAL;
+
+    // Si existe el select, SOLO usar su valor (no usar SESSION_LOCAL como fallback)
+    const local = selLocal ? (selLocal.value || "").trim() : (window.SESSION_LOCAL || "").trim();
     const badge = $("#rl-badge-estado");
     const btn = $("#rl-cerrar-local");
 
@@ -782,7 +816,8 @@
 
       // Obtener el local del select (fuente de verdad)
       const selLocal = $("#rl-local-select");
-      const local = selLocal?.value || window.SESSION_LOCAL;
+      // Si existe el select, SOLO usar su valor (no usar SESSION_LOCAL como fallback)
+      const local = selLocal ? (selLocal.value || "").trim() : (window.SESSION_LOCAL || "").trim();
 
       // Actualizar el display para que refleje el local que vamos a usar
       const display = $("#rl-local-display");
@@ -801,10 +836,13 @@
         console.error("Error crítico al actualizar resumen:", error);
         hideLoadingOverlay();
 
-        // Si el error es por fecha inválida, NO mostrar alerta molesta
-        // Solo registrar en console (el usuario debe seleccionar una fecha válida)
-        if (error.message && error.message.includes("Fecha inválida")) {
-          console.warn("⚠️ No se puede cargar datos: fecha inválida. Esperando que el usuario seleccione una fecha.");
+        // Si el error es por datos faltantes o inválidos, NO mostrar alerta molesta
+        // Solo registrar en console (el usuario debe seleccionar valores válidos)
+        const errorMsg = error.message || "";
+        if (errorMsg.includes("Fecha inválida") ||
+            errorMsg.includes("Falta seleccionar") ||
+            errorMsg.includes("local o fecha")) {
+          console.warn("⚠️ No se puede cargar datos:", errorMsg, "- Esperando que el usuario seleccione valores válidos.");
           return; // Salir silenciosamente sin mostrar alerta
         }
 
@@ -826,6 +864,15 @@
 
       // Paso 3: Asegurar botón de descarga
       ensureGlobalDownloadButton();
+
+      // Paso 4: Actualizar botones de auditoría (solo para nivel 3)
+      if (window.ROLE_LEVEL >= 3 && window.actualizarBotonesAuditoria) {
+        try {
+          await window.actualizarBotonesAuditoria();
+        } catch (error) {
+          console.error("Error al actualizar botones de auditoría:", error);
+        }
+      }
 
       // Éxito total
       loadAttempts = 0; // Reset contador
@@ -921,7 +968,7 @@
   }
 
   // ----------------- Boot -----------------
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     setTodayIfEmpty($("#rl-fecha"));
     const btnSidebar = $("#toggleSidebar");
     const root = document.querySelector(".layout");
@@ -943,7 +990,29 @@
     $("#imgDownload")?.addEventListener("click", (e) => { e.stopPropagation(); if (_modalCurrentItem) downloadSingle(_modalCurrentItem); });
 
     ensureGlobalDownloadButton();
-    refreshAll().catch(console.error);
+
+    // ESPERAR a que el select de locales tenga un valor antes de cargar datos
+    const selLocal = $("#rl-local-select");
+    if (selLocal) {
+      // Esperar hasta que el select tenga opciones y un valor seleccionado
+      let intentos = 0;
+      const maxIntentos = 50; // 5 segundos máximo
+      while (intentos < maxIntentos && (!selLocal.value || selLocal.value === "")) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        intentos++;
+      }
+
+      if (selLocal.value && selLocal.value !== "") {
+        console.log('✅ Local cargado correctamente:', selLocal.value, '- Procediendo a cargar datos');
+        refreshAll().catch(console.error);
+      } else {
+        console.warn('⚠️ No se pudo cargar el local automáticamente. El usuario debe seleccionar manualmente.');
+      }
+    } else {
+      // Si no hay select (nivel 2), usar SESSION_LOCAL directamente
+      refreshAll().catch(console.error);
+    }
+
     $("#rl-imprimir")?.addEventListener("click", () => window.print());
   });
 
