@@ -73,7 +73,9 @@
       if (!ov) {
         ov = document.createElement('div');
         ov.className = 'orqtabs-overlay';
-        ov.innerHTML = '<div class="orqtabs-spinner">Cargando…</div>';
+        // Mensaje personalizado según la pestaña
+        const loadingMsg = tabKey === 'anticiposTab' ? 'Cargando anticipos...' : 'Cargando…';
+        ov.innerHTML = `<div class="orqtabs-spinner">${loadingMsg}</div>`;
         ov.style.cssText = `
           position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
           background: rgba(255,255,255,.6); backdrop-filter: blur(1px); z-index: 5;
@@ -211,7 +213,7 @@
       const cached = tab.cache.get(cacheKey);
       if (cached) {
         if (tab.lastToken !== token) return; // anti-race
-        try { tab.render(cached.main, { fromCache: true, datasets: cached.map, endpoints: eps, key: cacheKey }); } catch {}
+        try { await tab.render(cached.main, { fromCache: true, datasets: cached.map, endpoints: eps, key: cacheKey }); } catch {}
         tab.stale = false;
         return;
       }
@@ -302,7 +304,9 @@
       tab.cache.set(cacheKey, { main, map: datasets });
 
       try {
-        tab.render(main, { fromCache: false, datasets, endpoints: eps, key: cacheKey });
+        // IMPORTANTE: Usar await para esperar que la función render complete
+        // (especialmente para tabs que hacen fetches adicionales como anticiposTab)
+        await tab.render(main, { fromCache: false, datasets, endpoints: eps, key: cacheKey });
       } catch (e) {
         const renderError = `❌ Error al renderizar pestaña "${tabKey}": ${e?.message || 'Error desconocido'}`;
         console.error('[OrqTabs]', renderError, e);

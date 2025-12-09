@@ -192,19 +192,9 @@ document.addEventListener("DOMContentLoaded", function () {
   })();
 
   function setLoading(on) {
-    if (!pane) return;
-    let ov = pane.querySelector(":scope > .mod-overlay");
-    if (on) {
-      if (!ov) {
-        ov = document.createElement("div");
-        ov.className = "mod-overlay";
-        ov.innerHTML = '<div class="mod-spinner">⏳ Cargando anticipos...</div>';
-        pane.appendChild(ov);
-      }
-      ov.style.display = "flex";
-    } else if (ov) {
-      ov.style.display = "none";
-    }
+    // DESHABILITADO: El orquestador ya maneja el overlay de carga
+    // No crear overlay propio para evitar doble carga
+    return;
   }
 
   // Helpers
@@ -228,19 +218,45 @@ document.addEventListener("DOMContentLoaded", function () {
   const money = (v) => '$' + fmt.format(Number(v ?? 0));
 
   function formatDate(dateString) {
-    if (!dateString) return '-';
+    if (!dateString || dateString === 'null' || dateString === 'undefined') return '-';
     try {
-      const [year, month, day] = dateString.split('T')[0].split('-');
+      // Manejar diferentes formatos de fecha
+      let dateStr = String(dateString);
+
+      // Si viene con 'T', extraer solo la parte de fecha
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+
+      // Si viene con espacios, extraer solo la parte de fecha
+      if (dateStr.includes(' ')) {
+        dateStr = dateStr.split(' ')[0];
+      }
+
+      // Verificar que tengamos una fecha válida en formato YYYY-MM-DD
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return '-';
+
+      const [year, month, day] = parts;
+
+      // Validar que las partes sean números válidos
+      if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+        return '-';
+      }
+
       return `${day}/${month}/${year}`;
     } catch {
-      return dateString;
+      return '-';
     }
   }
 
   function canActUI() {
     if (localAuditado) return false;
+    // Auditores pueden siempre
     if (ROLE >= 3) return true;
+    // Encargados pueden si el local está abierto (aunque las cajas estén cerradas)
     if (ROLE >= 2) return !localCerrado;
+    // Cajeros pueden solo si su caja está abierta
     return !window.cajaCerrada;
   }
 
@@ -293,11 +309,23 @@ document.addEventListener("DOMContentLoaded", function () {
     setLoading(true);
 
     try {
-      // Cargar anticipos disponibles
+      // Construir URLs para ambos endpoints
       const urlDisponibles = `/api/anticipos/disponibles?local=${encodeURIComponent(ctx.local)}&caja=${encodeURIComponent(ctx.caja)}&fecha=${encodeURIComponent(ctx.fecha)}&turno=${encodeURIComponent(ctx.turno)}`;
-      const resDisponibles = await fetch(urlDisponibles);
-      const dataDisponibles = await resDisponibles.json();
+      const urlConsumidos = `/api/anticipos/consumidos_en_caja?local=${encodeURIComponent(ctx.local)}&caja=${encodeURIComponent(ctx.caja)}&fecha=${encodeURIComponent(ctx.fecha)}&turno=${encodeURIComponent(ctx.turno)}`;
 
+      // Ejecutar ambos fetches EN PARALELO para mayor velocidad
+      const [resDisponibles, resConsumidos] = await Promise.all([
+        fetch(urlDisponibles),
+        fetch(urlConsumidos)
+      ]);
+
+      // Procesar respuestas en paralelo
+      const [dataDisponibles, dataConsumidos] = await Promise.all([
+        resDisponibles.json(),
+        resConsumidos.json()
+      ]);
+
+      // Actualizar datos disponibles
       if (dataDisponibles.success) {
         anticiposDisponibles = dataDisponibles.disponibles || [];
       } else {
@@ -305,11 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
         anticiposDisponibles = [];
       }
 
-      // Cargar anticipos consumidos en esta caja
-      const urlConsumidos = `/api/anticipos/consumidos_en_caja?local=${encodeURIComponent(ctx.local)}&caja=${encodeURIComponent(ctx.caja)}&fecha=${encodeURIComponent(ctx.fecha)}&turno=${encodeURIComponent(ctx.turno)}`;
-      const resConsumidos = await fetch(urlConsumidos);
-      const dataConsumidos = await resConsumidos.json();
-
+      // Actualizar datos consumidos
       if (dataConsumidos.success) {
         anticiposConsumidos = dataConsumidos.consumidos || [];
       } else {
@@ -317,6 +341,7 @@ document.addEventListener("DOMContentLoaded", function () {
         anticiposConsumidos = [];
       }
 
+      // Renderizar TODO junto una vez que AMBOS fetches terminaron
       renderAnticipos();
 
     } catch (error) {
@@ -360,12 +385,6 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
             ${a.observaciones ? `<div class="anticipo-observaciones">${a.observaciones}</div>` : ''}
             <div style="margin-top: 12px; text-align: right;">
-              <button class="btn-action btn-eliminar"
-                      onclick="eliminarDeCaja(${a.id})"
-                      ${!puedeActuar ? 'disabled' : ''}
-                      title="Cliente no vino a esta caja">
-                ❌ No vino a esta caja
-              </button>
               <button class="btn-action btn-consumir"
                       onclick="consumirAnticipo(${a.id})"
                       ${!puedeActuar ? 'disabled' : ''}
@@ -391,6 +410,7 @@ document.addEventListener("DOMContentLoaded", function () {
       htmlConsumidos += '<th>Medio Pago</th>';
       htmlConsumidos += '<th>Nº Transacción</th>';
       htmlConsumidos += '<th>Observaciones</th>';
+      htmlConsumidos += '<th style="text-align:center;">Acciones</th>';
       htmlConsumidos += '</tr></thead><tbody>';
 
       anticiposConsumidos.forEach(a => {
@@ -401,6 +421,15 @@ document.addEventListener("DOMContentLoaded", function () {
         htmlConsumidos += `<td>${a.medio_pago || '-'}</td>`;
         htmlConsumidos += `<td>${a.numero_transaccion || '-'}</td>`;
         htmlConsumidos += `<td style="font-size:12px; color:#6b7280;">${a.observaciones_consumo || (a.observaciones_anticipo || '-')}</td>`;
+        htmlConsumidos += `<td style="text-align:center;">
+          <button class="btn-action btn-eliminar"
+                  onclick="desconsumirAnticipo(${a.anticipo_id})"
+                  ${!puedeActuar ? 'disabled' : ''}
+                  style="font-size:11px; padding:4px 8px;"
+                  title="Deshacer consumo (error)">
+            ↩️ Desconsumir
+          </button>
+        </td>`;
         htmlConsumidos += '</tr>';
       });
 
@@ -450,9 +479,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (data.success) {
         alert(`✅ ${data.msg}`);
-        // Recargar datos
+        // Recargar datos - usar 'anticiposTab' que es el nombre registrado en OrqTabs
         if (window.OrqTabs) {
-          OrqTabs.reload('anticipos');
+          await OrqTabs.reload('anticiposTab');
         } else {
           await loadAnticipos();
         }
@@ -468,14 +497,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  // Eliminar de caja
-  window.eliminarDeCaja = async function(anticipoId) {
-    const anticipo = anticiposDisponibles.find(a => a.id === anticipoId);
+  // FUNCIÓN ELIMINADA: Ya no se permite marcar anticipos como "no vino a esta caja"
+  // Los anticipos sin consumir quedarán pendientes y bloquearán el cierre del local
+
+  // Desconsumir anticipo
+  window.desconsumirAnticipo = async function(anticipoId) {
+    const anticipo = anticiposConsumidos.find(a => a.anticipo_id === anticipoId);
     if (!anticipo) return;
 
     const confirmacion = confirm(
-      `¿Confirmar que el cliente "${anticipo.cliente}" NO vino a esta caja?\n\n` +
-      `El anticipo seguirá disponible para otras cajas del local.`
+      `¿Desconsumir el anticipo de "${anticipo.cliente}" por ${money(anticipo.importe_consumido)}?\n\n` +
+      `El anticipo volverá a estar disponible para todas las cajas.\n` +
+      `Usar solo si se consumió por error.`
     );
 
     if (!confirmacion) return;
@@ -485,7 +518,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/anticipos/eliminar_de_caja', {
+      const response = await fetch('/api/anticipos/desconsumir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -501,19 +534,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (data.success) {
         alert(`✅ ${data.msg}`);
-        // Recargar datos
+        // Recargar datos - usar 'anticiposTab' que es el nombre registrado en OrqTabs
         if (window.OrqTabs) {
-          OrqTabs.reload('anticipos');
+          await OrqTabs.reload('anticiposTab');
         } else {
           await loadAnticipos();
         }
       } else {
-        alert(`❌ Error: ${data.msg || 'No se pudo eliminar el anticipo de esta caja'}`);
+        alert(`❌ Error: ${data.msg || 'No se pudo desconsumir el anticipo'}`);
       }
 
     } catch (error) {
-      console.error('Error eliminando anticipo de caja:', error);
-      alert('❌ Error de red al eliminar anticipo');
+      console.error('Error desconsumiendo anticipo:', error);
+      alert('❌ Error de red al desconsumir anticipo');
     } finally {
       setLoading(false);
     }

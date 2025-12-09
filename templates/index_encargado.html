@@ -659,54 +659,26 @@
 
           <!-- Anticipos -->
           <div id="anticiposTab" class="tab-pane">
-            <h2>Registro de Anticipos Consumidos</h2>
+            <h2>Anticipos Disponibles</h2>
             <p style="font-size:14px; color:#666; margin-bottom:16px;">
-              Registra anticipos/señas recibidas en fechas anteriores que se consumieron hoy (justifican faltantes en caja).
+              Anticipos/señas que corresponden a esta caja para la fecha seleccionada.
             </p>
 
-            <div id="previewAnticipos" style="margin-bottom: 20px;">
-              <h4>Anticipos añadidos para esta caja:</h4>
-              <table>
-                <thead><tr><th>Fecha Anticipo Recibido</th><th>Medio de Pago</th><th>Comentario</th><th>Monto</th><th>Acciones</th></tr></thead>
-                <tbody id="tablaPreviewAnticipos"></tbody>
-              </table>
+            <!-- Lista de anticipos disponibles -->
+            <div id="anticipos-disponibles-container" style="margin-bottom: 24px;">
+              <h4>Anticipos para consumir:</h4>
+              <div id="anticipos-disponibles-lista" style="margin-top: 12px;">
+                <!-- Se llena dinámicamente por anticipos_v2.js -->
+              </div>
             </div>
 
-            <form id="anticiposForm" class="form-container">
-              <input type="hidden" id="idxEdicionAnticipos" value="-1">
-              <div class="form-group">
-                <label for="fechaAnticipoRecibido">Fecha Anticipo Recibido:</label>
-                <input type="date" id="fechaAnticipoRecibido" name="fechaAnticipoRecibido" class="form-control" required>
+            <!-- Lista de anticipos ya consumidos en esta caja -->
+            <div id="anticipos-consumidos-container" style="margin-top: 24px; padding-top: 24px; border-top: 2px solid #e5e7eb;">
+              <h4>Anticipos Consumidos en esta Caja:</h4>
+              <div id="anticipos-consumidos-lista" style="margin-top: 12px;">
+                <!-- Se llena dinámicamente por anticipos_v2.js -->
               </div>
-              <div class="form-group">
-                <label for="medioPagoAnticipo">Medio de Pago:</label>
-                <select id="medioPagoAnticipo" name="medioPagoAnticipo" class="form-control" required>
-                  <option value="">-- Seleccionar medio de pago --</option>
-                  <option value="MercadoPago">MercadoPago</option>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Banco">Banco</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="comentarioAnticipo">Comentario:</label>
-                <textarea id="comentarioAnticipo" name="comentarioAnticipo" class="form-control" rows="2" placeholder="Ej: Seña para mesa de 8 personas"></textarea>
-              </div>
-              <div class="form-group">
-                <label for="montoAnticipos">Monto:</label>
-                <div class="input-money"><span>$</span>
-                  <input type="text" id="montoAnticipos" name="montoAnticipos" class="form-control moneda currency-input" placeholder="0,00" required>
-                </div>
-              </div>
-              <button type="button" id="btnAnadirAnticipos" class="btn-submit">➕ Añadir Anticipo</button>
-              <button type="button" id="btnActualizarAnticipos" class="btn-submit" style="display:none; background-color:#28a745;">Actualizar Anticipo</button>
-            </form>
-
-            <!-- Uploader Anticipos -->
-            <div id="uploader-anticipos" class="img-uploader" data-title="Adjuntar imágenes de Anticipos" data-tab="anticipos" style="margin-top:12px;"></div>
-            <div id="galeria-anticipos" class="iu-grid" style="margin-top:8px;"></div>
-
-            <button type="button" id="guardarAnticiposBD" class="btn-custom btn-save" style="margin-top: 20px;">💾 Guardar Anticipos</button>
-            <div id="respuestaAnticipos" style="margin-top: 10px;"></div>
+            </div>
           </div>
         </div> <!-- /tabs-container -->
       </div> <!-- /container -->
@@ -880,7 +852,7 @@
   <script src="{{ url_for('static', filename='js/ventas.js') }}"></script>
   <script src="{{ url_for('static', filename='js/resumen.js') }}"></script>
   <script src="{{ url_for('static', filename='js/gastos.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/anticipos.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/anticipos_v2.js') }}"></script>
   <script src="{{ url_for('static', filename='js/orquestador-tabs.js') }}"></script>
 
   <script>

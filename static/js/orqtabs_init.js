@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pedidosyaTab:   { endpoints: ['/pedidosya_cargadas'], render: renderPedidosYa },
       remesas:        { endpoints: ['/remesas_no_retiradas','/remesas_hoy'], render: renderRemesas },
       gastos:         { endpoints: ['/gastos_cargadas'], render: renderGastos },
-      anticiposTab:   { endpoints: ['/anticipos_cargados'], render: renderAnticipos },
+      anticiposTab:   { endpoints: ['/estado_local'], render: renderAnticipos },
       'cierre-caja-container': { endpoints: ['/api/cierre/resumen','/estado_caja'], render: (d,o)=>window.renderResumenCaja && window.renderResumenCaja(d,o) },
     }
   });

@@ -358,6 +358,16 @@
                       </div>
                     </div>
 
+                    <!-- Anticipos -->
+                    <div class="sub-acc acc" aria-expanded="false">
+                      <div class="sl-row"><span class="label">Anticipos</span><span class="amount r" id="rl-anticipos">0,00</span></div>
+                      <div class="acc-body">
+                        <table class="sl-table" id="rl-anticipos-detalle">
+                          <!-- Se llena dinámicamente -->
+                        </table>
+                      </div>
+                    </div>
+
                     <!-- TIPs -->
                     <div class="sub-acc acc" aria-expanded="false">
                       <div class="sl-row"><span class="label">TIPs</span><span class="amount r" id="rl-tips">0,00</span></div>
@@ -571,6 +581,7 @@
       ['pedidosya','PedidosYa'],
       ['gastos','Gastos'],
       ['cuenta_cte','Cuenta Cte.'],
+      ['anticipos','Anticipos'],
     ];
     const byKey = {}; (groups||[]).forEach(g=>byKey[g.key]=g);
 
@@ -681,7 +692,9 @@
 
     // NUEVO: Descargar todas las imágenes en un ZIP organizado por carpetas
     const fecha = document.getElementById('rl-fecha').value;
-    const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+    const selLocal = document.getElementById('rl-local-select');
+    // Si existe el select, SOLO usar su valor. Si no existe, usar SESSION_LOCAL
+    const local = selLocal ? (selLocal.value || '').trim() : (window.SESSION_LOCAL || '').trim();
     if (!fecha || !local) {
       alert('Por favor seleccione fecha y local');
       return false;
@@ -767,7 +780,9 @@
   /* ===== Fetch media ===== */
   async function loadMedia(){
     const fecha = document.getElementById('rl-fecha').value;
-    const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+    const selLocal = document.getElementById('rl-local-select');
+    // Si existe el select, SOLO usar su valor. Si no existe, usar SESSION_LOCAL
+    const local = selLocal ? (selLocal.value || '').trim() : (window.SESSION_LOCAL || '').trim();
     if (!fecha || !local) return;
     const url = new URL('/files/summary_media', location.origin);
     url.searchParams.set('fecha', fecha);
@@ -852,7 +867,9 @@
     // Definir función de auditoría globalmente (para que esté disponible antes del if)
     if (window.ROLE_LEVEL >= 3) {
       window.actualizarBotonesAuditoria = async function() {
-        const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+        const selLocal = document.getElementById('rl-local-select');
+        // Si existe el select, SOLO usar su valor. Si no existe, usar SESSION_LOCAL
+        const local = selLocal ? (selLocal.value || '').trim() : (window.SESSION_LOCAL || '').trim();
         const fecha = document.getElementById('rl-fecha')?.value;
 
         console.log('🔍 Actualizando botones auditoría:', { local, fecha });
@@ -949,7 +966,9 @@
 
       // Botón Marcar Auditado
       btnAuditado?.addEventListener('click', async () => {
-        const local = (document.getElementById('rl-local-select')?.value) || window.SESSION_LOCAL;
+        const selLocal = document.getElementById('rl-local-select');
+        // Si existe el select, SOLO usar su valor. Si no existe, usar SESSION_LOCAL
+        const local = selLocal ? (selLocal.value || '').trim() : (window.SESSION_LOCAL || '').trim();
         const fecha = document.getElementById('rl-fecha')?.value;
 
         // Verificar primero si el local está cerrado

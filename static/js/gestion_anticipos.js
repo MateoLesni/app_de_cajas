@@ -147,12 +147,35 @@
   }
 
   function formatDate(dateString) {
-    if (!dateString) return '-';
+    if (!dateString || dateString === 'null' || dateString === 'undefined') return '-';
     try {
-      const [year, month, day] = dateString.split('T')[0].split('-');
+      // Manejar diferentes formatos de fecha
+      let dateStr = String(dateString);
+
+      // Si viene con 'T', extraer solo la parte de fecha
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+
+      // Si viene con espacios, extraer solo la parte de fecha
+      if (dateStr.includes(' ')) {
+        dateStr = dateStr.split(' ')[0];
+      }
+
+      // Verificar que tengamos una fecha válida en formato YYYY-MM-DD
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return '-';
+
+      const [year, month, day] = parts;
+
+      // Validar que las partes sean números válidos
+      if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+        return '-';
+      }
+
       return `${day}/${month}/${year}`;
     } catch {
-      return dateString;
+      return '-';
     }
   }
 

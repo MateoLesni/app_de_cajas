@@ -2394,37 +2394,80 @@ def listar_anticipos_recibidos():
         cur = conn.cursor(dictionary=True)
 
         # Construir query con filtros opcionales
+        # CORREGIDO: Verificar el estado real consultando anticipos_estados_caja
         sql = """
             SELECT
-                id, fecha_pago, fecha_evento, importe, cliente,
-                numero_transaccion, medio_pago, observaciones, local,
-                estado, created_by, created_at, updated_by, updated_at,
-                deleted_by, deleted_at
-            FROM anticipos_recibidos
+                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.cliente,
+                ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
+                ar.estado as estado_global,
+                ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
+                ar.deleted_by, ar.deleted_at,
+                -- Verificar si fue consumido realmente
+                (SELECT COUNT(*) FROM anticipos_estados_caja aec
+                 WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') as fue_consumido
+            FROM anticipos_recibidos ar
             WHERE 1=1
         """
         params = []
 
         if estado:
-            sql += " AND estado = %s"
+            sql += " AND ar.estado = %s"
             params.append(estado)
 
         if local:
-            sql += " AND local = %s"
+            sql += " AND ar.local = %s"
             params.append(local)
 
         if fecha_desde:
-            sql += " AND fecha_evento >= %s"
+            sql += " AND ar.fecha_evento >= %s"
             params.append(_normalize_fecha(fecha_desde))
 
         if fecha_hasta:
-            sql += " AND fecha_evento <= %s"
+            sql += " AND ar.fecha_evento <= %s"
             params.append(_normalize_fecha(fecha_hasta))
 
-        sql += " ORDER BY fecha_evento DESC, created_at DESC"
+        sql += " ORDER BY ar.fecha_evento DESC, ar.created_at DESC"
 
         cur.execute(sql, params)
-        anticipos = cur.fetchall() or []
+        anticipos_raw = cur.fetchall() or []
+
+        # Corregir el estado basado en la verificación real
+        anticipos = []
+        for a in anticipos_raw:
+            anticipo = dict(a)
+
+            # Convertir fechas a formato string YYYY-MM-DD para JSON
+            if anticipo.get('fecha_pago'):
+                if hasattr(anticipo['fecha_pago'], 'strftime'):
+                    anticipo['fecha_pago'] = anticipo['fecha_pago'].strftime('%Y-%m-%d')
+                else:
+                    anticipo['fecha_pago'] = str(anticipo['fecha_pago'])
+
+            if anticipo.get('fecha_evento'):
+                if hasattr(anticipo['fecha_evento'], 'strftime'):
+                    anticipo['fecha_evento'] = anticipo['fecha_evento'].strftime('%Y-%m-%d')
+                else:
+                    anticipo['fecha_evento'] = str(anticipo['fecha_evento'])
+
+            # Convertir timestamps a ISO string
+            for campo in ['created_at', 'updated_at', 'deleted_at']:
+                if anticipo.get(campo):
+                    if hasattr(anticipo[campo], 'isoformat'):
+                        anticipo[campo] = anticipo[campo].isoformat()
+                    else:
+                        anticipo[campo] = str(anticipo[campo])
+
+            # Si fue consumido en alguna caja, el estado debe ser 'consumido'
+            if anticipo['fue_consumido'] > 0:
+                anticipo['estado'] = 'consumido'
+            else:
+                anticipo['estado'] = anticipo['estado_global']
+
+            # Eliminar campos auxiliares
+            del anticipo['estado_global']
+            del anticipo['fue_consumido']
+
+            anticipos.append(anticipo)
 
         cur.close()
         conn.close()
@@ -2703,7 +2746,7 @@ def consumir_anticipo():
     turno = ctx['turno']
     usuario = session.get('username', 'sistema')
 
-    observaciones_consumo = data.get('observaciones_consumo', '').strip() or None
+    observaciones_consumo = (data.get('observaciones_consumo') or '').strip() or None
 
     try:
         conn = get_db_connection()
@@ -2773,10 +2816,7 @@ def consumir_anticipo():
             datos_anteriores={'estado': 'pendiente'},
             datos_nuevos={'estado': 'consumido', 'caja': caja, 'turno': turno},
             descripcion=f"Anticipo consumido en caja {caja}: {anticipo['cliente']} - ${anticipo['importe']}",
-            local=local,
-            caja=caja,
-            fecha_operacion=fecha,
-            turno=turno
+            contexto_override={'local': local, 'caja': caja, 'fecha': fecha, 'turno': turno}
         )
 
         cur.close()
@@ -2785,19 +2825,27 @@ def consumir_anticipo():
         return jsonify(success=True, msg=f"Anticipo consumido correctamente (${anticipo['importe']})")
 
     except Exception as e:
-        print("❌ ERROR consumir_anticipo:", e)
         import traceback
+        import logging
+        logger = logging.getLogger('app')
+        logger.error(f"❌ ERROR consumir_anticipo: {e}")
+        logger.error(traceback.format_exc())
+        print("❌ ERROR consumir_anticipo:", e)
         traceback.print_exc()
-        return jsonify(success=False, msg=str(e)), 500
+        return jsonify(success=False, msg=f"Error interno: {str(e)}"), 500
 
 
-@app.route('/api/anticipos/eliminar_de_caja', methods=['POST'])
+# ENDPOINT ELIMINADO: Ya no se permite marcar anticipos como "no vino a esta caja"
+# Los anticipos sin consumir simplemente quedarán pendientes y bloquearán el cierre del local
+
+
+@app.route('/api/anticipos/desconsumir', methods=['POST'])
 @login_required
 @require_edit_ctx
-def eliminar_anticipo_de_caja():
+def desconsumir_anticipo():
     """
-    Eliminar un anticipo de una caja específica (cliente no vino a esta caja).
-    El anticipo seguirá disponible para otras cajas.
+    Desconsumir un anticipo que fue consumido por error.
+    Solo permitido si la caja está abierta (cajero) o el local está abierto (encargado).
 
     Body:
     {
@@ -2826,40 +2874,58 @@ def eliminar_anticipo_de_caja():
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
-        # Verificar que el anticipo existe
+        # Verificar que el anticipo existe y está consumido
         cur.execute("""
             SELECT * FROM anticipos_recibidos
-            WHERE id = %s
+            WHERE id = %s AND estado = 'consumido'
         """, (anticipo_id,))
         anticipo = cur.fetchone()
 
         if not anticipo:
             cur.close()
             conn.close()
-            return jsonify(success=False, msg="Anticipo no encontrado"), 404
+            return jsonify(success=False, msg="Anticipo no encontrado o no está consumido"), 404
 
-        # Verificar que no fue ya procesado en esta caja
+        # Verificar que fue consumido en ESTA caja
         cur.execute("""
             SELECT * FROM anticipos_estados_caja
-            WHERE anticipo_id = %s AND local = %s AND caja = %s AND fecha = %s
+            WHERE anticipo_id = %s
+              AND local = %s
+              AND caja = %s
+              AND fecha = %s
+              AND estado = 'consumido'
         """, (anticipo_id, local, caja, fecha))
 
-        if cur.fetchone():
+        registro_consumo = cur.fetchone()
+
+        if not registro_consumo:
             cur.close()
             conn.close()
-            return jsonify(success=False, msg="Este anticipo ya fue procesado en esta caja"), 409
+            return jsonify(success=False, msg="Este anticipo no fue consumido en esta caja"), 404
 
         from datetime import datetime
         import pytz
         tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(tz_arg)
 
-        # Registrar eliminación en estados_caja
+        # Eliminar el registro de consumo en estados_caja
         cur.execute("""
-            INSERT INTO anticipos_estados_caja
-            (anticipo_id, local, caja, fecha, turno, estado, usuario, timestamp_accion)
-            VALUES (%s, %s, %s, %s, %s, 'eliminado_de_caja', %s, %s)
-        """, (anticipo_id, local, caja, fecha, turno, usuario, ahora))
+            DELETE FROM anticipos_estados_caja
+            WHERE anticipo_id = %s
+              AND local = %s
+              AND caja = %s
+              AND fecha = %s
+              AND estado = 'consumido'
+        """, (anticipo_id, local, caja, fecha))
+
+        # Volver el anticipo a estado 'pendiente'
+        cur.execute("""
+            UPDATE anticipos_recibidos
+            SET estado = 'pendiente',
+                updated_by = %s,
+                updated_at = %s
+            WHERE id = %s
+        """, (usuario, ahora, anticipo_id))
 
         conn.commit()
 
@@ -2867,27 +2933,29 @@ def eliminar_anticipo_de_caja():
         from modules.tabla_auditoria import registrar_auditoria
         registrar_auditoria(
             conn=conn,
-            accion='INSERT',
-            tabla='anticipos_estados_caja',
+            accion='UPDATE',
+            tabla='anticipos_recibidos',
             registro_id=anticipo_id,
-            datos_nuevos={'estado': 'eliminado_de_caja', 'caja': caja},
-            descripcion=f"Anticipo eliminado de caja {caja}: {anticipo['cliente']}",
-            local=local,
-            caja=caja,
-            fecha_operacion=fecha,
-            turno=turno
+            datos_anteriores={'estado': 'consumido'},
+            datos_nuevos={'estado': 'pendiente'},
+            descripcion=f"Anticipo desconsumido de caja {caja}: {anticipo['cliente']} - ${anticipo['importe']}",
+            contexto_override={'local': local, 'caja': caja, 'fecha': fecha, 'turno': turno}
         )
 
         cur.close()
         conn.close()
 
-        return jsonify(success=True, msg="Anticipo eliminado de esta caja correctamente")
+        return jsonify(success=True, msg=f"Anticipo desconsumido correctamente. Vuelve a estar disponible.")
 
     except Exception as e:
-        print("❌ ERROR eliminar_anticipo_de_caja:", e)
         import traceback
+        import logging
+        logger = logging.getLogger('app')
+        logger.error(f"❌ ERROR desconsumir_anticipo: {e}")
+        logger.error(traceback.format_exc())
+        print("❌ ERROR desconsumir_anticipo:", e)
         traceback.print_exc()
-        return jsonify(success=False, msg=str(e)), 500
+        return jsonify(success=False, msg=f"Error interno: {str(e)}"), 500
 
 
 @app.route('/api/anticipos/consumidos_en_caja', methods=['GET'])
@@ -4945,18 +5013,18 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         row = cur.fetchone()
         total_cobrado += float(row[0] or 0.0) if row else 0.0
 
-        # Anticipos Consumidos (solo en tablas normales, no hay snap todavía)
+        # Anticipos Consumidos - SIEMPRE consultar de tablas normales
+        # (no hay snap_anticipos todavía, se agregará en futuras versiones)
         # Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
-        if not usar_snap:
-            cur.execute("""
-                SELECT COALESCE(SUM(ar.importe),0)
-                FROM anticipos_recibidos ar
-                JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
-                WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s AND aec.turno=%s
-                  AND aec.estado = 'consumido'
-            """, (local, caja, f, turno))
-            row = cur.fetchone()
-            total_cobrado += float(row[0] or 0.0) if row else 0.0
+        cur.execute("""
+            SELECT COALESCE(SUM(ar.importe),0)
+            FROM anticipos_recibidos ar
+            JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+            WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s AND aec.turno=%s
+              AND aec.estado = 'consumido'
+        """, (local, caja, f, turno))
+        row = cur.fetchone()
+        total_cobrado += float(row[0] or 0.0) if row else 0.0
 
         # Calcular diferencia
         diferencia = total_cobrado - venta_total
@@ -5163,9 +5231,12 @@ def api_resumen_local():
             gastos_detalle = {}
 
         # ===== ANTICIPOS CONSUMIDOS (total + detalle) =====
+        # IMPORTANTE: Los anticipos SIEMPRE se consultan de tablas normales
+        # (no hay snap_anticipos todavía, se agregará en futuras versiones)
         anticipos_total = 0.0
         anticipos_items = []
-        if not usar_snap:  # Anticipos solo existen en tablas normales (no hay snap todavía)
+        # Removido el check de usar_snap - siempre consultar de tablas normales
+        if True:  # Anticipos solo existen en tablas normales (no hay snap todavía)
             # Total - Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
             anticipos_total = _qsum(
                 cur,
@@ -5177,10 +5248,12 @@ def api_resumen_local():
                 (local, f),
             ) or 0.0
 
+            print(f"🔍 DEBUG Anticipos - Local: {local}, Fecha: {f}, Total: {anticipos_total}, usar_snap: {usar_snap}")
+
             # Detalle (items individuales) - Nuevo sistema
             try:
                 cur.execute("""
-                    SELECT ar.id, ar.fecha_pago, ar.medio_pago, ar.observaciones, ar.importe, aec.usuario, ar.cliente, aec.caja
+                    SELECT ar.id, ar.fecha_pago, ar.medio_pago, ar.observaciones, ar.importe, aec.usuario, ar.cliente, aec.caja, aec.fecha
                     FROM anticipos_recibidos ar
                     JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
                     WHERE aec.local=%s AND DATE(aec.fecha)=%s
@@ -5188,7 +5261,9 @@ def api_resumen_local():
                     ORDER BY ar.id ASC
                 """, (local, f))
                 rows = cur.fetchall() or []
+                print(f"🔍 DEBUG Anticipos - Rows encontrados: {len(rows)}")
                 for r in rows:
+                    print(f"   - Cliente: {r[6]}, Fecha aec: {r[8]}, Importe: {r[4]}")
                     anticipos_items.append({
                         "id": r[0],
                         "fecha_anticipo_recibido": str(r[1]) if r[1] else "",
@@ -5200,6 +5275,8 @@ def api_resumen_local():
                     })
             except Exception as e:
                 print(f"⚠️ Error obteniendo detalle de anticipos: {e}")
+                import traceback
+                traceback.print_exc()
 
         # ===== FACTURAS (A, B, CC) =====
         # Helper para obtener items de facturas
@@ -6336,8 +6413,36 @@ def api_cierre_local():
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
-        # (1) Verificar que TODAS las cajas estén cerradas (estado=0)
-        # Primero, obtener todas las cajas/turnos que tienen datos ese día
+        # (1) PRIMERO: Validar que existan imágenes para cada pestaña con datos
+        ok_imgs, msg_imgs, faltantes_imgs = _validar_imagenes_antes_cierre_local(conn, local, fecha)
+        if not ok_imgs:
+            return jsonify(success=False, msg=msg_imgs, faltantes=faltantes_imgs), 400
+
+        # (1.5) Validar que NO haya anticipos pendientes sin consumir
+        cur.execute("""
+            SELECT
+                ar.id, ar.cliente, ar.importe, ar.numero_transaccion,
+                ar.observaciones
+            FROM anticipos_recibidos ar
+            WHERE ar.local = %s
+              AND ar.fecha_evento = %s
+              AND ar.estado = 'pendiente'
+        """, (local, f))
+        anticipos_pendientes = cur.fetchall() or []
+
+        if anticipos_pendientes:
+            lista_anticipos = []
+            for a in anticipos_pendientes:
+                cliente = a['cliente']
+                importe = f"${a['importe']:,.2f}".replace(',', '.')
+                lista_anticipos.append(f"{cliente} ({importe})")
+
+            msg_anticipos = (f"No se puede cerrar el local: hay {len(anticipos_pendientes)} anticipo(s) sin consumir:\n" +
+                           "\n".join(f"• {ant}" for ant in lista_anticipos))
+            return jsonify(success=False, msg=msg_anticipos, anticipos_pendientes=anticipos_pendientes), 400
+
+        # (2) SEGUNDO: Verificar que TODAS las cajas estén cerradas (estado=0)
+        # Obtener todas las cajas/turnos que tienen datos ese día
         cur.execute("""
             SELECT DISTINCT caja, turno
             FROM (
@@ -6376,11 +6481,6 @@ def api_cierre_local():
         if cajas_sin_cerrar:
             msg = f"Todas las cajas deben estar cerradas antes de cerrar el local. Faltan cerrar: {', '.join(cajas_sin_cerrar)}"
             return jsonify(success=False, msg=msg, cajas_sin_cerrar=cajas_sin_cerrar), 409
-
-        # (1.5) Validar que existan imágenes para cada pestaña con datos
-        ok_imgs, msg_imgs, faltantes_imgs = _validar_imagenes_antes_cierre_local(conn, local, fecha)
-        if not ok_imgs:
-            return jsonify(success=False, msg=msg_imgs, faltantes=faltantes_imgs), 400
 
         # (2) Marcar/crear cierre de local (sin columna turno)
         cur.execute("""
@@ -6742,63 +6842,7 @@ def crear_snapshot_local(conn, local, fecha, usuario):
 
 # ========================================================================
 # ENDPOINT TEMPORAL: Aumentar tamaño de columna 'tab' en imagenes_adjuntos
-# ========================================================================
-@app.route('/admin/fix-tab-column', methods=['GET'])
-@login_required
-def admin_fix_tab_column():
-    """
-    Endpoint temporal para ejecutar ALTER TABLE y aumentar la columna 'tab'.
-    Solo accesible para nivel 3 (admin/auditor).
-    Eliminar este endpoint después de ejecutarlo una vez.
-    """
-    if get_user_level() < 3:
-        return jsonify(success=False, msg="Solo administradores pueden ejecutar este endpoint"), 403
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        # Primero verificamos el estado actual
-        cur.execute("DESCRIBE imagenes_adjuntos")
-        current_def = None
-        for row in cur.fetchall():
-            if row[0] == 'tab':
-                current_def = row[1]
-                break
-
-        if not current_def:
-            return jsonify(success=False, msg="Columna 'tab' no encontrada en imagenes_adjuntos"), 404
-
-        # Ejecutar ALTER TABLE
-        cur.execute("ALTER TABLE imagenes_adjuntos MODIFY COLUMN tab VARCHAR(50)")
-        conn.commit()
-
-        # Verificar el cambio
-        cur.execute("DESCRIBE imagenes_adjuntos")
-        new_def = None
-        for row in cur.fetchall():
-            if row[0] == 'tab':
-                new_def = row[1]
-                break
-
-        cur.close()
-        conn.close()
-
-        return jsonify(
-            success=True,
-            msg="Columna 'tab' actualizada exitosamente",
-            before=current_def,
-            after=new_def
-        )
-
-    except Exception as e:
-        import traceback
-        return jsonify(
-            success=False,
-            msg=f"Error al actualizar columna: {str(e)}",
-            traceback=traceback.format_exc()
-        ), 500
-
+# 
 
 ## ______________________ GESTIÓN DE USUARIOS _______________________
 
