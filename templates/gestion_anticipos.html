@@ -308,7 +308,7 @@
                 <th>Local</th>
                 <th>Importe</th>
                 <th>Medio Pago</th>
-                <th>Nº Transacción</th>
+                <th>Usuario</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -357,6 +357,30 @@
         <div class="form-group">
           <label for="importe">Importe *</label>
           <input type="number" id="importe" step="0.01" min="0" required placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label for="divisa">Divisa *</label>
+          <select id="divisa" required>
+            <option value="ARS" selected>ARS - Peso Argentino</option>
+            <option value="USD">USD - Dólar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="BRL">BRL - Real Brasileño</option>
+            <option value="CLP">CLP - Peso Chileno</option>
+            <option value="UYU">UYU - Peso Uruguayo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="adjunto">Comprobante (imagen/PDF) *</label>
+          <input type="file" id="adjunto" accept="image/*,application/pdf" required>
+          <small style="display:block; margin-top:4px; color:#6b7280; font-size:12px;">
+            Subí el comprobante del anticipo (requerido)
+          </small>
+        </div>
+
+        <div id="adjuntoPreview" style="display:none; margin-top:8px;">
+          <img id="adjuntoImg" style="max-width:200px; max-height:200px; border-radius:8px;">
         </div>
 
         <div class="form-group">
