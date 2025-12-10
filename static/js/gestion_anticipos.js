@@ -114,11 +114,15 @@
             <td>${formatDate(a.fecha_evento)}</td>
             <td>${a.cliente}</td>
             <td>${a.local}</td>
-            <td style="text-align:right; font-weight:600;">${money(a.importe)}</td>
+            <td style="text-align:right; font-weight:600;">
+              <span style="font-size:11px; color:#6b7280; display:block;">${a.divisa || 'ARS'}</span>
+              ${money(a.importe)}
+            </td>
             <td>${a.medio_pago || '-'}</td>
-            <td>${a.numero_transaccion || '-'}</td>
+            <td>${a.created_by || '-'}</td>
             <td><span class="badge ${badgeClass}">${estadoText}</span></td>
             <td>
+              ${a.tiene_adjunto ? `<button class="btn-edit" onclick="verAdjunto(${a.id})" title="Ver comprobante">📎</button>` : ''}
               ${puedeEditar ? `<button class="btn-edit" onclick="editarAnticipo(${a.id})" title="Editar fecha">✏️</button>` : ''}
               ${puedeEliminar ? `<button class="btn-delete" onclick="eliminarAnticipo(${a.id}, '${a.cliente}')" title="Eliminar">🗑️</button>` : ''}
               <button class="btn-edit" onclick="verDetalles(${a.id})" title="Ver detalles">👁️</button>
@@ -251,16 +255,62 @@
     const anticipoId = $('#anticipoId').value;
     const isEdit = !!anticipoId;
 
+    // Si es creación, validar y subir adjunto primero
+    let adjuntoPath = null;
+    if (!isEdit) {
+      const adjuntoFile = $('#adjunto').files[0];
+      if (!adjuntoFile) {
+        alert('⚠️  Debés subir un comprobante del anticipo');
+        return;
+      }
+
+      // Subir adjunto
+      try {
+        const formData = new FormData();
+        formData.append('files[]', adjuntoFile);
+        formData.append('tab', 'anticipos');
+        formData.append('local', $('#local').value);
+        formData.append('caja', 'admin');
+        formData.append('turno', 'dia');
+        formData.append('fecha', $('#fechaPago').value);
+        formData.append('entity_type', 'anticipo_recibido');
+        formData.append('entity_id', '0'); // temporal
+
+        const uploadRes = await fetch('/files/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success) {
+          alert('❌ Error subiendo comprobante: ' + uploadData.msg);
+          return;
+        }
+
+        adjuntoPath = uploadData.items[0].path;
+      } catch (error) {
+        console.error('Error al subir adjunto:', error);
+        alert('❌ Error al subir el comprobante');
+        return;
+      }
+    }
+
     const data = {
       fecha_pago: $('#fechaPago').value,
       fecha_evento: $('#fechaEvento').value,
       cliente: $('#cliente').value,
       local: $('#local').value,
       importe: parseFloat($('#importe').value),
+      divisa: $('#divisa').value,
       medio_pago: $('#medioPago').value.trim() || null,
       numero_transaccion: $('#numeroTransaccion').value.trim() || null,
       observaciones: $('#observaciones').value.trim() || null
     };
+
+    // Agregar adjunto si existe
+    if (adjuntoPath) {
+      data.adjunto_gcs_path = adjuntoPath;
+    }
 
     // Validaciones
     if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.importe) {
@@ -283,8 +333,10 @@
         delete data.cliente;
         delete data.local;
         delete data.importe;
+        delete data.divisa;
         delete data.medio_pago;
         delete data.numero_transaccion;
+        delete data.adjunto_gcs_path;
       } else {
         url = '/api/anticipos_recibidos/crear';
         method = 'POST';
@@ -389,5 +441,32 @@ ${anticipo.deleted_by ? `\nEliminado: ${formatDateTime(anticipo.deleted_at)} por
       return dateString;
     }
   }
+
+  // ===== VER ADJUNTO =====
+  window.verAdjunto = async function(anticipoId) {
+    const anticipo = anticiposData.find(a => a.id === anticipoId);
+    if (!anticipo) return;
+
+    if (!anticipo.tiene_adjunto) {
+      alert('Este anticipo no tiene comprobante adjunto');
+      return;
+    }
+
+    try {
+      // Obtener detalles del adjunto desde el servidor
+      const response = await fetch(`/files/list?tab=anticipos&local=${encodeURIComponent(anticipo.local)}&fecha=${anticipo.fecha_pago}&scope=month`);
+      const data = await response.json();
+
+      if (data.success && data.items && data.items.length > 0) {
+        // Abrir el primer adjunto en nueva ventana
+        window.open(data.items[0].view_url, '_blank', 'width=800,height=600');
+      } else {
+        alert('No se pudo encontrar el comprobante');
+      }
+    } catch (error) {
+      console.error('Error al obtener adjunto:', error);
+      alert('❌ Error al cargar el comprobante');
+    }
+  };
 
 })();

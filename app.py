@@ -2312,32 +2312,62 @@ def crear_anticipo_recibido():
         cliente = data['cliente'].strip()
         local = data['local'].strip()
 
+        # Nuevos campos: divisa y adjunto
+        divisa = (data.get('divisa') or 'ARS').strip().upper()
+        tipo_cambio_fecha = data.get('tipo_cambio_fecha')
+        if not tipo_cambio_fecha:
+            tipo_cambio_fecha = fecha_pago
+        else:
+            tipo_cambio_fecha = _normalize_fecha(tipo_cambio_fecha)
+
         numero_transaccion = data.get('numero_transaccion', '').strip() or None
         medio_pago = data.get('medio_pago', '').strip() or None
         observaciones = data.get('observaciones', '').strip() or None
+        adjunto_gcs_path = data.get('adjunto_gcs_path', '').strip() or None
 
         if importe <= 0:
             return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400
+
+        # Validar divisa
+        divisas_permitidas = ['ARS', 'USD', 'EUR', 'BRL', 'CLP', 'UYU']
+        if divisa not in divisas_permitidas:
+            return jsonify(success=False, msg=f"Divisa no permitida. Usar: {', '.join(divisas_permitidas)}"), 400
 
         usuario = session.get('username', 'sistema')
 
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Insertar anticipo recibido
+        # Insertar anticipo recibido con divisa
         sql = """
             INSERT INTO anticipos_recibidos
-            (fecha_pago, fecha_evento, importe, cliente, numero_transaccion,
-             medio_pago, observaciones, local, estado, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
+            (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
+             cliente, numero_transaccion, medio_pago, observaciones,
+             local, estado, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
         """
-        cur.execute(sql, (fecha_pago, fecha_evento, importe, cliente, numero_transaccion,
-                         medio_pago, observaciones, local, usuario))
+        cur.execute(sql, (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
+                         cliente, numero_transaccion, medio_pago, observaciones,
+                         local, usuario))
 
         anticipo_id = cur.lastrowid
+
+        # Vincular adjunto si existe
+        if adjunto_gcs_path:
+            try:
+                cur.execute("""
+                    UPDATE imagenes_adjuntos
+                    SET entity_type = 'anticipo_recibido',
+                        entity_id = %s
+                    WHERE gcs_path = %s
+                      AND (entity_id IS NULL OR entity_id = 0)
+                """, (anticipo_id, adjunto_gcs_path))
+            except Exception as e:
+                print(f"⚠️  Warning: No se pudo vincular adjunto: {e}")
+
         conn.commit()
 
-        # Registrar en auditoría
+        # Registrar en auditoría con nuevos campos
         from modules.tabla_auditoria import registrar_auditoria
         registrar_auditoria(
             conn=conn,
@@ -2348,12 +2378,15 @@ def crear_anticipo_recibido():
                 'fecha_pago': str(fecha_pago),
                 'fecha_evento': str(fecha_evento),
                 'importe': importe,
+                'divisa': divisa,
+                'tipo_cambio_fecha': str(tipo_cambio_fecha),
                 'cliente': cliente,
                 'local': local,
                 'numero_transaccion': numero_transaccion,
-                'medio_pago': medio_pago
+                'medio_pago': medio_pago,
+                'tiene_adjunto': bool(adjunto_gcs_path)
             },
-            descripcion=f"Anticipo recibido creado: {cliente} - ${importe}"
+            descripcion=f"Anticipo recibido creado: {cliente} - {divisa} {importe}"
         )
 
         cur.close()
@@ -2397,14 +2430,22 @@ def listar_anticipos_recibidos():
         # CORREGIDO: Verificar el estado real consultando anticipos_estados_caja
         sql = """
             SELECT
-                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.cliente,
+                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
+                ar.tipo_cambio_fecha, ar.cliente,
                 ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
                 ar.deleted_by, ar.deleted_at,
                 -- Verificar si fue consumido realmente
                 (SELECT COUNT(*) FROM anticipos_estados_caja aec
-                 WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') as fue_consumido
+                 WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') as fue_consumido,
+                -- Verificar si tiene adjunto
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM imagenes_adjuntos ia
+                    WHERE ia.entity_type = 'anticipo_recibido'
+                      AND ia.entity_id = ar.id
+                      AND ia.estado = 'active'
+                ) THEN 1 ELSE 0 END as tiene_adjunto
             FROM anticipos_recibidos ar
             WHERE 1=1
         """
@@ -2683,10 +2724,19 @@ def obtener_anticipos_disponibles():
         # Obtener anticipos disponibles
         sql = """
             SELECT
-                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe,
+                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
                 ar.cliente, ar.numero_transaccion, ar.medio_pago,
-                ar.observaciones, ar.local, ar.created_by, ar.created_at
+                ar.observaciones, ar.local, ar.created_by, ar.created_at,
+                ia.gcs_path as adjunto_gcs_path,
+                ia.original_name as adjunto_nombre
             FROM anticipos_recibidos ar
+            LEFT JOIN (
+                SELECT entity_id, gcs_path, original_name
+                FROM imagenes_adjuntos
+                WHERE entity_type = 'anticipo_recibido'
+                  AND estado = 'active'
+                GROUP BY entity_id
+            ) ia ON ia.entity_id = ar.id
             WHERE ar.local = %s
               AND ar.fecha_evento = %s
               AND ar.estado = 'pendiente'
@@ -2990,7 +3040,8 @@ def obtener_anticipos_consumidos_en_caja():
                 aec.id, aec.anticipo_id, aec.timestamp_accion,
                 aec.importe_consumido, aec.observaciones_consumo,
                 ar.cliente, ar.numero_transaccion, ar.medio_pago,
-                ar.fecha_pago, ar.observaciones as observaciones_anticipo
+                ar.fecha_pago, ar.observaciones as observaciones_anticipo,
+                ar.divisa, ar.created_by
             FROM anticipos_estados_caja aec
             JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
             WHERE aec.local = %s

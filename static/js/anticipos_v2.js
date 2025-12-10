@@ -376,12 +376,16 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="anticipo-card-header">
               <div>
                 <div class="anticipo-cliente">${a.cliente}</div>
+                ${a.created_by ? `<div class="anticipo-detail">Cargado por: <strong>${a.created_by}</strong></div>` : ''}
                 <div class="anticipo-detail">Fecha de evento: ${formatDate(a.fecha_evento)}</div>
                 <div class="anticipo-detail">Fecha de pago: ${formatDate(a.fecha_pago)}</div>
                 ${a.medio_pago ? `<div class="anticipo-detail">Medio de pago: ${a.medio_pago}</div>` : ''}
                 ${a.numero_transaccion ? `<div class="anticipo-detail">Nº transacción: ${a.numero_transaccion}</div>` : ''}
               </div>
-              <div class="anticipo-importe">${money(a.importe)}</div>
+              <div class="anticipo-importe">
+                <div style="font-size:11px; color:#6b7280; text-align:right;">${a.divisa || 'ARS'}</div>
+                ${money(a.importe)}
+              </div>
             </div>
             ${a.observaciones ? `<div class="anticipo-observaciones">${a.observaciones}</div>` : ''}
             <div style="margin-top: 12px; text-align: right;">
@@ -408,7 +412,7 @@ document.addEventListener("DOMContentLoaded", function () {
       htmlConsumidos += '<th>Fecha Pago</th>';
       htmlConsumidos += '<th>Importe</th>';
       htmlConsumidos += '<th>Medio Pago</th>';
-      htmlConsumidos += '<th>Nº Transacción</th>';
+      htmlConsumidos += '<th>Cargado por</th>';
       htmlConsumidos += '<th>Observaciones</th>';
       htmlConsumidos += '<th style="text-align:center;">Acciones</th>';
       htmlConsumidos += '</tr></thead><tbody>';
@@ -417,9 +421,12 @@ document.addEventListener("DOMContentLoaded", function () {
         htmlConsumidos += '<tr>';
         htmlConsumidos += `<td><strong>${a.cliente}</strong></td>`;
         htmlConsumidos += `<td>${formatDate(a.fecha_pago)}</td>`;
-        htmlConsumidos += `<td style="text-align:right; font-weight:600;">${money(a.importe_consumido)}</td>`;
+        htmlConsumidos += `<td style="text-align:right; font-weight:600;">
+          <span style="font-size:10px; color:#6b7280; display:block;">${a.divisa || 'ARS'}</span>
+          ${money(a.importe_consumido)}
+        </td>`;
         htmlConsumidos += `<td>${a.medio_pago || '-'}</td>`;
-        htmlConsumidos += `<td>${a.numero_transaccion || '-'}</td>`;
+        htmlConsumidos += `<td>${a.created_by || '-'}</td>`;
         htmlConsumidos += `<td style="font-size:12px; color:#6b7280;">${a.observaciones_consumo || (a.observaciones_anticipo || '-')}</td>`;
         htmlConsumidos += `<td style="text-align:center;">
           <button class="btn-action btn-eliminar"
