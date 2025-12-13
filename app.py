@@ -7507,14 +7507,17 @@ def api_usuarios_anticipos_crear():
 
         role_id = role_row['id']
 
+        # Generar UUID para el usuario
+        user_id = str(uuid.uuid4())
+
         # Crear el usuario
         # Password vacío + first_login=0 = cualquier contraseña en el primer login será válida
         cur.execute("""
-            INSERT INTO users (username, password, role_id, status, first_login, created_at)
-            VALUES (%s, '', %s, 'active', 0, NOW())
-        """, (username, role_id))
+            INSERT INTO users (id, username, password, role_id, status, first_login, created_at)
+            VALUES (%s, %s, '', %s, 'active', 0, NOW())
+        """, (user_id, username, role_id))
 
-        user_id = cur.lastrowid
+        # Nota: No usar lastrowid porque estamos usando UUID, no AUTO_INCREMENT
 
         # Asignar locales si se especificaron
         admin_username = session.get('username', 'sistema')
