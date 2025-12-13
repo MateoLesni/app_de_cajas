@@ -75,7 +75,21 @@
       const data = await response.json();
       console.log('📦 Data recibida:', data);
 
-      let todosLocales = data.locales || [];
+      let localesRaw = data.locales || [];
+
+      // Normalizar: si son objetos {nombre: "..."}, extraer el nombre
+      let todosLocales = localesRaw.map(l => {
+        if (typeof l === 'string') {
+          return l;
+        } else if (l && l.nombre) {
+          return l.nombre;
+        } else if (l && l.local) {
+          return l.local;
+        } else {
+          return String(l);
+        }
+      });
+
       console.log('🏢 Todos los locales:', todosLocales);
       console.log('👤 User profile:', userProfile);
 
@@ -87,8 +101,7 @@
       } else if (userProfile.allowed_locales && userProfile.allowed_locales.length > 0) {
         // Usuario con permisos limitados: solo ve sus locales asignados
         localesDisponibles = todosLocales.filter(l => {
-          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
-          return userProfile.allowed_locales.includes(localNombre);
+          return userProfile.allowed_locales.includes(l);
         });
         console.log('🔒 Usuario limitado - locales filtrados:', localesDisponibles);
       } else {
@@ -106,8 +119,7 @@
         while (filtroLocal.options.length > 1) {
           filtroLocal.remove(1);
         }
-        localesDisponibles.forEach(l => {
-          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+        localesDisponibles.forEach(localNombre => {
           const option = document.createElement('option');
           option.value = localNombre;
           option.textContent = localNombre;
@@ -123,8 +135,7 @@
         while (localSelect.options.length > 1) {
           localSelect.remove(1);
         }
-        localesDisponibles.forEach(l => {
-          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+        localesDisponibles.forEach(localNombre => {
           const option = document.createElement('option');
           option.value = localNombre;
           option.textContent = localNombre;
