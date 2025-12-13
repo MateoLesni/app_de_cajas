@@ -27,7 +27,22 @@
     try {
       const response = await fetch('/api/locales');
       const data = await response.json();
-      todosLosLocales = data.locales || [];
+      const localesRaw = data.locales || [];
+
+      // Normalizar: si son objetos {nombre: "..."}, extraer el nombre
+      // Si son strings, dejarlos como están
+      todosLosLocales = localesRaw.map(l => {
+        if (typeof l === 'string') {
+          return l;
+        } else if (l && l.nombre) {
+          return l.nombre;
+        } else if (l && l.local) {
+          return l.local;
+        } else {
+          return String(l);
+        }
+      });
+
       console.log('Locales cargados:', todosLosLocales);
     } catch (error) {
       console.error('Error al cargar locales:', error);
