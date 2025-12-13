@@ -7512,9 +7512,10 @@ def api_usuarios_anticipos_crear():
 
         # Crear el usuario
         # Password vacío + first_login=0 = cualquier contraseña en el primer login será válida
+        # Los campos local y society se dejan vacíos porque los anticipos se manejan por user_local_permissions
         cur.execute("""
-            INSERT INTO users (id, username, password, role_id, status, first_login, created_at)
-            VALUES (%s, %s, '', %s, 'active', 0, NOW())
+            INSERT INTO users (id, username, password, role_id, local, society, status, first_login, created_at)
+            VALUES (%s, %s, '', %s, '', '', 'active', 0, NOW())
         """, (user_id, username, role_id))
 
         # Nota: No usar lastrowid porque estamos usando UUID, no AUTO_INCREMENT
