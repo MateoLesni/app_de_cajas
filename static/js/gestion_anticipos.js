@@ -10,42 +10,131 @@
 
   let localesDisponibles = [];
   let anticiposData = [];
+  let userProfile = {
+    level: 0,
+    allowed_locales: [],
+    can_edit: false,
+    can_delete: false,
+    has_full_access: false
+  };
 
   // ===== INICIALIZACIÓN =====
   document.addEventListener('DOMContentLoaded', async () => {
+    // Setear filtro de fecha por defecto: últimos 30 días
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const fechaDesdeInput = $('#filtroFechaDesde');
+    const fechaHastaInput = $('#filtroFechaHasta');
+
+    if (fechaDesdeInput) {
+      fechaDesdeInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+    }
+    if (fechaHastaInput) {
+      fechaHastaInput.value = today.toISOString().split('T')[0];
+    }
+
+    await loadUserProfile();
     await loadLocales();
     await loadAnticipos();
     setupEventListeners();
   });
 
+  async function loadUserProfile() {
+    try {
+      const response = await fetch('/api/mi_perfil_anticipos');
+      const data = await response.json();
+      if (data.success) {
+        userProfile = data;
+        console.log('Perfil de usuario cargado:', userProfile);
+
+        // Si es admin_anticipos (nivel 6), agregar link de Gestión de Usuarios
+        if (userProfile.level >= 6) {
+          const sidebarNav = $('#sidebarNav');
+          if (sidebarNav) {
+            const gestionUsuariosLink = document.createElement('a');
+            gestionUsuariosLink.className = 'nav-item';
+            gestionUsuariosLink.href = '/gestion-usuarios';
+            gestionUsuariosLink.innerHTML = '<span class="nav-dot"></span>Gestión de Usuarios';
+            sidebarNav.appendChild(gestionUsuariosLink);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar perfil de usuario:', error);
+    }
+  }
+
   async function loadLocales() {
     try {
+      console.log('🔍 Cargando locales...');
       const response = await fetch('/api/locales');
+      console.log('📡 Response status:', response.status, response.statusText);
+
       const data = await response.json();
-      localesDisponibles = data.locales || [];
+      console.log('📦 Data recibida:', data);
+
+      let todosLocales = data.locales || [];
+      console.log('🏢 Todos los locales:', todosLocales);
+      console.log('👤 User profile:', userProfile);
+
+      // Filtrar locales según permisos del usuario
+      if (userProfile.has_full_access) {
+        // Admin ve todos los locales
+        localesDisponibles = todosLocales;
+        console.log('✅ Admin - mostrando todos los locales');
+      } else if (userProfile.allowed_locales && userProfile.allowed_locales.length > 0) {
+        // Usuario con permisos limitados: solo ve sus locales asignados
+        localesDisponibles = todosLocales.filter(l => {
+          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+          return userProfile.allowed_locales.includes(localNombre);
+        });
+        console.log('🔒 Usuario limitado - locales filtrados:', localesDisponibles);
+      } else {
+        // Sin permisos: no ve ningún local
+        localesDisponibles = [];
+        console.log('❌ Sin permisos - sin locales');
+      }
+
+      console.log('📋 Locales disponibles finales:', localesDisponibles);
 
       // Llenar select de filtro
       const filtroLocal = $('#filtroLocal');
-      localesDisponibles.forEach(l => {
-        const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
-        const option = document.createElement('option');
-        option.value = localNombre;
-        option.textContent = localNombre;
-        filtroLocal.appendChild(option);
-      });
+      if (filtroLocal) {
+        // Limpiar opciones existentes excepto la primera (placeholder)
+        while (filtroLocal.options.length > 1) {
+          filtroLocal.remove(1);
+        }
+        localesDisponibles.forEach(l => {
+          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+          const option = document.createElement('option');
+          option.value = localNombre;
+          option.textContent = localNombre;
+          filtroLocal.appendChild(option);
+        });
+        console.log('✅ Select de filtro actualizado con', localesDisponibles.length, 'locales');
+      }
 
-      // Llenar select del modal
+      // Llenar select del modal (solo locales permitidos para crear)
       const localSelect = $('#local');
-      localesDisponibles.forEach(l => {
-        const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
-        const option = document.createElement('option');
-        option.value = localNombre;
-        option.textContent = localNombre;
-        localSelect.appendChild(option);
-      });
+      if (localSelect) {
+        // Limpiar opciones existentes excepto la primera (placeholder)
+        while (localSelect.options.length > 1) {
+          localSelect.remove(1);
+        }
+        localesDisponibles.forEach(l => {
+          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+          const option = document.createElement('option');
+          option.value = localNombre;
+          option.textContent = localNombre;
+          localSelect.appendChild(option);
+        });
+        console.log('✅ Select del modal actualizado con', localesDisponibles.length, 'locales');
+      }
 
     } catch (error) {
-      console.error('Error al cargar locales:', error);
+      console.error('❌ Error al cargar locales:', error);
       localesDisponibles = [];
     }
   }
@@ -53,11 +142,42 @@
   function setupEventListeners() {
     $('#btnNuevoAnticipo')?.addEventListener('click', () => abrirModal());
 
-    // Filtros
+    // Filtros con debounce para los inputs de texto
+    let debounceTimer;
+    const debounceFilter = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadAnticipos(), 300);
+    };
+
     $('#filtroEstado')?.addEventListener('change', () => loadAnticipos());
     $('#filtroLocal')?.addEventListener('change', () => loadAnticipos());
+    $('#filtroDivisa')?.addEventListener('change', () => loadAnticipos());
     $('#filtroFechaDesde')?.addEventListener('change', () => loadAnticipos());
     $('#filtroFechaHasta')?.addEventListener('change', () => loadAnticipos());
+    $('#filtroCliente')?.addEventListener('input', debounceFilter);
+    $('#filtroUsuario')?.addEventListener('input', debounceFilter);
+
+    // Preview de imagen al seleccionar archivo
+    $('#adjunto')?.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      const preview = $('#adjuntoPreview');
+      const img = $('#adjuntoImg');
+
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          img.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else if (file && file.type === 'application/pdf') {
+        // Si es PDF, mostrar un ícono o texto
+        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VmNDQ0NCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNDgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UERGJC90ZXh0Pjwvc3ZnPg==';
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
   }
 
   // ===== CARGAR ANTICIPOS =====
@@ -66,13 +186,13 @@
     if (!tbody) return;
 
     try {
-      // Obtener filtros
+      // Obtener filtros del servidor (backend)
       const estado = $('#filtroEstado')?.value || '';
       const local = $('#filtroLocal')?.value || '';
       const fechaDesde = $('#filtroFechaDesde')?.value || '';
       const fechaHasta = $('#filtroFechaHasta')?.value || '';
 
-      // Construir URL con filtros
+      // Construir URL con filtros del servidor
       let url = '/api/anticipos_recibidos/listar?';
       if (estado) url += `estado=${encodeURIComponent(estado)}&`;
       if (local) url += `local=${encodeURIComponent(local)}&`;
@@ -89,15 +209,41 @@
 
       anticiposData = data.anticipos || [];
 
-      // Actualizar estadísticas
-      updateStats(anticiposData);
+      // Filtros adicionales del lado del cliente
+      const filtroCliente = ($('#filtroCliente')?.value || '').toLowerCase();
+      const filtroDivisa = $('#filtroDivisa')?.value || '';
+      const filtroUsuario = ($('#filtroUsuario')?.value || '').toLowerCase();
 
-      if (anticiposData.length === 0) {
+      let anticiposFiltrados = anticiposData;
+
+      // Aplicar filtros del cliente
+      if (filtroCliente) {
+        anticiposFiltrados = anticiposFiltrados.filter(a =>
+          (a.cliente || '').toLowerCase().includes(filtroCliente)
+        );
+      }
+
+      if (filtroDivisa) {
+        anticiposFiltrados = anticiposFiltrados.filter(a =>
+          (a.divisa || 'ARS') === filtroDivisa
+        );
+      }
+
+      if (filtroUsuario) {
+        anticiposFiltrados = anticiposFiltrados.filter(a =>
+          (a.created_by || '').toLowerCase().includes(filtroUsuario)
+        );
+      }
+
+      // Actualizar estadísticas con datos filtrados
+      updateStats(anticiposFiltrados);
+
+      if (anticiposFiltrados.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: #6b7280;">No hay anticipos para mostrar</td></tr>';
         return;
       }
 
-      tbody.innerHTML = anticiposData.map(a => {
+      tbody.innerHTML = anticiposFiltrados.map(a => {
         const badgeClass = `badge-${a.estado}`;
         const estadoText = {
           'pendiente': 'Pendiente',
@@ -105,8 +251,9 @@
           'eliminado_global': 'Eliminado'
         }[a.estado] || a.estado;
 
-        const puedeEditar = a.estado === 'pendiente';
-        const puedeEliminar = a.estado === 'pendiente';
+        // Determinar si puede editar/eliminar según permisos del usuario y estado del anticipo
+        const puedeEditar = a.estado === 'pendiente' && userProfile.can_edit;
+        const puedeEliminar = a.estado === 'pendiente' && userProfile.can_delete;
 
         return `
           <tr>
@@ -198,6 +345,13 @@
     $('#medioPago').value = '';
     $('#numeroTransaccion').value = '';
     $('#observaciones').value = '';
+    $('#divisa').value = 'ARS';
+
+    // Limpiar preview de adjunto
+    const adjuntoInput = $('#adjunto');
+    if (adjuntoInput) adjuntoInput.value = '';
+    const preview = $('#adjuntoPreview');
+    if (preview) preview.style.display = 'none';
 
     if (anticipoId) {
       title.textContent = 'Editar Anticipo';
@@ -222,6 +376,7 @@
     $('#cliente').value = anticipo.cliente;
     $('#local').value = anticipo.local;
     $('#importe').value = anticipo.importe;
+    $('#divisa').value = anticipo.divisa || 'ARS';
     $('#medioPago').value = anticipo.medio_pago || '';
     $('#numeroTransaccion').value = anticipo.numero_transaccion || '';
     $('#observaciones').value = anticipo.observaciones || '';
@@ -231,8 +386,13 @@
     $('#cliente').disabled = true;
     $('#local').disabled = true;
     $('#importe').disabled = true;
+    $('#divisa').disabled = true;
     $('#medioPago').disabled = true;
     $('#numeroTransaccion').disabled = true;
+
+    // Ocultar el input de adjunto en modo edición (no se puede cambiar)
+    const adjuntoGroup = $('#adjunto')?.closest('.form-group');
+    if (adjuntoGroup) adjuntoGroup.style.display = 'none';
   }
 
   window.cerrarModal = function() {
@@ -244,8 +404,13 @@
     $('#cliente').disabled = false;
     $('#local').disabled = false;
     $('#importe').disabled = false;
+    $('#divisa').disabled = false;
     $('#medioPago').disabled = false;
     $('#numeroTransaccion').disabled = false;
+
+    // Mostrar el input de adjunto
+    const adjuntoGroup = $('#adjunto')?.closest('.form-group');
+    if (adjuntoGroup) adjuntoGroup.style.display = '';
   };
 
   // ===== GUARDAR ANTICIPO =====
@@ -452,21 +617,59 @@ ${anticipo.deleted_by ? `\nEliminado: ${formatDateTime(anticipo.deleted_at)} por
       return;
     }
 
+    // Abrir modal visor
+    const modal = $('#modalVisorAdjunto');
+    const visorImagen = $('#visorImagen');
+    const visorPDF = $('#visorPDF');
+    const visorLoading = $('#visorLoading');
+    const visorTitulo = $('#visorTitulo');
+
+    // Resetear estados
+    visorImagen.style.display = 'none';
+    visorPDF.style.display = 'none';
+    visorLoading.style.display = 'block';
+    visorImagen.src = '';
+    visorPDF.src = '';
+
+    modal.style.display = 'flex';
+    visorTitulo.textContent = `Comprobante - ${anticipo.cliente}`;
+
     try {
       // Obtener detalles del adjunto desde el servidor
       const response = await fetch(`/files/list?tab=anticipos&local=${encodeURIComponent(anticipo.local)}&fecha=${anticipo.fecha_pago}&scope=month`);
       const data = await response.json();
 
       if (data.success && data.items && data.items.length > 0) {
-        // Abrir el primer adjunto en nueva ventana
-        window.open(data.items[0].view_url, '_blank', 'width=800,height=600');
+        const adjunto = data.items[0];
+        const isPDF = adjunto.mime === 'application/pdf' || adjunto.original_name?.toLowerCase().endsWith('.pdf');
+
+        visorLoading.style.display = 'none';
+
+        if (isPDF) {
+          // Mostrar PDF en iframe
+          visorPDF.src = adjunto.view_url;
+          visorPDF.style.display = 'block';
+        } else {
+          // Mostrar imagen
+          visorImagen.src = adjunto.view_url;
+          visorImagen.style.display = 'block';
+        }
       } else {
-        alert('No se pudo encontrar el comprobante');
+        visorLoading.innerHTML = '<div style="color: #ef4444;">❌ No se pudo encontrar el comprobante</div>';
       }
     } catch (error) {
       console.error('Error al obtener adjunto:', error);
-      alert('❌ Error al cargar el comprobante');
+      visorLoading.innerHTML = '<div style="color: #ef4444;">❌ Error al cargar el comprobante</div>';
     }
+  };
+
+  window.cerrarVisorAdjunto = function() {
+    const modal = $('#modalVisorAdjunto');
+    modal.style.display = 'none';
+
+    // Limpiar contenido
+    $('#visorImagen').src = '';
+    $('#visorPDF').src = '';
   };
 
 })();
