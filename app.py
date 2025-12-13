@@ -127,7 +127,9 @@ def get_user_level() -> int:
     1 = cajero
     2 = encargado/administrativo
     3 = auditor
-    4 = jefe_auditor
+    4 = anticipos (solo crea anticipos en locales asignados)
+    5 = jefe_auditor
+    6 = admin_anticipos (gestiona todos los anticipos)
     """
     lvl = session.get('role_level')
     if lvl is not None:
@@ -138,10 +140,70 @@ def get_user_level() -> int:
         'encargado': 2,
         'administrativo': 2,
         'auditor': 3,
-        'jefe_auditor': 4,
-        'admin_anticipos': 5  # Rol especial: solo gestiona anticipos
+        'anticipos': 4,  # Rol limitado: solo crea anticipos en locales asignados
+        'jefe_auditor': 5,
+        'admin_anticipos': 6  # Rol especial: gestiona todos los anticipos
     }
     return MAP.get(role, 0)
+
+def get_user_allowed_locales() -> list:
+    """
+    Obtiene los locales a los que el usuario tiene acceso para anticipos.
+    - Si el nivel es 6 (admin_anticipos), tiene acceso a TODOS los locales
+    - Si el nivel es 4 (anticipos), consulta la tabla user_local_permissions
+    - Caso contrario, retorna lista vacía (sin acceso a anticipos)
+    """
+    lvl = get_user_level()
+
+    # Admin de anticipos (nivel 6): acceso total a todos los locales
+    if lvl == 6:
+        return []  # Lista vacía significa "todos los locales"
+
+    # Usuario con rol 'anticipos' (nivel 4): consultar permisos específicos
+    if lvl == 4:
+        username = session.get('username')
+        if not username:
+            return []
+
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor(dictionary=True)
+            cur.execute("""
+                SELECT local FROM user_local_permissions
+                WHERE username = %s
+                ORDER BY local ASC
+            """, (username,))
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            return [row['local'] for row in rows]
+        except Exception as e:
+            print(f"⚠️  Error obteniendo permisos de locales: {e}")
+            return []
+
+    # Otros roles (cajero, encargado, auditor, jefe_auditor): sin acceso a anticipos
+    return []
+
+def can_user_access_local_for_anticipos(local: str) -> bool:
+    """
+    Verifica si el usuario actual puede acceder a un local específico para anticipos.
+    - Si nivel == 6 (admin_anticipos): puede acceder a todos
+    - Si nivel == 4 (anticipos): verifica en user_local_permissions
+    - Otros niveles: False
+    """
+    lvl = get_user_level()
+
+    # Admin de anticipos (nivel 6): acceso total
+    if lvl == 6:
+        return True
+
+    # Usuario con rol 'anticipos' (nivel 4): verificar permiso específico
+    if lvl == 4:
+        allowed_locales = get_user_allowed_locales()
+        return local in allowed_locales
+
+    # Otros roles: sin acceso
+    return False
 
 def is_local_closed(conn, local:str, fecha) -> bool:
     cur = conn.cursor()
@@ -386,6 +448,59 @@ def login_required(view):
             if request.method == 'GET' and request.accept_mimetypes.accept_html:
                 return redirect(url_for('login', next=request.full_path))
             return jsonify(success=False, msg='Auth requerido'), 401
+
+        # IMPORTANTE: Forzar redirección para usuarios de anticipos
+        # Si el usuario tiene rol 'anticipos' (nivel 4) o 'admin_anticipos' (nivel 6)
+        # y NO está accediendo a rutas permitidas, redirigir a /gestion-anticipos
+        user_level = get_user_level()
+        current_endpoint = request.endpoint
+
+        # Rutas permitidas para usuarios de anticipos
+        allowed_endpoints_anticipos = [
+            'gestion_anticipos_page',
+            'logout',
+            'api_mi_perfil_anticipos',
+            'listar_anticipos_recibidos',
+            'crear_anticipo_recibido',
+            'editar_anticipo_recibido',
+            'eliminar_anticipo_recibido',
+            'api_locales',
+            'api_locales_options',
+            'auditoria.auditoria_locales',  # Endpoint /api/locales en blueprint auditoria
+            'files_upload',
+            'files_list',
+            'files_download',
+            'bp_files.upload',
+            'bp_files.list',
+            'bp_files.download',
+            'static',
+            'gestion_usuarios',  # Solo para admin_anticipos (nivel 6)
+            'api_usuarios_anticipos_listar',
+            'api_usuarios_anticipos_crear',
+            'api_usuarios_anticipos_asignar_local',
+            'api_usuarios_anticipos_quitar_local',
+            'api_usuarios_anticipos_resetear_password'
+        ]
+
+        # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
+        if user_level in [4, 6] and current_endpoint not in allowed_endpoints_anticipos:
+            # DEBUG: Imprimir endpoint actual
+            print(f"🚫 ACCESO DENEGADO - Endpoint: '{current_endpoint}', Path: {request.path}, Nivel: {user_level}")
+
+            # Detectar si es una petición API (empieza con /api/ o es AJAX)
+            is_api_request = (
+                request.path.startswith('/api/') or
+                request.path.startswith('/files/') or
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                'application/json' in request.headers.get('Accept', '')
+            )
+
+            # Solo redirigir si es una petición GET de HTML (no APIs)
+            if not is_api_request and request.method == 'GET':
+                return redirect(url_for('gestion_anticipos_page'))
+            # Si es API, retornar error 403
+            return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
+
         return view(*args, **kwargs)
     return wrapped
 
@@ -408,6 +523,9 @@ def route_for_current_role() -> str:
       1 -> 'index'            => '/'
       2 -> 'encargado'        => '/encargado' (o el que tengas: p.ej. 'ventas_cargadas')
       3 -> 'auditor'          => '/auditor'
+      4 -> 'anticipos'        => '/gestion-anticipos'
+      5+ -> 'jefe_auditor'    => '/auditor'
+      6+ -> 'admin_anticipos' => '/gestion-anticipos'
     """
     try:
         lvl = int(get_user_level())
@@ -417,7 +535,14 @@ def route_for_current_role() -> str:
     if lvl == 2:
         # Usa el endpoint real que tengas para la home del encargado
         return url_for('encargado')              # <-- o 'ventas_cargadas' / 'carga_datos_encargado' si existe
+    if lvl == 4:
+        # Usuario con rol 'anticipos' va directo a gestión de anticipos
+        return url_for('gestion_anticipos_page')
+    if lvl >= 6:
+        # Admin de anticipos también va a gestión de anticipos
+        return url_for('gestion_anticipos_page')
     if lvl >= 3:
+        # Auditor y jefe_auditor van al auditor
         return url_for('auditor')
     return url_for('index')
 
@@ -444,11 +569,21 @@ def go_home():
 
 def redirect_after_login():
     nxt = request.args.get('next') or (request.form.get('next') if hasattr(request, 'form') else None)
+    lvl = get_user_level()
+
+    # Usuario con rol 'anticipos' (nivel 4) siempre va a /gestion-anticipos
+    if lvl == 4:
+        return redirect(url_for('gestion_anticipos_page'))
+
+    # Admin de anticipos (nivel 6+) también va a /gestion-anticipos
+    if lvl >= 6:
+        return redirect(url_for('gestion_anticipos_page'))
+
     if nxt and _is_safe_url(nxt):
         path_only = urlparse(nxt).path or '/'
-        if get_user_level() == 2 and path_only in ('/', url_for('index')):
+        if lvl == 2 and path_only in ('/', url_for('index')):
             return redirect(url_for('encargado'))   # <-- endpoint real de encargado
-        if get_user_level() >= 3 and path_only in ('/', url_for('index')):
+        if lvl >= 3 and path_only in ('/', url_for('index')):
             return redirect(url_for('auditor'))
         return redirect(nxt)
     return redirect(route_for_current_role())
@@ -2278,7 +2413,9 @@ def borrar_anticipo(anticipo_id):
 def crear_anticipo_recibido():
     """
     Crear un nuevo anticipo recibido.
-    Solo accesible para admin_anticipos (nivel 5) o superiores.
+    Accesible para:
+    - admin_anticipos (nivel 6): puede crear en cualquier local
+    - anticipos (nivel 4): solo puede crear en los locales asignados
 
     Body:
     {
@@ -2293,7 +2430,7 @@ def crear_anticipo_recibido():
     }
     """
     user_level = get_user_level()
-    if user_level < 5:
+    if user_level < 4:
         return jsonify(success=False, msg="No tenés permisos para crear anticipos recibidos"), 403
 
     data = request.get_json() or {}
@@ -2311,6 +2448,10 @@ def crear_anticipo_recibido():
         importe = float(data['importe'])
         cliente = data['cliente'].strip()
         local = data['local'].strip()
+
+        # Validar permiso sobre el local específico
+        if not can_user_access_local_for_anticipos(local):
+            return jsonify(success=False, msg=f"No tenés permisos para crear anticipos en el local '{local}'"), 403
 
         # Nuevos campos: divisa y adjunto
         divisa = (data.get('divisa') or 'ARS').strip().upper()
@@ -2405,8 +2546,9 @@ def crear_anticipo_recibido():
 @login_required
 def listar_anticipos_recibidos():
     """
-    Listar todos los anticipos recibidos.
-    Solo accesible para admin_anticipos (nivel 5) o superiores.
+    Listar anticipos recibidos según permisos del usuario.
+    - admin_anticipos (nivel 6): ve todos los anticipos
+    - anticipos (nivel 4): solo ve anticipos de sus locales asignados
 
     Params:
     - estado: (opcional) 'pendiente', 'consumido', 'eliminado_global'
@@ -2414,7 +2556,7 @@ def listar_anticipos_recibidos():
     - fecha_desde, fecha_hasta: (opcional) filtrar por fecha_evento
     """
     user_level = get_user_level()
-    if user_level < 5:
+    if user_level < 4:
         return jsonify(success=False, msg="No tenés permisos para ver anticipos recibidos"), 403
 
     estado = request.args.get('estado', '').strip()
@@ -2450,6 +2592,17 @@ def listar_anticipos_recibidos():
             WHERE 1=1
         """
         params = []
+
+        # Filtrar por locales permitidos si es usuario nivel 4
+        if user_level == 4:
+            allowed_locales = get_user_allowed_locales()
+            if allowed_locales:
+                placeholders = ','.join(['%s'] * len(allowed_locales))
+                sql += f" AND ar.local IN ({placeholders})"
+                params.extend(allowed_locales)
+            else:
+                # Sin permisos asignados, retornar vacío
+                return jsonify(success=True, anticipos=[])
 
         if estado:
             sql += " AND ar.estado = %s"
@@ -2527,10 +2680,10 @@ def listar_anticipos_recibidos():
 def eliminar_anticipo_recibido(anticipo_id):
     """
     Eliminar (marcar como eliminado_global) un anticipo recibido.
-    Solo accesible para admin_anticipos (nivel 5) o superiores.
+    SOLO accesible para admin_anticipos (nivel 6) - rol 'anticipos' NO puede eliminar.
     """
     user_level = get_user_level()
-    if user_level < 5:
+    if user_level < 6:
         return jsonify(success=False, msg="No tenés permisos para eliminar anticipos recibidos"), 403
 
     try:
@@ -2600,11 +2753,11 @@ def eliminar_anticipo_recibido(anticipo_id):
 def editar_anticipo_recibido(anticipo_id):
     """
     Editar un anticipo recibido.
-    Solo permite editar fecha_evento si el anticipo está pendiente.
-    Solo accesible para admin_anticipos (nivel 5) o superiores.
+    Solo permite editar fecha_evento y observaciones si el anticipo está pendiente.
+    SOLO accesible para admin_anticipos (nivel 6) - rol 'anticipos' NO puede editar.
     """
     user_level = get_user_level()
-    if user_level < 5:
+    if user_level < 6:
         return jsonify(success=False, msg="No tenés permisos para editar anticipos recibidos"), 403
 
     data = request.get_json() or {}
@@ -2730,13 +2883,11 @@ def obtener_anticipos_disponibles():
                 ia.gcs_path as adjunto_gcs_path,
                 ia.original_name as adjunto_nombre
             FROM anticipos_recibidos ar
-            LEFT JOIN (
-                SELECT entity_id, gcs_path, original_name
-                FROM imagenes_adjuntos
-                WHERE entity_type = 'anticipo_recibido'
-                  AND estado = 'active'
-                GROUP BY entity_id
-            ) ia ON ia.entity_id = ar.id
+            LEFT JOIN imagenes_adjuntos ia ON (
+                ia.entity_type = 'anticipo_recibido'
+                AND ia.entity_id = ar.id
+                AND ia.estado = 'active'
+            )
             WHERE ar.local = %s
               AND ar.fecha_evento = %s
               AND ar.estado = 'pendiente'
@@ -6901,15 +7052,28 @@ def crear_snapshot_local(conn, local, fecha, usuario):
 @login_required
 @role_min_required(2)  # Mínimo nivel 2 (encargado)
 def gestion_usuarios():
-    """Página de gestión de usuarios"""
+    """
+    Página de gestión de usuarios.
+    Si el usuario es admin_anticipos (nivel 6), redirigir a gestión de usuarios de anticipos.
+    """
+    user_level = get_user_level()
+    if user_level == 6:
+        # Admin de anticipos ve la página específica de gestión de usuarios de anticipos
+        return render_template('gestion_usuarios_anticipos.html')
+    # Otros niveles ven la página normal
     return render_template('gestion_usuarios.html')
 
 
 @app.route('/gestion-anticipos')
 @login_required
-@role_min_required(5)  # Solo admin_anticipos (nivel 5)
-def gestion_anticipos():
-    """Página de gestión de anticipos recibidos - Solo para admin_anticipos"""
+@role_min_required(4)  # Accesible para 'anticipos' (nivel 4) y superiores
+def gestion_anticipos_page():
+    """
+    Página de gestión de anticipos recibidos.
+    Accesible para:
+    - anticipos (nivel 4): solo ve y crea anticipos en sus locales asignados
+    - admin_anticipos (nivel 6): gestiona todos los anticipos
+    """
     return render_template('gestion_anticipos.html')
 
 
@@ -6920,6 +7084,30 @@ def api_mi_nivel():
     return jsonify(
         level=get_user_level(),
         local=session.get('local', '')
+    )
+
+
+@app.route('/api/mi_perfil_anticipos', methods=['GET'])
+@login_required
+def api_mi_perfil_anticipos():
+    """
+    Devuelve el perfil del usuario actual para anticipos.
+    Incluye:
+    - level: nivel del usuario
+    - allowed_locales: locales a los que tiene acceso ([] significa todos)
+    - can_edit: si puede editar anticipos
+    - can_delete: si puede eliminar anticipos
+    """
+    user_level = get_user_level()
+    allowed_locales = get_user_allowed_locales()
+
+    return jsonify(
+        success=True,
+        level=user_level,
+        allowed_locales=allowed_locales,
+        can_edit=(user_level >= 6),  # Solo admin_anticipos puede editar
+        can_delete=(user_level >= 6),  # Solo admin_anticipos puede eliminar
+        has_full_access=(user_level >= 6)  # Admin tiene acceso total
     )
 
 
@@ -7219,6 +7407,382 @@ def api_cambiar_password_primer_login():
             conn.close()
         except:
             pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ==================================================================================
+# ENDPOINTS: Gestión de usuarios de anticipos (solo para admin_anticipos nivel 6)
+# ==================================================================================
+
+@app.route('/api/usuarios_anticipos/listar', methods=['GET'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_usuarios_anticipos_listar():
+    """
+    Lista todos los usuarios con rol 'anticipos' (nivel 4) con sus locales asignados.
+    Solo accesible para admin_anticipos (nivel 6).
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener usuarios con rol anticipos (nivel 4)
+        cur.execute("""
+            SELECT
+                u.id,
+                u.username,
+                u.status,
+                u.created_at,
+                r.name as role_name,
+                r.level as role_level
+            FROM users u
+            INNER JOIN roles r ON r.id = u.role_id
+            WHERE r.level = 4
+            ORDER BY u.username ASC
+        """)
+        usuarios = cur.fetchall()
+
+        # Para cada usuario, obtener sus locales asignados
+        for usuario in usuarios:
+            cur.execute("""
+                SELECT local
+                FROM user_local_permissions
+                WHERE username = %s
+                ORDER BY local ASC
+            """, (usuario['username'],))
+            locales_rows = cur.fetchall()
+            usuario['locales_asignados'] = [row['local'] for row in locales_rows]
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, usuarios=usuarios)
+
+    except Exception as e:
+        print(f"❌ ERROR api_usuarios_anticipos_listar: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/usuarios_anticipos/crear', methods=['POST'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_usuarios_anticipos_crear():
+    """
+    Crea un nuevo usuario con rol 'anticipos' (nivel 4).
+    Body: {
+        "username": "juan.anticipos",
+        "locales": ["Ribs Infanta", "La Mala"]  // Opcional
+    }
+    """
+    try:
+        data = request.get_json() or {}
+        username = (data.get('username') or '').strip()
+        locales = data.get('locales') or []
+
+        if not username:
+            return jsonify(success=False, msg='Username requerido'), 400
+
+        if len(username) < 3:
+            return jsonify(success=False, msg='Username debe tener al menos 3 caracteres'), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que el usuario no exista
+        cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'El usuario {username} ya existe'), 400
+
+        # Obtener el role_id del rol 'anticipos' (nivel 4)
+        cur.execute("SELECT id FROM roles WHERE level = 4 LIMIT 1")
+        role_row = cur.fetchone()
+        if not role_row:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='Rol anticipos no encontrado. Ejecutá la migración de roles.'), 500
+
+        role_id = role_row['id']
+
+        # Crear el usuario
+        # Password vacío + first_login=0 = cualquier contraseña en el primer login será válida
+        cur.execute("""
+            INSERT INTO users (username, password, role_id, status, first_login, created_at)
+            VALUES (%s, '', %s, 'active', 0, NOW())
+        """, (username, role_id))
+
+        user_id = cur.lastrowid
+
+        # Asignar locales si se especificaron
+        admin_username = session.get('username', 'sistema')
+        for local in locales:
+            local = local.strip()
+            if local:
+                try:
+                    cur.execute("""
+                        INSERT INTO user_local_permissions (username, local, created_by, created_at)
+                        VALUES (%s, %s, %s, NOW())
+                    """, (username, local, admin_username))
+                except Exception as e:
+                    print(f"⚠️  Warning: No se pudo asignar local {local}: {e}")
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='INSERT',
+            tabla='users',
+            registro_id=user_id,
+            datos_nuevos={
+                'username': username,
+                'role': 'anticipos',
+                'locales_asignados': locales
+            },
+            descripcion=f"Usuario anticipos creado: {username}"
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg=f'Usuario {username} creado correctamente', user_id=user_id)
+
+    except Exception as e:
+        print(f"❌ ERROR api_usuarios_anticipos_crear: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/usuarios_anticipos/<username>/locales/asignar', methods=['POST'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_usuarios_anticipos_asignar_local(username):
+    """
+    Asigna un local a un usuario de anticipos.
+    Body: { "local": "Ribs Infanta" }
+    """
+    try:
+        data = request.get_json() or {}
+        local = (data.get('local') or '').strip()
+
+        if not local:
+            return jsonify(success=False, msg='Local requerido'), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que el usuario existe y es de anticipos
+        cur.execute("""
+            SELECT u.id, r.level
+            FROM users u
+            INNER JOIN roles r ON r.id = u.role_id
+            WHERE u.username = %s
+        """, (username,))
+        user = cur.fetchone()
+
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'Usuario {username} no encontrado'), 404
+
+        if user['level'] != 4:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'El usuario {username} no es de tipo anticipos'), 400
+
+        # Verificar si ya tiene el local asignado
+        cur.execute("""
+            SELECT id FROM user_local_permissions
+            WHERE username = %s AND local = %s
+        """, (username, local))
+
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'El local {local} ya está asignado a {username}'), 400
+
+        # Asignar el local
+        admin_username = session.get('username', 'sistema')
+        cur.execute("""
+            INSERT INTO user_local_permissions (username, local, created_by, created_at)
+            VALUES (%s, %s, %s, NOW())
+        """, (username, local, admin_username))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='INSERT',
+            tabla='user_local_permissions',
+            registro_id=cur.lastrowid,
+            datos_nuevos={
+                'username': username,
+                'local': local,
+                'created_by': admin_username
+            },
+            descripcion=f"Local {local} asignado a {username}"
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg=f'Local {local} asignado correctamente a {username}')
+
+    except Exception as e:
+        print(f"❌ ERROR api_usuarios_anticipos_asignar_local: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/usuarios_anticipos/<username>/locales/<local>/quitar', methods=['DELETE'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_usuarios_anticipos_quitar_local(username, local):
+    """
+    Quita un local asignado a un usuario de anticipos.
+    """
+    try:
+        from urllib.parse import unquote
+        local = unquote(local)  # Decodificar URL encoding
+
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que el usuario existe y es de anticipos
+        cur.execute("""
+            SELECT u.id, r.level
+            FROM users u
+            INNER JOIN roles r ON r.id = u.role_id
+            WHERE u.username = %s
+        """, (username,))
+        user = cur.fetchone()
+
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'Usuario {username} no encontrado'), 404
+
+        if user['level'] != 4:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'El usuario {username} no es de tipo anticipos'), 400
+
+        # Eliminar el permiso
+        cur.execute("""
+            DELETE FROM user_local_permissions
+            WHERE username = %s AND local = %s
+        """, (username, local))
+
+        rows_affected = cur.rowcount
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='user_local_permissions',
+            registro_id=0,
+            datos_anteriores={
+                'username': username,
+                'local': local
+            },
+            descripcion=f"Local {local} removido de {username}"
+        )
+
+        cur.close()
+        conn.close()
+
+        if rows_affected == 0:
+            return jsonify(success=False, msg=f'El local {local} no estaba asignado a {username}'), 404
+
+        return jsonify(success=True, msg=f'Local {local} removido correctamente de {username}')
+
+    except Exception as e:
+        print(f"❌ ERROR api_usuarios_anticipos_quitar_local: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/usuarios_anticipos/resetear_password', methods=['POST'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_usuarios_anticipos_resetear_password():
+    """
+    Resetea la contraseña de un usuario de anticipos.
+    El usuario podrá usar cualquier contraseña en el próximo login.
+    Body: { "username": "juan.anticipos" }
+    """
+    try:
+        data = request.get_json() or {}
+        username = (data.get('username') or '').strip()
+
+        if not username:
+            return jsonify(success=False, msg='Username requerido'), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que el usuario existe y es de anticipos
+        cur.execute("""
+            SELECT u.id, r.level
+            FROM users u
+            INNER JOIN roles r ON r.id = u.role_id
+            WHERE u.username = %s
+        """, (username,))
+        user = cur.fetchone()
+
+        if not user:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'Usuario {username} no encontrado'), 404
+
+        if user['level'] != 4:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'El usuario {username} no es de tipo anticipos'), 400
+
+        # Resetear password (vacío) y first_login=0
+        cur.execute("""
+            UPDATE users
+            SET password = '', first_login = 0
+            WHERE username = %s
+        """, (username,))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='users',
+            registro_id=user['id'],
+            datos_nuevos={
+                'password_reset': True,
+                'first_login': 0
+            },
+            descripcion=f"Contraseña reseteada para {username}"
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg=f'Contraseña reseteada para {username}')
+
+    except Exception as e:
+        print(f"❌ ERROR api_usuarios_anticipos_resetear_password: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
 
 
