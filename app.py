@@ -7879,14 +7879,49 @@ def listar_anticipos_auditor():
         sql += " ORDER BY ar.fecha_evento DESC, ar.created_at DESC "
 
         cur.execute(sql, params)
-        anticipos = cur.fetchall()
+        rows = cur.fetchall()
 
-        # Convertir decimals a floats para JSON
-        for a in anticipos:
-            if a.get('importe') is not None:
-                a['importe'] = float(a['importe'])
-            if a.get('tipo_cambio_fecha') is not None:
-                a['tipo_cambio_fecha'] = float(a['tipo_cambio_fecha'])
+        # Procesar cada anticipo para convertir tipos
+        anticipos = []
+        for anticipo in rows:
+            # Convertir Decimal a float
+            if anticipo.get('importe') is not None:
+                anticipo['importe'] = float(anticipo['importe'])
+            if anticipo.get('tipo_cambio_fecha') is not None and isinstance(anticipo['tipo_cambio_fecha'], (int, float)):
+                anticipo['tipo_cambio_fecha'] = float(anticipo['tipo_cambio_fecha'])
+
+            # Convertir fechas a string
+            if anticipo.get('fecha_pago'):
+                if hasattr(anticipo['fecha_pago'], 'strftime'):
+                    anticipo['fecha_pago'] = anticipo['fecha_pago'].strftime('%Y-%m-%d')
+                else:
+                    anticipo['fecha_pago'] = str(anticipo['fecha_pago'])
+
+            if anticipo.get('fecha_evento'):
+                if hasattr(anticipo['fecha_evento'], 'strftime'):
+                    anticipo['fecha_evento'] = anticipo['fecha_evento'].strftime('%Y-%m-%d')
+                else:
+                    anticipo['fecha_evento'] = str(anticipo['fecha_evento'])
+
+            # Convertir timestamps a ISO string
+            for campo in ['created_at', 'updated_at', 'deleted_at']:
+                if anticipo.get(campo):
+                    if hasattr(anticipo[campo], 'isoformat'):
+                        anticipo[campo] = anticipo[campo].isoformat()
+                    else:
+                        anticipo[campo] = str(anticipo[campo])
+
+            # Si fue consumido en alguna caja, el estado debe ser 'consumido'
+            if anticipo['fue_consumido'] > 0:
+                anticipo['estado'] = 'consumido'
+            else:
+                anticipo['estado'] = anticipo['estado_global']
+
+            # Eliminar campos auxiliares
+            del anticipo['estado_global']
+            del anticipo['fue_consumido']
+
+            anticipos.append(anticipo)
 
         cur.close()
         conn.close()
