@@ -308,6 +308,34 @@
     $('#statMontoPendiente').textContent = money(montoPendiente);
   }
 
+  function toInputDateFormat(dateString) {
+    // Convierte cualquier formato de fecha a YYYY-MM-DD para <input type="date">
+    if (!dateString || dateString === 'null' || dateString === 'undefined') return '';
+    try {
+      let dateStr = String(dateString);
+
+      // Si viene con 'T', extraer solo la parte de fecha
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+
+      // Si viene con espacios, extraer solo la parte de fecha
+      if (dateStr.includes(' ')) {
+        dateStr = dateStr.split(' ')[0];
+      }
+
+      // Verificar que sea un formato válido YYYY-MM-DD
+      const parts = dateStr.split('-');
+      if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+        return dateStr; // Ya está en formato correcto
+      }
+
+      return '';
+    } catch {
+      return '';
+    }
+  }
+
   function formatDate(dateString) {
     if (!dateString || dateString === 'null' || dateString === 'undefined') return '-';
     try {
@@ -382,8 +410,9 @@
     if (!anticipo) return;
 
     $('#anticipoId').value = anticipo.id;
-    $('#fechaPago').value = anticipo.fecha_pago;
-    $('#fechaEvento').value = anticipo.fecha_evento;
+    // Formatear fechas para input type="date" (requiere YYYY-MM-DD)
+    $('#fechaPago').value = toInputDateFormat(anticipo.fecha_pago);
+    $('#fechaEvento').value = toInputDateFormat(anticipo.fecha_evento);
     $('#cliente').value = anticipo.cliente;
     $('#local').value = anticipo.local;
     $('#importe').value = anticipo.importe;
