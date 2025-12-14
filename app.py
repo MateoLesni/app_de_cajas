@@ -7541,8 +7541,9 @@ def api_usuarios_anticipos_crear():
             conn=conn,
             accion='INSERT',
             tabla='users',
-            registro_id=user_id,
+            registro_id=username,  # Usar username en lugar de UUID para compatibilidad
             datos_nuevos={
+                'id': user_id,
                 'username': username,
                 'role': 'anticipos',
                 'locales_asignados': locales
@@ -7790,5 +7791,112 @@ def api_usuarios_anticipos_resetear_password():
         return jsonify(success=False, msg=str(e)), 500
 
 
+## ====== ANTICIPOS PARA AUDITORES (SOLO VISUALIZACIÓN) ======
+
+@app.route('/anticipos-auditor')
+@login_required
+@role_min_required(3)  # Solo auditores (nivel 3+)
+def anticipos_auditor_page():
+    """
+    Página de visualización de anticipos para auditores (solo lectura).
+    Los auditores pueden ver todos los anticipos con filtros y detalles.
+    """
+    return render_template('anticipos_auditor.html')
+
+
+@app.route('/api/anticipos_auditor/listar', methods=['GET'])
+@login_required
+@role_min_required(3)  # Solo auditores (nivel 3+)
+def listar_anticipos_auditor():
+    """
+    Listar TODOS los anticipos recibidos para auditores (solo lectura).
+    Los auditores pueden ver todos los anticipos sin restricción de locales.
+
+    Params:
+    - estado: (opcional) 'pendiente', 'consumido', 'eliminado_global'
+    - local: (opcional) filtrar por local
+    - fecha_desde, fecha_hasta: (opcional) filtrar por fecha_evento
+    """
+    estado = request.args.get('estado', '').strip()
+    local = request.args.get('local', '').strip()
+    fecha_desde = request.args.get('fecha_desde', '').strip()
+    fecha_hasta = request.args.get('fecha_hasta', '').strip()
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Query similar al de listar_anticipos_recibidos pero sin restricción de permisos
+        sql = """
+            SELECT
+                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
+                ar.tipo_cambio_fecha, ar.cliente,
+                ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
+                ar.estado as estado_global,
+                ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
+                ar.deleted_by, ar.deleted_at,
+                -- Verificar si fue consumido realmente
+                (SELECT COUNT(*) FROM anticipos_estados_caja aec
+                 WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') as fue_consumido,
+                -- Verificar si tiene adjunto
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM imagenes_adjuntos ia
+                    WHERE ia.entity_type = 'anticipo_recibido'
+                      AND ia.entity_id = ar.id
+                      AND ia.estado = 'active'
+                ) THEN 1 ELSE 0 END as tiene_adjunto
+            FROM anticipos_recibidos ar
+            WHERE 1=1
+        """
+        params = []
+
+        # Filtro por estado
+        if estado:
+            if estado == 'pendiente':
+                sql += """ AND ar.estado = 'pendiente'
+                          AND (SELECT COUNT(*) FROM anticipos_estados_caja aec
+                               WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') = 0 """
+            elif estado == 'consumido':
+                sql += """ AND (SELECT COUNT(*) FROM anticipos_estados_caja aec
+                               WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') > 0 """
+            elif estado == 'eliminado_global':
+                sql += " AND ar.estado = 'eliminado_global' "
+
+        # Filtro por local
+        if local:
+            sql += " AND ar.local = %s "
+            params.append(local)
+
+        # Filtros por fecha_evento
+        if fecha_desde:
+            sql += " AND ar.fecha_evento >= %s "
+            params.append(fecha_desde)
+
+        if fecha_hasta:
+            sql += " AND ar.fecha_evento <= %s "
+            params.append(fecha_hasta)
+
+        sql += " ORDER BY ar.fecha_evento DESC, ar.created_at DESC "
+
+        cur.execute(sql, params)
+        anticipos = cur.fetchall()
+
+        # Convertir decimals a floats para JSON
+        for a in anticipos:
+            if a.get('importe') is not None:
+                a['importe'] = float(a['importe'])
+            if a.get('tipo_cambio_fecha') is not None:
+                a['tipo_cambio_fecha'] = float(a['tipo_cambio_fecha'])
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, anticipos=anticipos)
+
+    except Exception as e:
+        print("❌ ERROR listar_anticipos_auditor:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
 
 
