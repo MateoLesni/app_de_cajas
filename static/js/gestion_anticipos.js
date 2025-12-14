@@ -20,20 +20,8 @@
 
   // ===== INICIALIZACIÓN =====
   document.addEventListener('DOMContentLoaded', async () => {
-    // Setear filtro de fecha por defecto: últimos 30 días
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const fechaDesdeInput = $('#filtroFechaDesde');
-    const fechaHastaInput = $('#filtroFechaHasta');
-
-    if (fechaDesdeInput) {
-      fechaDesdeInput.value = thirtyDaysAgo.toISOString().split('T')[0];
-    }
-    if (fechaHastaInput) {
-      fechaHastaInput.value = today.toISOString().split('T')[0];
-    }
+    // No setear filtros por defecto - mostrar todos los anticipos
+    // Los usuarios pueden filtrar manualmente según necesiten
 
     await loadUserProfile();
     await loadLocales();
