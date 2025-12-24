@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tesorería - Sistema de Gestión</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <style>
+    :root{
+      --page-bg: #ffffff;
+      --primary-color: #1e88e5;
+    }
+    body{ background: var(--page-bg); }
+
+    .welcome-card {
+      background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      margin: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .welcome-card h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .welcome-card p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .action-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .action-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      border-color: #1e88e5;
+    }
+
+    .action-card-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .action-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .action-card p {
+      margin: 0;
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Barra lateral">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">NG</div>
+        <div class="brand-meta">
+          <strong>Sistema</strong>
+          <span>Gestión de Tesorería</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="nav-item is-active" href="{{ url_for('tesoreria_home') }}">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Inicio
+        </a>
+
+        <!-- Reportería -->
+        <div class="nav-group is-open">
+          <a href="javascript:void(0)"
+             id="navReportes"
+             class="nav-item nav-toggle is-active"
+             aria-expanded="true">
+            <span class="nav-dot" aria-hidden="true"></span>
+            <span>Reportería</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false" style="margin-left:auto;">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </a>
+
+          <div class="nav-sub">
+            <a class="nav-item nav-sub-item"
+               href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+              <span class="nav-dot" aria-hidden="true"></span>
+              Remesas Tesorería
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar__footer">
+          <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-main" role="main">
+      <!-- Welcome Card -->
+      <div class="welcome-card">
+        <h1>Bienvenido, {{ session['username'] }}</h1>
+        <p>Tesorería - Gestión de Remesas y Recepción de Efectivo</p>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <a href="{{ url_for('reporte_remesas_tesoreria_page') }}" class="action-card">
+          <div class="action-card-icon">
+            <i class="fas fa-table"></i>
+          </div>
+          <h3>Remesas para Tesorería</h3>
+          <p>Tabla expandible para registrar montos reales recibidos por local y fecha. Vista simplificada y rápida.</p>
+        </a>
+
+        <div class="action-card" style="opacity: 0.5; cursor: not-allowed;">
+          <div class="action-card-icon" style="background: #9ca3af;">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3>Estadísticas (Próximamente)</h3>
+          <p>Análisis de diferencias, tendencias y KPIs de recepción de efectivo.</p>
+        </div>
+
+        <div class="action-card" style="opacity: 0.5; cursor: not-allowed;">
+          <div class="action-card-icon" style="background: #9ca3af;">
+            <i class="fas fa-file-export"></i>
+          </div>
+          <h3>Exportar Reportes (Próximamente)</h3>
+          <p>Descarga reportes en Excel, PDF y otros formatos.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Toggle del menú de reportería
+    document.getElementById('navReportes')?.addEventListener('click', function(e) {
+      const parent = this.closest('.nav-group');
+      parent.classList.toggle('is-open');
+      const expanded = parent.classList.contains('is-open');
+      this.setAttribute('aria-expanded', expanded);
+    });
+  </script>
+</body>
+</html>
