@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reportería - Remesas para Tesorería</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .rep-wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    /* Filtros */
+    .rep-filtros {
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:end;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
+    }
+
+    .filtro-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filtro-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .filtro-group input[type="date"],
+    .filtro-group select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .rep-actions {
+      margin-left:auto;
+      display:flex;
+      gap:8px;
+      align-items: end;
+    }
+
+    .btn-primary {
+      background: #1e88e5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #1565c0;
+    }
+
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+
+    /* Card */
+    .rep-card {
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      box-shadow:0 8px 20px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+
+    /* Contador de resultados */
+    .contador-resultados {
+      padding: 12px 16px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 13px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .contador-resultados strong {
+      color: #1e88e5;
+      font-weight: 700;
+    }
+
+    /* Tabla principal */
+    .tabla-remesas-tesoreria {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tabla-remesas-tesoreria thead th {
+      background: #f9fafb;
+      border-bottom: 2px solid #e5e7eb;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+      color: #374151;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .tabla-remesas-tesoreria thead th:last-child {
+      text-align: center;
+    }
+
+    /* Fila resumen (clickeable) */
+    .fila-resumen {
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .fila-resumen:hover {
+      background: #f9fafb;
+    }
+
+    .fila-resumen.expanded {
+      background: #eff6ff;
+      border-bottom: 2px solid #1e88e5;
+    }
+
+    .fila-resumen td {
+      padding: 14px 16px;
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    .fila-resumen .icono-expandir {
+      transition: transform 0.2s;
+      display: inline-block;
+      margin-right: 8px;
+      color: #6b7280;
+    }
+
+    .fila-resumen.expanded .icono-expandir {
+      transform: rotate(90deg);
+    }
+
+    /* Tabla detalle (dentro de fila expandible) */
+    .fila-detalle {
+      display: none;
+    }
+
+    .fila-detalle.visible {
+      display: table-row;
+    }
+
+    .fila-detalle td {
+      padding: 0;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .detalle-container {
+      padding: 16px 32px 24px 32px;
+    }
+
+    .tabla-detalle {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .tabla-detalle thead th {
+      background: #f3f4f6;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tabla-detalle tbody td {
+      padding: 10px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .tabla-detalle tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tabla-detalle tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    /* Input de monto real */
+    .input-monto {
+      width: 120px;
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .input-monto:focus {
+      outline: none;
+      border-color: #1e88e5;
+      box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+    }
+
+    .input-monto.modified {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    /* Diferencia */
+    .dif-positiva { color: #f59e0b; font-weight: 700; } /* Falta */
+    .dif-negativa { color: #3b82f6; font-weight: 700; } /* Sobra */
+    .dif-cero { color: #10b981; font-weight: 700; } /* OK */
+
+    /* Botón guardar */
+    .btn-guardar {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s;
+      margin-top: 12px;
+    }
+
+    .btn-guardar:hover {
+      background: #059669;
+    }
+
+    .btn-guardar:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #9ca3af;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    /* Nav */
+    .nav-group > a { display:flex; align-items:center; justify-content:space-between; }
+    .nav-group .nav-sub { display:none; padding-left: 10px; }
+    .nav-group.is-open .nav-sub { display:block; }
+    .nav-sub a { padding-left: 26px; }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Barra lateral">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">NG</div>
+        <div class="brand-meta"><strong>Sistema</strong><span>Gestión de Tesorería</span></div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="nav-item" href="{{ url_for('tesoreria_home') if role_level >= 7 else url_for('resumen_local') }}">
+          <span class="nav-dot"></span> Inicio
+        </a>
+
+        <div class="nav-group is-open">
+          <a href="javascript:void(0)" id="navReportes" class="nav-item nav-toggle is-active" aria-expanded="true">
+            <span class="nav-dot" aria-hidden="true"></span>
+            <span>Reportería</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false" style="margin-left:auto;">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </a>
+
+          <div class="nav-sub">
+            <a class="nav-item nav-sub-item is-active" href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+              <span class="nav-dot" aria-hidden="true"></span>
+              Remesas Tesorería
+            </a>
+          </div>
+        </div>
+
+        <a class="nav-item" href="{{ url_for('logout') }}">
+          <span class="nav-dot"></span> Cerrar Sesión
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-main" role="main">
+      <div class="rep-wrap">
+        <!-- Filtros -->
+        <div class="rep-filtros">
+          <div class="filtro-group">
+            <label for="fechaDesde">Fecha Desde</label>
+            <input type="date" id="fechaDesde" value="">
+          </div>
+
+          <div class="filtro-group">
+            <label for="fechaHasta">Fecha Hasta</label>
+            <input type="date" id="fechaHasta" value="">
+          </div>
+
+          <div class="filtro-group">
+            <label for="filtroLocal">Local</label>
+            <select id="filtroLocal" onchange="aplicarFiltros()">
+              <option value="">Todos los locales</option>
+            </select>
+          </div>
+
+          <div class="filtro-group">
+            <label for="filtroEstado">Estado</label>
+            <select id="filtroEstado" onchange="aplicarFiltros()">
+              <option value="">Todos los estados</option>
+              <option value="en_transito">📦 En Tránsito</option>
+              <option value="recibido">✅ Recibido</option>
+              <option value="con_diferencia">⚠️ Con Diferencia</option>
+              <option value="auditado">✔️ Auditado</option>
+            </select>
+          </div>
+
+          <div class="filtro-group">
+            <label style="visibility: hidden;">Diferencias</label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+              <input type="checkbox" id="filtroDiferencias" onchange="aplicarFiltros()" style="cursor: pointer;">
+              <span style="font-size: 13px; font-weight: 500;">Solo con diferencias</span>
+            </label>
+          </div>
+
+          <div class="rep-actions">
+            <button class="btn-secondary" onclick="limpiarFiltros()" title="Limpiar todos los filtros">
+              <i class="fas fa-eraser"></i> Limpiar Filtros
+            </button>
+            <button class="btn-primary" onclick="cargarReporte()">
+              <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+          </div>
+        </div>
+
+        <!-- Card del Reporte -->
+        <div class="rep-card">
+          <!-- Loading -->
+          <div id="loadingState" class="loading" style="display: none;">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top-color: #1e88e5; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <p>Cargando reporte...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div id="emptyState" class="empty-state" style="display: none;">
+            <i class="fas fa-inbox"></i>
+            <p>No hay remesas retiradas en el rango de fechas seleccionado</p>
+          </div>
+
+          <!-- Contador de resultados -->
+          <div id="contadorResultados" class="contador-resultados" style="display: none;">
+            Mostrando <strong id="numResultados">0</strong> remesas
+          </div>
+
+          <!-- Tabla -->
+          <table id="tablaRemesas" class="tabla-remesas-tesoreria" style="display: none;">
+            <thead>
+              <tr>
+                <th>Local / Fecha Retiro</th>
+                <th style="text-align: right;">Teórico (Remesas)</th>
+                <th style="text-align: right;">Contabilizado (Real)</th>
+                <th style="text-align: right;">Diferencia</th>
+                <th style="text-align: center;">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tablaBody">
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/reporte_remesas_tesoreria.js') }}"></script>
+
+  <script>
+    // Toggle menú
+    document.getElementById('navReportes')?.addEventListener('click', function(e) {
+      const parent = this.closest('.nav-group');
+      parent.classList.toggle('is-open');
+      this.setAttribute('aria-expanded', parent.classList.contains('is-open'));
+    });
+
+    // Cargar fechas por defecto
+    window.addEventListener('DOMContentLoaded', function() {
+      const hoy = new Date();
+      const hace7Dias = new Date(hoy);
+      hace7Dias.setDate(hoy.getDate() - 6);
+
+      document.getElementById('fechaDesde').value = hace7Dias.toISOString().split('T')[0];
+      document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
+
+      cargarReporte();
+    });
+
+    // Animación spin
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
