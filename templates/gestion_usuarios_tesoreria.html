@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestión de Usuarios de Tesorería</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      background: #f8fafc;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .page-header {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .page-header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      color: #1f2937;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .btn-success {
+      background: #16a34a;
+      color: white;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .users-table {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #f9fafb;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-admin {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-user {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal-header {
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header">
+      <h1>Gestión de Usuarios de Tesorería</h1>
+      <p>Administrar usuarios con acceso al módulo de Tesorería</p>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="actions-bar">
+      <a href="{{ url_for('gestion_anticipos_page') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver a Anticipos
+      </a>
+      <button class="btn btn-primary" onclick="abrirModalCrear()">
+        <i class="fas fa-plus"></i> Crear Usuario
+      </button>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Rol</th>
+            <th>Local</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th style="text-align: right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 40px;">
+              <i class="fas fa-spinner fa-spin"></i> Cargando...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Crear Usuario -->
+  <div id="modalCrear" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Crear Usuario de Tesorería</h2>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="newUsername">Username</label>
+          <input type="text" id="newUsername" placeholder="usuario.tesoreria">
+        </div>
+        <div class="form-group">
+          <label for="newPassword">Contraseña Temporal</label>
+          <input type="password" id="newPassword" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="form-group">
+          <label for="newRol">Rol</label>
+          <select id="newRol">
+            <option value="tesoreria">Tesorería (Nivel 7)</option>
+            <option value="admin_tesoreria">Admin Tesorería (Nivel 8)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="newLocal">Local</label>
+          <input type="text" id="newLocal" value="TESORERIA">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalCrear')">Cancelar</button>
+        <button class="btn btn-primary" onclick="crearUsuario()">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Resetear Password -->
+  <div id="modalResetPassword" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Resetear Contraseña</h2>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 16px;">Usuario: <strong id="resetUsername"></strong></p>
+        <div class="form-group">
+          <label for="resetPassword">Nueva Contraseña Temporal</label>
+          <input type="password" id="resetPassword" placeholder="Mínimo 6 caracteres">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalResetPassword')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarResetPassword()">Resetear</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentResetUserId = null;
+
+    // Cargar usuarios al inicio
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarUsuarios();
+    });
+
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch('/api/usuarios-tesoreria/listar');
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.msg || 'Error al cargar usuarios');
+        }
+
+        renderizarUsuarios(data.users);
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar usuarios: ' + error.message);
+      }
+    }
+
+    function renderizarUsuarios(users) {
+      const tbody = document.getElementById('usersTableBody');
+
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">No hay usuarios de tesorería creados</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><strong>${u.username}</strong></td>
+          <td>
+            <span class="badge ${u.role === 'admin_tesoreria' ? 'badge-admin' : 'badge-user'}">
+              ${u.role === 'admin_tesoreria' ? '👑 Admin' : '📦 Tesorería'}
+            </span>
+          </td>
+          <td>${u.local || '-'}</td>
+          <td>${u.status === 'active' ? '✅ Activo' : '❌ Inactivo'}</td>
+          <td>${formatFecha(u.created_at)}</td>
+          <td style="text-align: right;">
+            <button class="btn btn-success" onclick="abrirModalResetPassword(${u.id}, '${u.username}')">
+              <i class="fas fa-key"></i> Reset
+            </button>
+            <button class="btn btn-danger" onclick="eliminarUsuario(${u.id}, '${u.username}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function abrirModalCrear() {
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('newRol').value = 'tesoreria';
+      document.getElementById('newLocal').value = 'TESORERIA';
+      document.getElementById('modalCrear').classList.add('active');
+    }
+
+    function abrirModalResetPassword(userId, username) {
+      currentResetUserId = userId;
+      document.getElementById('resetUsername').textContent = username;
+      document.getElementById('resetPassword').value = '';
+      document.getElementById('modalResetPassword').classList.add('active');
+    }
+
+    function cerrarModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    async function crearUsuario() {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value.trim();
+      const rol = document.getElementById('newRol').value;
+      const local = document.getElementById('newLocal').value.trim();
+
+      if (!username || !password) {
+        alert('Username y contraseña son requeridos');
+        return;
+      }
+
+      if (password.length < 6) {
+        alert('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/usuarios-tesoreria/crear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, rol, local })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.msg || 'Error al crear usuario');
+        }
+
+        alert('✅ Usuario creado exitosamente');
+        cerrarModal('modalCrear');
+        cargarUsuarios();
+      } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    async function confirmarResetPassword() {
+      const password = document.getElementById('resetPassword').value.trim();
+
+      if (!password) {
+        alert('La contraseña es requerida');
+        return;
+      }
+
+      if (password.length < 6) {
+        alert('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/usuarios-tesoreria/resetear-password/${currentResetUserId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.msg || 'Error al resetear contraseña');
+        }
+
+        alert('✅ ' + data.msg);
+        cerrarModal('modalResetPassword');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    async function eliminarUsuario(userId, username) {
+      if (!confirm(`¿Estás seguro de eliminar al usuario "${username}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/usuarios-tesoreria/eliminar/${userId}`, {
+          method: 'DELETE'
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.msg || 'Error al eliminar usuario');
+        }
+
+        alert('✅ Usuario eliminado exitosamente');
+        cargarUsuarios();
+      } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    function formatFecha(fecha) {
+      if (!fecha) return '-';
+      const d = new Date(fecha);
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const año = d.getFullYear();
+      return `${dia}/${mes}/${año}`;
+    }
+  </script>
+</body>
+</html>
