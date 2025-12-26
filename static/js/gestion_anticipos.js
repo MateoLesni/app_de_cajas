@@ -37,15 +37,23 @@
         userProfile = data;
         console.log('Perfil de usuario cargado:', userProfile);
 
-        // Si es admin_anticipos (nivel 6), agregar link de Gestión de Usuarios
+        // Si es admin_anticipos (nivel 6), agregar links de Gestión de Usuarios
         if (userProfile.level >= 6) {
           const sidebarNav = $('#sidebarNav');
           if (sidebarNav) {
+            // Link de Gestión de Usuarios de Anticipos
             const gestionUsuariosLink = document.createElement('a');
             gestionUsuariosLink.className = 'nav-item';
             gestionUsuariosLink.href = '/gestion-usuarios';
             gestionUsuariosLink.innerHTML = '<span class="nav-dot"></span>Gestión de Usuarios';
             sidebarNav.appendChild(gestionUsuariosLink);
+
+            // Link de Gestión de Usuarios de Tesorería
+            const gestionTesoreriaLink = document.createElement('a');
+            gestionTesoreriaLink.className = 'nav-item';
+            gestionTesoreriaLink.href = '/gestion-usuarios-tesoreria';
+            gestionTesoreriaLink.innerHTML = '<span class="nav-dot"></span>Usuarios de Tesorería';
+            sidebarNav.appendChild(gestionTesoreriaLink);
           }
         }
       }

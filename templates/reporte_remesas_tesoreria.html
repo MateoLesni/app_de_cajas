@@ -341,13 +341,8 @@
         <!-- Filtros -->
         <div class="rep-filtros">
           <div class="filtro-group">
-            <label for="fechaDesde">Fecha Desde</label>
-            <input type="date" id="fechaDesde" value="">
-          </div>
-
-          <div class="filtro-group">
-            <label for="fechaHasta">Fecha Hasta</label>
-            <input type="date" id="fechaHasta" value="">
+            <label for="fechaRetiro">Fecha de Retiro</label>
+            <input type="date" id="fechaRetiro" value="">
           </div>
 
           <div class="filtro-group">
@@ -397,7 +392,7 @@
           <!-- Empty State -->
           <div id="emptyState" class="empty-state" style="display: none;">
             <i class="fas fa-inbox"></i>
-            <p>No hay remesas retiradas en el rango de fechas seleccionado</p>
+            <p>No hay remesas retiradas en la fecha seleccionada</p>
           </div>
 
           <!-- Contador de resultados -->
@@ -435,15 +430,10 @@
       this.setAttribute('aria-expanded', parent.classList.contains('is-open'));
     });
 
-    // Cargar fechas por defecto
+    // Cargar fecha por defecto (hoy)
     window.addEventListener('DOMContentLoaded', function() {
       const hoy = new Date();
-      const hace7Dias = new Date(hoy);
-      hace7Dias.setDate(hoy.getDate() - 6);
-
-      document.getElementById('fechaDesde').value = hace7Dias.toISOString().split('T')[0];
-      document.getElementById('fechaHasta').value = hoy.toISOString().split('T')[0];
-
+      document.getElementById('fechaRetiro').value = hoy.toISOString().split('T')[0];
       cargarReporte();
     });
 

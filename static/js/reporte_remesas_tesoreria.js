@@ -11,18 +11,18 @@ let localesDisponibles = [];
  * Cargar reporte desde API
  */
 async function cargarReporte() {
-  const fechaDesde = document.getElementById('fechaDesde').value;
-  const fechaHasta = document.getElementById('fechaHasta').value;
+  const fechaRetiro = document.getElementById('fechaRetiro').value;
 
-  if (!fechaDesde || !fechaHasta) {
-    alert('Por favor selecciona ambas fechas');
+  if (!fechaRetiro) {
+    alert('Por favor selecciona una fecha');
     return;
   }
 
   mostrarLoading(true);
 
   try {
-    const response = await fetch(`/api/reportes/remesas-matriz?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`);
+    // Usar la misma fecha para desde y hasta (un solo día)
+    const response = await fetch(`/api/reportes/remesas-matriz?fecha_desde=${fechaRetiro}&fecha_hasta=${fechaRetiro}`);
 
     if (!response.ok) {
       const error = await response.json();
