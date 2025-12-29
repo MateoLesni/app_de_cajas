@@ -6199,6 +6199,141 @@ def api_tesoreria_obtener_real():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/tesoreria/remesas-detalle', methods=['GET'])
+@login_required
+@role_min_required(7)
+def api_tesoreria_remesas_detalle():
+    """
+    Obtiene TODAS las remesas retiradas en una fecha específica.
+    Retorna un array con cada remesa individual (no agrupadas).
+    Incluye el monto real si ya fue registrado en tesoreria_recibido.
+    """
+    fecha_retiro = request.args.get('fecha_retiro', '').strip()
+
+    if not fecha_retiro:
+        return jsonify(success=False, msg='Falta fecha_retiro'), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener todas las remesas retiradas en esta fecha
+        # IMPORTANTE: fecha_retiro_real es la fecha en que se marcó como retirada
+        cur.execute("""
+            SELECT
+                fecha AS fecha_caja,
+                precinto,
+                nro_remesa,
+                local,
+                caja,
+                turno,
+                efectivo AS monto,
+                fecha_retiro_real,
+                retirada_por
+            FROM remesas_trns
+            WHERE retirada IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
+              AND DATE(fecha_retiro_real) = %s
+            ORDER BY precinto
+        """, (fecha_retiro,))
+
+        remesas = cur.fetchall() or []
+
+        # Para cada remesa, consultar si tiene monto real registrado
+        # Crear un diccionario de reales por (local, fecha_retiro)
+        cur.execute("""
+            SELECT local, fecha_retiro, monto_real
+            FROM tesoreria_recibido
+            WHERE fecha_retiro = %s
+        """, (fecha_retiro,))
+
+        reales = {}
+        for row in cur.fetchall() or []:
+            key = (row['local'], str(row['fecha_retiro']))
+            reales[key] = float(row['monto_real']) if row['monto_real'] else 0
+
+        # Adjuntar el real a cada remesa (si existe)
+        for remesa in remesas:
+            key = (remesa['local'], fecha_retiro)
+            remesa['real'] = reales.get(key, 0)
+
+            # Convertir decimales a float
+            if remesa.get('monto'):
+                remesa['monto'] = float(remesa['monto'])
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, remesas=remesas)
+
+    except Exception as e:
+        print(f"❌ ERROR remesas-detalle: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/tesoreria/guardar-remesa', methods=['POST'])
+@login_required
+@role_min_required(7)
+def api_tesoreria_guardar_remesa():
+    """
+    Guarda el monto real de UNA remesa específica.
+    Actualiza o crea registro en tesoreria_recibido.
+    """
+    data = request.get_json() or {}
+    local = data.get('local', '').strip()
+    fecha_retiro = data.get('fecha_retiro', '').strip()
+    monto_real = data.get('monto_real', 0)
+    monto_teorico = data.get('monto_teorico', 0)
+
+    if not (local and fecha_retiro):
+        return jsonify(success=False, msg='Faltan datos requeridos'), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        username = session.get('username', 'SYSTEM')
+
+        # Determinar estado según diferencia
+        dif = float(monto_teorico) - float(monto_real)
+        if monto_real == 0:
+            estado = 'en_transito'
+        elif abs(dif) < 0.01:  # Tolerancia de 1 centavo
+            estado = 'recibido'
+        else:
+            estado = 'con_diferencia'
+
+        # Insertar o actualizar
+        cur.execute("""
+            INSERT INTO tesoreria_recibido
+                (local, fecha_retiro, monto_teorico, monto_real, estado, registrado_por, registrado_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            ON DUPLICATE KEY UPDATE
+                monto_real = VALUES(monto_real),
+                monto_teorico = VALUES(monto_teorico),
+                estado = VALUES(estado),
+                registrado_por = VALUES(registrado_por),
+                registrado_at = NOW()
+        """, (local, fecha_retiro, monto_teorico, monto_real, estado, username))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg='Guardado correctamente', estado=estado)
+
+    except Exception as e:
+        print(f"❌ ERROR guardar-remesa: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
 # NUEVO: Endpoint para registrar monto real recibido por tesorería
 @app.route("/api/tesoreria/registrar-recibido", methods=['POST'])
 @login_required
