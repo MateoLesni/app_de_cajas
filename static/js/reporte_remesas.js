@@ -8,6 +8,42 @@
 
   let remesasData = []; // Array de todas las remesas
 
+  // Formatear input con separador de miles argentino
+  function formatearInputArgentino(valor) {
+    // Eliminar todo excepto números y coma
+    let limpio = valor.replace(/[^\d,]/g, '');
+
+    // Separar parte entera y decimal
+    let partes = limpio.split(',');
+    let entero = partes[0];
+    let decimal = partes[1] || '';
+
+    // Limitar decimales a 2 dígitos
+    decimal = decimal.substring(0, 2);
+
+    // Agregar separadores de miles (punto)
+    entero = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    // Retornar formateado
+    return decimal ? `${entero},${decimal}` : entero;
+  }
+
+  // Convertir formato argentino a número para BD
+  function parsearNumeroArgentino(valorFormateado) {
+    if (!valorFormateado) return 0;
+    // Remover puntos (separador de miles) y reemplazar coma por punto (decimal)
+    const numero = valorFormateado.replace(/\./g, '').replace(',', '.');
+    return parseFloat(numero) || 0;
+  }
+
+  // Convertir número a formato argentino para mostrar
+  function numeroAFormatoArgentino(numero) {
+    if (!numero && numero !== 0) return '';
+    // Asegurar 2 decimales
+    const numeroConDecimales = parseFloat(numero).toFixed(2);
+    return formatearInputArgentino(numeroConDecimales.replace('.', ','));
+  }
+
   // Formatear fecha ISO a dd/mm/yyyy
   function formatFecha(isoDate) {
     if (!isoDate) return '-';
@@ -106,14 +142,14 @@
         <td class="col-readonly">${remesa.turno || '-'}</td>
         <td class="col-monto-teorico">$${money(remesa.monto)}</td>
         <td class="col-real">
-          <input type="number"
+          <input type="text"
                  class="input-real"
                  data-index="${index}"
-                 value="${remesa.real || ''}"
-                 placeholder="¿Cuánto llegó?"
-                 step="0.01"
-                 onchange="window.actualizarReal(${index}, this.value)"
-                 onkeypress="if(event.key==='Enter'){window.guardarRemesa(${index})}">
+                 value="${numeroAFormatoArgentino(remesa.real)}"
+                 placeholder="0,00"
+                 oninput="window.formatearInput(${index}, this)"
+                 onblur="window.actualizarReal(${index}, this.value)"
+                 onkeypress="if(event.key==='Enter'){event.target.blur();window.guardarRemesa(${index})}">
         </td>
         <td class="col-dif ${difClass}" id="dif-${index}">
           ${dif !== 0 ? `${signo}$${money(Math.abs(dif))}` : '$0.00'}
@@ -131,10 +167,31 @@
     mostrarTabla(true);
   }
 
-  // Actualizar monto real (solo en memoria)
-  window.actualizarReal = function(index, valor) {
+  // Formatear input mientras se escribe
+  window.formatearInput = function(index, input) {
+    const cursorPos = input.selectionStart;
+    const valorAnterior = input.value;
+    const valorFormateado = formatearInputArgentino(input.value);
+
+    // Solo actualizar si cambió
+    if (valorFormateado !== valorAnterior) {
+      input.value = valorFormateado;
+
+      // Intentar mantener posición del cursor
+      const diff = valorFormateado.length - valorAnterior.length;
+      const newPos = cursorPos + diff;
+      input.setSelectionRange(newPos, newPos);
+    }
+
+    // Marcar como modificado mientras escribe
+    input.style.borderColor = '#f59e0b';
+    input.style.background = '#fef3c7';
+  };
+
+  // Actualizar monto real (solo en memoria) cuando pierde foco
+  window.actualizarReal = function(index, valorFormateado) {
     const remesa = remesasData[index];
-    remesa.real = parseFloat(valor) || 0;
+    remesa.real = parsearNumeroArgentino(valorFormateado);
 
     // Actualizar diferencia
     const dif = (remesa.monto || 0) - remesa.real;
@@ -146,10 +203,11 @@
     difEl.className = `col-dif ${difClass}`;
     difEl.textContent = dif !== 0 ? `${signo}$${money(Math.abs(dif))}` : '$0.00';
 
-    // Marcar input como modificado
+    // Formatear con ,00 si no tiene decimales
     const input = $(`.input-real[data-index="${index}"]`);
-    input.style.borderColor = '#f59e0b';
-    input.style.background = '#fef3c7';
+    if (remesa.real > 0 && !valorFormateado.includes(',')) {
+      input.value = numeroAFormatoArgentino(remesa.real);
+    }
   };
 
   // Guardar una remesa individual
