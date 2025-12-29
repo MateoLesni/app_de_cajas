@@ -94,14 +94,19 @@ function actualizarContador() {
   const numResultados = reporteData.length;
   const totalDisponibles = reporteDataCompleto.length;
 
-  document.getElementById('numResultados').textContent = numResultados;
+  const numResultadosEl = document.getElementById('numResultados');
+  if (numResultadosEl) {
+    numResultadosEl.textContent = numResultados;
+  }
 
   // Mostrar info adicional si hay filtros activos
   const contadorDiv = document.getElementById('contadorResultados');
-  if (numResultados < totalDisponibles) {
-    contadorDiv.innerHTML = `Mostrando <strong>${numResultados}</strong> de ${totalDisponibles} remesas <span style="color: #9ca3af;">(filtros activos)</span>`;
-  } else {
-    contadorDiv.innerHTML = `Mostrando <strong>${numResultados}</strong> remesas`;
+  if (contadorDiv) {
+    if (numResultados < totalDisponibles) {
+      contadorDiv.innerHTML = `Mostrando <strong>${numResultados}</strong> de ${totalDisponibles} remesas <span style="color: #9ca3af;">(filtros activos)</span>`;
+    } else {
+      contadorDiv.innerHTML = `Mostrando <strong>${numResultados}</strong> remesas`;
+    }
   }
 }
 
