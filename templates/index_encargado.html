@@ -52,6 +52,28 @@
     #fechaGlobal.date-modern::-webkit-datetime-edit-day-field{
       padding: 0 2px;
     }
+
+    /* Badge contador para remesas no retiradas */
+    .badge-counter {
+      background: #dc2626;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 8px;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .nav-item:hover .badge-counter {
+      background: #b91c1c;
+    }
   </style>
 </head>
 <body>
@@ -85,6 +107,13 @@
         <a class="nav-item" href="{{ url_for('gestion_usuarios') }}">
           <span class="nav-dot" aria-hidden="true"></span>
           Gestión de Usuarios
+        </a>
+
+        <!-- Remesas No Retiradas -->
+        <a class="nav-item" href="/remesas-no-retiradas" id="linkRemesasNoRetiradas">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Remesas No Retiradas
+          <span id="badgeRemesasNoRetiradas" class="badge-counter" style="display: none;"></span>
         </a>
       </nav>
 
@@ -132,7 +161,12 @@
         </div>
 
         <div class="form-group">
-          <label for="cajaSelect">Seleccioná una caja:</label>
+          <label for="cajaSelect">
+            Seleccioná una caja:
+            <span id="cajasCounter" style="font-size: 11px; color: #6b7280; font-weight: normal; margin-left: 8px;">
+              ({{ cantidad_cajas }} disponibles - usa scroll o escribe para buscar)
+            </span>
+          </label>
           <select id="cajaSelect" class="form-control" required>
             {% for i in range(1, cantidad_cajas + 1) %}
               <option value="Caja {{ i }}">Caja {{ i }}</option>
@@ -1086,7 +1120,25 @@
   <script src="{{ url_for('static', filename='js/adjuntador.js') }}"></script>
   <script src="{{ url_for('static', filename='js/orqtabs_init.js') }}" defer></script>
 
+  <!-- Contador de remesas no retiradas -->
+  <script>
+  (async function() {
+    try {
+      const response = await fetch('/api/remesas-no-retiradas/contador');
+      const data = await response.json();
 
+      if (data.success && data.total > 0) {
+        const badge = document.getElementById('badgeRemesasNoRetiradas');
+        if (badge) {
+          badge.textContent = data.total;
+          badge.style.display = 'inline-block';
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar contador de remesas:', error);
+    }
+  })();
+  </script>
 
 </body>
 </html>

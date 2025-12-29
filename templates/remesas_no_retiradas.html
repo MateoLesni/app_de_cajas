@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remesas No Retiradas - Sistema de Gestión</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      background: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .page-header {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .page-header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      color: #1f2937;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .alert-box {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alert-box.success {
+      background: #d1fae5;
+      border-left-color: #10b981;
+    }
+
+    .alert-icon {
+      font-size: 24px;
+    }
+
+    .alert-content h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      color: #92400e;
+    }
+
+    .alert-box.success .alert-content h3 {
+      color: #065f46;
+    }
+
+    .alert-content p {
+      margin: 0;
+      font-size: 14px;
+      color: #78350f;
+    }
+
+    .alert-box.success .alert-content p {
+      color: #047857;
+    }
+
+    .filters-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .filter-group input,
+    .filter-group select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-warning:hover {
+      background: #d97706;
+    }
+
+    .remesas-table-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .remesas-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .remesas-table thead {
+      background: #f8fafc;
+    }
+
+    .remesas-table th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .remesas-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    .remesas-table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-pendiente {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #2563eb;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state h3 {
+      margin: 16px 0 8px;
+      color: #374151;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #1f2937;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-help {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .detail-item {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      font-size: 15px;
+      color: #1f2937;
+      font-weight: 500;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .back-link:hover {
+      color: #1d4ed8;
+    }
+
+    .monto-importante {
+      font-weight: 700;
+      color: #dc2626;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">
+      <span>←</span> Volver al Panel Principal
+    </a>
+
+    <div class="page-header">
+      <h1>Remesas No Retiradas</h1>
+      <p>Gestión centralizada de remesas pendientes de retiro</p>
+    </div>
+
+    <div id="alertBox" class="alert-box" style="display: none;">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-content">
+        <h3 id="alertTitle">Remesas Pendientes</h3>
+        <p id="alertMessage">Tenés remesas no retiradas que requieren atención</p>
+      </div>
+    </div>
+
+    <div class="filters-card" id="filtersCard" style="display: none;">
+      <div class="filters-grid">
+        <div class="filter-group" id="localFilterGroup" style="display: none;">
+          <label for="filtroLocal">Local</label>
+          <select id="filtroLocal">
+            <option value="">Todos los locales</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filtroFechaDesde">Fecha Caja Desde</label>
+          <input type="date" id="filtroFechaDesde">
+        </div>
+        <div class="filter-group">
+          <label for="filtroFechaHasta">Fecha Caja Hasta</label>
+          <input type="date" id="filtroFechaHasta">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-secondary" onclick="limpiarFiltros()">Limpiar Filtros</button>
+        <button class="btn btn-primary" onclick="aplicarFiltros()">Aplicar Filtros</button>
+      </div>
+    </div>
+
+    <div class="remesas-table-card">
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando remesas...</p>
+      </div>
+
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <h3>🎉 ¡Excelente trabajo!</h3>
+        <p>No hay remesas pendientes de retiro</p>
+      </div>
+
+      <table class="remesas-table" id="remesasTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Fecha Caja</th>
+            <th>Local</th>
+            <th>Caja</th>
+            <th>Turno</th>
+            <th>N° Remesa</th>
+            <th>Precinto</th>
+            <th>Monto</th>
+            <th>Usuario</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="remesasTableBody">
+          <!-- Se llena dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal: Marcar como Retirada -->
+  <div class="modal-overlay" id="modalMarcarRetirada">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Marcar Remesa como Retirada</h2>
+      </div>
+      <div class="modal-body">
+        <div class="detail-item">
+          <span class="detail-label">Fecha de Caja</span>
+          <span class="detail-value" id="detalleFechaCaja"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Local</span>
+          <span class="detail-value" id="detalleLocal"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Caja / Turno</span>
+          <span class="detail-value" id="detalleCajaTurno"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Monto</span>
+          <span class="detail-value monto-importante" id="detalleMonto"></span>
+        </div>
+
+        <form id="formMarcarRetirada">
+          <input type="hidden" id="remesaId" name="remesa_id">
+
+          <div class="form-group">
+            <label for="fechaRetiro">Fecha de Retiro *</label>
+            <input type="date" id="fechaRetiro" name="fecha_retirada" required>
+            <p class="form-help">Fecha en que se retiró efectivamente la remesa</p>
+          </div>
+
+          <div class="form-group">
+            <label for="retiradaPor">Nombre de Quien Retira *</label>
+            <input type="text" id="retiradaPor" name="retirada_por" required placeholder="Juan Pérez">
+            <p class="form-help">Nombre completo de la persona que retiró la remesa</p>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalMarcar()">Cancelar</button>
+        <button type="submit" form="formMarcarRetirada" class="btn btn-success">Marcar como Retirada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar (Solo Auditores) -->
+  <div class="modal-overlay" id="modalEditarRetirada">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Editar Datos de Retiro</h2>
+      </div>
+      <div class="modal-body">
+        <div class="detail-item">
+          <span class="detail-label">Remesa</span>
+          <span class="detail-value" id="editarDetalleRemesa"></span>
+        </div>
+
+        <form id="formEditarRetirada">
+          <input type="hidden" id="editarRemesaId" name="remesa_id">
+
+          <div class="form-group">
+            <label for="editarFechaRetiro">Nueva Fecha de Retiro</label>
+            <input type="date" id="editarFechaRetiro" name="fecha_retirada">
+            <p class="form-help">Dejar vacío para no modificar</p>
+          </div>
+
+          <div class="form-group">
+            <label for="editarRetiradaPor">Nuevo Nombre de Quien Retira</label>
+            <input type="text" id="editarRetiradaPor" name="retirada_por" placeholder="Juan Pérez">
+            <p class="form-help">Dejar vacío para no modificar</p>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditar()">Cancelar</button>
+        <button type="submit" form="formEditarRetirada" class="btn btn-warning">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/remesas_no_retiradas.js') }}"></script>
+</body>
+</html>

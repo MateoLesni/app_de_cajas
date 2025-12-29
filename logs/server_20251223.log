@@ -1,0 +1,306 @@
+2025-12-23 14:13:34,658 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-23 14:13:34,659 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-23 14:13:34,664 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:13:36,980 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:13:36,986 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:13:37,220 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:13:37] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:13:37,330 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:13:37] "GET /login?next=/? HTTP/1.1" 200 -
+2025-12-23 14:13:37,408 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:13:37] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-12-23 14:14:01,403 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-23 14:14:01,403 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-23 14:14:01,406 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-23 14:14:06,511 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:06] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-12-23 14:14:09,154 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:14:09,222 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:14:09,281 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,281 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,281 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,282 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,281 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,281 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "GET /static/js/index.js HTTP/1.1" 200 -
+2025-12-23 14:14:09,337 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,338 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,338 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,339 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,354 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,360 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-23 14:14:09,398 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:14:09,401 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:14:09,400 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:09] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:14:11,758 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:11] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:14:11,821 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:11] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:14:11,849 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:11] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:14:12,068 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:12] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:14:14,253 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:14] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:14:29,551 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:29] "GET /reporteria/remesas-matriz HTTP/1.1" 200 -
+2025-12-23 14:14:29,606 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:29] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:14:29,615 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:29] "GET /static/js/reporte_remesas_matriz.js HTTP/1.1" 200 -
+2025-12-23 14:14:32,282 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:32] "[31m[1mGET /api/reportes/remesas-matriz?fecha_desde=2025-12-17&fecha_hasta=2025-12-23 HTTP/1.1[0m" 400 -
+2025-12-23 14:14:50,473 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:14:50] "[31m[1mGET /api/reportes/remesas-matriz?fecha_desde=2025-12-01&fecha_hasta=2025-12-23 HTTP/1.1[0m" 400 -
+2025-12-23 14:15:19,471 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:19] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-23 14:15:19,501 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:19] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:15:19,554 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:19] "GET /static/css/reporte_remesas.css HTTP/1.1" 200 -
+2025-12-23 14:15:19,727 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:19] "GET /static/js/reporte_remesas.js HTTP/1.1" 200 -
+2025-12-23 14:15:23,900 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:23] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:15:23,900 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:23] "[36mGET /static/css/reporte_remesas.css HTTP/1.1[0m" 304 -
+2025-12-23 14:15:23,904 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:23] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:15:25,855 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:25] "GET /api/reportes/remesas?fecha=2025-12-23 HTTP/1.1" 200 -
+2025-12-23 14:15:46,152 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:46] "GET /api/reportes/remesas?fecha=2025-12-20 HTTP/1.1" 200 -
+2025-12-23 14:15:46,945 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:46] "GET /api/reportes/remesas?fecha=2025-12-20 HTTP/1.1" 200 -
+2025-12-23 14:15:55,404 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:55] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-23 14:15:55,445 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:55] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:15:55,447 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:55] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:15:55,453 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:55] "GET /static/css/reporte_remesas.css HTTP/1.1" 200 -
+2025-12-23 14:15:55,453 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:55] "GET /static/js/reporte_remesas.js HTTP/1.1" 200 -
+2025-12-23 14:15:59,727 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:59] "GET /resumen-local HTTP/1.1" 200 -
+2025-12-23 14:15:59,761 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:59] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:15:59,768 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:59] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:15:59,803 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:59] "GET /static/css/resumen_local.css HTTP/1.1" 200 -
+2025-12-23 14:15:59,842 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:15:59] "GET /static/js/resumen_local.js HTTP/1.1" 200 -
+2025-12-23 14:16:01,504 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:01] "GET /api/reportes/remesas?fecha=2025-12-23 HTTP/1.1" 200 -
+2025-12-23 14:16:02,313 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:02] "GET /api/locales_options HTTP/1.1" 200 -
+2025-12-23 14:16:05,970 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:05] "GET /resumen-local HTTP/1.1" 200 -
+2025-12-23 14:16:05,994 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:05] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:16:06,000 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:06] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:16:06,009 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:06] "GET /static/js/resumen_local.js HTTP/1.1" 200 -
+2025-12-23 14:16:06,010 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:06] "GET /static/css/resumen_local.css HTTP/1.1" 200 -
+2025-12-23 14:16:07,184 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:07] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:16:08,422 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:08] "GET /api/locales_options HTTP/1.1" 200 -
+2025-12-23 14:16:09,809 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:16:09,840 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:16:09,844 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:16:09,876 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/pedidosya.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,877 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/tarjetas.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,878 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/ventas.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,878 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/rappi.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,878 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/index.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,877 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/mercadopago.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,894 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/resumen.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,903 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/orquestador-tabs.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,904 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/gastos.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,920 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/fecha_hoy_index.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,922 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/adjuntador.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,922 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /static/js/orqtabs_init.js HTTP/1.1" 200 -
+2025-12-23 14:16:09,959 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:16:09,961 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:16:09,964 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:09] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:16:12,291 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:12] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:16:12,292 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:12] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:16:12,322 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:12] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:16:12,346 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:12] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:16:12,643 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:12] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:16:13,577 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:13] "GET /reporteria/remesas-matriz HTTP/1.1" 200 -
+2025-12-23 14:16:13,615 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:13] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:16:13,623 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:13] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:16:13,631 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:13] "GET /static/js/reporte_remesas_matriz.js HTTP/1.1" 200 -
+2025-12-23 14:16:16,220 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:16:16] "[31m[1mGET /api/reportes/remesas-matriz?fecha_desde=2025-12-17&fecha_hasta=2025-12-23 HTTP/1.1[0m" 400 -
+2025-12-23 14:17:13,821 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 14:17:14,348 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:17:18,000 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:17:18,005 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:18:34,892 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 14:18:35,198 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:18:38,728 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:18:38,732 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:21:01,040 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-23 14:21:01,041 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-23 14:21:01,045 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:21:03,287 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:21:03,291 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:21:09,461 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:09] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:21:10,148 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-23 14:21:10,148 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-23 14:21:10,150 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-23 14:21:12,260 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:21:12,280 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,285 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,286 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,290 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,300 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,306 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,308 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,313 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,323 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,324 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,326 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,337 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,337 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:12,370 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:21:12,372 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:21:12,371 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:12] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:21:14,735 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:14] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:21:14,747 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:14] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:21:14,923 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:14] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:21:15,071 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:15] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:21:16,147 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:16] "GET /remesas-no-retiradas HTTP/1.1" 200 -
+2025-12-23 14:21:16,185 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:16] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:21:16,270 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:16] "GET /static/js/remesas_no_retiradas.js HTTP/1.1" 200 -
+2025-12-23 14:21:17,134 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:17] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:21:18,699 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:18] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:21:21,597 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:21] "GET /api/remesas-no-retiradas/listar HTTP/1.1" 200 -
+2025-12-23 14:21:45,195 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:45] "POST /api/remesas-no-retiradas/305/marcar-retirada HTTP/1.1" 200 -
+2025-12-23 14:21:48,283 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:48] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:21:49,511 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:49] "GET /api/remesas-no-retiradas/listar HTTP/1.1" 200 -
+2025-12-23 14:21:50,822 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:21:50,860 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,875 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,877 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,878 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,878 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,880 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,880 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,890 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,898 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,903 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,906 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,910 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,910 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:50,942 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:21:50,944 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:21:50,945 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:50] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:21:53,284 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:53] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:21:53,297 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:53] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:21:53,305 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:53] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:21:53,602 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:53] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:21:53,993 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:53] "GET /reporteria/remesas-matriz HTTP/1.1" 200 -
+2025-12-23 14:21:54,028 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:54] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:21:54,032 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:54] "[36mGET /static/js/reporte_remesas_matriz.js HTTP/1.1[0m" 304 -
+2025-12-23 14:21:55,660 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:55] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:21:56,673 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:21:56] "[31m[1mGET /api/reportes/remesas-matriz?fecha_desde=2025-12-17&fecha_hasta=2025-12-23 HTTP/1.1[0m" 400 -
+2025-12-23 14:22:00,582 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:22:00] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:22:00,585 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:22:00] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:22:09,333 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:22:09] "[31m[1mGET /api/reportes/remesas-matriz?fecha_desde=2025-12-23&fecha_hasta=2025-12-23 HTTP/1.1[0m" 400 -
+2025-12-23 14:23:26,853 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 14:23:27,226 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:23:31,018 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:23:31,022 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:25:27,150 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-23 14:25:27,151 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-23 14:25:27,154 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:25:29,412 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:25:29,416 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:25:30,804 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:30] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:25:31,527 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-23 14:25:31,527 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-23 14:25:31,531 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-23 14:25:33,670 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:25:33,697 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,699 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,700 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,704 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,708 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,712 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,715 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,719 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,722 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,726 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,730 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,733 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,735 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-23 14:25:33,819 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:25:33,821 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:25:33,823 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:33] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:25:36,227 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:36] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:25:36,228 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:36] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:25:36,243 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:36] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:25:36,543 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:36] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:25:38,775 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:38] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:25:41,786 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:41] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:25:41,811 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:41] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:25:55,805 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:55] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-23 14:25:55,862 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:55] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:25:55,870 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:55] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:25:55,871 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:55] "GET /static/css/reporte_remesas.css HTTP/1.1" 200 -
+2025-12-23 14:25:55,871 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:25:55] "GET /static/js/reporte_remesas.js HTTP/1.1" 200 -
+2025-12-23 14:26:01,968 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:01] "GET /api/reportes/remesas?fecha=2025-12-23 HTTP/1.1" 200 -
+2025-12-23 14:26:04,723 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:04] "GET /resumen-local HTTP/1.1" 200 -
+2025-12-23 14:26:04,765 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:04] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:26:04,772 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:04] "GET /static/css/resumen_local.css HTTP/1.1" 200 -
+2025-12-23 14:26:04,772 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:04] "GET /static/js/resumen_local.js HTTP/1.1" 200 -
+2025-12-23 14:26:04,777 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:04] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:26:05,932 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:05] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:26:07,201 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:07] "GET /api/locales_options HTTP/1.1" 200 -
+2025-12-23 14:26:08,488 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:26:08,523 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:26:08,539 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/rappi.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,539 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/index.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,541 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/tarjetas.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,541 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/mercadopago.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,540 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/pedidosya.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,547 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/ventas.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,557 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/resumen.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,566 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/gastos.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,575 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:26:08,575 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/orquestador-tabs.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,587 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/fecha_hoy_index.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,600 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/adjuntador.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,602 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /static/js/orqtabs_init.js HTTP/1.1" 200 -
+2025-12-23 14:26:08,635 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:26:08,637 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:26:08,641 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:08] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:26:11,106 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:26:11,107 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:26:11,111 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:26:11,111 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:26:11,424 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:26:11,508 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /reporteria/remesas-matriz HTTP/1.1" 200 -
+2025-12-23 14:26:11,552 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /static/css/styles.css HTTP/1.1" 200 -
+2025-12-23 14:26:11,554 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2025-12-23 14:26:11,556 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:11] "GET /static/js/reporte_remesas_matriz.js HTTP/1.1" 200 -
+2025-12-23 14:26:14,095 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:26:14] "[31m[1mGET /api/reportes/remesas-matriz?fecha_desde=2025-12-17&fecha_hasta=2025-12-23 HTTP/1.1[0m" 400 -
+2025-12-23 14:26:59,268 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 14:26:59,550 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:27:03,380 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:27:03,383 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:27:21,880 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-23 14:27:21,881 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-23 14:27:21,884 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 14:27:24,130 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 14:27:24,134 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 14:28:03,893 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:03] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-23 14:28:04,625 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-23 14:28:04,626 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-23 14:28:04,628 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-23 14:28:06,743 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "GET /auditor HTTP/1.1" 200 -
+2025-12-23 14:28:06,771 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,772 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,772 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,775 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,775 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,779 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,784 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,792 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,795 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,796 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,802 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,805 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,807 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:06,929 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-23 14:28:06,933 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-23 14:28:06,931 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:06] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-23 14:28:09,301 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:09] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-23 14:28:09,303 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:09] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:28:09,320 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:09] "GET /api/locales HTTP/1.1" 200 -
+2025-12-23 14:28:09,644 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:09] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-23 14:28:10,986 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:10] "GET /reporteria/remesas-matriz HTTP/1.1" 200 -
+2025-12-23 14:28:11,013 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:11] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-23 14:28:11,019 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:11] "[36mGET /static/js/reporte_remesas_matriz.js HTTP/1.1[0m" 304 -
+2025-12-23 14:28:11,727 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:11] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-23 14:28:38,296 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:28:38] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-17&fecha_hasta=2025-12-23 HTTP/1.1" 200 -
+2025-12-23 14:30:15,382 - werkzeug - INFO - 127.0.0.1 - - [23/Dec/2025 14:30:15] "[31m[1mPOST /api/tesoreria/registrar-recibido HTTP/1.1[0m" 403 -
+2025-12-23 15:02:33,503 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 15:02:34,436 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 15:02:39,186 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 15:02:39,193 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 15:03:11,495 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 15:03:11,758 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 15:03:15,277 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 15:03:15,281 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-23 15:03:24,741 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-23 15:03:25,013 - werkzeug - INFO -  * Restarting with stat
+2025-12-23 15:03:27,892 - werkzeug - WARNING -  * Debugger is active!
+2025-12-23 15:03:27,897 - werkzeug - INFO -  * Debugger PIN: 563-593-695

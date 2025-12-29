@@ -1,1 +1,0 @@
-# Invoice Extractor Package
