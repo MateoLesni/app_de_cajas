@@ -3,40 +3,252 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reportería - Remesas</title>
+  <title>Tesorería - Carga de Remesas</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* Estilos puntuales del reporte */
-    .rep-wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 14px; }
+    .rep-wrap { max-width: 1400px; margin: 0 auto; padding: 20px; display: grid; gap: 14px; }
+
     .rep-filtros {
       display:flex; flex-wrap:wrap; gap:12px; align-items:end;
-      background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px;
+      background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
     }
-    .rep-actions { margin-left:auto; display:flex; gap:8px; }
-    .btn-ghost{ background:#fff; border:1px solid #d1d5db; padding:8px 12px; border-radius:8px; cursor:pointer; }
-    .btn-ghost:hover{ background:#f5f7fa; }
-    .rep-card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 8px 20px rgba(0,0,0,.06); overflow:hidden; }
 
-    table.rep { width:100%; border-collapse: collapse; }
-    table.rep thead th {
-      background:#f3f4f6; border-bottom:1px solid #e5e7eb; padding:8px; text-align:center; font-weight:700;
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    table.rep tbody td {
-      border-bottom:1px solid #eef1f5; padding:8px; font-variant-numeric: tabular-nums;
-    }
-    table.rep tfoot td { font-weight:700; border-top:1px solid #dfe3e8; padding:8px; }
-    .td-right{ text-align:right; }
-    .ap-col{ background:#e7e7e7; font-weight:700; }
-    .tot-row td{ background:#fafafa; }
 
-    /* Nav reportería (submenu simple) */
-    .nav-group > a { display:flex; align-items:center; justify-content:space-between; }
-    .nav-group .nav-sub { display:none; padding-left: 10px; }
-    .nav-group.is-open .nav-sub { display:block; }
-    .nav-sub a { padding-left: 26px; }
-    .nav-item.is-current { background: #e8f0fe; }
+    .form-group label {
+      font-weight: 600;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .form-group input {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .rep-actions { margin-left:auto; display:flex; gap:8px; align-items: center; }
+
+    .btn-submit {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-submit:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-ghost {
+      background:#fff;
+      border:1px solid #d1d5db;
+      padding:10px 16px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .btn-ghost:hover{
+      background:#f5f7fa;
+    }
+
+    .rep-card {
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      box-shadow:0 8px 20px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 2px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    .card-header h2 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      color: #1f2937;
+    }
+
+    .card-header p {
+      margin: 0;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    table.remesas-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table.remesas-table thead th {
+      background: #f3f4f6;
+      border-bottom: 2px solid #e5e7eb;
+      padding: 12px 10px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+      color: #374151;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    table.remesas-table thead th.col-right {
+      text-align: right;
+    }
+
+    table.remesas-table tbody td {
+      border-bottom: 1px solid #f3f4f6;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    table.remesas-table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    /* Columnas de datos inmutables (gris claro) */
+    .col-readonly {
+      background: #fafafa;
+      color: #4b5563;
+    }
+
+    .col-precinto {
+      background: #fafafa;
+      font-weight: 700;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .col-remesa {
+      background: #fafafa;
+      font-weight: 700;
+    }
+
+    .col-monto-teorico {
+      background: #fafafa;
+      font-weight: 700;
+      text-align: right;
+      font-size: 15px;
+    }
+
+    /* Columna de Real (editable, amarilla) */
+    .col-real {
+      background: #fffbeb;
+      text-align: right;
+    }
+
+    .input-real {
+      width: 120px;
+      padding: 8px;
+      border: 2px solid #fbbf24;
+      border-radius: 6px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .input-real:focus {
+      outline: none;
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+    }
+
+    /* Columna de Diferencia */
+    .col-dif {
+      text-align: right;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .dif-cero { color: #6b7280; }
+    .dif-positiva { color: #dc2626; } /* Falta plata */
+    .dif-negativa { color: #f97316; } /* Sobra plata */
+
+    .btn-guardar {
+      background: #16a34a;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-guardar:hover {
+      background: #15803d;
+    }
+
+    .btn-guardar:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #9ca3af;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .info-box {
+      background: #f0f9ff;
+      border: 1px solid #0ea5e9;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .info-box h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      color: #0369a1;
+    }
+
+    .info-box p {
+      margin: 0;
+      color: #0c4a6e;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .fa-spin {
+      animation: spin 1s linear infinite;
+    }
   </style>
 </head>
 <body>
@@ -49,46 +261,17 @@
       </div>
 
       <nav class="sidebar__nav">
-        <a class="nav-item" href="{{ url_for('resumen_local') }}"><span class="nav-dot"></span> Resumen Local</a>
-
-        <!-- Grupo: Reportería (desplegable) -->
-<div class="nav-group {% if request.path.startswith('/reporteria') %}is-open{% endif %}">
-  <!-- Toggle con el MISMO look de .nav-item -->
-  <a href="javascript:void(0)"
-     id="navReportes"
-     class="nav-item nav-toggle {% if request.path.startswith('/reporteria') %}is-active{% endif %}"
-     aria-expanded="{% if request.path.startswith('/reporteria') %}true{% else %}false{% endif %}">
-    <span class="nav-dot" aria-hidden="true"></span>
-    <span>Reportería</span>
-    <!-- caret -->
-    <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-         aria-hidden="true" focusable="false" style="margin-left:auto;">
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
-  </a>
-
-  <!-- Subitems con leve sangría -->
-  <div class="nav-sub">
-    <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
-       href="{{ url_for('ui_reporteria_remesas') }}">
-      <span class="nav-dot" aria-hidden="true"></span>
-      Remesas
-    </a>
-
-    <a class="nav-item nav-sub-item {% if request.path == url_for('index') %}is-active{% endif %}"
-       href="{{ url_for('index') if false else '#' }}">
-      <span class="nav-dot" aria-hidden="true"></span>
-      Cuentas Corrientes
-    </a>
-  </div>
-</div>
-
-
-        <a class="nav-item" href="{{ url_for('index') }}"><span class="nav-dot"></span> Carga de Datos</a>
+        <a class="nav-item is-active" href="{{ url_for('ui_reporteria_remesas') }}">
+          <span class="nav-dot"></span> Carga de Remesas
+        </a>
+        <a class="nav-item" href="{{ url_for('reporte_remesas_matriz_page') }}">
+          <span class="nav-dot"></span> Resumen por Local
+        </a>
       </nav>
 
-      <div class="sidebar__footer"><a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a></div>
+      <div class="sidebar__footer">
+        <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+      </div>
       <button class="sidebar__toggle" id="toggleSidebar" aria-label="Abrir/cerrar menú">☰</button>
     </aside>
 
@@ -97,43 +280,78 @@
       <div class="container">
         <div class="header">
           <div class="header-info">
-            <div class="info-item"><span class="label">Fecha:</span> <span id="currentDate" class="value"></span></div>
             <div class="info-item"><span class="label">Usuario:</span> <span class="value">{{ session['username'] }}</span></div>
             <div class="info-item"><span class="label">Local:</span> <span class="value">{{ session['local'] }}</span></div>
-            <div class="info-item"><span class="label">Sociedad:</span> <span class="value">{{ session['society'] }}</span></div>
           </div>
           <div class="header-buttons">
-            <a href="{{ url_for('index') }}" class="btn-header">Inicio</a>
+            <a href="{{ url_for('tesoreria_home') }}" class="btn-header">Inicio</a>
             <a href="{{ url_for('logout') }}" class="btn-header">Cerrar Sesión</a>
           </div>
         </div>
 
         <div class="rep-wrap">
+          <!-- Explicación -->
+          <div class="info-box">
+            <h3>💰 Carga de Montos Reales</h3>
+            <p>
+              Esta es la tabla donde se cargan los <strong>montos reales</strong> que llegaron de cada bolsa.<br>
+              Contá la plata de cada bolsa y anotá el monto en la columna amarilla. Las diferencias se calculan automáticamente.
+            </p>
+          </div>
+
+          <!-- Filtros -->
           <div class="rep-filtros">
             <div class="form-group">
-              <label for="rep-fecha">Seleccioná una fecha:</label>
+              <label for="rep-fecha">Fecha de Retiro:</label>
               <input type="date" id="rep-fecha" class="form-control" required>
             </div>
             <div class="rep-actions">
-              <button class="btn-submit" id="rep-buscar">Actualizar</button>
-              <button class="btn-ghost" id="rep-excel">Exportar a Excel</button>
+              <button class="btn-submit" id="rep-buscar">
+                <i class="fas fa-sync-alt"></i> Actualizar
+              </button>
+              <button class="btn-ghost" id="btn-guardar-todo">
+                <i class="fas fa-save"></i> Guardar Todos los Cambios
+              </button>
             </div>
           </div>
 
+          <!-- Card con tabla -->
           <section class="rep-card">
-            <div style="padding:10px 12px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center;">
-              <h2 style="margin:0; font-size:18px;">Reporte de Remesas</h2>
-              <div id="rep-badge" style="font-weight:600; color:#6b7280;"></div>
+            <div class="card-header">
+              <h2>📦 Remesas Retiradas</h2>
+              <p id="fecha-label">Seleccioná una fecha arriba</p>
             </div>
 
-            <div style="padding: 8px 12px 14px;">
-              <div style="overflow:auto">
-                <table class="rep" id="rep-table">
-                  <thead id="rep-thead"></thead>
-                  <tbody id="rep-tbody"></tbody>
-                  <tfoot id="rep-tfoot"></tfoot>
-                </table>
-              </div>
+            <div id="loading-state" class="loading" style="display: none;">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Cargando remesas...</p>
+            </div>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+              <i class="fas fa-inbox"></i>
+              <p>No hay remesas retiradas en esta fecha</p>
+            </div>
+
+            <div style="overflow: auto; max-height: 70vh;" id="table-container" style="display: none;">
+              <table class="remesas-table" id="remesas-table">
+                <thead>
+                  <tr>
+                    <th>Fecha de Remesa</th>
+                    <th>N° Precinto</th>
+                    <th>N° Remesa</th>
+                    <th>Local</th>
+                    <th>Caja</th>
+                    <th>Turno</th>
+                    <th class="col-right">$ Teórico</th>
+                    <th class="col-right" style="background: #fef3c7;">$ Real (Contar aquí)</th>
+                    <th class="col-right">Diferencia</th>
+                    <th style="text-align: center;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="remesas-tbody">
+                  <!-- Se llena dinámicamente -->
+                </tbody>
+              </table>
             </div>
           </section>
         </div>
@@ -141,23 +359,7 @@
     </main>
   </div>
 
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
   <script src="{{ url_for('static', filename='js/reporte_remesas.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reporte_remesas.css') }}">
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const grp = document.querySelector('.nav-group');
-  const tgl = document.getElementById('navReportes');
-  if (grp && tgl) {
-    tgl.addEventListener('click', (e) => {
-      e.preventDefault();
-      const open = grp.classList.toggle('is-open');
-      tgl.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-  }
-});
-</script>
-
-
 </body>
 </html>
