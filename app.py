@@ -6151,6 +6151,54 @@ def api_reportes_remesas_matriz():
         print(f"ERROR en api_reportes_remesas_matriz: {error_detail}")
         return jsonify(error=f"Error al generar reporte: {str(e)}", details=error_detail), 400
 
+
+@app.route('/api/tesoreria/obtener-real', methods=['GET'])
+@login_required
+@role_min_required(7)
+def api_tesoreria_obtener_real():
+    """
+    Obtiene el monto real registrado para un local y fecha de retiro.
+    Consulta la tabla tesoreria_recibido.
+    """
+    local = request.args.get('local', '').strip()
+    fecha_retiro = request.args.get('fecha_retiro', '').strip()
+
+    if not (local and fecha_retiro):
+        return jsonify(success=False, msg='Faltan parámetros'), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Buscar registro en tesoreria_recibido
+        cur.execute("""
+            SELECT monto_real, monto_teorico, estado, observaciones
+            FROM tesoreria_recibido
+            WHERE local = %s AND fecha_retiro = %s
+            LIMIT 1
+        """, (local, fecha_retiro))
+
+        registro = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if registro:
+            return jsonify(
+                success=True,
+                monto_real=float(registro['monto_real']) if registro['monto_real'] else 0,
+                monto_teorico=float(registro['monto_teorico']) if registro['monto_teorico'] else 0,
+                estado=registro['estado'],
+                observaciones=registro['observaciones']
+            )
+        else:
+            # No hay registro, devolver 0
+            return jsonify(success=True, monto_real=0, monto_teorico=0, estado='en_transito', observaciones='')
+
+    except Exception as e:
+        print(f"❌ ERROR obtener_real: {e}")
+        return jsonify(success=False, msg=str(e)), 500
+
+
 # NUEVO: Endpoint para registrar monto real recibido por tesorería
 @app.route("/api/tesoreria/registrar-recibido", methods=['POST'])
 @login_required

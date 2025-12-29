@@ -192,13 +192,14 @@ function renderizarTabla() {
       <td>
         <span class="icono-expandir">▶</span>
         <strong>${fila.local}</strong>
-        <div style="font-size: 12px; color: #6b7280; font-weight: 400; margin-top: 2px;">
-          ${formatFecha(fila.fecha)} • ${fila.remesas.length} remesa${fila.remesas.length !== 1 ? 's' : ''}
+        <div style="font-size: 11px; color: #9ca3af; font-weight: 400; margin-top: 2px;">
+          ${fila.remesas.length} bolsa${fila.remesas.length !== 1 ? 's' : ''} • Click para ver detalle
         </div>
       </td>
-      <td style="text-align: right;">$${formatMoney(fila.teorico)}</td>
-      <td style="text-align: right;">$${formatMoney(fila.real)}</td>
-      <td style="text-align: right;" class="${difClass}">${signo}$${formatMoney(Math.abs(fila.dif))}</td>
+      <td><strong>${formatFecha(fila.fecha)}</strong></td>
+      <td style="text-align: right; font-weight: 600;">$${formatMoney(fila.teorico)}</td>
+      <td style="text-align: right; font-weight: 600;" id="real-${index}">$${formatMoney(fila.real)}</td>
+      <td style="text-align: right;" class="${difClass}" id="dif-resumen-${index}">${signo}$${formatMoney(Math.abs(fila.dif))}</td>
       <td style="text-align: center;">${getEstadoBadge(fila.estado, fila.real > 0)}</td>
     `;
 
@@ -209,9 +210,11 @@ function renderizarTabla() {
     filaDetalle.className = 'fila-detalle';
     filaDetalle.dataset.index = index;
     filaDetalle.innerHTML = `
-      <td colspan="5">
-        <div class="detalle-container">
-          ${renderizarTablaDetalle(fila, index)}
+      <td colspan="6">
+        <div class="detalle-container" id="detalle-${index}">
+          <div style="text-align: center; padding: 20px; color: #6b7280;">
+            <i class="fas fa-spinner fa-spin"></i> Cargando detalle...
+          </div>
         </div>
       </td>
     `;
@@ -225,21 +228,23 @@ function renderizarTabla() {
  */
 function renderizarTablaDetalle(fila, filaIndex) {
   let html = `
-    <table class="tabla-detalle">
-      <thead>
-        <tr>
-          <th>N° Remesa</th>
-          <th>Precinto</th>
-          <th>Fecha Caja</th>
-          <th>Caja</th>
-          <th>Turno</th>
-          <th>Retiró</th>
-          <th style="text-align: right;">Teórico</th>
-          <th style="text-align: right;">Contabilizado</th>
-          <th style="text-align: right;">Diferencia</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div style="background: white; padding: 16px; border-radius: 8px;">
+      <h4 style="margin: 0 0 12px 0; color: #1f2937; font-size: 14px;">
+        📦 Detalle de las ${fila.remesas.length} bolsa${fila.remesas.length !== 1 ? 's' : ''} - ${fila.local}
+      </h4>
+      <table class="tabla-detalle">
+        <thead>
+          <tr>
+            <th>N° Bolsa</th>
+            <th>Precinto</th>
+            <th>Día de Caja</th>
+            <th>Quién Retiró</th>
+            <th style="text-align: right;">$ Que debería haber</th>
+            <th style="text-align: right; background: #fef3c7;">$ Real (Anotar aquí)</th>
+            <th style="text-align: right;">Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>
   `;
 
   fila.remesas.forEach((remesa, remesaIndex) => {
@@ -249,24 +254,23 @@ function renderizarTablaDetalle(fila, filaIndex) {
 
     html += `
       <tr>
-        <td>${remesa.nro_remesa || '-'}</td>
-        <td>${remesa.precinto || '-'}</td>
+        <td><strong>${remesa.nro_remesa || '-'}</strong></td>
+        <td><span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${remesa.precinto || '-'}</span></td>
         <td>${formatFecha(remesa.fecha_caja)}</td>
-        <td>${remesa.caja || '-'}</td>
-        <td>${remesa.turno || '-'}</td>
-        <td style="font-size: 12px;">${remesa.retirada_por || '-'}</td>
-        <td style="text-align: right; font-weight: 600;">$${formatMoney(remesa.monto)}</td>
-        <td style="text-align: right;">
+        <td style="font-size: 13px;">${remesa.retirada_por || '-'}</td>
+        <td style="text-align: right; font-weight: 700; font-size: 15px; color: #1f2937;">$${formatMoney(remesa.monto)}</td>
+        <td style="text-align: right; background: #fffbeb;">
           <input type="number"
                  class="input-monto"
                  data-fila="${filaIndex}"
                  data-remesa="${remesaIndex}"
                  value="${remesa.real || ''}"
-                 placeholder="0.00"
+                 placeholder="¿Cuánto llegó?"
                  step="0.01"
+                 style="width: 140px; padding: 8px; border: 2px solid #fbbf24; border-radius: 6px; font-size: 15px; font-weight: 700; text-align: right;"
                  onchange="actualizarMontoReal(${filaIndex}, ${remesaIndex}, this.value)">
         </td>
-        <td style="text-align: right;" class="${difClass}" id="dif-${filaIndex}-${remesaIndex}">
+        <td style="text-align: right; font-weight: 700; font-size: 15px;" class="${difClass}" id="dif-${filaIndex}-${remesaIndex}">
           ${dif !== 0 ? `${signo}$${formatMoney(Math.abs(dif))}` : '$0.00'}
         </td>
       </tr>
@@ -274,11 +278,18 @@ function renderizarTablaDetalle(fila, filaIndex) {
   });
 
   html += `
-      </tbody>
-    </table>
-    <button class="btn-guardar" onclick="guardarRemesas(${filaIndex})">
-      <i class="fas fa-save"></i> Guardar Cambios
-    </button>
+        </tbody>
+      </table>
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 14px; color: #6b7280;">
+          <strong>Total:</strong> Teórico <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.teorico)}</span> •
+          Real <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.real)}</span>
+        </div>
+        <button class="btn-guardar" onclick="guardarRemesas(${filaIndex})" style="font-size: 15px; padding: 12px 24px;">
+          <i class="fas fa-save"></i> Guardar Todo
+        </button>
+      </div>
+    </div>
   `;
 
   return html;
@@ -287,12 +298,67 @@ function renderizarTablaDetalle(fila, filaIndex) {
 /**
  * Toggle expandir/colapsar detalle
  */
-function toggleDetalle(index) {
+async function toggleDetalle(index) {
   const filaResumen = document.querySelector(`.fila-resumen[data-index="${index}"]`);
   const filaDetalle = document.querySelector(`.fila-detalle[data-index="${index}"]`);
 
+  const yaExpandido = filaResumen.classList.contains('expanded');
+
   filaResumen.classList.toggle('expanded');
   filaDetalle.classList.toggle('visible');
+
+  // Si se está expandiendo por primera vez, cargar detalle
+  if (!yaExpandido) {
+    await cargarDetalleRemesas(index);
+  }
+}
+
+/**
+ * Cargar detalle de remesas (con consulta del real desde BD)
+ */
+async function cargarDetalleRemesas(index) {
+  const fila = reporteData[index];
+  const detalleContainer = document.getElementById(`detalle-${index}`);
+
+  try {
+    // Consultar el monto real desde la base de datos
+    const response = await fetch(`/api/tesoreria/obtener-real?local=${encodeURIComponent(fila.local)}&fecha_retiro=${fila.fecha}`);
+
+    let montoRealDB = 0;
+    if (response.ok) {
+      const data = await response.json();
+      montoRealDB = data.monto_real || 0;
+
+      // Actualizar el real en la fila
+      fila.real = montoRealDB;
+      fila.dif = fila.teorico - montoRealDB;
+
+      // Actualizar visualmente en la tabla resumen
+      const realCell = document.getElementById(`real-${index}`);
+      if (realCell) {
+        realCell.textContent = '$' + formatMoney(montoRealDB);
+      }
+
+      const difCell = document.getElementById(`dif-resumen-${index}`);
+      if (difCell) {
+        const difClass = fila.dif === 0 ? 'dif-cero' : fila.dif > 0 ? 'dif-positiva' : 'dif-negativa';
+        const signo = fila.dif > 0 ? '-' : fila.dif < 0 ? '+' : '';
+        difCell.className = difClass;
+        difCell.textContent = `${signo}$${formatMoney(Math.abs(fila.dif))}`;
+      }
+    }
+
+    // Renderizar tabla de detalle
+    detalleContainer.innerHTML = renderizarTablaDetalle(fila, index);
+
+  } catch (error) {
+    console.error('Error al cargar detalle:', error);
+    detalleContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #dc2626;">
+        <i class="fas fa-exclamation-triangle"></i> Error al cargar detalle
+      </div>
+    `;
+  }
 }
 
 /**
