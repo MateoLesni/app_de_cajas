@@ -1,0 +1,54 @@
+2025-12-27 16:36:56,582 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-27 16:36:56,584 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-27 16:36:56,590 - werkzeug - INFO -  * Restarting with stat
+2025-12-27 16:37:02,342 - werkzeug - WARNING -  * Debugger is active!
+2025-12-27 16:37:02,356 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-27 16:37:02,768 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:02] "[32mGET / HTTP/1.1[0m" 302 -
+2025-12-27 16:37:03,511 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-27 16:37:03,511 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-27 16:37:03,517 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-27 16:37:06,242 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "GET /auditor HTTP/1.1" 200 -
+2025-12-27 16:37:06,316 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,384 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,390 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,390 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,394 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,395 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,413 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,452 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,469 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,474 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,474 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,483 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,492 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2025-12-27 16:37:06,617 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2025-12-27 16:37:06,622 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2025-12-27 16:37:06,623 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:06] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2025-12-27 16:37:09,193 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:09] "GET /api/locales HTTP/1.1" 200 -
+2025-12-27 16:37:09,236 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:09] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2025-12-27 16:37:09,240 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:09] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-27 16:37:09,535 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:09] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2025-12-27 16:37:12,147 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:12] "GET /api/terminales?local= HTTP/1.1" 200 -
+2025-12-27 16:37:17,939 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:17] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-12-27 16:37:18,069 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:18] "GET /login HTTP/1.1" 200 -
+2025-12-27 16:37:18,145 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:18] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2025-12-27 16:37:34,866 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:34] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-12-27 16:37:34,986 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:34] "GET /tesoreria HTTP/1.1" 200 -
+2025-12-27 16:37:35,073 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:35] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-27 16:37:38,163 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:38] "GET /reporteria/remesas-tesoreria HTTP/1.1" 200 -
+2025-12-27 16:37:38,210 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:38] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-27 16:37:38,282 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:38] "GET /static/js/reporte_remesas_tesoreria.js HTTP/1.1" 200 -
+2025-12-27 16:37:46,761 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:37:46] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-27&fecha_hasta=2025-12-27 HTTP/1.1" 200 -
+2025-12-27 16:38:05,012 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:38:05] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-26&fecha_hasta=2025-12-26 HTTP/1.1" 200 -
+2025-12-27 16:38:22,534 - werkzeug - INFO - 127.0.0.1 - - [27/Dec/2025 16:38:22] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-25&fecha_hasta=2025-12-25 HTTP/1.1" 200 -
+2025-12-27 16:42:47,842 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-27 16:42:48,499 - werkzeug - INFO -  * Restarting with stat
+2025-12-27 16:42:55,397 - werkzeug - WARNING -  * Debugger is active!
+2025-12-27 16:42:55,408 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-29 08:07:02,921 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 08:07:02] "GET /reporteria/remesas-tesoreria HTTP/1.1" 200 -
+2025-12-29 08:07:03,060 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 08:07:03] "GET /static/js/reporte_remesas_tesoreria.js HTTP/1.1" 200 -
+2025-12-29 08:07:05,173 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-29 08:07:05,174 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-29 08:07:05,183 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-29 08:07:11,486 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 08:07:11] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-29&fecha_hasta=2025-12-29 HTTP/1.1" 200 -

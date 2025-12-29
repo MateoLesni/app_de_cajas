@@ -1485,3 +1485,28 @@ tr.fila-no-retirada {
 .nav-sub .nav-item .nav-dot {
   transform: scale(.8); opacity:.6; /* puntito un pelín más chico */
 }
+
+/* ========== FIX: Mejorar visualización del dropdown de select ========== */
+/* Los navegadores limitan visualmente el dropdown pero TODAS las opciones están disponibles */
+/* El usuario puede hacer scroll o empezar a escribir para buscar */
+
+/* Mejorar el padding de las opciones para mejor lectura */
+select.form-control option {
+  padding: 10px 12px;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* Asegurar que el select cerrado tenga buen tamaño y se vea claro */
+select.form-control {
+  min-height: 42px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Destacar visualmente cuando el select está enfocado (desplegado) */
+select.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+  outline: none;
+}

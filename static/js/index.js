@@ -597,7 +597,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // ===================== Fallback sin orquestador =====================
   function legacyReload() {
     const { local, caja, fecha, turno } = getCtx();
-    const u1 = `/remesas_no_retiradas?caja=${encodeURIComponent(caja)}&local=${encodeURIComponent(local)}&turno=${encodeURIComponent(turno)}`; // sin fecha
+    // CAMBIO: Ahora pasamos fecha a remesas_no_retiradas para que solo muestre las de la fecha actual
+    const u1 = `/remesas_no_retiradas?caja=${encodeURIComponent(caja)}&local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`;
     const u2 = `/remesas_hoy?caja=${encodeURIComponent(caja)}${fecha ? `&fecha=${encodeURIComponent(fecha)}` : ''}&local=${encodeURIComponent(local)}&turno=${encodeURIComponent(turno)}`;
     Promise.all([
       fetch(u1).then(r => r.ok ? r.json() : []).catch(()=>[]),

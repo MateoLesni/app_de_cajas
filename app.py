@@ -5790,16 +5790,6 @@ from openpyxl.utils import get_column_letter
 def ui_reporteria_remesas():
     return render_template("reporte_remesas.html")
 
-@app.route("/reporteria/remesas-matriz")
-@login_required
-@role_min_required(3)  # Solo auditores y tesorería (nivel 3+)
-def reporte_remesas_matriz_page():
-    """
-    Vista matricial de remesas para Tesorería.
-    Permite ver remesas agrupadas por Local x Fecha y registrar montos reales recibidos.
-    """
-    return render_template("reporte_remesas_matriz.html")
-
 @app.route("/reporteria/remesas-tesoreria")
 @login_required
 @role_min_required(3)  # Solo auditores y tesorería (nivel 3+)
@@ -6218,7 +6208,7 @@ def api_tesoreria_remesas_detalle():
         cur = conn.cursor(dictionary=True)
 
         # Obtener todas las remesas retiradas en esta fecha
-        # IMPORTANTE: fecha_retiro_real es la fecha en que se marcó como retirada
+        # IMPORTANTE: fecha_retirada es la fecha en que se marcó como retirada
         cur.execute("""
             SELECT
                 fecha AS fecha_caja,
@@ -6227,12 +6217,12 @@ def api_tesoreria_remesas_detalle():
                 local,
                 caja,
                 turno,
-                efectivo AS monto,
-                fecha_retiro_real,
+                monto,
+                fecha_retirada,
                 retirada_por
             FROM remesas_trns
             WHERE retirada IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
-              AND DATE(fecha_retiro_real) = %s
+              AND DATE(fecha_retirada) = %s
             ORDER BY precinto
         """, (fecha_retiro,))
 
