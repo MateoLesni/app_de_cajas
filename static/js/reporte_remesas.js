@@ -11,7 +11,24 @@
   // Formatear fecha ISO a dd/mm/yyyy
   function formatFecha(isoDate) {
     if (!isoDate) return '-';
-    const d = new Date(isoDate + 'T12:00:00'); // Forzar hora local
+
+    let d;
+    if (typeof isoDate === 'string') {
+      // Si es string, puede venir como "YYYY-MM-DD" o "YYYY-MM-DDTHH:mm:ss"
+      if (isoDate.includes('T')) {
+        d = new Date(isoDate);
+      } else {
+        d = new Date(isoDate + 'T12:00:00'); // Forzar hora local
+      }
+    } else if (isoDate instanceof Date) {
+      d = isoDate;
+    } else {
+      return '-';
+    }
+
+    // Validar que sea una fecha válida
+    if (isNaN(d.getTime())) return '-';
+
     const dia = String(d.getDate()).padStart(2, '0');
     const mes = String(d.getMonth() + 1).padStart(2, '0');
     const año = d.getFullYear();
@@ -95,7 +112,8 @@
                  value="${remesa.real || ''}"
                  placeholder="¿Cuánto llegó?"
                  step="0.01"
-                 onchange="window.actualizarReal(${index}, this.value)">
+                 onchange="window.actualizarReal(${index}, this.value)"
+                 onkeypress="if(event.key==='Enter'){window.guardarRemesa(${index})}">
         </td>
         <td class="col-dif ${difClass}" id="dif-${index}">
           ${dif !== 0 ? `${signo}$${money(Math.abs(dif))}` : '$0.00'}
@@ -166,8 +184,8 @@
 
       // Quitar estilo de modificado
       const input = $(`.input-real[data-index="${index}"]`);
-      input.style.borderColor = '#fbbf24';
-      input.style.background = '#fffbeb';
+      input.style.borderColor = '#9ca3af';
+      input.style.background = '#e5e7eb';
 
     } catch (error) {
       console.error('Error:', error);
@@ -232,8 +250,8 @@
       alert(`✅ Se guardaron ${exitosos} remesas correctamente`);
       // Resetear estilos
       $$('.input-real').forEach(input => {
-        input.style.borderColor = '#fbbf24';
-        input.style.background = '#fffbeb';
+        input.style.borderColor = '#9ca3af';
+        input.style.background = '#e5e7eb';
       });
     } else {
       alert(`⚠️ Se guardaron ${exitosos} remesas.\nHubo ${errores} errores.`);
