@@ -5786,17 +5786,21 @@ from openpyxl.utils import get_column_letter
 # Página UI
 @app.route("/reporteria/remesas")
 @login_required
-@role_min_required(3)  # encargado+ crea usuarios
+@role_min_required(8)  # Tesoreros (role_id 8) - Carga individual de remesas
 def ui_reporteria_remesas():
+    """
+    Vista de carga individual de remesas para tesoreros.
+    Permite cargar el monto real de cada bolsa/remesa.
+    """
     return render_template("reporte_remesas.html")
 
 @app.route("/reporteria/remesas-tesoreria")
 @login_required
-@role_min_required(3)  # Solo auditores y tesorería (nivel 3+)
+@role_min_required(9)  # Admin Tesorería (role_id 9) - Conciliación por local
 def reporte_remesas_tesoreria_page():
     """
-    Vista simplificada de remesas para Tesorería.
-    Tabla expandible con registro individual de montos reales.
+    Vista de conciliación agrupada por local para admin de tesorería.
+    Muestra resumen por local con opción de aprobar/desaprobar conciliación.
     """
     return render_template("reporte_remesas_tesoreria.html")
 
@@ -6264,11 +6268,12 @@ def api_tesoreria_remesas_detalle():
 
 @app.route('/api/tesoreria/guardar-remesa', methods=['POST'])
 @login_required
-@role_min_required(7)
+@role_min_required(8)  # Solo tesoreros (role_id 8)
 def api_tesoreria_guardar_remesa():
     """
     Guarda el monto real de UNA remesa específica.
     Actualiza o crea registro en tesoreria_recibido.
+    Solo permite guardar si la fecha NO está aprobada.
     """
     data = request.get_json() or {}
     local = data.get('local', '').strip()
@@ -6284,6 +6289,18 @@ def api_tesoreria_guardar_remesa():
         cur = conn.cursor(dictionary=True)
 
         username = session.get('username', 'SYSTEM')
+
+        # Verificar si la fecha está aprobada
+        cur.execute("""
+            SELECT estado FROM tesoreria_aprobaciones
+            WHERE fecha_retiro = %s
+        """, (fecha_retiro,))
+        aprobacion = cur.fetchone()
+
+        if aprobacion and aprobacion['estado'] == 'aprobado':
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='No se puede editar. La conciliación de esta fecha ya fue aprobada.'), 403
 
         # Determinar estado según diferencia
         dif = float(monto_teorico) - float(monto_real)
@@ -6321,6 +6338,156 @@ def api_tesoreria_guardar_remesa():
             conn.rollback()
         except:
             pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/tesoreria/aprobar-conciliacion', methods=['POST'])
+@login_required
+@role_min_required(9)  # Solo admin tesorería (role_id 9)
+def api_aprobar_conciliacion():
+    """
+    Aprueba la conciliación de una fecha específica.
+    Solo admin de tesorería puede aprobar.
+    Una vez aprobado, los tesoreros no pueden editar más.
+    """
+    data = request.get_json() or {}
+    fecha_retiro = data.get('fecha_retiro', '').strip()
+    observaciones = data.get('observaciones', '').strip()
+
+    if not fecha_retiro:
+        return jsonify(success=False, msg='Falta fecha_retiro'), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        username = session.get('username', 'SYSTEM')
+
+        # Insertar o actualizar aprobación
+        cur.execute("""
+            INSERT INTO tesoreria_aprobaciones
+                (fecha_retiro, estado, aprobado_por, aprobado_at, observaciones)
+            VALUES (%s, 'aprobado', %s, NOW(), %s)
+            ON DUPLICATE KEY UPDATE
+                estado = 'aprobado',
+                aprobado_por = VALUES(aprobado_por),
+                aprobado_at = NOW(),
+                observaciones = VALUES(observaciones)
+        """, (fecha_retiro, username, observaciones))
+
+        # Registrar en auditoría
+        cur.execute("""
+            INSERT INTO tesoreria_aprobaciones_audit
+                (fecha_retiro, accion, usuario, observaciones)
+            VALUES (%s, 'aprobar', %s, %s)
+        """, (fecha_retiro, username, observaciones))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg='Conciliación aprobada correctamente')
+
+    except Exception as e:
+        print(f"❌ ERROR aprobar-conciliacion: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/tesoreria/desaprobar-conciliacion', methods=['POST'])
+@login_required
+@role_min_required(9)  # Solo admin tesorería (role_id 9)
+def api_desaprobar_conciliacion():
+    """
+    Desaprueba la conciliación de una fecha específica.
+    Permite que los tesoreros vuelvan a editar.
+    Queda registrado en auditoría.
+    """
+    data = request.get_json() or {}
+    fecha_retiro = data.get('fecha_retiro', '').strip()
+    observaciones = data.get('observaciones', '').strip()
+
+    if not fecha_retiro:
+        return jsonify(success=False, msg='Falta fecha_retiro'), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        username = session.get('username', 'SYSTEM')
+
+        # Actualizar aprobación a desaprobado
+        cur.execute("""
+            INSERT INTO tesoreria_aprobaciones
+                (fecha_retiro, estado, desaprobado_por, desaprobado_at, observaciones)
+            VALUES (%s, 'desaprobado', %s, NOW(), %s)
+            ON DUPLICATE KEY UPDATE
+                estado = 'desaprobado',
+                desaprobado_por = VALUES(desaprobado_por),
+                desaprobado_at = NOW(),
+                observaciones = VALUES(observaciones)
+        """, (fecha_retiro, username, observaciones))
+
+        # Registrar en auditoría
+        cur.execute("""
+            INSERT INTO tesoreria_aprobaciones_audit
+                (fecha_retiro, accion, usuario, observaciones)
+            VALUES (%s, 'desaprobar', %s, %s)
+        """, (fecha_retiro, username, observaciones))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg='Conciliación desaprobada. Los tesoreros pueden volver a editar.')
+
+    except Exception as e:
+        print(f"❌ ERROR desaprobar-conciliacion: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/tesoreria/estado-aprobacion', methods=['GET'])
+@login_required
+@role_min_required(8)  # Tesoreros y admin
+def api_estado_aprobacion():
+    """
+    Obtiene el estado de aprobación de una fecha.
+    """
+    fecha_retiro = request.args.get('fecha_retiro', '').strip()
+
+    if not fecha_retiro:
+        return jsonify(success=False, msg='Falta fecha_retiro'), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("""
+            SELECT estado, aprobado_por, aprobado_at, desaprobado_por, desaprobado_at, observaciones
+            FROM tesoreria_aprobaciones
+            WHERE fecha_retiro = %s
+        """, (fecha_retiro,))
+
+        aprobacion = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if aprobacion:
+            return jsonify(success=True, aprobacion=aprobacion)
+        else:
+            return jsonify(success=True, aprobacion={'estado': 'pendiente'})
+
+    except Exception as e:
+        print(f"❌ ERROR estado-aprobacion: {e}")
         return jsonify(success=False, msg=str(e)), 500
 
 
