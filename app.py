@@ -6173,29 +6173,44 @@ def api_tesoreria_obtener_real():
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
-        # Buscar registro en tesoreria_recibido
+        # Sumar TODAS las remesas individuales de este local y fecha
         cur.execute("""
-            SELECT monto_real, monto_teorico, estado, observaciones
+            SELECT
+                SUM(monto_real) as monto_real_total,
+                SUM(monto_teorico) as monto_teorico_total,
+                COUNT(*) as cantidad_remesas
             FROM tesoreria_recibido
             WHERE local = %s AND fecha_retiro = %s
-            LIMIT 1
         """, (local, fecha_retiro))
 
-        registro = cur.fetchone()
+        resultado = cur.fetchone()
         cur.close()
         conn.close()
 
-        if registro:
+        if resultado and resultado['cantidad_remesas'] > 0:
+            monto_real = float(resultado['monto_real_total']) if resultado['monto_real_total'] else 0
+            monto_teorico = float(resultado['monto_teorico_total']) if resultado['monto_teorico_total'] else 0
+
+            # Determinar estado basado en diferencia
+            diferencia = abs(monto_teorico - monto_real)
+            if monto_real == 0:
+                estado = 'en_transito'
+            elif diferencia < 0.01:
+                estado = 'recibido'
+            else:
+                estado = 'con_diferencia'
+
             return jsonify(
                 success=True,
-                monto_real=float(registro['monto_real']) if registro['monto_real'] else 0,
-                monto_teorico=float(registro['monto_teorico']) if registro['monto_teorico'] else 0,
-                estado=registro['estado'],
-                observaciones=registro['observaciones']
+                monto_real=monto_real,
+                monto_teorico=monto_teorico,
+                estado=estado,
+                observaciones='',
+                cantidad_remesas=resultado['cantidad_remesas']
             )
         else:
-            # No hay registro, devolver 0
-            return jsonify(success=True, monto_real=0, monto_teorico=0, estado='en_transito', observaciones='')
+            # No hay registros, devolver 0
+            return jsonify(success=True, monto_real=0, monto_teorico=0, estado='en_transito', observaciones='', cantidad_remesas=0)
 
     except Exception as e:
         print(f"❌ ERROR obtener_real: {e}")
