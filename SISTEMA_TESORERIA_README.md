@@ -23,7 +23,7 @@ Sistema de dos niveles para la gestión y conciliación de remesas de efectivo:
 
 ## Instalación
 
-### 1. Crear las tablas necesarias
+### 1. Crear las tablas de aprobaciones
 
 Ejecutar el script SQL:
 ```bash
@@ -35,10 +35,29 @@ O ejecutar directamente en MySQL:
 source SQL_CREATE_APROBACIONES_REMESAS.sql
 ```
 
-### 2. Verificar que existan las tablas
+### 2. Modificar tabla tesoreria_recibido para remesas individuales
+
+**IMPORTANTE:** Este paso modifica la estructura de `tesoreria_recibido` para guardar cada remesa individual en lugar de totales por local.
+
+```bash
+mysql -u usuario -p nombre_base_datos < SQL_ALTER_TESORERIA_RECIBIDO.sql
+```
+
+O ejecutar directamente:
+```sql
+source SQL_ALTER_TESORERIA_RECIBIDO.sql
+```
+
+Este script:
+- Agrega columnas `precinto` y `nro_remesa`
+- Cambia la clave única de `(local, fecha_retiro)` a `(local, fecha_retiro, precinto, nro_remesa)`
+- Permite guardar el monto real de cada bolsa por separado
+
+### 3. Verificar que existan las tablas y columnas
 
 ```sql
 SHOW TABLES LIKE 'tesoreria%';
+DESCRIBE tesoreria_recibido;
 ```
 
 Deberías ver:
