@@ -265,7 +265,7 @@
       </div>
 
       <nav class="sidebar__nav">
-        <a class="nav-item" href="{{ url_for('tesoreria_home') }}">
+        <a class="nav-item" href="{{ url_for('tesoreria_home_new') }}">
           <span class="nav-dot"></span> Inicio
         </a>
         <a class="nav-item is-active" href="{{ url_for('ui_reporteria_remesas') }}">
@@ -291,7 +291,7 @@
             <div class="info-item"><span class="label">Local:</span> <span class="value">{{ session['local'] }}</span></div>
           </div>
           <div class="header-buttons">
-            <a href="{{ url_for('tesoreria_home') }}" class="btn-header">Inicio</a>
+            <a href="{{ url_for('tesoreria_home_new') }}" class="btn-header">Inicio</a>
             <a href="{{ url_for('logout') }}" class="btn-header">Cerrar Sesión</a>
           </div>
         </div>

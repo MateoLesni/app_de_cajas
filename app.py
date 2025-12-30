@@ -540,7 +540,7 @@ def route_for_current_role() -> str:
         return url_for('gestion_anticipos_page')
     if lvl >= 7:
         # Tesorería (7) y Jefe de Tesorería (8+)
-        return url_for('tesoreria_home')
+        return url_for('tesoreria_home_new')
     if lvl >= 6:
         # Admin de anticipos
         return url_for('gestion_anticipos_page')
@@ -576,7 +576,7 @@ def redirect_after_login():
 
     # Usuario con rol 'tesoreria' (nivel 7+) siempre va a /tesoreria
     if lvl >= 7:
-        return redirect(url_for('tesoreria_home'))
+        return redirect(url_for('tesoreria_home_new'))
 
     # Usuario con rol 'anticipos' (nivel 4) siempre va a /gestion-anticipos
     if lvl == 4:
@@ -797,12 +797,11 @@ def encargado():
 @app.route('/tesoreria')
 @login_required
 @role_min_required(7)  # Solo tesorería (nivel 7+)
-def tesoreria_home():
+def tesoreria_old_redirect():
     """
-    Página de inicio para usuarios de Tesorería.
-    Solo tienen acceso a reportes de remesas.
+    Redirección de la ruta antigua /tesoreria a /tesoreria/home
     """
-    return render_template('index_tesoreria.html')
+    return redirect(url_for('tesoreria_home_new'))
 
 
 # __________________________________REMESAS__________________________________________#
@@ -5787,7 +5786,7 @@ from openpyxl.utils import get_column_letter
 @app.route("/tesoreria/home")
 @login_required
 @role_min_required(8)  # Tesoreros (role_id 8+)
-def tesoreria_home():
+def tesoreria_home_new():
     """
     Página de inicio para tesorería con dos opciones principales.
     """
