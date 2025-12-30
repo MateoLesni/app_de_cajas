@@ -193,3 +193,91 @@
 2025-12-29 15:21:43,530 - werkzeug - INFO -  * Restarting with stat
 2025-12-29 15:21:47,385 - werkzeug - WARNING -  * Debugger is active!
 2025-12-29 15:21:47,390 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-29 15:24:41,808 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-29 15:24:41,808 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-29 15:24:41,811 - werkzeug - INFO -  * Restarting with stat
+2025-12-29 15:24:44,257 - werkzeug - WARNING -  * Debugger is active!
+2025-12-29 15:24:44,260 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-29 15:24:44,522 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:24:44] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-29 15:24:44,622 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:24:44] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-29 15:24:44,628 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:24:44] "[36mGET /static/js/reporte_remesas.js HTTP/1.1[0m" 304 -
+2025-12-29 15:24:44,630 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:24:44] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-29 15:24:45,402 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-29 15:24:45,402 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-29 15:24:45,404 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-29 15:24:47,427 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:24:47] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-29 HTTP/1.1" 200 -
+2025-12-29 15:24:57,429 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:24:57] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-27 HTTP/1.1" 200 -
+2025-12-29 15:25:34,670 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:25:34] "POST /api/tesoreria/guardar-remesa HTTP/1.1" 200 -
+2025-12-29 15:32:23,549 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2025-12-29 15:32:23,550 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-29 15:32:23,555 - werkzeug - INFO -  * Restarting with stat
+2025-12-29 15:32:26,452 - werkzeug - WARNING -  * Debugger is active!
+2025-12-29 15:32:26,458 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2025-12-29 15:32:29,680 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:29] "[31m[1mGET / HTTP/1.1[0m" 403 -
+2025-12-29 15:32:35,283 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:35] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-29 15:32:35,334 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:35] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-29 15:32:35,340 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:35] "GET /static/js/reporte_remesas.js HTTP/1.1" 200 -
+2025-12-29 15:32:35,340 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:35] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-29 15:32:36,033 - mysql.connector - INFO - package: mysql.connector.plugins
+2025-12-29 15:32:36,033 - mysql.connector - INFO - plugin_name: mysql_native_password
+2025-12-29 15:32:36,036 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2025-12-29 15:32:38,098 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:38] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-29 HTTP/1.1" 200 -
+2025-12-29 15:32:51,370 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:32:51] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-27 HTTP/1.1" 200 -
+2025-12-29 15:33:38,948 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:33:38] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-27 HTTP/1.1" 200 -
+2025-12-29 15:33:52,827 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:33:52] "POST /api/tesoreria/guardar-remesa HTTP/1.1" 200 -
+2025-12-29 15:38:21,695 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:38:21] "POST /api/tesoreria/guardar-remesa HTTP/1.1" 200 -
+2025-12-29 15:47:50,286 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:47:50] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-29 15:47:50,418 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:47:50] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-29 15:47:50,425 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:47:50] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2025-12-29 15:47:50,426 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:47:50] "GET /static/js/reporte_remesas.js HTTP/1.1" 200 -
+2025-12-29 15:47:53,714 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:47:53] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-29 HTTP/1.1" 200 -
+2025-12-29 15:48:01,359 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:48:01] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-27 HTTP/1.1" 200 -
+2025-12-29 15:49:27,295 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:49:27] "POST /api/tesoreria/guardar-remesa HTTP/1.1" 200 -
+2025-12-29 15:50:07,020 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:50:07] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-25 HTTP/1.1" 200 -
+2025-12-29 15:50:53,521 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:50:53] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-24 HTTP/1.1" 200 -
+2025-12-29 15:50:59,832 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:50:59] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-23 HTTP/1.1" 200 -
+2025-12-29 15:53:19,092 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:53:19] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-25 HTTP/1.1" 200 -
+2025-12-29 15:56:08,667 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:08] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-29 15:56:08,705 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:08] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-29 15:56:08,718 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:08] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-29 15:56:08,719 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:08] "[36mGET /static/js/reporte_remesas.js HTTP/1.1[0m" 304 -
+2025-12-29 15:56:08,844 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:08] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-29 15:56:09,037 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-29 15:56:09,063 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-29 15:56:09,072 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-29 15:56:09,073 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "[36mGET /static/js/reporte_remesas.js HTTP/1.1[0m" 304 -
+2025-12-29 15:56:09,114 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-29 15:56:09,120 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-29 15:56:09,121 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:09] "[36mGET /static/js/reporte_remesas.js HTTP/1.1[0m" 304 -
+2025-12-29 15:56:11,486 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:11] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-29 HTTP/1.1" 200 -
+2025-12-29 15:56:11,803 - werkzeug - INFO - 127.0.0.1 - - [29/Dec/2025 15:56:11] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-29 HTTP/1.1" 200 -
+2025-12-30 08:40:48,600 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:40:48] "GET /reporteria/remesas-tesoreria HTTP/1.1" 200 -
+2025-12-30 08:40:48,696 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:40:48] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-30 08:40:48,698 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:40:48] "[36mGET /static/js/reporte_remesas_tesoreria.js HTTP/1.1[0m" 304 -
+2025-12-30 08:40:56,343 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:40:56] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-30&fecha_hasta=2025-12-30 HTTP/1.1" 200 -
+2025-12-30 08:41:14,675 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:14] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-26&fecha_hasta=2025-12-26 HTTP/1.1" 200 -
+2025-12-30 08:41:25,829 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:25] "GET /api/tesoreria/obtener-real?local=Fabric%20Sushi&fecha_retiro=2025-12-26 HTTP/1.1" 200 -
+2025-12-30 08:41:34,075 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:34] "GET /tesoreria HTTP/1.1" 200 -
+2025-12-30 08:41:34,157 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:34] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-30 08:41:35,633 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:35] "GET /reporteria/remesas-tesoreria HTTP/1.1" 200 -
+2025-12-30 08:41:35,678 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:35] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-30 08:41:35,680 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:35] "[36mGET /static/js/reporte_remesas_tesoreria.js HTTP/1.1[0m" 304 -
+2025-12-30 08:41:41,404 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:41] "GET /reporteria/remesas HTTP/1.1" 200 -
+2025-12-30 08:41:41,449 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:41] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-30 08:41:41,457 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:41] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2025-12-30 08:41:41,458 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:41] "[36mGET /static/js/reporte_remesas.js HTTP/1.1[0m" 304 -
+2025-12-30 08:41:42,328 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:42] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-30&fecha_hasta=2025-12-30 HTTP/1.1" 200 -
+2025-12-30 08:41:44,057 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:41:44] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-30 HTTP/1.1" 200 -
+2025-12-30 08:42:11,184 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:42:11] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-27 HTTP/1.1" 200 -
+2025-12-30 08:42:13,718 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:42:13] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-27 HTTP/1.1" 200 -
+2025-12-30 08:48:34,658 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:48:34] "GET /reporteria/remesas-tesoreria HTTP/1.1" 200 -
+2025-12-30 08:48:34,733 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:48:34] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2025-12-30 08:48:34,745 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:48:34] "[36mGET /static/js/reporte_remesas_tesoreria.js HTTP/1.1[0m" 304 -
+2025-12-30 08:48:41,741 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:48:41] "GET /api/reportes/remesas-matriz?fecha_desde=2025-12-30&fecha_hasta=2025-12-30 HTTP/1.1" 200 -
+2025-12-30 08:57:24,059 - werkzeug - INFO - 127.0.0.1 - - [30/Dec/2025 08:57:24] "GET /api/tesoreria/remesas-detalle?fecha_retiro=2025-12-30 HTTP/1.1" 200 -
+2025-12-30 09:25:02,643 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2025-12-30 09:25:04,611 - werkzeug - INFO -  * Restarting with stat
+2025-12-30 09:25:57,880 - werkzeug - INFO -  * Restarting with stat
+2025-12-30 09:26:44,143 - werkzeug - INFO -  * Restarting with stat
