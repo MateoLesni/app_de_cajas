@@ -265,8 +265,14 @@
       </div>
 
       <nav class="sidebar__nav">
+        <a class="nav-item" href="{{ url_for('tesoreria_home') }}">
+          <span class="nav-dot"></span> Inicio
+        </a>
         <a class="nav-item is-active" href="{{ url_for('ui_reporteria_remesas') }}">
-          <span class="nav-dot"></span> Carga de Remesas
+          <span class="nav-dot"></span> Conciliación de Efectivo
+        </a>
+        <a class="nav-item" href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+          <span class="nav-dot"></span> Resumen por Local
         </a>
       </nav>
 

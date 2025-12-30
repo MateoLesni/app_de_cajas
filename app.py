@@ -5784,9 +5784,18 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
 # Página UI
+@app.route("/tesoreria/home")
+@login_required
+@role_min_required(8)  # Tesoreros (role_id 8+)
+def tesoreria_home():
+    """
+    Página de inicio para tesorería con dos opciones principales.
+    """
+    return render_template("tesoreria_home.html")
+
 @app.route("/reporteria/remesas")
 @login_required
-@role_min_required(8)  # Tesoreros (role_id 8) - Carga individual de remesas
+@role_min_required(8)  # Tesoreros (role_id 8+) - Carga individual de remesas
 def ui_reporteria_remesas():
     """
     Vista de carga individual de remesas para tesoreros.
@@ -5796,11 +5805,12 @@ def ui_reporteria_remesas():
 
 @app.route("/reporteria/remesas-tesoreria")
 @login_required
-@role_min_required(9)  # Admin Tesorería (role_id 9) - Conciliación por local
+@role_min_required(8)  # Tesoreros (role_id 8+) - Resumen por local (solo lectura)
 def reporte_remesas_tesoreria_page():
     """
-    Vista de conciliación agrupada por local para admin de tesorería.
-    Muestra resumen por local con opción de aprobar/desaprobar conciliación.
+    Vista de resumen agrupado por local para tesorería.
+    SOLO LECTURA - Muestra lo cargado previamente en /reporteria/remesas.
+    Sirve para reclamar diferencias a los locales.
     """
     return render_template("reporte_remesas_tesoreria.html")
 

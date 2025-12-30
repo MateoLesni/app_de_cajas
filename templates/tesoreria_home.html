@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tesorería - Inicio</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .home-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .header-home {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header-home h1 {
+      font-size: 32px;
+      color: #1f2937;
+      margin: 0 0 10px 0;
+    }
+
+    .header-home p {
+      font-size: 16px;
+      color: #6b7280;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .option-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 32px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .option-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .option-card.primary {
+      border-color: #3b82f6;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .option-card.primary:hover {
+      border-color: #2563eb;
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    }
+
+    .card-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    .primary .card-icon {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .secondary .card-icon {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0 0 12px 0;
+    }
+
+    .card-description {
+      font-size: 15px;
+      color: #6b7280;
+      line-height: 1.6;
+      margin: 0 0 20px 0;
+    }
+
+    .card-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 24px 0;
+    }
+
+    .card-features li {
+      font-size: 14px;
+      color: #4b5563;
+      padding: 6px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-features li::before {
+      content: "✓";
+      margin-right: 10px;
+      color: #10b981;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .card-badge {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .secondary .card-badge {
+      background: #6b7280;
+    }
+
+    .info-user {
+      text-align: center;
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 32px;
+    }
+
+    .info-user p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .info-user strong {
+      color: #1f2937;
+    }
+
+    .btn-logout {
+      display: inline-block;
+      margin-top: 40px;
+      padding: 12px 24px;
+      background: #ef4444;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="home-container">
+    <div class="header-home">
+      <h1>💰 Sistema de Tesorería</h1>
+      <p>Selecciona una opción para comenzar</p>
+    </div>
+
+    <div class="info-user">
+      <p><strong>Usuario:</strong> {{ session['username'] }} | <strong>Local:</strong> {{ session['local'] }}</p>
+    </div>
+
+    <div class="cards-grid">
+      <!-- Opción 1: Conciliación de Efectivo (Principal) -->
+      <a href="{{ url_for('ui_reporteria_remesas') }}" class="option-card primary">
+        <div class="card-icon">
+          <i class="fas fa-calculator"></i>
+        </div>
+        <div class="card-badge">Principal</div>
+        <h2 class="card-title">Conciliación de Efectivo</h2>
+        <p class="card-description">
+          Carga individual de remesas. Contá el dinero de cada bolsa y registrá el monto real.
+        </p>
+        <ul class="card-features">
+          <li>Ver todas las remesas del día</li>
+          <li>Cargar monto real contado</li>
+          <li>Formato argentino (1.000,00)</li>
+          <li>Cálculo automático de diferencias</li>
+          <li>Guardar individual o por lote</li>
+        </ul>
+      </a>
+
+      <!-- Opción 2: Resumen por Local (Secundaria) -->
+      <a href="{{ url_for('reporte_remesas_tesoreria_page') }}" class="option-card secondary">
+        <div class="card-icon">
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="card-badge">Reporte</div>
+        <h2 class="card-title">Resumen por Local</h2>
+        <p class="card-description">
+          Vista agrupada por local con lo cargado previamente. Para reclamar diferencias.
+        </p>
+        <ul class="card-features">
+          <li>Agrupado por local</li>
+          <li>Ver detalle expandible</li>
+          <li>Identificar faltantes y sobrantes</li>
+          <li>Solo lectura (no editable)</li>
+          <li>Para reclamos a locales</li>
+        </ul>
+      </a>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="{{ url_for('logout') }}" class="btn-logout">
+        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+      </a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+</body>
+</html>

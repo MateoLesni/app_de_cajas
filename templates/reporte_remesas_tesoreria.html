@@ -306,33 +306,21 @@
       </div>
 
       <nav class="sidebar__nav">
-        <a class="nav-item" href="{{ url_for('tesoreria_home') if role_level >= 7 else url_for('resumen_local') }}">
+        <a class="nav-item" href="{{ url_for('tesoreria_home') }}">
           <span class="nav-dot"></span> Inicio
         </a>
-
-        <div class="nav-group is-open">
-          <a href="javascript:void(0)" id="navReportes" class="nav-item nav-toggle is-active" aria-expanded="true">
-            <span class="nav-dot" aria-hidden="true"></span>
-            <span>Reportería</span>
-            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                 aria-hidden="true" focusable="false" style="margin-left:auto;">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </a>
-
-          <div class="nav-sub">
-            <a class="nav-item nav-sub-item is-active" href="{{ url_for('reporte_remesas_tesoreria_page') }}">
-              <span class="nav-dot" aria-hidden="true"></span>
-              Remesas Tesorería
-            </a>
-          </div>
-        </div>
-
-        <a class="nav-item" href="{{ url_for('logout') }}">
-          <span class="nav-dot"></span> Cerrar Sesión
+        <a class="nav-item" href="{{ url_for('ui_reporteria_remesas') }}">
+          <span class="nav-dot"></span> Conciliación de Efectivo
+        </a>
+        <a class="nav-item is-active" href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+          <span class="nav-dot"></span> Resumen por Local
         </a>
       </nav>
+
+      <div class="sidebar__footer">
+        <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+      </div>
+      <button class="sidebar__toggle" id="toggleSidebar" aria-label="Abrir/cerrar menú">☰</button>
     </aside>
 
     <!-- Main Content -->
