@@ -6242,21 +6242,21 @@ def api_tesoreria_remesas_detalle():
         remesas = cur.fetchall() or []
 
         # Para cada remesa, consultar si tiene monto real registrado
-        # Crear un diccionario de reales por (local, fecha_retiro)
+        # Crear un diccionario de reales por (precinto, nro_remesa)
         cur.execute("""
-            SELECT local, fecha_retiro, monto_real
+            SELECT precinto, nro_remesa, monto_real
             FROM tesoreria_recibido
             WHERE fecha_retiro = %s
         """, (fecha_retiro,))
 
         reales = {}
         for row in cur.fetchall() or []:
-            key = (row['local'], str(row['fecha_retiro']))
+            key = (row['precinto'], row['nro_remesa'])
             reales[key] = float(row['monto_real']) if row['monto_real'] else 0
 
-        # Adjuntar el real a cada remesa (si existe)
+        # Adjuntar el real a cada remesa individual (si existe)
         for remesa in remesas:
-            key = (remesa['local'], fecha_retiro)
+            key = (remesa['precinto'], remesa['nro_remesa'])
             remesa['real'] = reales.get(key, 0)
 
             # Convertir decimales a float
@@ -6287,11 +6287,13 @@ def api_tesoreria_guardar_remesa():
     data = request.get_json() or {}
     local = data.get('local', '').strip()
     fecha_retiro = data.get('fecha_retiro', '').strip()
+    precinto = data.get('precinto', '').strip()
+    nro_remesa = data.get('nro_remesa', '').strip()
     monto_real = data.get('monto_real', 0)
     monto_teorico = data.get('monto_teorico', 0)
 
-    if not (local and fecha_retiro):
-        return jsonify(success=False, msg='Faltan datos requeridos'), 400
+    if not (local and fecha_retiro and precinto and nro_remesa):
+        return jsonify(success=False, msg='Faltan datos requeridos (local, fecha_retiro, precinto, nro_remesa)'), 400
 
     try:
         conn = get_db_connection()
@@ -6320,18 +6322,18 @@ def api_tesoreria_guardar_remesa():
         else:
             estado = 'con_diferencia'
 
-        # Insertar o actualizar
+        # Insertar o actualizar remesa individual
         cur.execute("""
             INSERT INTO tesoreria_recibido
-                (local, fecha_retiro, monto_teorico, monto_real, estado, registrado_por, registrado_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                (local, fecha_retiro, precinto, nro_remesa, monto_teorico, monto_real, estado, registrado_por, registrado_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE
                 monto_real = VALUES(monto_real),
                 monto_teorico = VALUES(monto_teorico),
                 estado = VALUES(estado),
                 registrado_por = VALUES(registrado_por),
                 registrado_at = NOW()
-        """, (local, fecha_retiro, monto_teorico, monto_real, estado, username))
+        """, (local, fecha_retiro, precinto, nro_remesa, monto_teorico, monto_real, estado, username))
 
         conn.commit()
         cur.close()

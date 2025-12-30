@@ -229,9 +229,9 @@ function renderizarTabla() {
 }
 
 /**
- * Renderizar tabla de detalle de remesas
+ * Renderizar tabla de detalle de remesas (SOLO LECTURA)
  */
-function renderizarTablaDetalle(fila, filaIndex) {
+function renderizarTablaDetalle(fila) {
   let html = `
     <div style="background: white; padding: 16px; border-radius: 8px;">
       <h4 style="margin: 0 0 12px 0; color: #1f2937; font-size: 14px;">
@@ -244,15 +244,15 @@ function renderizarTablaDetalle(fila, filaIndex) {
             <th>Precinto</th>
             <th>Día de Caja</th>
             <th>Quién Retiró</th>
-            <th style="text-align: right;">$ Que debería haber</th>
-            <th style="text-align: right; background: #fef3c7;">$ Real (Anotar aquí)</th>
+            <th style="text-align: right;">$ Teórico</th>
+            <th style="text-align: right;">$ Real (Cargado)</th>
             <th style="text-align: right;">Diferencia</th>
           </tr>
         </thead>
         <tbody>
   `;
 
-  fila.remesas.forEach((remesa, remesaIndex) => {
+  fila.remesas.forEach((remesa) => {
     const dif = remesa.monto - (remesa.real || 0);
     const difClass = dif === 0 ? 'dif-cero' : dif > 0 ? 'dif-positiva' : 'dif-negativa';
     const signo = dif > 0 ? '-' : dif < 0 ? '+' : '';
@@ -264,18 +264,10 @@ function renderizarTablaDetalle(fila, filaIndex) {
         <td>${formatFecha(remesa.fecha_caja)}</td>
         <td style="font-size: 13px;">${remesa.retirada_por || '-'}</td>
         <td style="text-align: right; font-weight: 700; font-size: 15px; color: #1f2937;">$${formatMoney(remesa.monto)}</td>
-        <td style="text-align: right; background: #fffbeb;">
-          <input type="number"
-                 class="input-monto"
-                 data-fila="${filaIndex}"
-                 data-remesa="${remesaIndex}"
-                 value="${remesa.real || ''}"
-                 placeholder="¿Cuánto llegó?"
-                 step="0.01"
-                 style="width: 140px; padding: 8px; border: 2px solid #fbbf24; border-radius: 6px; font-size: 15px; font-weight: 700; text-align: right;"
-                 onchange="actualizarMontoReal(${filaIndex}, ${remesaIndex}, this.value)">
+        <td style="text-align: right; font-weight: 700; font-size: 15px; background: #f9fafb; color: ${remesa.real > 0 ? '#059669' : '#9ca3af'};">
+          ${remesa.real > 0 ? '$' + formatMoney(remesa.real) : 'Sin cargar'}
         </td>
-        <td style="text-align: right; font-weight: 700; font-size: 15px;" class="${difClass}" id="dif-${filaIndex}-${remesaIndex}">
+        <td style="text-align: right; font-weight: 700; font-size: 15px;" class="${difClass}">
           ${dif !== 0 ? `${signo}$${formatMoney(Math.abs(dif))}` : '$0.00'}
         </td>
       </tr>
@@ -288,11 +280,9 @@ function renderizarTablaDetalle(fila, filaIndex) {
       <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
         <div style="font-size: 14px; color: #6b7280;">
           <strong>Total:</strong> Teórico <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.teorico)}</span> •
-          Real <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.real)}</span>
+          Real <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.real)}</span> •
+          Diferencia <span style="font-weight: 700;" class="${difClass}">${signo}$${formatMoney(Math.abs(fila.dif))}</span>
         </div>
-        <button class="btn-guardar" onclick="guardarRemesas(${filaIndex})" style="font-size: 15px; padding: 12px 24px;">
-          <i class="fas fa-save"></i> Guardar Todo
-        </button>
       </div>
     </div>
   `;
@@ -354,7 +344,7 @@ async function cargarDetalleRemesas(index) {
     }
 
     // Renderizar tabla de detalle
-    detalleContainer.innerHTML = renderizarTablaDetalle(fila, index);
+    detalleContainer.innerHTML = renderizarTablaDetalle(fila);
 
   } catch (error) {
     console.error('Error al cargar detalle:', error);
@@ -366,103 +356,11 @@ async function cargarDetalleRemesas(index) {
   }
 }
 
-/**
- * Actualizar monto real de una remesa (solo en memoria)
- */
-function actualizarMontoReal(filaIndex, remesaIndex, valor) {
-  const remesa = reporteData[filaIndex].remesas[remesaIndex];
-  remesa.real = parseFloat(valor) || 0;
-
-  // Actualizar diferencia en la tabla
-  const dif = remesa.monto - remesa.real;
-  const difEl = document.getElementById(`dif-${filaIndex}-${remesaIndex}`);
-
-  difEl.className = dif === 0 ? 'dif-cero' : dif > 0 ? 'dif-positiva' : 'dif-negativa';
-  const signo = dif > 0 ? '-' : dif < 0 ? '+' : '';
-  difEl.textContent = dif !== 0 ? `${signo}$${formatMoney(Math.abs(dif))}` : '$0.00';
-
-  // Marcar input como modificado
-  const input = document.querySelector(`input[data-fila="${filaIndex}"][data-remesa="${remesaIndex}"]`);
-  input.classList.add('modified');
-
-  // Recalcular totales de la fila
-  recalcularTotalesFila(filaIndex);
-}
-
-/**
- * Recalcular totales de una fila
- */
-function recalcularTotalesFila(filaIndex) {
-  const fila = reporteData[filaIndex];
-
-  // Sumar todos los reales de las remesas
-  fila.real = fila.remesas.reduce((sum, r) => sum + (r.real || 0), 0);
-  fila.dif = fila.teorico - fila.real;
-
-  // Actualizar la fila resumen en la tabla
-  const filaResumen = document.querySelector(`.fila-resumen[data-index="${filaIndex}"]`);
-  const difClass = fila.dif === 0 ? 'dif-cero' : fila.dif > 0 ? 'dif-positiva' : 'dif-negativa';
-  const signo = fila.dif > 0 ? '-' : fila.dif < 0 ? '+' : '';
-
-  filaResumen.children[2].textContent = '$' + formatMoney(fila.real);
-  filaResumen.children[3].className = difClass;
-  filaResumen.children[3].style.textAlign = 'right';
-  filaResumen.children[3].textContent = `${signo}$${formatMoney(Math.abs(fila.dif))}`;
-}
-
-/**
- * Guardar cambios de todas las remesas de una fila
- */
-async function guardarRemesas(filaIndex) {
-  const fila = reporteData[filaIndex];
-  const btn = event.target;
-
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-  try {
-    // Calcular monto real total
-    const montoReal = fila.remesas.reduce((sum, r) => sum + (r.real || 0), 0);
-    const montoTeorico = fila.teorico;
-
-    const response = await fetch('/api/tesoreria/registrar-recibido', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        local: fila.local,
-        fecha_retiro: fila.fecha,
-        monto_teorico: montoTeorico,
-        monto_real: montoReal,
-        observaciones: ''
-      })
-    });
-
-    const result = await response.json();
-
-    if (response.ok && result.success) {
-      alert('✅ Cambios guardados correctamente');
-
-      // Quitar clase modified de todos los inputs
-      const inputs = document.querySelectorAll(`input[data-fila="${filaIndex}"]`);
-      inputs.forEach(input => input.classList.remove('modified'));
-
-      // Actualizar estado en la fila
-      fila.estado = result.estado || 'recibido';
-      const filaResumen = document.querySelector(`.fila-resumen[data-index="${filaIndex}"]`);
-      filaResumen.children[4].innerHTML = getEstadoBadge(fila.estado, true);
-
-    } else {
-      throw new Error(result.msg || 'Error al guardar');
-    }
-
-  } catch (error) {
-    console.error('Error:', error);
-    alert('❌ Error al guardar: ' + error.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
-  }
-}
+// =============================================================================
+// NOTA: Esta vista es SOLO LECTURA
+// Los datos se cargan desde la BD (tesoreria_recibido)
+// No hay funciones de edición/guardado aquí
+// =============================================================================
 
 /**
  * Mostrar/ocultar loading
