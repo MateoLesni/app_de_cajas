@@ -86,6 +86,7 @@
       const res = await fetch(`/api/tesoreria/remesas-detalle?fecha_retiro=${encodeURIComponent(fechaRetiro)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      console.log('Remesas cargadas desde API:', data.remesas);
       return data.remesas || [];
     } catch (error) {
       console.error('Error al cargar remesas:', error);
@@ -215,21 +216,32 @@
     const remesa = remesasData[index];
     const btn = event.target.closest('.btn-guardar');
 
+    // Validar que tenemos los datos necesarios
+    if (!remesa.precinto || !remesa.nro_remesa) {
+      alert('❌ Error: Faltan datos de precinto o número de remesa');
+      console.error('Remesa sin precinto/nro_remesa:', remesa);
+      return;
+    }
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    const payload = {
+      local: remesa.local,
+      fecha_retiro: $('#rep-fecha').value,
+      nro_remesa: remesa.nro_remesa,
+      precinto: remesa.precinto,
+      monto_teorico: remesa.monto,
+      monto_real: remesa.real || 0
+    };
+
+    console.log('Guardando remesa:', payload);
 
     try {
       const res = await fetch('/api/tesoreria/guardar-remesa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          local: remesa.local,
-          fecha_retiro: $('#rep-fecha').value,
-          nro_remesa: remesa.nro_remesa,
-          precinto: remesa.precinto,
-          monto_teorico: remesa.monto,
-          monto_real: remesa.real || 0
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
