@@ -10,6 +10,7 @@
 
   let localesDisponibles = [];
   let anticiposData = [];
+  let mediosPagoDisponibles = [];
   let userProfile = {
     level: 0,
     allowed_locales: [],
@@ -25,6 +26,7 @@
 
     await loadUserProfile();
     await loadLocales();
+    await loadMediosPago();
     await loadAnticipos();
     setupEventListeners();
   });
@@ -143,6 +145,40 @@
     } catch (error) {
       console.error('❌ Error al cargar locales:', error);
       localesDisponibles = [];
+    }
+  }
+
+  async function loadMediosPago() {
+    try {
+      console.log('🔍 Cargando medios de pago...');
+      const response = await fetch('/api/medios_anticipos/activos');
+      const data = await response.json();
+
+      if (data.success) {
+        mediosPagoDisponibles = data.medios || [];
+        console.log('✅ Medios de pago cargados:', mediosPagoDisponibles);
+
+        // Llenar select del modal
+        const medioPagoSelect = $('#medioPagoId');
+        if (medioPagoSelect) {
+          // Limpiar opciones existentes
+          medioPagoSelect.innerHTML = '<option value="">-- Seleccionar medio de pago --</option>';
+
+          mediosPagoDisponibles.forEach(medio => {
+            const option = document.createElement('option');
+            option.value = medio.id;
+            option.textContent = medio.nombre;
+            medioPagoSelect.appendChild(option);
+          });
+          console.log('✅ Select de medio de pago actualizado con', mediosPagoDisponibles.length, 'medios');
+        }
+      } else {
+        console.error('❌ Error al cargar medios de pago:', data.msg);
+        mediosPagoDisponibles = [];
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar medios de pago:', error);
+      mediosPagoDisponibles = [];
     }
   }
 
@@ -377,10 +413,15 @@
     $('#cliente').value = '';
     $('#local').value = '';
     $('#importe').value = '';
-    $('#medioPago').value = '';
     $('#numeroTransaccion').value = '';
     $('#observaciones').value = '';
     $('#divisa').value = 'ARS';
+
+    // Resetear medio de pago (dejar en placeholder)
+    const medioPagoSelect = $('#medioPagoId');
+    if (medioPagoSelect) {
+      medioPagoSelect.selectedIndex = 0; // Selecciona "-- Seleccionar medio de pago --"
+    }
 
     // Limpiar preview de adjunto
     const adjuntoInput = $('#adjunto');
@@ -413,7 +454,7 @@
     $('#local').value = anticipo.local;
     $('#importe').value = anticipo.importe;
     $('#divisa').value = anticipo.divisa || 'ARS';
-    $('#medioPago').value = anticipo.medio_pago || '';
+    $('#medioPagoId').value = anticipo.medio_pago_id || '';
     $('#numeroTransaccion').value = anticipo.numero_transaccion || '';
     $('#observaciones').value = anticipo.observaciones || '';
 
@@ -423,7 +464,7 @@
     $('#local').disabled = true;
     $('#importe').disabled = true;
     $('#divisa').disabled = true;
-    $('#medioPago').disabled = true;
+    $('#medioPagoId').disabled = true;
     $('#numeroTransaccion').disabled = true;
 
     // Ocultar el input de adjunto en modo edición (no se puede cambiar)
@@ -441,7 +482,7 @@
     $('#local').disabled = false;
     $('#importe').disabled = false;
     $('#divisa').disabled = false;
-    $('#medioPago').disabled = false;
+    $('#medioPagoId').disabled = false;
     $('#numeroTransaccion').disabled = false;
 
     // Mostrar el input de adjunto
@@ -503,7 +544,7 @@
       local: $('#local').value,
       importe: parseFloat($('#importe').value),
       divisa: $('#divisa').value,
-      medio_pago: $('#medioPago').value.trim() || null,
+      medio_pago_id: parseInt($('#medioPagoId').value) || null,
       numero_transaccion: $('#numeroTransaccion').value.trim() || null,
       observaciones: $('#observaciones').value.trim() || null
     };
@@ -535,7 +576,7 @@
         delete data.local;
         delete data.importe;
         delete data.divisa;
-        delete data.medio_pago;
+        delete data.medio_pago_id;
         delete data.numero_transaccion;
         delete data.adjunto_gcs_path;
       } else {

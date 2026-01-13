@@ -50,11 +50,18 @@ def crear_anticipo_recibido():
         fecha_pago = _normalize_fecha(data['fecha_pago'])
         fecha_evento = _normalize_fecha(data['fecha_evento'])
         importe = float(data['importe'])
-        cliente = data['cliente'].strip()
-        local = data['local'].strip()
+
+        # Validar y sanitizar campos de texto obligatorios
+        cliente = (data.get('cliente') or '').strip()
+        if not cliente:
+            return jsonify(success=False, msg="El campo 'cliente' es obligatorio"), 400
+
+        local = (data.get('local') or '').strip()
+        if not local:
+            return jsonify(success=False, msg="El campo 'local' es obligatorio"), 400
 
         # NUEVO: Campos de divisa
-        divisa = (data.get('divisa') or 'ARS').strip().upper()
+        divisa = (data.get('divisa') or 'ARS').strip().upper() if data.get('divisa') else 'ARS'
         tipo_cambio_fecha = data.get('tipo_cambio_fecha')
         if not tipo_cambio_fecha:
             # Si no se especifica, usar la fecha de pago
@@ -62,12 +69,13 @@ def crear_anticipo_recibido():
         else:
             tipo_cambio_fecha = _normalize_fecha(tipo_cambio_fecha)
 
-        numero_transaccion = data.get('numero_transaccion', '').strip() or None
-        medio_pago = data.get('medio_pago', '').strip() or None
-        observaciones = data.get('observaciones', '').strip() or None
+        # Campos opcionales - manejar None correctamente
+        numero_transaccion = (data.get('numero_transaccion') or '').strip() or None
+        medio_pago = (data.get('medio_pago') or '').strip() or None
+        observaciones = (data.get('observaciones') or '').strip() or None
 
         # NUEVO: Adjunto opcional
-        adjunto_gcs_path = data.get('adjunto_gcs_path', '').strip() or None
+        adjunto_gcs_path = (data.get('adjunto_gcs_path') or '').strip() or None
 
         if importe <= 0:
             return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400

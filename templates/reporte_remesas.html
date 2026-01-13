@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tesorería - Carga de Remesas</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Tesorería - Histórico de Remesas</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -164,7 +165,7 @@
       padding: 8px;
       border: 2px solid #9ca3af;
       border-radius: 6px;
-      text-align: right;
+      text-align: center;
       font-weight: 700;
       font-size: 15px;
       background: #e5e7eb;
@@ -183,9 +184,9 @@
       font-size: 15px;
     }
 
-    .dif-cero { color: #6b7280; }
-    .dif-positiva { color: #dc2626; } /* Falta plata */
-    .dif-negativa { color: #f97316; } /* Sobra plata */
+    .dif-cero { color: #1f2937; } /* OK = NEGRO */
+    .dif-positiva { color: #dc2626; } /* Falta plata = ROJO */
+    .dif-negativa { color: #16a34a; } /* Sobra plata = VERDE */
 
     .btn-guardar {
       background: #16a34a;
@@ -268,8 +269,11 @@
         <a class="nav-item" href="{{ url_for('tesoreria_home_new') }}">
           <span class="nav-dot"></span> Inicio
         </a>
+        <a class="nav-item" href="{{ url_for('ui_reporteria_remesas_trabajo') }}">
+          <span class="nav-dot"></span> Mesa de Trabajo
+        </a>
         <a class="nav-item is-active" href="{{ url_for('ui_reporteria_remesas') }}">
-          <span class="nav-dot"></span> Conciliación de Efectivo
+          <span class="nav-dot"></span> Histórico
         </a>
         <a class="nav-item" href="{{ url_for('reporte_remesas_tesoreria_page') }}">
           <span class="nav-dot"></span> Resumen por Local
@@ -299,12 +303,34 @@
         <div class="rep-wrap">
           <!-- Explicación -->
           <div class="info-box">
-            <h3>💰 Carga de Montos Reales</h3>
+            <h3>📋 Histórico - Consulta de Remesas</h3>
             <p>
-              Esta es la tabla donde se cargan los <strong>montos reales</strong> que llegaron de cada bolsa.<br>
-              Contá la plata de cada bolsa y anotá el monto en la columna amarilla. Las diferencias se calculan automáticamente.
+              Vista de consulta histórica con filtro de fecha para revisar <strong>montos reales contabilizados</strong>.<br>
+              Esta es una vista de <strong>solo lectura</strong>. Para cargar montos reales, utilizá la vista "Mesa de Trabajo".<br>
+              <strong>Tip:</strong> Las remesas contabilizadas desaparecen de "Mesa de Trabajo" y se visualizan aquí.
             </p>
           </div>
+
+          <!-- Panel de Aprobación (solo para admin tesorería - level 8 o superior) -->
+          {% if session.get('role_level') and session.get('role_level') >= 8 %}
+          <div id="panelAprobacion" class="info-box" style="display: none; background: #f0f9ff; border-left: 4px solid #3b82f6;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="flex: 1;">
+                <div id="estadoAprobacion" style="font-size: 14px; font-weight: 600;">
+                  <!-- Se llena dinámicamente -->
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button id="btnAprobar" class="btn-submit" onclick="aprobarFecha()" style="display: none;">
+                  <i class="fas fa-check-circle"></i> Aprobar Conciliación
+                </button>
+                <button id="btnDesaprobar" class="btn-ghost" onclick="desaprobarFecha()" style="display: none; background: #dc2626; color: white;">
+                  <i class="fas fa-times-circle"></i> Desaprobar
+                </button>
+              </div>
+            </div>
+          </div>
+          {% endif %}
 
           <!-- Filtros -->
           <div class="rep-filtros">
@@ -312,12 +338,17 @@
               <label for="rep-fecha">Fecha de Retiro:</label>
               <input type="date" id="rep-fecha" class="form-control" required>
             </div>
+            <div class="form-group">
+              <label for="rep-fecha-sello">Fecha de Sello (Apertura):</label>
+              <input type="date" id="rep-fecha-sello" class="form-control" placeholder="Opcional">
+              <small style="color: #6b7280; font-size: 12px;">Opcional: filtrar por fecha de contabilización</small>
+            </div>
             <div class="rep-actions">
+              <a href="{{ url_for('reporte_resumen_tesoreria_page') }}" class="btn-ghost">
+                <i class="fas fa-chart-bar"></i> Resumen Local 2
+              </a>
               <button class="btn-submit" id="rep-buscar">
-                <i class="fas fa-sync-alt"></i> Actualizar
-              </button>
-              <button class="btn-ghost" id="btn-guardar-todo">
-                <i class="fas fa-save"></i> Guardar Todos los Cambios
+                <i class="fas fa-sync-alt"></i> Consultar
               </button>
             </div>
           </div>
@@ -339,7 +370,7 @@
               <p>No hay remesas retiradas en esta fecha</p>
             </div>
 
-            <div style="overflow: auto; max-height: 70vh;" id="table-container" style="display: none;">
+            <div id="table-container" style="display: none;">
               <table class="remesas-table" id="remesas-table">
                 <thead>
                   <tr>
@@ -350,9 +381,9 @@
                     <th>Caja</th>
                     <th>Turno</th>
                     <th class="col-right">$ Teórico</th>
-                    <th class="col-right">$ Real (Contar aquí)</th>
+                    <th class="col-right">$ Real (Contabilizado)</th>
                     <th class="col-right">Diferencia</th>
-                    <th style="text-align: center;">Acción</th>
+                    <th style="text-align: center;">Estado</th>
                   </tr>
                 </thead>
                 <tbody id="remesas-tbody">

@@ -8,6 +8,12 @@
 
   let remesasData = []; // Array de todas las remesas
 
+  // Obtener CSRF token del meta tag
+  function getCSRFToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.content : '';
+  }
+
   // Formatear input con separador de miles argentino
   function formatearInputArgentino(valor) {
     // Eliminar todo excepto números y coma
@@ -79,11 +85,15 @@
     input.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   }
 
-  // Fetch remesas por fecha de retiro
-  async function fetchRemesas(fechaRetiro) {
+  // Fetch remesas por fecha de retiro y opcionalmente por fecha de sello
+  async function fetchRemesas(fechaRetiro, fechaSello = null) {
     mostrarLoading(true);
     try {
-      const res = await fetch(`/api/tesoreria/remesas-detalle?fecha_retiro=${encodeURIComponent(fechaRetiro)}`);
+      let url = `/api/tesoreria/remesas-detalle?fecha_retiro=${encodeURIComponent(fechaRetiro)}`;
+      if (fechaSello) {
+        url += `&fecha_sello=${encodeURIComponent(fechaSello)}`;
+      }
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       console.log('Remesas cargadas desde API:', data.remesas);
@@ -142,23 +152,14 @@
         <td class="col-readonly">${remesa.caja || '-'}</td>
         <td class="col-readonly">${remesa.turno || '-'}</td>
         <td class="col-monto-teorico">$${money(remesa.monto)}</td>
-        <td class="col-real">
-          <input type="text"
-                 class="input-real"
-                 data-index="${index}"
-                 value="${numeroAFormatoArgentino(remesa.real)}"
-                 placeholder="0,00"
-                 oninput="window.formatearInput(${index}, this)"
-                 onblur="window.actualizarReal(${index}, this.value)"
-                 onkeypress="if(event.key==='Enter'){event.target.blur();window.guardarRemesa(${index})}">
+        <td class="col-real" style="text-align: right; font-weight: 700; font-size: 15px;">
+          ${remesa.real > 0 ? '$' + numeroAFormatoArgentino(remesa.real) : '-'}
         </td>
         <td class="col-dif ${difClass}" id="dif-${index}">
           ${dif !== 0 ? `${signo}$${money(Math.abs(dif))}` : '$0.00'}
         </td>
-        <td style="text-align: center;">
-          <button class="btn-guardar" onclick="window.guardarRemesa(${index})">
-            <i class="fas fa-save"></i> Guardar
-          </button>
+        <td style="text-align: center; color: #9ca3af; font-size: 12px;">
+          ${remesa.real > 0 ? '<i class="fas fa-check-circle" style="color: #10b981;"></i> Contabilizado' : '<i class="fas fa-clock" style="color: #f59e0b;"></i> Pendiente'}
         </td>
       `;
 
@@ -168,33 +169,36 @@
     mostrarTabla(true);
   }
 
-  // Formatear input mientras se escribe
+  // =====================================================
+  // FUNCIONES DE EDICIÓN DESHABILITADAS
+  // =====================================================
+  // El Histórico es ahora una vista READ-ONLY.
+  // Para editar, usar "Mesa de Trabajo" (/reporteria/remesas-trabajo)
+  // =====================================================
+
+  /*
+  // Formatear input mientras se escribe - YA NO SE USA
   window.formatearInput = function(index, input) {
     const cursorPos = input.selectionStart;
     const valorAnterior = input.value;
     const valorFormateado = formatearInputArgentino(input.value);
 
-    // Solo actualizar si cambió
     if (valorFormateado !== valorAnterior) {
       input.value = valorFormateado;
-
-      // Intentar mantener posición del cursor
       const diff = valorFormateado.length - valorAnterior.length;
       const newPos = cursorPos + diff;
       input.setSelectionRange(newPos, newPos);
     }
 
-    // Marcar como modificado mientras escribe
     input.style.borderColor = '#f59e0b';
     input.style.background = '#fef3c7';
   };
 
-  // Actualizar monto real (solo en memoria) cuando pierde foco
+  // Actualizar monto real - YA NO SE USA
   window.actualizarReal = function(index, valorFormateado) {
     const remesa = remesasData[index];
     remesa.real = parsearNumeroArgentino(valorFormateado);
 
-    // Actualizar diferencia
     const dif = (remesa.monto || 0) - remesa.real;
     const difEl = $(`#dif-${index}`);
 
@@ -204,22 +208,21 @@
     difEl.className = `col-dif ${difClass}`;
     difEl.textContent = dif !== 0 ? `${signo}$${money(Math.abs(dif))}` : '$0.00';
 
-    // Formatear con ,00 si no tiene decimales
     const input = $(`.input-real[data-index="${index}"]`);
     if (remesa.real > 0 && !valorFormateado.includes(',')) {
       input.value = numeroAFormatoArgentino(remesa.real);
     }
   };
 
-  // Guardar una remesa individual
-  window.guardarRemesa = async function(index) {
+  // Guardar una remesa individual - YA NO SE USA
+  window.guardarRemesa_OLD = async function(index) {
     const remesa = remesasData[index];
     const btn = event.target.closest('.btn-guardar');
 
-    // Validar que tenemos los datos necesarios
-    if (!remesa.precinto || !remesa.nro_remesa) {
-      alert('❌ Error: Faltan datos de precinto o número de remesa');
-      console.error('Remesa sin precinto/nro_remesa:', remesa);
+    // Validar que tenemos el ID de remesa
+    if (!remesa.id) {
+      alert('❌ Error: Falta ID de remesa');
+      console.error('Remesa sin ID:', remesa);
       return;
     }
 
@@ -227,10 +230,11 @@
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
     const payload = {
+      remesa_id: remesa.id,
       local: remesa.local,
       fecha_retiro: $('#rep-fecha').value,
-      nro_remesa: remesa.nro_remesa,
-      precinto: remesa.precinto,
+      nro_remesa: remesa.nro_remesa || '',
+      precinto: remesa.precinto || '',
       monto_teorico: remesa.monto,
       monto_real: remesa.real || 0
     };
@@ -240,7 +244,10 @@
     try {
       const res = await fetch('/api/tesoreria/guardar-remesa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCSRFToken()
+        },
         body: JSON.stringify(payload)
       });
 
@@ -252,7 +259,6 @@
 
       alert('✅ Guardado correctamente');
 
-      // Quitar estilo de modificado
       const input = $(`.input-real[data-index="${index}"]`);
       input.style.borderColor = '#9ca3af';
       input.style.background = '#e5e7eb';
@@ -266,8 +272,8 @@
     }
   };
 
-  // Guardar todos los cambios
-  async function guardarTodo() {
+  // Guardar todos los cambios - YA NO SE USA
+  async function guardarTodo_OLD() {
     const modificados = remesasData.filter(r => r.real > 0);
 
     if (modificados.length === 0) {
@@ -290,12 +296,16 @@
       try {
         const res = await fetch('/api/tesoreria/guardar-remesa', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': getCSRFToken()
+          },
           body: JSON.stringify({
+            remesa_id: remesa.id,
             local: remesa.local,
             fecha_retiro: $('#rep-fecha').value,
-            nro_remesa: remesa.nro_remesa,
-            precinto: remesa.precinto,
+            nro_remesa: remesa.nro_remesa || '',
+            precinto: remesa.precinto || '',
             monto_teorico: remesa.monto,
             monto_real: remesa.real || 0
           })
@@ -318,7 +328,6 @@
 
     if (errores === 0) {
       alert(`✅ Se guardaron ${exitosos} remesas correctamente`);
-      // Resetear estilos
       $$('.input-real').forEach(input => {
         input.style.borderColor = '#9ca3af';
         input.style.background = '#e5e7eb';
@@ -327,6 +336,7 @@
       alert(`⚠️ Se guardaron ${exitosos} remesas.\nHubo ${errores} errores.`);
     }
   }
+  */
 
   // Cargar remesas
   async function cargarRemesas() {
@@ -336,11 +346,157 @@
       return;
     }
 
-    $('#fecha-label').textContent = `Fecha de retiro: ${formatFecha(fecha)}`;
+    const fechaSello = $('#rep-fecha-sello').value || null;
 
-    remesasData = await fetchRemesas(fecha);
+    let labelText = `Fecha de retiro: ${formatFecha(fecha)}`;
+    if (fechaSello) {
+      labelText += ` | Fecha de sello: ${formatFecha(fechaSello)}`;
+    }
+    $('#fecha-label').textContent = labelText;
+
+    remesasData = await fetchRemesas(fecha, fechaSello);
     renderizarTabla();
+
+    // Verificar estado de aprobación después de cargar
+    verificarEstadoAprobacion();
   }
+
+  /**
+   * Verificar estado de aprobación de la fecha (para admin tesorería)
+   */
+  async function verificarEstadoAprobacion() {
+    const fechaRetiro = $('#rep-fecha').value;
+    if (!fechaRetiro) return;
+
+    const panel = document.getElementById('panelAprobacion');
+    if (!panel) return; // No es admin tesorería
+
+    try {
+      const res = await fetch(`/api/tesoreria/estado-aprobacion?fecha_retiro=${encodeURIComponent(fechaRetiro)}`);
+      const data = await res.json();
+
+      const estadoEl = document.getElementById('estadoAprobacion');
+      const btnAprobar = document.getElementById('btnAprobar');
+      const btnDesaprobar = document.getElementById('btnDesaprobar');
+
+      if (data.aprobado) {
+        estadoEl.innerHTML = `
+          <span style="color: #059669; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-check-circle" style="font-size: 18px;"></i>
+            <span>✅ Conciliación aprobada el ${formatFecha(data.fecha_aprobacion)} por ${data.aprobado_por}</span>
+          </span>
+        `;
+        btnAprobar.style.display = 'none';
+        btnDesaprobar.style.display = 'inline-block';
+      } else {
+        estadoEl.innerHTML = `
+          <span style="color: #6b7280; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-clock" style="font-size: 18px;"></i>
+            <span>⏳ Conciliación pendiente de aprobación</span>
+          </span>
+        `;
+        btnAprobar.style.display = 'inline-block';
+        btnDesaprobar.style.display = 'none';
+      }
+
+      panel.style.display = 'block';
+    } catch (error) {
+      console.error('Error verificando aprobación:', error);
+    }
+  }
+
+  /**
+   * Aprobar conciliación de una fecha
+   */
+  async function aprobarFecha() {
+    const fechaRetiro = $('#rep-fecha').value;
+    if (!fechaRetiro) return;
+
+    if (!confirm(`¿Confirmar aprobación de la conciliación del ${formatFecha(fechaRetiro)}?\n\nUna vez aprobada, los tesoreros no podrán modificar los montos reales.`)) {
+      return;
+    }
+
+    const btn = document.getElementById('btnAprobar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aprobando...';
+
+    try {
+      const res = await fetch('/api/tesoreria/aprobar-conciliacion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCSRFToken()
+        },
+        body: JSON.stringify({ fecha_retiro: fechaRetiro })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.msg || 'Error al aprobar');
+      }
+
+      alert('✅ Conciliación aprobada correctamente');
+      verificarEstadoAprobacion();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('❌ Error al aprobar: ' + error.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> Aprobar Conciliación';
+    }
+  }
+
+  /**
+   * Desaprobar conciliación de una fecha
+   */
+  async function desaprobarFecha() {
+    const fechaRetiro = $('#rep-fecha').value;
+    if (!fechaRetiro) return;
+
+    const motivo = prompt('Ingresá el motivo de la desaprobación:');
+    if (!motivo || motivo.trim() === '') {
+      alert('Debe ingresar un motivo');
+      return;
+    }
+
+    const btn = document.getElementById('btnDesaprobar');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Desaprobando...';
+
+    try {
+      const res = await fetch('/api/tesoreria/desaprobar-conciliacion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCSRFToken()
+        },
+        body: JSON.stringify({
+          fecha_retiro: fechaRetiro,
+          observaciones: motivo.trim()
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.msg || 'Error al desaprobar');
+      }
+
+      alert('✅ Conciliación desaprobada correctamente');
+      verificarEstadoAprobacion();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('❌ Error al desaprobar: ' + error.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-times-circle"></i> Desaprobar';
+    }
+  }
+
+  // Exponer funciones al scope global para que funcionen desde HTML onclick
+  window.aprobarFecha = aprobarFecha;
+  window.desaprobarFecha = desaprobarFecha;
 
   // Inicialización
   document.addEventListener('DOMContentLoaded', () => {
@@ -349,6 +505,6 @@
 
     $('#rep-buscar')?.addEventListener('click', cargarRemesas);
     $('#rep-fecha')?.addEventListener('change', cargarRemesas);
-    $('#btn-guardar-todo')?.addEventListener('click', guardarTodo);
+    // $('#btn-guardar-todo')?.addEventListener('click', guardarTodo); // YA NO EXISTE - Vista READ-ONLY
   });
 })();

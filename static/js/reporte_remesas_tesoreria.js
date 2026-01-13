@@ -154,6 +154,9 @@ function procesarYRenderizar(data) {
   // Aplicar filtros iniciales
   aplicarFiltros();
   mostrarLoading(false);
+
+  // Verificar estado de aprobación (solo para admin)
+  verificarEstadoAprobacion();
 }
 
 /**
@@ -274,6 +277,11 @@ function renderizarTablaDetalle(fila) {
     `;
   });
 
+  // Calcular diferencia total para el pie de tabla
+  const difTotal = fila.dif || 0;
+  const difTotalClass = difTotal === 0 ? 'dif-cero' : difTotal > 0 ? 'dif-positiva' : 'dif-negativa';
+  const signoTotal = difTotal > 0 ? '-' : difTotal < 0 ? '+' : '';
+
   html += `
         </tbody>
       </table>
@@ -281,7 +289,7 @@ function renderizarTablaDetalle(fila) {
         <div style="font-size: 14px; color: #6b7280;">
           <strong>Total:</strong> Teórico <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.teorico)}</span> •
           Real <span style="color: #1f2937; font-weight: 700;">$${formatMoney(fila.real)}</span> •
-          Diferencia <span style="font-weight: 700;" class="${difClass}">${signo}$${formatMoney(Math.abs(fila.dif))}</span>
+          Diferencia <span style="font-weight: 700;" class="${difTotalClass}">${signoTotal}$${formatMoney(Math.abs(difTotal))}</span>
         </div>
       </div>
     </div>
@@ -309,48 +317,34 @@ async function toggleDetalle(index) {
 }
 
 /**
- * Cargar detalle de remesas (con consulta del real desde BD)
+ * Cargar detalle de remesas (renderiza datos que ya tenemos en memoria)
  */
 async function cargarDetalleRemesas(index) {
   const fila = reporteData[index];
   const detalleContainer = document.getElementById(`detalle-${index}`);
 
+  console.log('🔍 Cargando detalle para fila:', fila);
+  console.log('🔍 Remesas en fila:', fila.remesas);
+  console.log('🔍 Cantidad de remesas:', fila.remesas ? fila.remesas.length : 0);
+
   try {
-    // Consultar el monto real desde la base de datos
-    const response = await fetch(`/api/tesoreria/obtener-real?local=${encodeURIComponent(fila.local)}&fecha_retiro=${fila.fecha}`);
-
-    let montoRealDB = 0;
-    if (response.ok) {
-      const data = await response.json();
-      montoRealDB = data.monto_real || 0;
-
-      // Actualizar el real en la fila
-      fila.real = montoRealDB;
-      fila.dif = fila.teorico - montoRealDB;
-
-      // Actualizar visualmente en la tabla resumen
-      const realCell = document.getElementById(`real-${index}`);
-      if (realCell) {
-        realCell.textContent = '$' + formatMoney(montoRealDB);
-      }
-
-      const difCell = document.getElementById(`dif-resumen-${index}`);
-      if (difCell) {
-        const difClass = fila.dif === 0 ? 'dif-cero' : fila.dif > 0 ? 'dif-positiva' : 'dif-negativa';
-        const signo = fila.dif > 0 ? '-' : fila.dif < 0 ? '+' : '';
-        difCell.className = difClass;
-        difCell.textContent = `${signo}$${formatMoney(Math.abs(fila.dif))}`;
-      }
+    // Verificar que existan remesas
+    if (!fila.remesas || fila.remesas.length === 0) {
+      throw new Error('No hay remesas en esta fila');
     }
 
-    // Renderizar tabla de detalle
+    // NO volver a consultar la BD - los datos correctos ya están en fila.real y fila.remesas
+    // que vienen del endpoint /api/reportes/remesas-matriz
+
+    // Renderizar tabla de detalle con los datos que ya tenemos
     detalleContainer.innerHTML = renderizarTablaDetalle(fila);
 
   } catch (error) {
-    console.error('Error al cargar detalle:', error);
+    console.error('❌ Error al cargar detalle:', error);
+    console.error('❌ Fila completa:', fila);
     detalleContainer.innerHTML = `
       <div style="text-align: center; padding: 20px; color: #dc2626;">
-        <i class="fas fa-exclamation-triangle"></i> Error al cargar detalle
+        <i class="fas fa-exclamation-triangle"></i> Error al cargar detalle: ${error.message}
       </div>
     `;
   }
@@ -415,4 +409,144 @@ function getEstadoBadge(estado, tieneReal) {
   }
 
   return badges[estado] || badges['en_transito'];
+}
+
+/**
+ * Verificar estado de aprobación de la fecha
+ */
+async function verificarEstadoAprobacion() {
+  const fechaRetiro = document.getElementById('fechaRetiro').value;
+  if (!fechaRetiro) return;
+
+  const panel = document.getElementById('panelAprobacion');
+  if (!panel) return; // No es admin tesorería
+
+  try {
+    const res = await fetch(`/api/tesoreria/estado-aprobacion?fecha_retiro=${encodeURIComponent(fechaRetiro)}`);
+    const data = await res.json();
+
+    const estadoEl = document.getElementById('estadoAprobacion');
+    const btnAprobar = document.getElementById('btnAprobar');
+    const btnDesaprobar = document.getElementById('btnDesaprobar');
+
+    if (data.aprobado) {
+      estadoEl.innerHTML = `
+        <span style="color: #059669; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-check-circle" style="font-size: 18px;"></i>
+          <span>Conciliación aprobada el ${formatearFecha(data.fecha_aprobacion)} por ${data.aprobado_por}</span>
+        </span>
+      `;
+      btnAprobar.style.display = 'none';
+      btnDesaprobar.style.display = 'inline-block';
+    } else {
+      estadoEl.innerHTML = `
+        <span style="color: #6b7280; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-clock" style="font-size: 18px;"></i>
+          <span>Conciliación pendiente de aprobación</span>
+        </span>
+      `;
+      btnAprobar.style.display = 'inline-block';
+      btnDesaprobar.style.display = 'none';
+    }
+
+    panel.style.display = 'flex';
+  } catch (error) {
+    console.error('Error verificando aprobación:', error);
+  }
+}
+
+/**
+ * Aprobar conciliación de una fecha
+ */
+async function aprobarFecha() {
+  const fechaRetiro = document.getElementById('fechaRetiro').value;
+  if (!fechaRetiro) return;
+
+  if (!confirm(`¿Confirmar aprobación de la conciliación del ${formatearFecha(fechaRetiro)}?\n\nUna vez aprobada, tesorería no podrá modificar los montos reales.`)) {
+    return;
+  }
+
+  const btn = document.getElementById('btnAprobar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aprobando...';
+
+  try {
+    const res = await fetch('/api/tesoreria/aprobar-conciliacion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha_retiro: fechaRetiro })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.msg || 'Error al aprobar');
+    }
+
+    alert('✅ Conciliación aprobada correctamente');
+    verificarEstadoAprobacion();
+  } catch (error) {
+    console.error('Error:', error);
+    alert('❌ Error al aprobar: ' + error.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-circle"></i> Aprobar Conciliación';
+  }
+}
+
+/**
+ * Desaprobar conciliación de una fecha
+ */
+async function desaprobarFecha() {
+  const fechaRetiro = document.getElementById('fechaRetiro').value;
+  if (!fechaRetiro) return;
+
+  const motivo = prompt('Ingresá el motivo de la desaprobación:');
+  if (!motivo || motivo.trim() === '') {
+    alert('Debe ingresar un motivo');
+    return;
+  }
+
+  const btn = document.getElementById('btnDesaprobar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Desaprobando...';
+
+  try {
+    const res = await fetch('/api/tesoreria/desaprobar-conciliacion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fecha_retiro: fechaRetiro,
+        motivo: motivo.trim()
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.msg || 'Error al desaprobar');
+    }
+
+    alert('✅ Conciliación desaprobada. Tesorería puede volver a modificar los montos.');
+    verificarEstadoAprobacion();
+  } catch (error) {
+    console.error('Error:', error);
+    alert('❌ Error al desaprobar: ' + error.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-times-circle"></i> Desaprobar';
+  }
+}
+
+/**
+ * Formatear fecha ISO a dd/mm/yyyy
+ */
+function formatearFecha(isoDate) {
+  if (!isoDate) return '-';
+  const d = new Date(isoDate + 'T12:00:00');
+  if (isNaN(d.getTime())) return '-';
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const año = d.getFullYear();
+  return `${dia}/${mes}/${año}`;
 }

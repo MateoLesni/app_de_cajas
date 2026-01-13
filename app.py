@@ -32,6 +32,16 @@ import concurrent.futures
 from datetime import timedelta
 import random
 
+# Importar módulo de seguridad de tesorería
+from modules.tesoreria_security import (
+    init_security,
+    csrf_protected,
+    rate_limited,
+    tesoreria_secured,
+    CSRFProtection,
+    AuditLogger
+)
+
 # ========================================================================
 # ===== CONFIGURACIÓN INICIAL DE LA APLICACIÓN =====
 # ========================================================================
@@ -479,7 +489,12 @@ def login_required(view):
             'api_usuarios_anticipos_crear',
             'api_usuarios_anticipos_asignar_local',
             'api_usuarios_anticipos_quitar_local',
-            'api_usuarios_anticipos_resetear_password'
+            'api_usuarios_anticipos_resetear_password',
+            # Endpoints de medios de pago para anticipos
+            'api_medios_anticipos_listar',  # Solo admin_anticipos (nivel 6)
+            'api_medios_anticipos_crear',   # Solo admin_anticipos (nivel 6)
+            'api_medios_anticipos_eliminar', # Solo admin_anticipos (nivel 6)
+            'api_medios_anticipos_activos'  # Todos los usuarios de anticipos
         ]
 
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
@@ -676,6 +691,9 @@ app.config['DATA_FOLDER'] = 'c:\\Users\\PROPIETARIO\\Downloads\\01.Proyectos\\fo
 db = SQLAlchemy(app)
 from dotenv import load_dotenv
 load_dotenv()
+
+# Inicializar sistema de seguridad de tesorería
+init_security(app)
 
 
 
@@ -2494,17 +2512,26 @@ def crear_anticipo_recibido():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Insertar anticipo recibido con divisa
+        # Obtener medio_pago_id (nuevo campo)
+        medio_pago_id = data.get('medio_pago_id')
+
+        # Si no viene medio_pago_id, asignar "Efectivo" por defecto (retrocompatibilidad)
+        if not medio_pago_id:
+            cur.execute("SELECT id FROM medios_anticipos WHERE nombre = 'Efectivo' LIMIT 1")
+            result = cur.fetchone()
+            medio_pago_id = result[0] if result else None
+
+        # Insertar anticipo recibido con divisa y medio_pago_id
         sql = """
             INSERT INTO anticipos_recibidos
             (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
              cliente, numero_transaccion, medio_pago, observaciones,
-             local, estado, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
+             local, medio_pago_id, estado, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
         """
         cur.execute(sql, (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
                          cliente, numero_transaccion, medio_pago, observaciones,
-                         local, usuario))
+                         local, medio_pago_id, usuario))
 
         anticipo_id = cur.lastrowid
 
@@ -2562,8 +2589,9 @@ def crear_anticipo_recibido():
 def listar_anticipos_recibidos():
     """
     Listar anticipos recibidos según permisos del usuario.
-    - admin_anticipos (nivel 6): ve todos los anticipos
+    - auditores (nivel 3): ven todos los anticipos
     - anticipos (nivel 4): solo ve anticipos de sus locales asignados
+    - admin_anticipos (nivel 6): ve todos los anticipos
 
     Params:
     - estado: (opcional) 'pendiente', 'consumido', 'eliminado_global'
@@ -2571,7 +2599,7 @@ def listar_anticipos_recibidos():
     - fecha_desde, fecha_hasta: (opcional) filtrar por fecha_evento
     """
     user_level = get_user_level()
-    if user_level < 4:
+    if user_level < 3:
         return jsonify(success=False, msg="No tenés permisos para ver anticipos recibidos"), 403
 
     estado = request.args.get('estado', '').strip()
@@ -2919,6 +2947,15 @@ def obtener_anticipos_disponibles():
         cur.execute(sql, (local, fecha_norm, local, caja, fecha_norm))
         disponibles = cur.fetchall() or []
 
+        # Convertir fechas a string para JSON
+        for anticipo in disponibles:
+            if anticipo.get('fecha_pago'):
+                anticipo['fecha_pago'] = anticipo['fecha_pago'].isoformat() if hasattr(anticipo['fecha_pago'], 'isoformat') else str(anticipo['fecha_pago'])
+            if anticipo.get('fecha_evento'):
+                anticipo['fecha_evento'] = anticipo['fecha_evento'].isoformat() if hasattr(anticipo['fecha_evento'], 'isoformat') else str(anticipo['fecha_evento'])
+            if anticipo.get('created_at'):
+                anticipo['created_at'] = anticipo['created_at'].isoformat() if hasattr(anticipo['created_at'], 'isoformat') else str(anticipo['created_at'])
+
         cur.close()
         conn.close()
 
@@ -3220,6 +3257,13 @@ def obtener_anticipos_consumidos_en_caja():
 
         cur.execute(sql, (local, caja, fecha_norm, turno))
         consumidos = cur.fetchall() or []
+
+        # Convertir fechas a string para JSON
+        for anticipo in consumidos:
+            if anticipo.get('fecha_pago'):
+                anticipo['fecha_pago'] = anticipo['fecha_pago'].isoformat() if hasattr(anticipo['fecha_pago'], 'isoformat') else str(anticipo['fecha_pago'])
+            if anticipo.get('timestamp_accion'):
+                anticipo['timestamp_accion'] = anticipo['timestamp_accion'].isoformat() if hasattr(anticipo['timestamp_accion'], 'isoformat') else str(anticipo['timestamp_accion'])
 
         cur.close()
         conn.close()
@@ -4286,7 +4330,27 @@ def cierre_resumen():
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
-        resumen['efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
+        efectivo_base = float(row[0]) if row and row[0] is not None else 0.0
+
+        # COMPENSACIÓN: Restar anticipos en efectivo consumidos en esta caja
+        # (para evitar duplicación al crear la remesa)
+        cur.execute("""
+            SELECT COALESCE(SUM(aec.importe_consumido), 0)
+            FROM anticipos_estados_caja aec
+            JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
+            JOIN medios_anticipos ma ON ma.id = ar.medio_pago_id
+            WHERE aec.fecha = %s
+              AND aec.local = %s
+              AND aec.caja = %s
+              AND aec.turno = %s
+              AND aec.estado = 'consumido'
+              AND ma.es_efectivo = 1
+        """, (fecha, local, caja, turno))
+        row_compensacion = cur.fetchone()
+        compensacion_efectivo = float(row_compensacion[0]) if row_compensacion and row_compensacion[0] is not None else 0.0
+
+        # Efectivo final = efectivo_base - compensación
+        resumen['efectivo'] = efectivo_base - compensacion_efectivo
 
         # tarjeta (ventas con tarjeta NO TIPS)
         cur.execute(f"""
@@ -5365,7 +5429,24 @@ def api_resumen_local():
             f"SELECT COALESCE(SUM(monto),0) FROM {T_REMESAS} WHERE DATE(fecha)=%s AND local=%s",
             (f, local),
         )
-        efectivo_neto = efectivo_remesas
+
+        # COMPENSACIÓN: Restar anticipos en efectivo consumidos en este local/fecha
+        compensacion_efectivo_local = _qsum(
+            cur,
+            """
+            SELECT COALESCE(SUM(aec.importe_consumido), 0)
+            FROM anticipos_estados_caja aec
+            JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
+            JOIN medios_anticipos ma ON ma.id = ar.medio_pago_id
+            WHERE aec.fecha = %s
+              AND aec.local = %s
+              AND aec.estado = 'consumido'
+              AND ma.es_efectivo = 1
+            """,
+            (f, local)
+        ) or 0.0
+
+        efectivo_neto = efectivo_remesas - compensacion_efectivo_local
 
         # ===== TARJETAS (ventas por marca) =====
         marcas = [
@@ -5785,7 +5866,7 @@ from openpyxl.utils import get_column_letter
 # Página UI
 @app.route("/tesoreria/home")
 @login_required
-@role_min_required(8)  # Tesoreros (role_id 8+)
+@role_min_required(7)  # Tesoreros (role_level 7+)
 def tesoreria_home_new():
     """
     Página de inicio para tesorería con dos opciones principales.
@@ -5794,17 +5875,30 @@ def tesoreria_home_new():
 
 @app.route("/reporteria/remesas")
 @login_required
-@role_min_required(8)  # Tesoreros (role_id 8+) - Carga individual de remesas
+@role_min_required(7)  # Tesoreros (role_level 7+) - Carga individual de remesas
 def ui_reporteria_remesas():
     """
     Vista de carga individual de remesas para tesoreros.
     Permite cargar el monto real de cada bolsa/remesa.
+    NOTA: Esta es la vista HISTÓRICA con filtro de fecha.
     """
     return render_template("reporte_remesas.html")
 
+@app.route("/reporteria/remesas-trabajo")
+@login_required
+@role_min_required(7)  # Tesoreros (role_level 7+)
+def ui_reporteria_remesas_trabajo():
+    """
+    Vista de TRABAJO para tesoreros.
+    Muestra SOLO remesas en estado TRAN (pendientes de contabilizar).
+    Sin filtro de fecha - muestra todas las TRAN.
+    Read-only - solo visualización.
+    """
+    return render_template("reporte_remesas_trabajo.html")
+
 @app.route("/reporteria/remesas-tesoreria")
 @login_required
-@role_min_required(8)  # Tesoreros (role_id 8+) - Resumen por local (solo lectura)
+@role_min_required(7)  # Tesoreros (role_level 7+) - Resumen por local (solo lectura)
 def reporte_remesas_tesoreria_page():
     """
     Vista de resumen agrupado por local para tesorería.
@@ -5812,6 +5906,20 @@ def reporte_remesas_tesoreria_page():
     Sirve para reclamar diferencias a los locales.
     """
     return render_template("reporte_remesas_tesoreria.html")
+
+
+@app.route("/reporteria/resumen-tesoreria")
+@login_required
+@role_min_required(7)  # Tesoreros y admin_tesoreria
+def reporte_resumen_tesoreria_page():
+    """
+    Nuevo reporte visual de tesorería por local con formato similar a Excel de gerencia.
+    - Detecta automáticamente si es lunes (muestra fin de semana: Vie, Sáb, Dom)
+    - Días normales: solo fecha actual (TRAN vs Real)
+    - Incluye sección 'No Enviados' con cálculo de relevancia
+    """
+    return render_template("resumen_tesoreria.html")
+
 
 # Helpers DB
 def _get_locales(cur):
@@ -5821,14 +5929,14 @@ def _get_locales(cur):
     """
     # 1) tabla "locales" si existe
     try:
-        cur.execute("SELECT nombre FROM locales WHERE activo=1 ORDER BY nombre")
+        cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
         rows = cur.fetchall()
         if rows:
             # Detectar si es dictionary cursor
             if isinstance(rows[0], dict):
-                return [r['nombre'] for r in rows]
+                return [r['local'] for r in rows if r['local']]
             else:
-                return [r[0] for r in rows]
+                return [r[0] for r in rows if r[0]]
     except Exception:
         pass
 
@@ -6026,31 +6134,43 @@ def _build_remesas_matrix_report(fecha_desde: date, fecha_hasta: date):
                     ORDER BY id
                 """, (local, fecha_obj))
 
-                remesas = cur.fetchall()
+                remesas = cur.fetchall() or []
 
                 # Calcular teórico
                 teorico = sum(float(r['monto'] or 0) for r in remesas)
 
-                # Obtener real registrado por tesorería (si la tabla existe)
-                tesoreria_row = None
+                # Obtener montos reales de cada remesa individual
+                reales_por_remesa = {}
+                real = 0
                 try:
-                    cur.execute("""
-                        SELECT monto_real, monto_teorico, diferencia, estado, observaciones,
-                               registrado_por, registrado_at
+                    # Usar un nuevo cursor para evitar "Unread result found"
+                    cur2 = conn.cursor(dictionary=True)
+                    cur2.execute("""
+                        SELECT remesa_id, monto_real
                         FROM tesoreria_recibido
-                        WHERE local = %s AND fecha_retiro = %s
+                        WHERE local = %s AND fecha_retiro = %s AND remesa_id IS NOT NULL
                     """, (local, fecha_obj))
-                    tesoreria_row = cur.fetchone()
-                except Exception:
-                    # Tabla no existe aún, usar None
-                    pass
 
-                real = float(tesoreria_row['monto_real']) if tesoreria_row else 0
+                    for row in cur2.fetchall() or []:
+                        reales_por_remesa[row['remesa_id']] = float(row['monto_real']) if row['monto_real'] else 0
+                        real += reales_por_remesa[row['remesa_id']]
+
+                    cur2.close()
+                except Exception as e:
+                    # Tabla no existe o error, usar 0
+                    print(f"⚠️ Error consultando tesoreria_recibido: {e}")
+                    pass
                 dif = teorico - real
-                # Estados: en_transito (remesas retiradas pero no recibidas por tesorería),
-                #          recibido (tesorería confirmó recepción), con_diferencia, auditado
-                estado = tesoreria_row['estado'] if tesoreria_row else ('en_transito' if teorico > 0 else None)
-                observaciones = tesoreria_row['observaciones'] if tesoreria_row else ''
+                # Determinar estado basado en la diferencia
+                if real == 0 and teorico > 0:
+                    estado = 'en_transito'
+                elif abs(dif) < 0.01:  # Tolerancia de 1 centavo
+                    estado = 'recibido'
+                elif dif != 0:
+                    estado = 'con_diferencia'
+                else:
+                    estado = None
+                observaciones = ''
 
                 # Preparar remesas para el detalle (convertir a formato serializable)
                 remesas_detail = []
@@ -6075,6 +6195,7 @@ def _build_remesas_matrix_report(fecha_desde: date, fecha_hasta: date):
                         'nro_remesa': r.get('nro_remesa'),
                         'precinto': r.get('precinto'),
                         'monto': float(r.get('monto') or 0),
+                        'real': reales_por_remesa.get(r.get('id'), 0),  # Agregar monto real individual
                         'retirada_por': r.get('retirada_por'),
                         'fecha_caja': fecha_caja_str,
                         'caja': r.get('caja'),
@@ -6217,16 +6338,94 @@ def api_tesoreria_obtener_real():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/tesoreria/remesas-tran', methods=['GET'])
+@login_required
+@role_min_required(7)
+@rate_limited(max_requests=60, window_seconds=60)
+def api_tesoreria_remesas_tran():
+    """
+    Obtiene TODAS las remesas en estado TRAN (pendientes de contabilizar).
+    Sin filtro de fecha - retorna todas las que están en tránsito.
+
+    SEGURIDAD:
+    - Rate limiting: 60 requests/min ✅
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener todas las remesas en estado TRAN
+        cur.execute("""
+            SELECT
+                r.id,
+                r.fecha,
+                r.precinto,
+                r.nro_remesa,
+                r.local,
+                r.caja,
+                r.turno,
+                r.monto as monto_teorico,
+                r.fecha_retirada,
+                r.retirada_por,
+                r.estado_contable,
+                r.fecha_estado_tran,
+                COALESCE(t.monto_real, 0) as monto_real
+            FROM remesas_trns r
+            LEFT JOIN tesoreria_recibido t ON t.remesa_id = r.id
+            WHERE r.estado_contable = 'TRAN'
+            ORDER BY r.fecha_retirada DESC, r.local, r.caja
+        """)
+
+        remesas = cur.fetchall() or []
+
+        # Convertir decimales y fechas a formatos serializables
+        for remesa in remesas:
+            if remesa.get('monto_teorico'):
+                remesa['monto_teorico'] = float(remesa['monto_teorico'])
+            if remesa.get('monto_real'):
+                remesa['monto_real'] = float(remesa['monto_real'])
+            if remesa.get('fecha'):
+                remesa['fecha'] = remesa['fecha'].isoformat() if hasattr(remesa['fecha'], 'isoformat') else str(remesa['fecha'])
+            if remesa.get('fecha_retirada'):
+                remesa['fecha_retirada'] = remesa['fecha_retirada'].isoformat() if hasattr(remesa['fecha_retirada'], 'isoformat') else str(remesa['fecha_retirada'])
+            if remesa.get('fecha_estado_tran'):
+                remesa['fecha_estado_tran'] = remesa['fecha_estado_tran'].isoformat() if hasattr(remesa['fecha_estado_tran'], 'isoformat') else str(remesa['fecha_estado_tran'])
+
+            # Debug log para remesa 956
+            if remesa.get('id') == 956 or remesa.get('nro_remesa') == '438410':
+                print(f"🔍 DEBUG Remesa 956/438410: fecha={remesa.get('fecha')}, fecha_retirada={remesa.get('fecha_retirada')}, local={remesa.get('local')}")
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, remesas=remesas, count=len(remesas))
+
+    except Exception as e:
+        print(f"❌ ERROR remesas-tran: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
 @app.route('/api/tesoreria/remesas-detalle', methods=['GET'])
 @login_required
 @role_min_required(7)
+@rate_limited(max_requests=60, window_seconds=60)
 def api_tesoreria_remesas_detalle():
     """
     Obtiene TODAS las remesas retiradas en una fecha específica.
     Retorna un array con cada remesa individual (no agrupadas).
-    Incluye el monto real si ya fue registrado en tesoreria_recibido.
+    Incluye el monto real y fecha_sello si ya fue registrado en tesoreria_recibido.
+
+    Parámetros:
+    - fecha_retiro: fecha en que se marcó como retirada (obligatorio)
+    - fecha_sello: fecha de apertura/contabilización (opcional, filtra adicionalmente)
+
+    SEGURIDAD:
+    - Rate limiting: 60 requests/min ✅
     """
     fecha_retiro = request.args.get('fecha_retiro', '').strip()
+    fecha_sello = request.args.get('fecha_sello', '').strip()
 
     if not fecha_retiro:
         return jsonify(success=False, msg='Falta fecha_retiro'), 400
@@ -6239,6 +6438,7 @@ def api_tesoreria_remesas_detalle():
         # IMPORTANTE: fecha_retirada es la fecha en que se marcó como retirada
         cur.execute("""
             SELECT
+                id,
                 fecha AS fecha_caja,
                 precinto,
                 nro_remesa,
@@ -6251,28 +6451,45 @@ def api_tesoreria_remesas_detalle():
             FROM remesas_trns
             WHERE retirada IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
               AND DATE(fecha_retirada) = %s
-            ORDER BY precinto
+            ORDER BY COALESCE(NULLIF(precinto, ''), '9999'), nro_remesa
         """, (fecha_retiro,))
 
         remesas = cur.fetchall() or []
 
+        # DEBUG: Verificar si precinto y nro_remesa vienen de remesas_trns
+        print(f"🔍 DEBUG remesas-detalle: fecha={fecha_retiro}, cantidad={len(remesas)}")
+        if remesas:
+            print(f"🔍 Primera remesa: precinto={remesas[0].get('precinto')}, nro_remesa={remesas[0].get('nro_remesa')}, local={remesas[0].get('local')}")
+
         # Para cada remesa, consultar si tiene monto real registrado
-        # Crear un diccionario de reales por (precinto, nro_remesa)
-        cur.execute("""
-            SELECT precinto, nro_remesa, monto_real
-            FROM tesoreria_recibido
-            WHERE fecha_retiro = %s
-        """, (fecha_retiro,))
+        # Usar remesa_id como clave principal (más confiable que precinto/nro_remesa)
+        if fecha_sello:
+            # Si se proporciona fecha_sello, filtrar por ella
+            cur.execute("""
+                SELECT remesa_id, monto_real, fecha_sello
+                FROM tesoreria_recibido
+                WHERE fecha_retiro = %s
+                  AND fecha_sello = %s
+                  AND remesa_id IS NOT NULL
+            """, (fecha_retiro, fecha_sello))
+        else:
+            # Sin filtro de fecha_sello, traer todas
+            cur.execute("""
+                SELECT remesa_id, monto_real, fecha_sello
+                FROM tesoreria_recibido
+                WHERE fecha_retiro = %s AND remesa_id IS NOT NULL
+            """, (fecha_retiro,))
 
         reales = {}
+        fechas_sello = {}
         for row in cur.fetchall() or []:
-            key = (row['precinto'], row['nro_remesa'])
-            reales[key] = float(row['monto_real']) if row['monto_real'] else 0
+            reales[row['remesa_id']] = float(row['monto_real']) if row['monto_real'] else 0
+            fechas_sello[row['remesa_id']] = row['fecha_sello'].isoformat() if row.get('fecha_sello') and hasattr(row['fecha_sello'], 'isoformat') else str(row.get('fecha_sello')) if row.get('fecha_sello') else None
 
-        # Adjuntar el real a cada remesa individual (si existe)
+        # Adjuntar el real y fecha_sello a cada remesa individual (si existe)
         for remesa in remesas:
-            key = (remesa['precinto'], remesa['nro_remesa'])
-            remesa['real'] = reales.get(key, 0)
+            remesa['real'] = reales.get(remesa['id'], 0)
+            remesa['fecha_sello'] = fechas_sello.get(remesa['id'], None)
 
             # Convertir decimales a float
             if remesa.get('monto'):
@@ -6280,6 +6497,8 @@ def api_tesoreria_remesas_detalle():
 
         cur.close()
         conn.close()
+
+        print(f"🔍 DEBUG remesas-detalle: Retornando {len(remesas)} remesas")
 
         return jsonify(success=True, remesas=remesas)
 
@@ -6292,14 +6511,21 @@ def api_tesoreria_remesas_detalle():
 
 @app.route('/api/tesoreria/guardar-remesa', methods=['POST'])
 @login_required
-@role_min_required(8)  # Solo tesoreros (role_id 8)
+@role_min_required(7)
+@tesoreria_secured(max_requests=30, window_seconds=60)
 def api_tesoreria_guardar_remesa():
     """
     Guarda el monto real de UNA remesa específica.
     Actualiza o crea registro en tesoreria_recibido.
     Solo permite guardar si la fecha NO está aprobada.
+
+    SEGURIDAD:
+    - CSRF protection ✅
+    - Rate limiting: 30 requests/min ✅
+    - Audit logging ✅
     """
     data = request.get_json() or {}
+    remesa_id = data.get('remesa_id')
     local = data.get('local', '').strip()
     fecha_retiro = data.get('fecha_retiro', '').strip()
     precinto = data.get('precinto', '').strip()
@@ -6307,14 +6533,15 @@ def api_tesoreria_guardar_remesa():
     monto_real = data.get('monto_real', 0)
     monto_teorico = data.get('monto_teorico', 0)
 
-    if not (local and fecha_retiro and precinto and nro_remesa):
-        return jsonify(success=False, msg='Faltan datos requeridos (local, fecha_retiro, precinto, nro_remesa)'), 400
+    if not (local and fecha_retiro and remesa_id):
+        return jsonify(success=False, msg='Faltan datos requeridos (local, fecha_retiro, remesa_id)'), 400
 
     try:
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
         username = session.get('username', 'SYSTEM')
+        user_id = session.get('user_id')
 
         # Verificar si la fecha está aprobada
         cur.execute("""
@@ -6328,6 +6555,13 @@ def api_tesoreria_guardar_remesa():
             conn.close()
             return jsonify(success=False, msg='No se puede editar. La conciliación de esta fecha ya fue aprobada.'), 403
 
+        # Obtener monto_real anterior para audit log
+        cur.execute("""
+            SELECT monto_real FROM tesoreria_recibido WHERE remesa_id = %s
+        """, (remesa_id,))
+        old_record = cur.fetchone()
+        old_monto = float(old_record['monto_real']) if old_record else 0
+
         # Determinar estado según diferencia
         dif = float(monto_teorico) - float(monto_real)
         if monto_real == 0:
@@ -6337,20 +6571,42 @@ def api_tesoreria_guardar_remesa():
         else:
             estado = 'con_diferencia'
 
-        # Insertar o actualizar remesa individual
+        # Obtener fecha de hoy (fecha_sello = fecha de apertura del bolsín)
+        from datetime import date
+        fecha_sello = date.today().isoformat()
+
+        # Insertar o actualizar remesa individual usando remesa_id
         cur.execute("""
             INSERT INTO tesoreria_recibido
-                (local, fecha_retiro, precinto, nro_remesa, monto_teorico, monto_real, estado, registrado_por, registrado_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                (remesa_id, local, fecha_retiro, precinto, nro_remesa, monto_teorico, monto_real, estado, fecha_sello, registrado_por, registrado_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON DUPLICATE KEY UPDATE
                 monto_real = VALUES(monto_real),
                 monto_teorico = VALUES(monto_teorico),
                 estado = VALUES(estado),
+                fecha_sello = VALUES(fecha_sello),
                 registrado_por = VALUES(registrado_por),
                 registrado_at = NOW()
-        """, (local, fecha_retiro, precinto, nro_remesa, monto_teorico, monto_real, estado, username))
+        """, (remesa_id, local, fecha_retiro, precinto, nro_remesa, monto_teorico, monto_real, estado, fecha_sello, username))
+
+        # NUEVO: Actualizar estado_contable en remesas_trns si se contabilizó
+        if float(monto_real) > 0:
+            cur.execute("""
+                UPDATE remesas_trns
+                SET estado_contable = 'Contabilizada',
+                    fecha_estado_contabilizada = NOW()
+                WHERE id = %s
+                  AND estado_contable != 'Contabilizada'
+            """, (remesa_id,))
 
         conn.commit()
+
+        # NUEVO: Registrar en audit log si cambió el monto
+        if float(monto_real) != old_monto:
+            AuditLogger.log_remesa_change(
+                conn, remesa_id, 'monto_real', old_monto, float(monto_real), user_id
+            )
+
         cur.close()
         conn.close()
 
@@ -6369,12 +6625,16 @@ def api_tesoreria_guardar_remesa():
 
 @app.route('/api/tesoreria/aprobar-conciliacion', methods=['POST'])
 @login_required
-@role_min_required(9)  # Solo admin tesorería (role_id 9)
+@role_min_required(8)
+@tesoreria_secured(max_requests=10, window_seconds=60)
 def api_aprobar_conciliacion():
     """
     Aprueba la conciliación de una fecha específica.
     Solo admin de tesorería puede aprobar.
-    Una vez aprobado, los tesoreros no pueden editar más.
+
+    SEGURIDAD:
+    - CSRF protection ✅
+    - Rate limiting: 10 requests/min ✅
     """
     data = request.get_json() or {}
     fecha_retiro = data.get('fecha_retiro', '').strip()
@@ -6426,12 +6686,15 @@ def api_aprobar_conciliacion():
 
 @app.route('/api/tesoreria/desaprobar-conciliacion', methods=['POST'])
 @login_required
-@role_min_required(9)  # Solo admin tesorería (role_id 9)
+@role_min_required(8)
+@tesoreria_secured(max_requests=10, window_seconds=60)
 def api_desaprobar_conciliacion():
     """
     Desaprueba la conciliación de una fecha específica.
-    Permite que los tesoreros vuelvan a editar.
-    Queda registrado en auditoría.
+
+    SEGURIDAD:
+    - CSRF protection ✅
+    - Rate limiting: 10 requests/min ✅
     """
     data = request.get_json() or {}
     fecha_retiro = data.get('fecha_retiro', '').strip()
@@ -6439,6 +6702,9 @@ def api_desaprobar_conciliacion():
 
     if not fecha_retiro:
         return jsonify(success=False, msg='Falta fecha_retiro'), 400
+
+    if not observaciones:
+        return jsonify(success=False, msg='Debes proporcionar un motivo para desaprobar'), 400
 
     try:
         conn = get_db_connection()
@@ -6481,12 +6747,123 @@ def api_desaprobar_conciliacion():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/tesoreria/devolver-a-local/<int:remesa_id>', methods=['POST'])
+@login_required
+@role_min_required(7)
+@tesoreria_secured(max_requests=20, window_seconds=60)
+def api_devolver_remesa_a_local(remesa_id):
+    """
+    Devuelve una remesa de estado TRAN a estado Local.
+    Se usa cuando la remesa no llegó físicamente a tesorería.
+    Registra en auditoría.
+
+    SEGURIDAD:
+    - CSRF protection ✅
+    - Rate limiting: 20 requests/min ✅
+    - Audit logging ✅
+    """
+    data = request.get_json() or {}
+    motivo = data.get('motivo', '').strip()
+
+    if not motivo:
+        motivo = 'Remesa no recibida físicamente'
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        username = session.get('username', 'SYSTEM')
+        user_id = session.get('user_id')
+
+        # Obtener datos actuales de la remesa
+        cur.execute("""
+            SELECT id, local, fecha, caja, turno, estado_contable, fecha_retirada, retirada_por
+            FROM remesas_trns
+            WHERE id = %s
+        """, (remesa_id,))
+        remesa = cur.fetchone()
+
+        if not remesa:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='Remesa no encontrada'), 404
+
+        if remesa['estado_contable'] != 'TRAN':
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'La remesa está en estado {remesa["estado_contable"]}, solo se pueden devolver remesas en TRAN'), 400
+
+        # Guardar datos anteriores para auditoría
+        datos_anteriores = {
+            'estado_contable': remesa['estado_contable'],
+            'retirada': 1,
+            'retirada_por': remesa['retirada_por'],
+            'fecha_retirada': remesa['fecha_retirada'].strftime('%Y-%m-%d') if remesa['fecha_retirada'] and hasattr(remesa['fecha_retirada'], 'strftime') else str(remesa['fecha_retirada']) if remesa['fecha_retirada'] else None
+        }
+
+        # Actualizar remesa: volver a estado Local
+        cur.execute("""
+            UPDATE remesas_trns
+            SET estado_contable = 'Local',
+                retirada = 0,
+                retirada_por = NULL,
+                fecha_retirada = NULL,
+                fecha_estado_tran = NULL,
+                ult_mod = NOW()
+            WHERE id = %s
+        """, (remesa_id,))
+
+        # Eliminar registro de tesoreria_recibido si existe
+        cur.execute("""
+            DELETE FROM tesoreria_recibido
+            WHERE remesa_id = %s
+        """, (remesa_id,))
+
+        conn.commit()
+
+        # Datos nuevos para auditoría
+        datos_nuevos = {
+            'estado_contable': 'Local',
+            'retirada': 0,
+            'retirada_por': None,
+            'fecha_retirada': None,
+            'motivo_devolucion': motivo
+        }
+
+        # Registrar en auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='remesas_trns',
+            registro_id=remesa_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=datos_nuevos,
+            observaciones=f'Remesa devuelta a Local. Motivo: {motivo}'
+        )
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, msg='Remesa devuelta a estado Local correctamente')
+
+    except Exception as e:
+        print(f"❌ ERROR devolver-a-local: {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify(success=False, msg=str(e)), 500
+
+
 @app.route('/api/tesoreria/estado-aprobacion', methods=['GET'])
 @login_required
-@role_min_required(8)  # Tesoreros y admin
+@role_min_required(7)  # Tesoreros (level 7+) pueden consultar, solo admin (level 8) puede aprobar
 def api_estado_aprobacion():
     """
     Obtiene el estado de aprobación de una fecha.
+    Disponible para tesoreros (7+) y admin_tesoreria (8+).
     """
     fecha_retiro = request.args.get('fecha_retiro', '').strip()
 
@@ -6507,13 +6884,291 @@ def api_estado_aprobacion():
         cur.close()
         conn.close()
 
-        if aprobacion:
-            return jsonify(success=True, aprobacion=aprobacion)
+        if aprobacion and aprobacion['estado'] == 'aprobado':
+            return jsonify(
+                success=True,
+                aprobado=True,
+                aprobado_por=aprobacion['aprobado_por'],
+                fecha_aprobacion=aprobacion['aprobado_at'].isoformat() if aprobacion['aprobado_at'] else None,
+                aprobacion=aprobacion  # Mantener compatibilidad con código existente
+            )
         else:
-            return jsonify(success=True, aprobacion={'estado': 'pendiente'})
+            return jsonify(
+                success=True,
+                aprobado=False,
+                aprobacion={'estado': 'pendiente'} if not aprobacion else aprobacion
+            )
 
     except Exception as e:
         print(f"❌ ERROR estado-aprobacion: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/tesoreria/audit-log', methods=['GET'])
+@login_required
+@role_min_required(8)  # Solo admin_tesoreria
+@rate_limited(max_requests=30, window_seconds=60)
+def api_tesoreria_audit_log():
+    """
+    Obtiene el log de auditoría de cambios en remesas.
+    Solo disponible para admin_tesoreria (level 8+).
+
+    Query params:
+    - fecha_desde: YYYY-MM-DD (opcional)
+    - fecha_hasta: YYYY-MM-DD (opcional)
+    - remesa_id: int (opcional)
+    - usuario: string (opcional)
+    - limit: int (default: 100, max: 1000)
+
+    SEGURIDAD:
+    - Solo admin_tesoreria ✅
+    - Rate limiting: 30 requests/min ✅
+    """
+    fecha_desde = request.args.get('fecha_desde')
+    fecha_hasta = request.args.get('fecha_hasta')
+    remesa_id = request.args.get('remesa_id')
+    usuario = request.args.get('usuario')
+    limit = min(int(request.args.get('limit', 100)), 1000)
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Construir query dinámicamente según filtros
+        where_clauses = []
+        params = []
+
+        if fecha_desde:
+            where_clauses.append("DATE(t.changed_at) >= %s")
+            params.append(fecha_desde)
+
+        if fecha_hasta:
+            where_clauses.append("DATE(t.changed_at) <= %s")
+            params.append(fecha_hasta)
+
+        if remesa_id:
+            where_clauses.append("t.remesa_id = %s")
+            params.append(int(remesa_id))
+
+        if usuario:
+            where_clauses.append("t.changed_by_username LIKE %s")
+            params.append(f"%{usuario}%")
+
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+
+        query = f"""
+            SELECT
+                t.id,
+                t.remesa_id,
+                r.local,
+                r.precinto,
+                r.nro_remesa,
+                r.fecha as fecha_remesa,
+                t.field_changed,
+                t.old_value,
+                t.new_value,
+                t.changed_by_user_id,
+                t.changed_by_username,
+                t.ip_address,
+                t.changed_at
+            FROM tesoreria_audit_log t
+            LEFT JOIN remesas_trns r ON r.id = t.remesa_id
+            WHERE {where_sql}
+            ORDER BY t.changed_at DESC
+            LIMIT %s
+        """
+
+        params.append(limit)
+        cur.execute(query, tuple(params))
+
+        logs = cur.fetchall() or []
+
+        # Convertir datetime a string
+        for log in logs:
+            if log.get('changed_at'):
+                log['changed_at'] = log['changed_at'].isoformat()
+            if log.get('fecha_remesa'):
+                log['fecha_remesa'] = log['fecha_remesa'].isoformat()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, logs=logs, count=len(logs))
+
+    except Exception as e:
+        print(f"❌ ERROR audit-log: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/tesoreria/resumen-por-local', methods=['GET'])
+@login_required
+@role_min_required(7)
+def api_tesoreria_resumen_por_local():
+    """
+    Nuevo reporte de tesorería agrupado por local con formato de gerencia.
+
+    Detecta automáticamente:
+    - Si es LUNES → Muestra fin de semana (Viernes, Sábado, Domingo)
+    - Otros días → Solo fecha actual
+
+    Segmenta locales en 3 grupos:
+    1. Principal (todos menos Nómade, Polo House, Narda Sucre)
+    2. Nómade + Polo House
+    3. Narda Sucre
+
+    También incluye sección "No Enviados" con cálculo de relevancia.
+    """
+    from datetime import datetime, timedelta
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener fecha del parámetro o usar fecha actual
+        fecha_param = request.args.get('fecha')
+        if fecha_param:
+            try:
+                hoy = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+            except:
+                hoy = datetime.now().date()
+        else:
+            hoy = datetime.now().date()
+
+        es_lunes = hoy.weekday() == 0  # 0 = Lunes
+
+        # Determinar fechas a mostrar
+        if es_lunes:
+            # Fin de semana: Viernes, Sábado, Domingo
+            viernes = hoy - timedelta(days=3)
+            sabado = hoy - timedelta(days=2)
+            domingo = hoy - timedelta(days=1)
+            fechas = [viernes, sabado, domingo]
+            fecha_labels = [
+                viernes.strftime('%d/%m'),
+                sabado.strftime('%d/%m'),
+                domingo.strftime('%d/%m')
+            ]
+        else:
+            # Solo hoy
+            fechas = [hoy]
+            fecha_labels = [hoy.strftime('%d/%m')]
+
+        # Obtener todos los locales activos
+        cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
+        todos_locales = [r['local'] for r in cur.fetchall() if r['local']]
+
+        # Definir segmentos
+        segmento2 = ['Nómade', 'Polo House']
+        segmento3 = ['Narda Sucre']
+        segmento1 = [l for l in todos_locales if l not in segmento2 and l not in segmento3]
+
+        segmentos = [
+            {'nombre': 'Principal', 'locales': segmento1},
+            {'nombre': 'Segmento 2', 'locales': segmento2},
+            {'nombre': 'Narda Sucre', 'locales': segmento3}
+        ]
+
+        # Para cada local, obtener datos por fecha
+        datos_por_local = {}
+
+        for local in todos_locales:
+            datos_por_local[local] = {
+                'saldo_a_retirar': 0  # Remesas de HOY que no fueron retiradas
+            }
+
+            for idx, fecha in enumerate(fechas):
+                fecha_label = fecha_labels[idx]
+
+                # Obtener monto teórico de todas las remesas retiradas en esta fecha
+                # SIN filtro de estado - necesitamos el teórico aunque ya esté contabilizada
+                # Incluye remesas que ya fueron contabilizadas (estado_contable = 'Contabilizada')
+                cur.execute("""
+                    SELECT
+                        SUM(r.monto) as tran_total,
+                        COUNT(*) as cantidad_tran
+                    FROM remesas_trns r
+                    WHERE r.local = %s
+                      AND DATE(r.fecha_retirada) = %s
+                      AND (r.retirada = 1 OR r.estado_contable IN ('TRAN', 'Contabilizada'))
+                """, (local, fecha))
+                tran_data = cur.fetchone()
+                tran_total = float(tran_data['tran_total']) if tran_data and tran_data['tran_total'] else 0
+
+                # Obtener monto real contabilizado (suma de tesoreria_recibido)
+                cur.execute("""
+                    SELECT SUM(monto_real) as real_total
+                    FROM tesoreria_recibido
+                    WHERE local = %s
+                      AND DATE(fecha_retiro) = %s
+                """, (local, fecha))
+                real_data = cur.fetchone()
+                real_total = float(real_data['real_total']) if real_data and real_data['real_total'] else 0
+
+                diferencia = real_total - tran_total
+
+                # Guardar indexado por fecha_label para acceso fácil en frontend
+                datos_por_local[local][fecha_label] = {
+                    'tran': tran_total,
+                    'real': real_total,
+                    'diferencia': diferencia
+                }
+
+            # Calcular "Saldo a retirar" (remesas del DÍA ANTERIOR en estado Local)
+            # Si hoy es 13/01, muestra remesas Local de 12/01
+            fecha_ayer = hoy - timedelta(days=1)
+            cur.execute("""
+                SELECT SUM(monto) as saldo_pendiente
+                FROM remesas_trns
+                WHERE local = %s
+                  AND DATE(fecha) = %s
+                  AND estado_contable = 'Local'
+                  AND retirada = 0
+            """, (local, fecha_ayer))
+            saldo_data = cur.fetchone()
+            datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente']) if saldo_data and saldo_data['saldo_pendiente'] else 0
+
+        # Calcular "No Enviados" (remesas en estado Local, ordenadas por relevancia)
+        cur.execute("""
+            SELECT
+                local,
+                fecha as fecha_caja,
+                monto,
+                DATEDIFF(CURDATE(), fecha) as dias_transcurridos,
+                (monto * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
+            FROM remesas_trns
+            WHERE estado_contable = 'Local'
+              AND retirada = 0
+            ORDER BY relevancia DESC
+            LIMIT 50
+        """)
+        no_enviados = cur.fetchall()
+
+        # Convertir fechas a string
+        for item in no_enviados:
+            if item.get('fecha_caja'):
+                item['fecha_caja'] = item['fecha_caja'].isoformat()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(
+            success=True,
+            es_lunes=es_lunes,
+            fechas=fecha_labels,
+            fechas_full=[f.strftime('%Y-%m-%d') for f in fechas],
+            segmentos=segmentos,
+            datos=datos_por_local,
+            no_enviados=no_enviados
+        )
+
+    except Exception as e:
+        print(f"❌ ERROR resumen-por-local: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
 
 
@@ -7451,7 +8106,7 @@ def api_marcar_auditado():
         return jsonify(success=False, msg='Fecha inválida (formato esperado YYYY-MM-DD)'), 400
 
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(dictionary=True)
     try:
         # Verificar que el local esté cerrado
         cur.execute("""
@@ -7461,9 +8116,13 @@ def api_marcar_auditado():
         row = cur.fetchone()
 
         if not row:
+            cur.close()
+            conn.close()
             return jsonify(success=False, msg='El local no está cerrado para esta fecha'), 400
 
-        if row[0] != 0:
+        if row['estado'] != 0:
+            cur.close()
+            conn.close()
             return jsonify(success=False, msg='El local debe estar cerrado (estado=0) para ser auditado'), 400
 
         # Verificar si ya está auditado
@@ -7473,7 +8132,40 @@ def api_marcar_auditado():
         """, (local, f))
 
         if cur.fetchone():
+            cur.close()
+            conn.close()
             return jsonify(success=False, msg='Este local ya está marcado como auditado'), 409
+
+        # NUEVO: Verificar que no haya anticipos pendientes
+        cur.execute("""
+            SELECT
+                ar.id, ar.cliente, ar.importe, ar.numero_transaccion,
+                ar.observaciones
+            FROM anticipos_recibidos ar
+            WHERE ar.local = %s
+              AND ar.fecha_evento = %s
+              AND ar.estado = 'pendiente'
+        """, (local, f))
+        anticipos_pendientes = cur.fetchall() or []
+
+        if anticipos_pendientes:
+            cur.close()
+            conn.close()
+            # Construir mensaje detallado
+            msg_anticipos = []
+            for ant in anticipos_pendientes:
+                msg_anticipos.append(f"• {ant['cliente']} - ${ant['importe']} (ID: {ant['id']})")
+
+            msg = (
+                f"❌ No se puede marcar como auditado. Hay {len(anticipos_pendientes)} anticipo(s) sin consumir:\n\n" +
+                "\n".join(msg_anticipos) +
+                "\n\nDebés consumir o eliminar todos los anticipos antes de auditar."
+            )
+            return jsonify(
+                success=False,
+                msg=msg,
+                anticipos_pendientes=anticipos_pendientes
+            ), 400
 
         # Marcar como auditado
         cur.execute("""
@@ -7483,7 +8175,81 @@ def api_marcar_auditado():
         """, (local, f, session.get('username'), observaciones))
 
         conn.commit()
-        return jsonify(success=True, msg=f"Local {local} marcado como auditado para {f}")
+
+        # ========== SINCRONIZACIÓN AUTOMÁTICA CON OPPEN ==========
+        # Enviar facturas a Oppen después de marcar como auditado
+        try:
+            from modules.oppen_integration import sync_facturas_to_oppen, sync_recibo_to_oppen
+
+            print(f"🔄 Iniciando sincronización de facturas con Oppen para {local} - {f}...")
+            resultado_oppen = sync_facturas_to_oppen(conn, local, f)
+
+            # Construir mensaje de resultado
+            msg_base = f"Local {local} marcado como auditado para {f}"
+
+            if resultado_oppen['success']:
+                if resultado_oppen['total'] > 0:
+                    msg_oppen = f"\n✅ {resultado_oppen['exitosas']} factura(s) enviada(s) a Oppen exitosamente"
+                else:
+                    msg_oppen = "\nℹ️ No había facturas para sincronizar con Oppen"
+            else:
+                msg_oppen = f"\n⚠️ Algunas facturas no pudieron enviarse a Oppen: {resultado_oppen['fallidas']}/{resultado_oppen['total']}"
+                if resultado_oppen['errores']:
+                    # Mostrar primer error como ejemplo
+                    primer_error = resultado_oppen['errores'][0]
+                    msg_oppen += f"\nPrimer error: {primer_error.get('error', 'Error desconocido')}"
+
+            # ========== CREAR RECIBO EN OPPEN ==========
+            # Después de crear facturas, crear el recibo vinculando las facturas Z
+            msg_recibo = ""
+            resultado_recibo = None
+
+            if resultado_oppen['success'] and resultado_oppen['exitosas'] > 0:
+                try:
+                    print(f"🔄 Creando recibo en Oppen para {local} - {f}...")
+                    resultado_recibo = sync_recibo_to_oppen(conn, local, f)
+
+                    if resultado_recibo['recibo_creado']:
+                        msg_recibo = f"\n✅ Recibo creado en Oppen: {resultado_recibo['message']}"
+                        if resultado_recibo.get('sernr'):
+                            msg_recibo += f" (SerNr: {resultado_recibo['sernr']})"
+                    else:
+                        msg_recibo = f"\nℹ️ {resultado_recibo['message']}"
+
+                except Exception as e:
+                    logger.error(f"Error creando recibo: {e}")
+                    msg_recibo = f"\n⚠️ Error creando recibo: {str(e)}"
+
+            cur.close()
+            conn.close()
+
+            return jsonify(
+                success=True,
+                msg=msg_base + msg_oppen + msg_recibo,
+                oppen_sync=resultado_oppen,
+                recibo_sync=resultado_recibo
+            )
+
+        except ImportError as e:
+            # Si falla la importación del módulo, continuar sin Oppen
+            print(f"⚠️ Módulo de Oppen no disponible: {e}")
+            cur.close()
+            conn.close()
+            return jsonify(
+                success=True,
+                msg=f"Local {local} marcado como auditado para {f} (sincronización con Oppen no disponible)"
+            )
+        except Exception as e:
+            # Si falla Oppen, el local YA ESTÁ AUDITADO (commit ya se hizo)
+            # Solo notificamos el error de Oppen
+            print(f"❌ Error sincronizando con Oppen: {e}")
+            cur.close()
+            conn.close()
+            return jsonify(
+                success=True,
+                msg=f"Local {local} marcado como auditado para {f}\n⚠️ Error sincronizando con Oppen: {str(e)}",
+                oppen_error=str(e)
+            )
 
     except Exception as e:
         conn.rollback()
@@ -7764,11 +8530,12 @@ def gestion_usuarios():
 
 @app.route('/gestion-anticipos')
 @login_required
-@role_min_required(4)  # Accesible para 'anticipos' (nivel 4) y superiores
+@role_min_required(3)  # Accesible para auditores (nivel 3) y superiores
 def gestion_anticipos_page():
     """
     Página de gestión de anticipos recibidos.
     Accesible para:
+    - auditores (nivel 3): pueden consumir/desconsumir si local no está auditado
     - anticipos (nivel 4): solo ve y crea anticipos en sus locales asignados
     - admin_anticipos (nivel 6): gestiona todos los anticipos
     """
@@ -7795,9 +8562,14 @@ def api_mi_perfil_anticipos():
     - allowed_locales: locales a los que tiene acceso ([] significa todos)
     - can_edit: si puede editar anticipos
     - can_delete: si puede eliminar anticipos
+    - can_consume: si puede consumir/desconsumir anticipos
     """
     user_level = get_user_level()
     allowed_locales = get_user_allowed_locales()
+
+    # Auditores (nivel 3+) y admin_anticipos (nivel 6+) ven todos los locales
+    if user_level >= 3:
+        allowed_locales = []  # [] = acceso a todos los locales
 
     return jsonify(
         success=True,
@@ -7805,6 +8577,7 @@ def api_mi_perfil_anticipos():
         allowed_locales=allowed_locales,
         can_edit=(user_level >= 6),  # Solo admin_anticipos puede editar
         can_delete=(user_level >= 6),  # Solo admin_anticipos puede eliminar
+        can_consume=(user_level >= 3),  # Auditores pueden consumir/desconsumir si local no está auditado
         has_full_access=(user_level >= 6)  # Admin tiene acceso total
     )
 
@@ -8633,6 +9406,210 @@ def listar_anticipos_auditor():
         return jsonify(success=False, msg=str(e)), 500
 
 
+## ====== MEDIOS DE PAGO PARA ANTICIPOS ======
+
+@app.route('/api/medios_anticipos/listar', methods=['GET'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_medios_anticipos_listar():
+    """
+    Listar todos los medios de pago para anticipos.
+    Solo para admin_anticipos (level 6+)
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("""
+            SELECT
+                id,
+                nombre,
+                activo,
+                es_efectivo,
+                created_at,
+                updated_at
+            FROM medios_anticipos
+            ORDER BY
+                CASE nombre
+                    WHEN 'Efectivo' THEN 1
+                    ELSE 2
+                END,
+                nombre ASC
+        """)
+
+        medios = cur.fetchall()
+
+        # Convertir timestamps a string
+        for medio in medios:
+            if medio.get('created_at'):
+                medio['created_at'] = medio['created_at'].isoformat() if hasattr(medio['created_at'], 'isoformat') else str(medio['created_at'])
+            if medio.get('updated_at'):
+                medio['updated_at'] = medio['updated_at'].isoformat() if hasattr(medio['updated_at'], 'isoformat') else str(medio['updated_at'])
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, medios=medios)
+
+    except Exception as e:
+        print("❌ ERROR api_medios_anticipos_listar:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/medios_anticipos/crear', methods=['POST'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_medios_anticipos_crear():
+    """
+    Crear un nuevo medio de pago para anticipos.
+    Solo para admin_anticipos (level 6+)
+
+    Body JSON:
+    {
+        "nombre": "Nombre del medio",
+        "es_efectivo": 0/1
+    }
+    """
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre', '').strip()
+        es_efectivo = int(data.get('es_efectivo', 0))
+
+        if not nombre:
+            return jsonify(success=False, msg='El nombre es obligatorio'), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Verificar si ya existe
+        cur.execute("SELECT id FROM medios_anticipos WHERE nombre = %s", (nombre,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f'Ya existe un medio de pago con el nombre "{nombre}"'), 400
+
+        # Insertar
+        cur.execute("""
+            INSERT INTO medios_anticipos (nombre, es_efectivo, activo)
+            VALUES (%s, %s, 1)
+        """, (nombre, es_efectivo))
+
+        conn.commit()
+        nuevo_id = cur.lastrowid
+
+        cur.close()
+        conn.close()
+
+        print(f"✅ Medio de pago creado: ID={nuevo_id}, nombre={nombre}, es_efectivo={es_efectivo}")
+
+        return jsonify(success=True, msg='Medio de pago creado correctamente', id=nuevo_id)
+
+    except Exception as e:
+        print("❌ ERROR api_medios_anticipos_crear:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/medios_anticipos/<int:medio_id>', methods=['DELETE'])
+@login_required
+@role_min_required(6)  # Solo admin_anticipos
+def api_medios_anticipos_eliminar(medio_id):
+    """
+    Eliminar (desactivar) un medio de pago.
+    Solo para admin_anticipos (level 6+)
+
+    IMPORTANTE: No se elimina físicamente, solo se desactiva (activo=0)
+    para no romper referencias en anticipos existentes.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Verificar que existe
+        cur.execute("SELECT nombre, es_efectivo FROM medios_anticipos WHERE id = %s", (medio_id,))
+        medio = cur.fetchone()
+
+        if not medio:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='Medio de pago no encontrado'), 404
+
+        # No permitir eliminar "Efectivo"
+        if medio['nombre'] == 'Efectivo':
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg='No se puede eliminar el medio "Efectivo" (es el medio por defecto)'), 400
+
+        # Verificar si hay anticipos usando este medio
+        cur.execute("SELECT COUNT(*) as count FROM anticipos_recibidos WHERE medio_pago_id = %s", (medio_id,))
+        result = cur.fetchone()
+        anticipos_count = result['count'] if result else 0
+
+        # Desactivar (no eliminar físicamente)
+        cur.execute("UPDATE medios_anticipos SET activo = 0 WHERE id = %s", (medio_id,))
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        msg = f'Medio de pago "{medio["nombre"]}" desactivado correctamente'
+        if anticipos_count > 0:
+            msg += f' (había {anticipos_count} anticipo(s) usando este medio)'
+
+        print(f"✅ {msg}")
+
+        return jsonify(success=True, msg=msg)
+
+    except Exception as e:
+        print("❌ ERROR api_medios_anticipos_eliminar:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/medios_anticipos/activos', methods=['GET'])
+@login_required
+def api_medios_anticipos_activos():
+    """
+    Listar solo medios de pago activos (para uso en formularios).
+    Accesible para cualquier usuario autenticado.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("""
+            SELECT
+                id,
+                nombre,
+                es_efectivo
+            FROM medios_anticipos
+            WHERE activo = 1
+            ORDER BY
+                CASE nombre
+                    WHEN 'Efectivo' THEN 1
+                    ELSE 2
+                END,
+                nombre ASC
+        """)
+
+        medios = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, medios=medios)
+
+    except Exception as e:
+        print("❌ ERROR api_medios_anticipos_activos:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
 ## ====== REMESAS NO RETIRADAS - GESTIÓN CENTRALIZADA ======
 
 @app.route('/remesas-no-retiradas')
@@ -8827,18 +9804,21 @@ def marcar_remesa_retirada(remesa_id):
         datos_anteriores = {
             'retirada': str(remesa['retirada']),
             'retirada_por': remesa['retirada_por'],
-            'fecha_retirada': remesa['fecha_retirada'].strftime('%Y-%m-%d') if remesa['fecha_retirada'] and hasattr(remesa['fecha_retirada'], 'strftime') else str(remesa['fecha_retirada']) if remesa['fecha_retirada'] else None
+            'fecha_retirada': remesa['fecha_retirada'].strftime('%Y-%m-%d') if remesa['fecha_retirada'] and hasattr(remesa['fecha_retirada'], 'strftime') else str(remesa['fecha_retirada']) if remesa['fecha_retirada'] else None,
+            'estado_contable': 'Local'
         }
 
-        # Actualizar remesa
+        # Actualizar remesa y cambiar estado a TRAN
         cur.execute("""
             UPDATE remesas_trns
             SET retirada = 1,
                 retirada_por = %s,
                 fecha_retirada = %s,
+                estado_contable = 'TRAN',
+                fecha_estado_tran = %s,
                 ult_mod = NOW()
             WHERE id = %s
-        """, (retirada_por, fecha_retirada, remesa_id))
+        """, (retirada_por, fecha_retirada, fecha_retirada, remesa_id))
 
         conn.commit()
 
@@ -8846,7 +9826,9 @@ def marcar_remesa_retirada(remesa_id):
         datos_nuevos = {
             'retirada': 1,
             'retirada_por': retirada_por,
-            'fecha_retirada': fecha_retirada
+            'fecha_retirada': fecha_retirada,
+            'estado_contable': 'TRAN',
+            'fecha_estado_tran': fecha_retirada
         }
 
         # Registrar en auditoría

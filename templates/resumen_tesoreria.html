@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resumen Tesorería por Local</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .tesoreria-container {
+        padding: 8px;
+        max-width: 100%;
+        overflow-x: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #d1d5db;
+        width: 100%;
+    }
+
+    .header-section h1 {
+        color: #374151;
+        font-size: 14px;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .controls-section {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .date-selector {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 11px;
+    }
+
+    .date-selector label {
+        color: #4b5563;
+        font-weight: 600;
+    }
+
+    .date-selector input[type="date"] {
+        padding: 3px 6px;
+        border: 1px solid #9ca3af;
+        border-radius: 3px;
+        font-size: 10px;
+        color: #374151;
+    }
+
+    .btn-actualizar {
+        background: #1e88e5;
+        color: white;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-actualizar:hover {
+        background: #1565c0;
+    }
+
+    .date-indicator {
+        background: #6b7280;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 2px;
+        font-weight: 600;
+        font-size: 10px;
+    }
+
+    .segment-section {
+        margin-bottom: 6px;
+        width: 100%;
+        max-width: 1000px;
+        display: block;
+    }
+
+    .segment-title {
+        background: #d1d5db;
+        color: #1f2937;
+        padding: 2px 6px;
+        font-size: 10px;
+        font-weight: 700;
+        border: none;
+        margin-top: 3px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        margin-bottom: 2px;
+        font-size: 11px;
+        table-layout: fixed;
+    }
+
+    .data-table thead {
+        background: #d1d5db;
+    }
+
+    .data-table th {
+        padding: 3px 8px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 10px;
+        border: 1px solid #9ca3af;
+        color: #4b5563;
+        white-space: nowrap;
+    }
+
+    .data-table th.local-header {
+        background: #d1d5db;
+        text-align: left;
+        white-space: normal;
+        width: 15%;
+    }
+
+    .data-table th.date-header {
+        background: #d1d5db;
+    }
+
+    .data-table th.saldo-header {
+        background: #d1d5db;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background: white;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .data-table td {
+        padding: 3px 8px;
+        text-align: center;
+        border: 1px solid #d1d5db;
+        font-size: 11px;
+        line-height: 1.3;
+    }
+
+    .data-table td.local-name {
+        text-align: left;
+        font-weight: 400;
+        color: #000000;
+        padding-left: 8px;
+        width: 15%;
+    }
+
+    .data-table td.amount {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-weight: 400;
+        color: #000000;
+    }
+
+    /* Teórico - texto negro */
+    .teorico-value {
+        color: #000000;
+        font-weight: 400;
+    }
+
+    /* Real - gris clarito con fondo gris claro */
+    .real-value {
+        color: #000000;
+        font-weight: 700;
+        background: #f3f4f6;
+    }
+
+    /* Diferencia - con fondo gris más oscuro que Real */
+    .diff-value {
+        font-weight: 700;
+        color: #000000;
+        background: #e5e7eb;
+    }
+
+    .diff-value.positivo {
+        color: #16a34a !important;
+        font-weight: 700;
+    }
+
+    .diff-value.negativo {
+        color: #dc2626 !important;
+        font-weight: 700;
+    }
+
+    .saldo-value {
+        color: #000000;
+        font-weight: 700;
+    }
+
+    .ap-proyectada-value {
+        color: #000000;
+        font-weight: 700;
+        background: #e5e7eb;
+    }
+
+    /* Sección No Enviados */
+    .no-enviados-section {
+        margin-top: 12px;
+        padding-top: 8px;
+        border-top: 2px solid #9ca3af;
+        width: auto;
+        display: block;
+    }
+
+    .no-enviados-title {
+        background: #d1d5db;
+        color: #1f2937;
+        padding: 2px 6px;
+        font-size: 10px;
+        font-weight: 700;
+        border: none;
+        margin-bottom: 0;
+    }
+
+    .no-enviados-table {
+        width: auto;
+        border-collapse: collapse;
+        background: white;
+        font-size: 11px;
+        table-layout: auto;
+    }
+
+    .no-enviados-table thead {
+        background: #d1d5db;
+    }
+
+    .no-enviados-table th {
+        padding: 3px 8px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 10px;
+        border: 1px solid #9ca3af;
+        color: #4b5563;
+        white-space: nowrap;
+        min-width: 80px;
+    }
+
+    .no-enviados-table tbody tr:nth-child(even) {
+        background: white;
+    }
+
+    .no-enviados-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .no-enviados-table td {
+        padding: 3px 8px;
+        border: 1px solid #d1d5db;
+        text-align: center;
+        line-height: 1.3;
+        min-width: 80px;
+    }
+
+    .no-enviados-table td.local-col {
+        text-align: left;
+        font-weight: 400;
+        color: #000000;
+        min-width: auto;
+        width: auto;
+    }
+
+    .no-enviados-table td.monto-col {
+        text-align: right;
+        font-family: Arial, sans-serif;
+        font-weight: 400;
+        color: #000000;
+        min-width: 80px;
+    }
+
+    .no-enviados-table td.dias-col {
+        font-weight: 400;
+        color: #dc2626;
+        min-width: 90px;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        padding: 15px;
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    .error-message {
+        background: #dc2626;
+        color: white;
+        padding: 8px;
+        border-radius: 2px;
+        margin: 6px 0;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    .empty-message {
+        text-align: center;
+        padding: 10px;
+        color: #9ca3af;
+        font-style: italic;
+        font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Barra lateral">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">NG</div>
+        <div class="brand-meta">
+          <strong>Sistema</strong>
+          <span>Gestión de Tesorería</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="nav-item" href="{{ url_for('tesoreria_home_new') }}">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Inicio
+        </a>
+
+        <div class="nav-group is-open">
+          <a href="javascript:void(0)"
+             id="navReportes"
+             class="nav-item nav-toggle is-active"
+             aria-expanded="true">
+            <span class="nav-dot" aria-hidden="true"></span>
+            <span>Reportería</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false" style="margin-left:auto;">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </a>
+
+          <div class="nav-sub">
+            <a class="nav-item nav-sub-item"
+               href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+              <span class="nav-dot" aria-hidden="true"></span>
+              Remesas Tesorería
+            </a>
+            <a class="nav-item nav-sub-item is-active"
+               href="{{ url_for('reporte_resumen_tesoreria_page') }}">
+              <span class="nav-dot" aria-hidden="true"></span>
+              Resumen por Local
+            </a>
+          </div>
+        </div>
+
+        <div class="sidebar__footer">
+          <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="content-main" role="main">
+      <div class="tesoreria-container">
+        <div class="header-section">
+          <h1>Resumen Tesorería por Local</h1>
+          <div class="controls-section">
+            <div class="date-selector">
+              <label for="fechaConsulta">Fecha:</label>
+              <input type="date" id="fechaConsulta" />
+              <button class="btn-actualizar" id="btnActualizar">
+                <i class="fas fa-sync-alt"></i> Actualizar
+              </button>
+            </div>
+            <div class="date-indicator" id="dateIndicator">Cargando...</div>
+          </div>
+        </div>
+
+        <div id="loadingSpinner" class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i> Cargando datos...
+        </div>
+
+        <div id="errorContainer" style="display: none;"></div>
+
+        <div id="dataContainer" style="display: none; width: auto;">
+          <!-- Los segmentos se generarán dinámicamente aquí -->
+        </div>
+
+        <!-- Sección No Enviados -->
+        <div class="no-enviados-section" id="noEnviadosSection" style="display: none;">
+          <div class="no-enviados-title">No Enviados (Pendientes de Retiro)</div>
+          <table class="no-enviados-table">
+            <thead>
+              <tr>
+                <th>Local</th>
+                <th>Fecha Caja</th>
+                <th>Monto</th>
+                <th>Días Transcurridos</th>
+              </tr>
+            </thead>
+            <tbody id="noEnviadosBody">
+              <!-- Se llenará dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar fecha selector con fecha actual
+    const fechaInput = document.getElementById('fechaConsulta');
+    const hoy = new Date();
+    fechaInput.value = hoy.toISOString().split('T')[0];
+
+    // Cargar datos iniciales
+    cargarResumenTesoreria();
+
+    // Evento click botón actualizar
+    document.getElementById('btnActualizar').addEventListener('click', function() {
+        cargarResumenTesoreria();
+    });
+
+    // También permitir actualizar con Enter en el input de fecha
+    fechaInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            cargarResumenTesoreria();
+        }
+    });
+});
+
+async function cargarResumenTesoreria() {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorContainer = document.getElementById('errorContainer');
+    const dataContainer = document.getElementById('dataContainer');
+    const dateIndicator = document.getElementById('dateIndicator');
+    const noEnviadosSection = document.getElementById('noEnviadosSection');
+
+    try {
+        const fechaSeleccionada = document.getElementById('fechaConsulta').value;
+        const url = `/api/tesoreria/resumen-por-local${fechaSeleccionada ? '?fecha=' + fechaSeleccionada : ''}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.msg || 'Error al cargar datos');
+        }
+
+        loadingSpinner.style.display = 'none';
+        dataContainer.style.display = 'block';
+
+        // Actualizar indicador de fecha
+        if (data.es_lunes) {
+            dateIndicator.textContent = '📅 Fin de Semana';
+            dateIndicator.style.background = '#6b7280';
+        } else {
+            dateIndicator.textContent = '📅 Día: ' + data.fechas[0];
+            dateIndicator.style.background = '#6b7280';
+        }
+
+        // Renderizar segmentos
+        renderizarSegmentos(data);
+
+        // Renderizar No Enviados
+        renderizarNoEnviados(data.no_enviados);
+
+    } catch (error) {
+        console.error('❌ Error:', error);
+        loadingSpinner.style.display = 'none';
+        errorContainer.style.display = 'block';
+        errorContainer.innerHTML = `<div class="error-message">❌ ${error.message}</div>`;
+    }
+}
+
+function renderizarSegmentos(data) {
+    const dataContainer = document.getElementById('dataContainer');
+    dataContainer.innerHTML = '';
+
+    const esLunes = data.es_lunes || false;
+
+    data.segmentos.forEach((segmento, idx) => {
+        const segmentDiv = document.createElement('div');
+        segmentDiv.className = 'segment-section';
+
+        const segmentTitle = document.createElement('div');
+        segmentTitle.className = 'segment-title';
+        segmentTitle.textContent = `Fecha: ${data.fechas_full[0]} - Locales: ${segmento.nombre}`;
+
+        const table = crearTablaSegmento(segmento, data.fechas, data.datos, esLunes);
+
+        segmentDiv.appendChild(segmentTitle);
+        segmentDiv.appendChild(table);
+        dataContainer.appendChild(segmentDiv);
+    });
+}
+
+function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
+    const table = document.createElement('table');
+    table.className = 'data-table';
+
+    // Crear thead
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    // Columna Local
+    const thLocal = document.createElement('th');
+    thLocal.className = 'local-header';
+    thLocal.textContent = 'Locales';
+    headerRow.appendChild(thLocal);
+
+    // Columnas de fechas
+    fechas.forEach(fecha => {
+        const thFecha = document.createElement('th');
+        thFecha.className = 'date-header';
+        thFecha.colSpan = 3;
+        thFecha.textContent = fecha;
+        headerRow.appendChild(thFecha);
+    });
+
+    // Columna Total FDS (solo si es lunes) + Ap Proyectada + Saldo a Retirar
+    if (esLunes) {
+        const thTotal = document.createElement('th');
+        thTotal.className = 'saldo-header';
+        thTotal.textContent = 'Total FDS';
+        headerRow.appendChild(thTotal);
+    }
+
+    const thAp = document.createElement('th');
+    thAp.className = 'saldo-header';
+    thAp.textContent = 'Ap Proyectada';
+    headerRow.appendChild(thAp);
+
+    const thSaldo = document.createElement('th');
+    thSaldo.className = 'saldo-header';
+    thSaldo.textContent = 'Saldo a retirar';
+    headerRow.appendChild(thSaldo);
+
+    thead.appendChild(headerRow);
+
+    // Segunda fila de encabezados (Teórico, Real, Dif.)
+    const subHeaderRow = document.createElement('tr');
+    const thLocalEmpty = document.createElement('th');
+    thLocalEmpty.className = 'local-header';
+    thLocalEmpty.textContent = '';
+    subHeaderRow.appendChild(thLocalEmpty);
+
+    fechas.forEach(() => {
+        const thTeorico = document.createElement('th');
+        thTeorico.textContent = 'Teórico';
+        subHeaderRow.appendChild(thTeorico);
+
+        const thReal = document.createElement('th');
+        thReal.textContent = 'Real';
+        subHeaderRow.appendChild(thReal);
+
+        const thDif = document.createElement('th');
+        thDif.textContent = 'Dif.';
+        subHeaderRow.appendChild(thDif);
+    });
+
+    if (esLunes) {
+        const thTotalEmpty = document.createElement('th');
+        thTotalEmpty.className = 'saldo-header';
+        thTotalEmpty.textContent = '';
+        subHeaderRow.appendChild(thTotalEmpty);
+    }
+
+    const thApEmpty = document.createElement('th');
+    thApEmpty.className = 'saldo-header';
+    thApEmpty.textContent = '';
+    subHeaderRow.appendChild(thApEmpty);
+
+    const thSaldoEmpty = document.createElement('th');
+    thSaldoEmpty.className = 'saldo-header';
+    thSaldoEmpty.textContent = '';
+    subHeaderRow.appendChild(thSaldoEmpty);
+
+    thead.appendChild(subHeaderRow);
+    table.appendChild(thead);
+
+    // Crear tbody
+    const tbody = document.createElement('tbody');
+
+    segmento.locales.forEach(local => {
+        const row = document.createElement('tr');
+
+        // Columna nombre local
+        const tdLocal = document.createElement('td');
+        tdLocal.className = 'local-name';
+        tdLocal.textContent = local;
+        row.appendChild(tdLocal);
+
+        const datosLocal = datosGlobal[local] || {};
+        let totalFDS = 0;
+
+        // Columnas de fechas
+        fechas.forEach(fecha => {
+            const datosFecha = datosLocal[fecha] || { tran: 0, real: 0, diferencia: 0 };
+            totalFDS += datosFecha.tran;
+
+            const tdTeorico = document.createElement('td');
+            tdTeorico.className = 'amount teorico-value';
+            tdTeorico.textContent = formatearMonto(datosFecha.tran);
+            row.appendChild(tdTeorico);
+
+            const tdReal = document.createElement('td');
+            tdReal.className = 'amount real-value';
+            tdReal.textContent = formatearMonto(datosFecha.real);
+            row.appendChild(tdReal);
+
+            const tdDif = document.createElement('td');
+            tdDif.className = 'amount diff-value';
+            const diferencia = datosFecha.diferencia;
+
+            // Formatear diferencia con signo
+            if (diferencia > 0) {
+                tdDif.textContent = '+' + formatearMonto(diferencia);
+                tdDif.classList.add('positivo');
+            } else if (diferencia < 0) {
+                tdDif.textContent = formatearMonto(diferencia);
+                tdDif.classList.add('negativo');
+            } else {
+                // Si ambos (tran y real) tienen valor, mostrar 0, sino mostrar -
+                if (datosFecha.tran > 0 || datosFecha.real > 0) {
+                    tdDif.textContent = '$0';
+                } else {
+                    tdDif.textContent = '-';
+                }
+            }
+
+            row.appendChild(tdDif);
+        });
+
+        // Total FDS (solo si es lunes)
+        if (esLunes) {
+            const tdTotalFDS = document.createElement('td');
+            tdTotalFDS.className = 'amount';
+            tdTotalFDS.textContent = formatearMonto(totalFDS);
+            row.appendChild(tdTotalFDS);
+        }
+
+        // Ap Proyectada (Total FDS por ahora)
+        const tdApProyectada = document.createElement('td');
+        tdApProyectada.className = 'amount ap-proyectada-value';
+        tdApProyectada.textContent = formatearMonto(totalFDS);
+        row.appendChild(tdApProyectada);
+
+        // Saldo a Retirar
+        const tdSaldo = document.createElement('td');
+        tdSaldo.className = 'amount saldo-value';
+        tdSaldo.textContent = formatearMonto(datosLocal.saldo_a_retirar || 0);
+        row.appendChild(tdSaldo);
+
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    return table;
+}
+
+function renderizarNoEnviados(noEnviados) {
+    const noEnviadosSection = document.getElementById('noEnviadosSection');
+    const noEnviadosBody = document.getElementById('noEnviadosBody');
+
+    if (!noEnviados || noEnviados.length === 0) {
+        noEnviadosBody.innerHTML = '<tr><td colspan="4" class="empty-message">✅ No hay remesas pendientes de retiro</td></tr>';
+    } else {
+        noEnviadosBody.innerHTML = '';
+
+        noEnviados.forEach(item => {
+            const row = document.createElement('tr');
+
+            const tdLocal = document.createElement('td');
+            tdLocal.className = 'local-col';
+            tdLocal.textContent = item.local;
+            row.appendChild(tdLocal);
+
+            const tdFecha = document.createElement('td');
+            tdFecha.textContent = formatearFecha(item.fecha_caja);
+            row.appendChild(tdFecha);
+
+            const tdMonto = document.createElement('td');
+            tdMonto.className = 'monto-col';
+            tdMonto.textContent = formatearMonto(item.monto);
+            row.appendChild(tdMonto);
+
+            const tdDias = document.createElement('td');
+            tdDias.className = 'dias-col';
+            tdDias.textContent = item.dias_transcurridos + ' día' + (item.dias_transcurridos !== 1 ? 's' : '');
+            row.appendChild(tdDias);
+
+            noEnviadosBody.appendChild(row);
+        });
+    }
+
+    noEnviadosSection.style.display = 'block';
+}
+
+function formatearMonto(valor) {
+    if (!valor || valor === 0) return '-';
+    return '$' + Math.round(parseFloat(valor)).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function formatearFecha(fechaStr) {
+    if (!fechaStr) return '-';
+    const fecha = new Date(fechaStr);
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+}
+  </script>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tesorería - Mesa de Trabajo</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .rep-wrap { max-width: 1600px; margin: 0 auto; padding: 20px; display: grid; gap: 14px; }
+
+    .rep-card {
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      box-shadow:0 8px 20px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 2px solid #e5e7eb;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .badge-count {
+      background: rgba(255,255,255,0.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    table.remesas-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table.remesas-table thead th {
+      background: #6b7280;
+      color: white;
+      border-bottom: 2px solid #9ca3af;
+      padding: 14px 12px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    table.remesas-table thead th.col-right {
+      text-align: right;
+    }
+
+    table.remesas-table tbody td {
+      border-bottom: 1px solid #f3f4f6;
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    table.remesas-table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    table.remesas-table tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    table.remesas-table tbody tr:nth-child(even):hover {
+      background: #f3f4f6;
+    }
+
+    /* Columnas específicas */
+    .col-readonly {
+      background: #f9fafb;
+      color: #4b5563;
+    }
+
+    .col-gray-bg {
+      background: #f3f4f6 !important;
+      font-weight: 700;
+    }
+
+    .col-precinto {
+      font-family: monospace;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .col-remesa {
+      color: #374151;
+    }
+
+    .col-monto {
+      font-weight: 700;
+      text-align: right;
+      font-size: 15px;
+      color: #374151;
+    }
+
+    .input-real {
+      width: 110px;
+      padding: 8px;
+      border: 2px solid #9ca3af;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .input-real:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: white;
+    }
+
+    .btn-guardar {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-guardar:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-guardar:active {
+      transform: translateY(0);
+    }
+
+    .btn-guardar:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-guardar i {
+      font-size: 12px;
+    }
+
+    .btn-devolver {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-left: 8px;
+    }
+
+    .btn-devolver:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-devolver:active {
+      transform: translateY(0);
+    }
+
+    .col-actions {
+      text-align: center;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .badge-tran {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #9ca3af;
+    }
+
+    .empty-state i {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .empty-state h3 {
+      font-size: 20px;
+      margin: 16px 0 8px 0;
+      color: #6b7280;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+
+    .info-box {
+      background: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .info-box h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-box p {
+      margin: 0;
+      color: #0c4a6e;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .btn-refresh {
+      background: white;
+      color: #3b82f6;
+      border: 2px solid white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-refresh:hover {
+      background: #f0f9ff;
+      transform: translateY(-2px);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .fa-spin {
+      animation: spin 1s linear infinite;
+    }
+
+    .stat-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+
+    .stat-card h4 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Barra lateral">
+      <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">NG</div>
+        <div class="brand-meta"><strong>Sistema</strong><span>Gestión de Flujo de Cajas</span></div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <a class="nav-item" href="{{ url_for('tesoreria_home_new') }}">
+          <span class="nav-dot"></span> Inicio
+        </a>
+        <a class="nav-item is-active" href="{{ url_for('ui_reporteria_remesas_trabajo') }}">
+          <span class="nav-dot"></span> Mesa de Trabajo
+        </a>
+        <a class="nav-item" href="{{ url_for('ui_reporteria_remesas') }}">
+          <span class="nav-dot"></span> Histórico
+        </a>
+        <a class="nav-item" href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+          <span class="nav-dot"></span> Resumen por Local
+        </a>
+      </nav>
+
+      <div class="sidebar__footer">
+        <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+      </div>
+      <button class="sidebar__toggle" id="toggleSidebar" aria-label="Abrir/cerrar menú">☰</button>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="container">
+        <div class="header">
+          <div class="header-info">
+            <div class="info-item"><span class="label">Usuario:</span> <span class="value">{{ session['username'] }}</span></div>
+            <div class="info-item"><span class="label">Local:</span> <span class="value">{{ session['local'] }}</span></div>
+          </div>
+          <div class="header-buttons">
+            <a href="{{ url_for('tesoreria_home_new') }}" class="btn-header">Inicio</a>
+            <a href="{{ url_for('logout') }}" class="btn-header">Cerrar Sesión</a>
+          </div>
+        </div>
+
+        <div class="rep-wrap">
+          <!-- Explicación -->
+          <div class="info-box">
+            <h3>
+              <i class="fas fa-briefcase"></i>
+              Mesa de Trabajo - Remesas Pendientes
+            </h3>
+            <p>
+              Esta vista muestra <strong>todas las remesas en estado TRAN</strong> (retiradas pero pendientes de contabilizar).<br>
+              Ingresa el monto real contabilizado y presiona "Guardar" para registrar cada remesa.
+              <strong>Las remesas desaparecen automáticamente de esta lista una vez contabilizadas.</strong>
+            </p>
+          </div>
+
+          <!-- Estadísticas -->
+          <div class="stat-box">
+            <div class="stat-card">
+              <h4>Total Pendientes</h4>
+              <div class="value" id="stat-total">-</div>
+              <div class="label">remesas en TRAN</div>
+            </div>
+            <div class="stat-card">
+              <h4>Monto Total</h4>
+              <div class="value" id="stat-monto">-</div>
+              <div class="label">suma teórica</div>
+            </div>
+            <div class="stat-card">
+              <h4>Última Actualización</h4>
+              <div class="value" style="font-size: 18px;" id="stat-update">-</div>
+              <div class="label">hora del sistema</div>
+            </div>
+          </div>
+
+          <!-- Card con tabla -->
+          <section class="rep-card">
+            <div class="card-header">
+              <div>
+                <h2>📦 Remesas en Tránsito (TRAN)</h2>
+              </div>
+              <button class="btn-refresh" id="btn-refresh">
+                <i class="fas fa-sync-alt"></i> Actualizar
+              </button>
+            </div>
+
+            <div id="loading-state" class="loading">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Cargando remesas en tránsito...</p>
+            </div>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+              <i class="fas fa-check-circle"></i>
+              <h3>¡Excelente trabajo!</h3>
+              <p>No hay remesas pendientes de contabilizar en este momento.</p>
+            </div>
+
+            <div id="table-container" style="display: none; max-height: 70vh; overflow-y: auto;">
+              <table class="remesas-table" id="remesas-table">
+                <thead>
+                  <tr>
+                    <th>Fecha Remesa</th>
+                    <th>Fecha Retiro</th>
+                    <th>N° Precinto</th>
+                    <th>N° Remesa</th>
+                    <th>Local</th>
+                    <th class="col-right">$ Teórico</th>
+                    <th style="text-align: center;">Real (Contabilizado)</th>
+                    <th style="text-align: center;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="remesas-tbody">
+                  <!-- Se llena dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/reporte_remesas_trabajo.js') }}"></script>
+</body>
+</html>
