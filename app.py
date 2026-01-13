@@ -686,6 +686,7 @@ app.secret_key = '8V#n*aQHYUt@7MdGBY0wE8f'  # Cambiar en producción
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///registros.db'
 app.config['SESSION_COOKIE_SECURE'] = False  # Cambiar a True solo en producción con HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Permite cookies en navegación normal
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3)  # Aumentar a 3 días
 app.config['DATA_FOLDER'] = 'c:\\Users\\PROPIETARIO\\Downloads\\01.Proyectos\\form-project\\data'
 db = SQLAlchemy(app)
@@ -7628,6 +7629,7 @@ def login():
 
     # Sesión (mismas claves que usa tu app)
     session.clear()
+    session.permanent     = True  # Usar PERMANENT_SESSION_LIFETIME configurado
     session['user_id']    = user['id']
     session['username']   = user['username']
     session['local']      = user.get('local')
