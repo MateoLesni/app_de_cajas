@@ -396,6 +396,40 @@
 
                   </div>
                 </section>
+
+                <!-- ANTICIPOS -->
+                <section class="sl-section acc" aria-expanded="false">
+                  <div class="sl-title">Anticipos</div>
+                  <div class="acc-body">
+                    <div id="rl-anticipos-loading" style="padding: 20px; text-align: center; color: #6b7280;">
+                      <i class="fas fa-spinner fa-spin"></i> Cargando anticipos...
+                    </div>
+                    <div id="rl-anticipos-empty" style="display: none; padding: 20px; text-align: center; color: #9ca3af;">
+                      No hay anticipos consumidos en este local
+                    </div>
+                    <table class="sl-table" id="rl-anticipos-table" style="display: none;">
+                      <thead>
+                        <tr>
+                          <th>Fecha Evento</th>
+                          <th>Cliente</th>
+                          <th>Medio</th>
+                          <th class="r">Importe</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody id="rl-anticipos-items">
+                        <!-- Se llena dinámicamente -->
+                      </tbody>
+                      <tfoot>
+                        <tr class="sl-total">
+                          <td colspan="3">Total Anticipos</td>
+                          <td class="r" id="rl-anticipos-total">$ 0,00</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </section>
               </div>
 
               <footer class="sl-foot">

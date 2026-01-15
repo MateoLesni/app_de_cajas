@@ -874,6 +874,15 @@
         }
       }
 
+      // Paso 5: Cargar anticipos (solo para nivel 3+)
+      if (window.ROLE_LEVEL >= 3) {
+        try {
+          await cargarAnticipos();
+        } catch (error) {
+          console.error("Error al cargar anticipos:", error);
+        }
+      }
+
       // Éxito total
       loadAttempts = 0; // Reset contador
       updateLoadingDetail("✅ Datos cargados correctamente");
@@ -1107,6 +1116,113 @@
         fechaValida: fechaRegex.test(fecha || '')
       });
       return false;
+    }
+  }
+
+  // ========= CARGAR ANTICIPOS =========
+  async function cargarAnticipos() {
+    const loadingDiv = $("#rl-anticipos-loading");
+    const emptyDiv = $("#rl-anticipos-empty");
+    const table = $("#rl-anticipos-table");
+    const tbody = $("#rl-anticipos-items");
+    const totalSpan = $("#rl-anticipos-total");
+
+    // Mostrar loading
+    if (loadingDiv) loadingDiv.style.display = "block";
+    if (emptyDiv) emptyDiv.style.display = "none";
+    if (table) table.style.display = "none";
+
+    try {
+      const selLocal = $("#rl-local-select");
+      const local = selLocal ? (selLocal.value || "").trim() : (window.SESSION_LOCAL || "").trim();
+      const fecha = $("#rl-fecha")?.value;
+
+      if (!local || !fecha) {
+        console.warn("⚠️ No se puede cargar anticipos: falta local o fecha");
+        if (loadingDiv) loadingDiv.style.display = "none";
+        if (emptyDiv) {
+          emptyDiv.textContent = "Seleccione un local y fecha para ver anticipos";
+          emptyDiv.style.display = "block";
+        }
+        return;
+      }
+
+      // Llamar al API con filtros
+      const params = new URLSearchParams({
+        local: local,
+        fecha_desde: fecha,
+        fecha_hasta: fecha,
+        estado: "consumido" // Solo mostrar anticipos consumidos
+      });
+
+      const response = await fetch(`/api/anticipos_recibidos/listar?${params.toString()}`);
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.msg || "Error al cargar anticipos");
+      }
+
+      const anticipos = data.anticipos || [];
+
+      // Ocultar loading
+      if (loadingDiv) loadingDiv.style.display = "none";
+
+      if (anticipos.length === 0) {
+        if (emptyDiv) emptyDiv.style.display = "block";
+        return;
+      }
+
+      // Renderizar anticipos
+      if (tbody) {
+        tbody.innerHTML = "";
+        let total = 0;
+
+        anticipos.forEach(anticipo => {
+          const tr = document.createElement("tr");
+
+          // Formatear fecha
+          const fechaEvento = anticipo.fecha_evento ? anticipo.fecha_evento.split('T')[0] : '-';
+
+          // Calcular importe en ARS
+          const divisa = anticipo.divisa || 'ARS';
+          const tipoCambio = parseFloat(anticipo.tipo_cambio_fecha) || 1;
+          const importe = parseFloat(anticipo.importe) || 0;
+          const importeARS = divisa === 'ARS' ? importe : importe * tipoCambio;
+
+          total += importeARS;
+
+          // Estado badge
+          const estadoBadge = anticipo.fue_consumido > 0
+            ? '<span style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">Consumido</span>'
+            : '<span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">Pendiente</span>';
+
+          tr.innerHTML = `
+            <td>${fechaEvento}</td>
+            <td>${anticipo.cliente || '-'}</td>
+            <td>${anticipo.medio_pago || '-'}</td>
+            <td class="r">$ ${importeARS.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td>${estadoBadge}</td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+
+        // Actualizar total
+        if (totalSpan) {
+          totalSpan.textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+      }
+
+      // Mostrar tabla
+      if (table) table.style.display = "table";
+
+    } catch (error) {
+      console.error("Error al cargar anticipos:", error);
+      if (loadingDiv) loadingDiv.style.display = "none";
+      if (emptyDiv) {
+        emptyDiv.textContent = "Error al cargar anticipos: " + error.message;
+        emptyDiv.style.display = "block";
+      }
     }
   }
 
