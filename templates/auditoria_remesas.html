@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría de Remesas - Sistema de Gestión</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .page-header {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .page-header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .info-box {
+      background: #dbeafe;
+      border-left: 4px solid #2563eb;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .info-icon {
+      font-size: 24px;
+    }
+
+    .info-content h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      color: #1e40af;
+    }
+
+    .info-content p {
+      margin: 0;
+      font-size: 14px;
+      color: #1d4ed8;
+    }
+
+    .filters-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .filter-group input,
+    .filter-group select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .auditoria-table-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 16px 20px;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0;
+    }
+
+    .table-count {
+      font-size: 13px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .auditoria-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .auditoria-table thead {
+      background: #f8fafc;
+    }
+
+    .auditoria-table th {
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .auditoria-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f3f4f6;
+      color: #1f2937;
+    }
+
+    .auditoria-table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .badge-insert {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-update {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-delete {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #2563eb;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      color: #d1d5db;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      margin: 16px 0 8px;
+      color: #374151;
+      font-size: 20px;
+    }
+
+    .empty-state p {
+      margin: 0;
+      color: #6b7280;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #1d4ed8;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .btn-ver-cambios {
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-ver-cambios:hover {
+      background: #1d4ed8;
+    }
+
+    /* Modal para ver cambios */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 800px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 10;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #1f2937;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .json-viewer {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+
+    .json-viewer pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .cambio-item {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .cambio-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .cambio-valor {
+      font-size: 14px;
+      color: #1f2937;
+      font-family: monospace;
+    }
+
+    .cambio-anterior {
+      color: #dc2626;
+      text-decoration: line-through;
+    }
+
+    .cambio-nuevo {
+      color: #059669;
+      font-weight: 600;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/tesoreria" class="back-link">
+      <i class="fas fa-arrow-left"></i> Volver a Tesorería
+    </a>
+
+    <div class="page-header">
+      <h1>
+        <i class="fas fa-clipboard-list"></i>
+        Auditoría de Remesas
+      </h1>
+      <p>Trazabilidad completa de todos los cambios en remesas (INSERT, UPDATE, DELETE)</p>
+    </div>
+
+    <div class="info-box">
+      <div class="info-icon">🔒</div>
+      <div class="info-content">
+        <h3>Sistema de Auditoría</h3>
+        <p>Registra TODOS los cambios: quién, cuándo, qué cambió, desde qué IP, valores anteriores y nuevos.</p>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-card">
+      <div class="filters-grid">
+        <!-- Número de Remesa -->
+        <div class="filter-group">
+          <label for="filtroNroRemesa">
+            <i class="fas fa-hashtag"></i> N° Remesa
+          </label>
+          <input type="text" id="filtroNroRemesa" placeholder="Ej: 123">
+        </div>
+
+        <!-- Precinto -->
+        <div class="filter-group">
+          <label for="filtroPrecinto">
+            <i class="fas fa-tag"></i> Precinto
+          </label>
+          <input type="text" id="filtroPrecinto" placeholder="Ej: ABC123">
+        </div>
+
+        <!-- Local -->
+        <div class="filter-group">
+          <label for="filtroLocal">
+            <i class="fas fa-store"></i> Local
+          </label>
+          <input type="text" id="filtroLocal" placeholder="Ej: LOCAL01">
+        </div>
+
+        <!-- Fecha Desde -->
+        <div class="filter-group">
+          <label for="filtroFechaDesde">
+            <i class="fas fa-calendar-alt"></i> Fecha Desde
+          </label>
+          <input type="date" id="filtroFechaDesde">
+        </div>
+
+        <!-- Fecha Hasta -->
+        <div class="filter-group">
+          <label for="filtroFechaHasta">
+            <i class="fas fa-calendar-alt"></i> Fecha Hasta
+          </label>
+          <input type="date" id="filtroFechaHasta">
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-secondary" onclick="limpiarFiltros()">
+          <i class="fas fa-eraser"></i> Limpiar
+        </button>
+        <button class="btn btn-primary" onclick="aplicarFiltros()">
+          <i class="fas fa-filter"></i> Filtrar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de Auditoría -->
+    <div class="auditoria-table-card">
+      <div class="table-header">
+        <h2 class="table-title">Registros de Auditoría</h2>
+        <span class="table-count" id="countInfo">Cargando...</span>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando registros de auditoría...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">
+          <i class="fas fa-inbox"></i>
+        </div>
+        <h3>No hay registros</h3>
+        <p>No se encontraron registros de auditoría con los filtros aplicados</p>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" id="tableContainer" style="display: none;">
+        <table class="auditoria-table">
+          <thead>
+            <tr>
+              <th>Fecha/Hora</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Remesa ID</th>
+              <th>Descripción</th>
+              <th>IP</th>
+              <th>Cambios</th>
+            </tr>
+          </thead>
+          <tbody id="auditoriaTableBody">
+            <!-- Se llena dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ver Cambios -->
+  <div class="modal-overlay" id="modalVerCambios">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Detalles del Cambio</h2>
+      </div>
+      <div class="modal-body" id="modalCambiosBody">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/auditoria_remesas.js') }}"></script>
+</body>
+</html>

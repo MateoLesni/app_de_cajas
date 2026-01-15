@@ -10019,6 +10019,145 @@ def contador_remesas_no_retiradas():
 
 
 # ===========================
+# AUDITORÍA DE REMESAS - TRAZABILIDAD COMPLETA
+# Solo accesible para admin_tesoreria (nivel 8)
+# ===========================
+
+@app.route('/auditoria-remesas')
+@login_required
+@role_min_required(8)  # Solo admin_tesoreria
+def auditoria_remesas_page():
+    """
+    Página de auditoría completa de remesas.
+    Muestra todos los cambios registrados en remesas_trns.
+    """
+    return render_template('auditoria_remesas.html')
+
+
+@app.route('/api/auditoria-remesas/listar', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_auditoria_remesas_listar():
+    """
+    Lista todos los registros de auditoría de remesas_trns con filtros.
+
+    Query params:
+    - nro_remesa (opcional): filtrar por número de remesa
+    - precinto (opcional): filtrar por precinto
+    - local (opcional): filtrar por local
+    - fecha_desde (opcional): filtro de fecha desde (changed_at)
+    - fecha_hasta (opcional): filtro de fecha hasta (changed_at)
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener filtros
+        nro_remesa = request.args.get('nro_remesa', '').strip()
+        precinto = request.args.get('precinto', '').strip()
+        local = request.args.get('local', '').strip()
+        fecha_desde = request.args.get('fecha_desde', '').strip()
+        fecha_hasta = request.args.get('fecha_hasta', '').strip()
+
+        # Construir query base
+        # La tabla auditoria tiene: fecha_hora, usuario, accion, tabla, registro_id,
+        # datos_anteriores, datos_nuevos, descripcion
+        query_parts = ["""
+            SELECT
+                a.id,
+                DATE_FORMAT(a.fecha_hora, '%Y-%m-%d %H:%i:%s') as fecha_hora,
+                a.usuario,
+                a.usuario_email,
+                a.usuario_nivel,
+                a.usuario_ip,
+                a.local as local_auditoria,
+                a.accion,
+                a.tabla,
+                a.registro_id,
+                a.datos_anteriores,
+                a.datos_nuevos,
+                a.datos_cambios,
+                a.descripcion,
+                a.endpoint
+            FROM auditoria a
+            WHERE a.tabla = 'remesas_trns'
+        """]
+
+        params = []
+
+        # Filtros específicos (búsqueda en descripcion o datos JSON)
+        if nro_remesa:
+            query_parts.append("""
+                AND (
+                    a.descripcion LIKE %s
+                    OR JSON_EXTRACT(a.datos_anteriores, '$.nro_remesa') = %s
+                    OR JSON_EXTRACT(a.datos_nuevos, '$.nro_remesa') = %s
+                )
+            """)
+            like_pattern = f"%{nro_remesa}%"
+            params.extend([like_pattern, nro_remesa, nro_remesa])
+
+        if precinto:
+            query_parts.append("""
+                AND (
+                    a.descripcion LIKE %s
+                    OR JSON_EXTRACT(a.datos_anteriores, '$.precinto') = %s
+                    OR JSON_EXTRACT(a.datos_nuevos, '$.precinto') = %s
+                )
+            """)
+            like_pattern = f"%{precinto}%"
+            params.extend([like_pattern, precinto, precinto])
+
+        if local:
+            query_parts.append("""
+                AND (
+                    a.local = %s
+                    OR a.descripcion LIKE %s
+                    OR JSON_EXTRACT(a.datos_anteriores, '$.local') = %s
+                    OR JSON_EXTRACT(a.datos_nuevos, '$.local') = %s
+                )
+            """)
+            like_pattern = f"%{local}%"
+            params.extend([local, like_pattern, local, local])
+
+        # Filtros de fecha
+        if fecha_desde:
+            query_parts.append("AND DATE(a.fecha_hora) >= %s")
+            params.append(fecha_desde)
+
+        if fecha_hasta:
+            query_parts.append("AND DATE(a.fecha_hora) <= %s")
+            params.append(fecha_hasta)
+
+        # Ordenar descendentemente (más recientes primero)
+        query_parts.append("ORDER BY a.fecha_hora DESC")
+
+        # Limitar resultados para performance
+        query_parts.append("LIMIT 1000")
+
+        # Ejecutar query
+        query = " ".join(query_parts)
+        print(f"🔍 Query auditoría: {query}")
+        print(f"📊 Params: {params}")
+
+        cur.execute(query, tuple(params))
+        registros = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        print(f"✅ {len(registros)} registros de auditoría encontrados")
+
+        return jsonify(success=True, registros=registros)
+
+    except Exception as e:
+        print("❌ ERROR api_auditoria_remesas_listar:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+# ===========================
 # GESTIÓN DE USUARIOS DE TESORERÍA
 # Solo accesible para admin_anticipos (nivel 6) y admin_tesoreria (nivel 8)
 # ===========================

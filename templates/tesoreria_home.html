@@ -221,6 +221,27 @@
           <li>Para reclamos a locales</li>
         </ul>
       </a>
+
+      {% if session.get('role_level', 0) >= 8 %}
+      <!-- Opción 3: Auditoría de Remesas (Solo Admin Tesorería) -->
+      <a href="{{ url_for('auditoria_remesas_page') }}" class="option-card" style="border: 2px solid #2563eb;">
+        <div class="card-icon" style="background: #dbeafe;">
+          <i class="fas fa-clipboard-list" style="color: #2563eb;"></i>
+        </div>
+        <div class="card-badge" style="background: #2563eb;">Auditoría</div>
+        <h2 class="card-title">Auditoría de Remesas</h2>
+        <p class="card-description">
+          Trazabilidad completa de todos los cambios en remesas. Solo admin tesorería.
+        </p>
+        <ul class="card-features">
+          <li>Ver todos los cambios (INSERT/UPDATE/DELETE)</li>
+          <li>Filtrar por remesa, precinto, local</li>
+          <li>Ver datos anteriores y nuevos</li>
+          <li>Registra usuario, IP, timestamp</li>
+          <li>Máxima transparencia y seguridad</li>
+        </ul>
+      </a>
+      {% endif %}
     </div>
 
     <div style="text-align: center;">
