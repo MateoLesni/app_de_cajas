@@ -249,6 +249,7 @@
             <button class="tab-btn" data-tab="tarjetas">Tarjetas</button>
             <button class="tab-btn" data-tab="remesas">Remesas</button>
             <button class="tab-btn" data-tab="gastos">Gastos</button>
+            <button class="tab-btn" data-tab="anticiposTab">Anticipos</button>
             <button class="tab-btn" data-tab="rappiTab">Rappi</button>
             <button class="tab-btn" data-tab="pedidosyaTab">PedidosYa</button>
           </div>
@@ -750,6 +751,30 @@
             <button type="button" id="guardarGastosBD" class="btn-custom btn-save" style="margin-top: 20px;">💾 Guardar Comprobantes</button>
             <div id="respuestaGastos" style="margin-top: 10px;"></div>
           </div>
+
+          <!-- Anticipos -->
+          <div id="anticiposTab" class="tab-pane">
+            <h2>Anticipos Disponibles</h2>
+            <p style="font-size:14px; color:#666; margin-bottom:16px;">
+              Anticipos/señas que corresponden a esta caja para la fecha seleccionada.
+            </p>
+
+            <!-- Lista de anticipos disponibles -->
+            <div id="anticipos-disponibles-container" style="margin-bottom: 24px;">
+              <h4>Anticipos para consumir:</h4>
+              <div id="anticipos-disponibles-lista" style="margin-top: 12px;">
+                <!-- Se llena dinámicamente por anticipos_v2.js -->
+              </div>
+            </div>
+
+            <!-- Lista de anticipos ya consumidos en esta caja -->
+            <div id="anticipos-consumidos-container" style="margin-top: 24px; padding-top: 24px; border-top: 2px solid #e5e7eb;">
+              <h4>Anticipos Consumidos en esta Caja:</h4>
+              <div id="anticipos-consumidos-lista" style="margin-top: 12px;">
+                <!-- Se llena dinámicamente por anticipos_v2.js -->
+              </div>
+            </div>
+          </div>
         </div> <!-- /tabs-container -->
       </div> <!-- /container -->
 
@@ -872,6 +897,7 @@
   <script src="{{ url_for('static', filename='js/ventas.js') }}"></script>
   <script src="{{ url_for('static', filename='js/resumen.js') }}"></script>
   <script src="{{ url_for('static', filename='js/gastos.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/anticipos_v2.js') }}"></script>
   <script src="{{ url_for('static', filename='js/orquestador-tabs.js') }}"></script>
 
   <script>
