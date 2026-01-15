@@ -878,6 +878,34 @@
   <script>
   // 1=cajero, 2=encargado/adm, 3=auditor
   window.ROLE_LEVEL = {{ session['role_level']|int }};
+
+  // DEBUG: Verificar visibilidad de pestaña Anticipos
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const anticiposBtn = document.querySelector('[data-tab="anticiposTab"]');
+      if (anticiposBtn) {
+        const styles = window.getComputedStyle(anticiposBtn);
+        console.log('🔍 DEBUG Anticipos Tab Button:');
+        console.log('  - Element found:', anticiposBtn);
+        console.log('  - Display:', styles.display);
+        console.log('  - Visibility:', styles.visibility);
+        console.log('  - Opacity:', styles.opacity);
+        console.log('  - Position:', styles.position);
+        console.log('  - InnerText:', anticiposBtn.innerText);
+        console.log('  - Parent:', anticiposBtn.parentElement);
+
+        // Forzar que sea visible por si está oculto
+        if (styles.display === 'none' || styles.visibility === 'hidden' || styles.opacity === '0') {
+          console.warn('⚠️ Anticipos tab está oculto! Forzando visibilidad...');
+          anticiposBtn.style.display = 'inline-block';
+          anticiposBtn.style.visibility = 'visible';
+          anticiposBtn.style.opacity = '1';
+        }
+      } else {
+        console.error('❌ No se encontró el botón de Anticipos tab!');
+      }
+    }, 1000);
+  });
 </script>
 
   <!-- Restaurar contexto (fecha, caja, turno) ANTES de otros scripts -->
