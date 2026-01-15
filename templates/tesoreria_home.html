@@ -185,7 +185,7 @@
 
     <div class="cards-grid">
       <!-- Opción 1: Conciliación de Efectivo (Principal) -->
-      <a href="{{ url_for('ui_reporteria_remesas') }}" class="option-card primary">
+      <a href="{{ url_for('ui_reporteria_remesas_trabajo') }}" class="option-card primary">
         <div class="card-icon">
           <i class="fas fa-calculator"></i>
         </div>
@@ -203,13 +203,13 @@
         </ul>
       </a>
 
-      <!-- Opción 2: Resumen por Local (Secundaria) -->
-      <a href="{{ url_for('reporte_remesas_tesoreria_page') }}" class="option-card secondary">
+      <!-- Opción 2: Resumen de Apertura de Efectivo (Secundaria) -->
+      <a href="{{ url_for('reporte_resumen_tesoreria_page') }}" class="option-card secondary">
         <div class="card-icon">
           <i class="fas fa-chart-bar"></i>
         </div>
         <div class="card-badge">Reporte</div>
-        <h2 class="card-title">Resumen por Local</h2>
+        <h2 class="card-title">Resumen de Apertura de Efectivo</h2>
         <p class="card-description">
           Vista agrupada por local con lo cargado previamente. Para reclamar diferencias.
         </p>
