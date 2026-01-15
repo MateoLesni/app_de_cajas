@@ -154,22 +154,22 @@
 
     .table-header {
       padding: 16px 20px;
-      background: #f9fafb;
-      border-bottom: 2px solid #e5e7eb;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .table-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1f2937;
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
       margin: 0;
     }
 
     .table-count {
-      font-size: 14px;
+      font-size: 13px;
       color: #6b7280;
       font-weight: 500;
     }
@@ -302,43 +302,6 @@
     .table-responsive {
       overflow-x: auto;
     }
-
-    /* Stats cards */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      border-left: 4px solid #10b981;
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: #6b7280;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 32px;
-      font-weight: 700;
-      color: #1f2937;
-    }
-
-    .stat-description {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-top: 4px;
-    }
   </style>
 </head>
 <body>
@@ -357,20 +320,6 @@
       <div class="info-content">
         <h3>Remesas Procesadas</h3>
         <p>Esta vista muestra todas las remesas que fueron marcadas como "retiradas" y están en tránsito o contabilizadas.</p>
-      </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="stats-grid" id="statsGrid" style="display: none;">
-      <div class="stat-card">
-        <div class="stat-label">Total Remesas</div>
-        <div class="stat-value" id="statTotalRemesas">0</div>
-        <div class="stat-description">Remesas retiradas</div>
-      </div>
-      <div class="stat-card" style="border-left-color: #3b82f6;">
-        <div class="stat-label">Monto Total</div>
-        <div class="stat-value" id="statMontoTotal" style="color: #3b82f6;">$0</div>
-        <div class="stat-description">Suma de todas las remesas</div>
       </div>
     </div>
 
@@ -421,7 +370,6 @@
       </div>
 
       <div class="filter-actions">
-        <span class="table-count" id="filtroInfo">Mostrando todos los resultados</span>
         <button class="btn btn-secondary" onclick="limpiarFiltros()">
           <i class="fas fa-eraser"></i> Limpiar
         </button>
@@ -434,8 +382,8 @@
     <!-- Tabla de Remesas -->
     <div class="remesas-table-card">
       <div class="table-header">
-        <h2 class="table-title">Listado de Remesas Retiradas</h2>
-        <span class="table-count" id="tableCount">Cargando...</span>
+        <h2 class="table-title">Remesas Retiradas</h2>
+        <span class="table-count" id="filtroInfo">Cargando...</span>
       </div>
 
       <!-- Loading State -->

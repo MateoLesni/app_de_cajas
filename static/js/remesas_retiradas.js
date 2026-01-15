@@ -92,19 +92,19 @@ async function cargarLocales() {
 }
 
 // =====================================================
-// CONFIGURAR FECHAS POR DEFECTO (ÚLTIMOS 30 DÍAS)
+// CONFIGURAR FECHAS POR DEFECTO (ÚLTIMA SEMANA - 7 DÍAS)
 // =====================================================
 
 function configurarFechasPorDefecto() {
   const hoy = new Date();
-  const hace30Dias = new Date();
-  hace30Dias.setDate(hoy.getDate() - 30);
+  const hace7Dias = new Date();
+  hace7Dias.setDate(hoy.getDate() - 7);
 
   const filtroFechaDesde = document.getElementById('filtroFechaDesde');
   const filtroFechaHasta = document.getElementById('filtroFechaHasta');
 
   if (filtroFechaDesde) {
-    filtroFechaDesde.value = hace30Dias.toISOString().split('T')[0];
+    filtroFechaDesde.value = hace7Dias.toISOString().split('T')[0];
   }
 
   if (filtroFechaHasta) {
@@ -220,30 +220,20 @@ function renderizarTabla() {
 // =====================================================
 
 function renderizarStats() {
-  const statsGrid = document.getElementById('statsGrid');
-  const statTotalRemesas = document.getElementById('statTotalRemesas');
-  const statMontoTotal = document.getElementById('statMontoTotal');
+  const filtroInfo = document.getElementById('filtroInfo');
 
-  if (!statsGrid) return;
+  if (!filtroInfo) return;
 
   // Calcular totales
   const totalRemesas = remesasData.length;
-  const montoTotal = remesasData.reduce((sum, r) => sum + (parseFloat(r.monto) || 0), 0);
 
-  // Actualizar valores
-  if (statTotalRemesas) {
-    statTotalRemesas.textContent = totalRemesas;
-  }
-
-  if (statMontoTotal) {
-    statMontoTotal.textContent = formatearMonto(montoTotal);
-  }
-
-  // Mostrar/ocultar stats
-  if (totalRemesas > 0) {
-    statsGrid.style.display = 'grid';
+  // Actualizar texto informativo
+  if (totalRemesas === 0) {
+    filtroInfo.textContent = 'No hay resultados';
+  } else if (totalRemesas === 1) {
+    filtroInfo.textContent = '1 remesa retirada';
   } else {
-    statsGrid.style.display = 'none';
+    filtroInfo.textContent = `${totalRemesas} remesas retiradas`;
   }
 }
 
@@ -269,9 +259,23 @@ function formatearFecha(fecha) {
   if (!fecha) return '-';
 
   try {
-    const [year, month, day] = fecha.split('T')[0].split('-');
-    return `${day}/${month}/${year}`;
+    // Si es formato ISO con hora (YYYY-MM-DDTHH:MM:SS)
+    if (fecha.includes('T')) {
+      fecha = fecha.split('T')[0];
+    }
+
+    // Si tiene formato YYYY-MM-DD
+    if (fecha.includes('-')) {
+      const partes = fecha.split('-');
+      if (partes.length === 3) {
+        const [year, month, day] = partes;
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+      }
+    }
+
+    return fecha;
   } catch (e) {
+    console.error('Error formateando fecha:', fecha, e);
     return fecha;
   }
 }
