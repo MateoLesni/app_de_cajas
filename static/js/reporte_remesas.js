@@ -85,14 +85,11 @@
     input.value = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   }
 
-  // Fetch remesas por fecha de retiro y opcionalmente por fecha de sello
-  async function fetchRemesas(fechaRetiro, fechaSello = null) {
+  // Fetch remesas por fecha de sello/apertura
+  async function fetchRemesas(fechaSello) {
     mostrarLoading(true);
     try {
-      let url = `/api/tesoreria/remesas-detalle?fecha_retiro=${encodeURIComponent(fechaRetiro)}`;
-      if (fechaSello) {
-        url += `&fecha_sello=${encodeURIComponent(fechaSello)}`;
-      }
+      let url = `/api/tesoreria/remesas-detalle?fecha_sello=${encodeURIComponent(fechaSello)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -340,21 +337,16 @@
 
   // Cargar remesas
   async function cargarRemesas() {
-    const fecha = $('#rep-fecha').value;
-    if (!fecha) {
-      alert('Seleccioná una fecha');
+    const fechaSello = $('#rep-fecha-sello').value;
+    if (!fechaSello) {
+      alert('Seleccioná una fecha de sello/apertura');
       return;
     }
 
-    const fechaSello = $('#rep-fecha-sello').value || null;
-
-    let labelText = `Fecha de retiro: ${formatFecha(fecha)}`;
-    if (fechaSello) {
-      labelText += ` | Fecha de sello: ${formatFecha(fechaSello)}`;
-    }
+    let labelText = `Fecha de sello/apertura: ${formatFecha(fechaSello)}`;
     $('#fecha-label').textContent = labelText;
 
-    remesasData = await fetchRemesas(fecha, fechaSello);
+    remesasData = await fetchRemesas(fechaSello);
     renderizarTabla();
 
     // Verificar estado de aprobación después de cargar
@@ -365,14 +357,14 @@
    * Verificar estado de aprobación de la fecha (para admin tesorería)
    */
   async function verificarEstadoAprobacion() {
-    const fechaRetiro = $('#rep-fecha').value;
-    if (!fechaRetiro) return;
+    const fechaSello = $('#rep-fecha-sello').value;
+    if (!fechaSello) return;
 
     const panel = document.getElementById('panelAprobacion');
     if (!panel) return; // No es admin tesorería
 
     try {
-      const res = await fetch(`/api/tesoreria/estado-aprobacion?fecha_retiro=${encodeURIComponent(fechaRetiro)}`);
+      const res = await fetch(`/api/tesoreria/estado-aprobacion?fecha_sello=${encodeURIComponent(fechaSello)}`);
       const data = await res.json();
 
       const estadoEl = document.getElementById('estadoAprobacion');
@@ -409,10 +401,10 @@
    * Aprobar conciliación de una fecha
    */
   async function aprobarFecha() {
-    const fechaRetiro = $('#rep-fecha').value;
-    if (!fechaRetiro) return;
+    const fechaSello = $('#rep-fecha-sello').value;
+    if (!fechaSello) return;
 
-    if (!confirm(`¿Confirmar aprobación de la conciliación del ${formatFecha(fechaRetiro)}?\n\nUna vez aprobada, los tesoreros no podrán modificar los montos reales.`)) {
+    if (!confirm(`¿Confirmar aprobación de la conciliación del ${formatFecha(fechaSello)}?\n\nUna vez aprobada, los tesoreros no podrán modificar los montos reales.`)) {
       return;
     }
 
@@ -427,7 +419,7 @@
           'Content-Type': 'application/json',
           'X-CSRF-Token': getCSRFToken()
         },
-        body: JSON.stringify({ fecha_retiro: fechaRetiro })
+        body: JSON.stringify({ fecha_sello: fechaSello })
       });
 
       const data = await res.json();
@@ -451,8 +443,8 @@
    * Desaprobar conciliación de una fecha
    */
   async function desaprobarFecha() {
-    const fechaRetiro = $('#rep-fecha').value;
-    if (!fechaRetiro) return;
+    const fechaSello = $('#rep-fecha-sello').value;
+    if (!fechaSello) return;
 
     const motivo = prompt('Ingresá el motivo de la desaprobación:');
     if (!motivo || motivo.trim() === '') {
@@ -472,7 +464,7 @@
           'X-CSRF-Token': getCSRFToken()
         },
         body: JSON.stringify({
-          fecha_retiro: fechaRetiro,
+          fecha_sello: fechaSello,
           observaciones: motivo.trim()
         })
       });
@@ -500,11 +492,11 @@
 
   // Inicialización
   document.addEventListener('DOMContentLoaded', () => {
-    setToday($('#rep-fecha'));
+    setToday($('#rep-fecha-sello'));
     cargarRemesas();
 
     $('#rep-buscar')?.addEventListener('click', cargarRemesas);
-    $('#rep-fecha')?.addEventListener('change', cargarRemesas);
+    $('#rep-fecha-sello')?.addEventListener('change', cargarRemesas);
     // $('#btn-guardar-todo')?.addEventListener('click', guardarTodo); // YA NO EXISTE - Vista READ-ONLY
   });
 })();

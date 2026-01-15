@@ -335,13 +335,9 @@
           <!-- Filtros -->
           <div class="rep-filtros">
             <div class="form-group">
-              <label for="rep-fecha">Fecha de Retiro:</label>
-              <input type="date" id="rep-fecha" class="form-control" required>
-            </div>
-            <div class="form-group">
-              <label for="rep-fecha-sello">Fecha de Sello (Apertura):</label>
-              <input type="date" id="rep-fecha-sello" class="form-control" placeholder="Opcional">
-              <small style="color: #6b7280; font-size: 12px;">Opcional: filtrar por fecha de contabilización</small>
+              <label for="rep-fecha-sello">Fecha de Sello/Apertura:</label>
+              <input type="date" id="rep-fecha-sello" class="form-control" required>
+              <small style="color: #6b7280; font-size: 12px;">Fecha en que se abrió/contabilizó el bolsín</small>
             </div>
             <div class="rep-actions">
               <a href="{{ url_for('reporte_resumen_tesoreria_page') }}" class="btn-ghost">
