@@ -9775,7 +9775,7 @@ def marcar_remesa_retirada(remesa_id):
 
         # Obtener remesa actual para auditoría
         cur.execute("""
-            SELECT id, local, caja, fecha, turno, monto, retirada, retirada_por, fecha_retirada
+            SELECT id, local, caja, fecha, turno, monto, retirada, retirada_por, fecha_retirada, estado_contable
             FROM remesas_trns
             WHERE id = %s
         """, (remesa_id,))
@@ -9786,14 +9786,21 @@ def marcar_remesa_retirada(remesa_id):
             conn.close()
             return jsonify(success=False, msg="Remesa no encontrada"), 404
 
-        # Verificar que no esté ya retirada (todas las variantes posibles)
+        # VALIDACIÓN DE SEGURIDAD 1: Verificar que no esté ya retirada
         retirada_val = str(remesa['retirada']).strip() if remesa['retirada'] is not None else ''
         if retirada_val.lower() in ('1', 'si', 'sí', 'true') or remesa['retirada'] in (1, True):
             cur.close()
             conn.close()
             return jsonify(success=False, msg="Esta remesa ya está marcada como retirada"), 400
 
-        # Verificar permisos (encargados solo su local)
+        # VALIDACIÓN DE SEGURIDAD 2: Solo permitir si está en estado Local
+        estado_actual = str(remesa.get('estado_contable', '')).strip().upper()
+        if estado_actual not in ('', 'LOCAL', 'NONE'):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f"No se puede marcar como retirada una remesa en estado {estado_actual}"), 400
+
+        # VALIDACIÓN DE SEGURIDAD 3: Verificar permisos (encargados solo su local)
         user_level = session.get('role_level', 0)
         if user_level < 3:  # Encargado
             user_local = session.get('local')
@@ -9878,7 +9885,7 @@ def editar_remesa_retirada(remesa_id):
 
         # Obtener remesa actual
         cur.execute("""
-            SELECT id, local, caja, fecha, turno, monto, retirada, retirada_por, fecha_retirada
+            SELECT id, local, caja, fecha, turno, monto, retirada, retirada_por, fecha_retirada, estado_contable
             FROM remesas_trns
             WHERE id = %s
         """, (remesa_id,))
@@ -9888,6 +9895,13 @@ def editar_remesa_retirada(remesa_id):
             cur.close()
             conn.close()
             return jsonify(success=False, msg="Remesa no encontrada"), 404
+
+        # VALIDACIÓN DE SEGURIDAD: Solo auditores pueden editar, pero no remesas contabilizadas
+        estado_actual = str(remesa.get('estado_contable', '')).strip().upper()
+        if estado_actual == 'CONTABILIZADA':
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="No se puede editar una remesa ya contabilizada. Contactá a un administrador."), 403
 
         # Guardar datos anteriores
         datos_anteriores = {
