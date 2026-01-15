@@ -10344,18 +10344,19 @@ def listar_remesas_retiradas():
         query_parts = ["""
             SELECT
                 id,
-                fecha,
+                DATE_FORMAT(fecha, '%Y-%m-%d') as fecha,
                 local,
                 caja,
                 turno,
                 nro_remesa,
                 precinto,
                 monto,
-                fecha_retirada,
+                DATE_FORMAT(fecha_retirada, '%Y-%m-%d') as fecha_retirada,
                 retirada_por,
                 estado_contable
             FROM remesas_trns
             WHERE retirada IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
+              AND estado_contable IN ('TRAN', 'Contabilizada')
         """]
 
         params = []
