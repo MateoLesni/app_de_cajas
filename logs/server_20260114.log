@@ -1,0 +1,48 @@
+2026-01-14 22:59:20,012 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-14 22:59:20,929 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-01-14 22:59:20,929 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-01-14 22:59:20,935 - werkzeug - INFO -  * Restarting with stat
+2026-01-14 22:59:24,681 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-14 22:59:25,678 - werkzeug - WARNING -  * Debugger is active!
+2026-01-14 22:59:25,685 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2026-01-14 22:59:43,610 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:43] "[32mGET / HTTP/1.1[0m" 302 -
+2026-01-14 22:59:43,684 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:43] "GET /login?next=/? HTTP/1.1" 200 -
+2026-01-14 22:59:43,871 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:43] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2026-01-14 22:59:51,441 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-14 22:59:51,441 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-14 22:59:51,444 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-14 22:59:57,003 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:57] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-01-14 22:59:57,021 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:57] "GET /tesoreria/home HTTP/1.1" 200 -
+2026-01-14 22:59:57,080 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:57] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 22:59:57,081 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 22:59:57] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:00:02,205 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:00:02] "GET /reporteria/resumen-tesoreria HTTP/1.1" 200 -
+2026-01-14 23:00:02,252 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:00:02] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:00:02,265 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:00:02] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:00:20,911 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:00:20] "GET /api/tesoreria/resumen-por-local?fecha=2026-01-15 HTTP/1.1" 200 -
+2026-01-14 23:01:43,543 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:43] "GET /tesoreria/home HTTP/1.1" 200 -
+2026-01-14 23:01:43,593 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:43] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:01:43,606 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:43] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:01:45,421 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:45] "GET /reporteria/remesas-trabajo HTTP/1.1" 200 -
+2026-01-14 23:01:45,465 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:45] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:01:45,487 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:45] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:01:45,488 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:45] "GET /static/js/reporte_remesas_trabajo.js HTTP/1.1" 200 -
+2026-01-14 23:01:48,312 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:01:48] "GET /api/tesoreria/remesas-tran HTTP/1.1" 200 -
+2026-01-14 23:03:48,668 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:03:48] "GET /api/tesoreria/remesas-tran HTTP/1.1" 200 -
+2026-01-14 23:05:48,885 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:05:48] "GET /api/tesoreria/remesas-tran HTTP/1.1" 200 -
+2026-01-14 23:06:26,650 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:26] "GET /tesoreria/home HTTP/1.1" 200 -
+2026-01-14 23:06:26,699 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:26] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:06:26,711 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:26] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:06:30,474 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:30] "GET /reporteria/resumen-tesoreria HTTP/1.1" 200 -
+2026-01-14 23:06:30,521 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:30] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:06:30,533 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:30] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:06:48,820 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:06:48] "GET /api/tesoreria/resumen-por-local?fecha=2026-01-15 HTTP/1.1" 200 -
+2026-01-14 23:16:30,978 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:16:30] "GET /reporteria/resumen-tesoreria HTTP/1.1" 200 -
+2026-01-14 23:16:31,086 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:16:31] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-14 23:16:31,087 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:16:31] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:16:49,936 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:16:49] "GET /api/tesoreria/resumen-por-local?fecha=2026-01-15 HTTP/1.1" 200 -
+2026-01-14 23:16:59,055 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:16:59] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-14 23:16:59,077 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:16:59] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-01-14 23:17:13,565 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:17:13] "GET /api/tesoreria/resumen-por-local?fecha=2026-01-08 HTTP/1.1" 200 -
+2026-01-14 23:17:27,579 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:17:27] "GET /api/tesoreria/resumen-por-local?fecha=2026-01-08 HTTP/1.1" 200 -
+2026-01-14 23:30:15,839 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading

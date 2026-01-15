@@ -10269,3 +10269,156 @@ def api_usuarios_tesoreria_resetear_password(user_id):
         return jsonify(success=False, msg=str(e)), 500
 
 
+
+# ===========================
+# REMESAS RETIRADAS - VISTA HISTÓRICA
+# ===========================
+
+@app.route('/remesas-retiradas')
+@login_required
+@role_min_required(2)  # Encargados (nivel 2+) y auditores (nivel 3+)
+def remesas_retiradas_page():
+    """
+    Página de visualización de remesas retiradas (historial).
+    - Encargados: ven solo su local, ordenadas descendentemente
+    - Auditores: ven todos los locales con filtros
+    """
+    return render_template('remesas_retiradas.html')
+
+
+@app.route('/api/remesas-retiradas/listar', methods=['GET'])
+@login_required
+@role_min_required(2)
+def listar_remesas_retiradas():
+    """
+    Lista remesas que ya fueron retiradas (retirada = 1 o 'Sí').
+    - Encargados: solo ven su local
+    - Auditores: ven todos los locales (con filtro opcional)
+
+    Query params:
+    - local (opcional): filtrar por local (solo auditores)
+    - fecha_desde (opcional): filtro de fecha de caja desde
+    - fecha_hasta (opcional): filtro de fecha de caja hasta
+    - fecha_retiro_desde (opcional): filtro de fecha de retiro desde
+    - fecha_retiro_hasta (opcional): filtro de fecha de retiro hasta
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener nivel del usuario
+        user_id = session.get('user_id')
+        cur.execute("SELECT role_id FROM users WHERE id = %s", (user_id,))
+        user_row = cur.fetchone()
+        if not user_row:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Usuario no encontrado"), 404
+
+        cur.execute("SELECT level FROM roles WHERE id = %s", (user_row['role_id'],))
+        role_row = cur.fetchone()
+        user_level = role_row['level'] if role_row else 0
+
+        # Obtener filtros de query params
+        filtro_local = request.args.get('local', '').strip()
+        filtro_fecha_desde = request.args.get('fecha_desde', '').strip()
+        filtro_fecha_hasta = request.args.get('fecha_hasta', '').strip()
+        filtro_retiro_desde = request.args.get('fecha_retiro_desde', '').strip()
+        filtro_retiro_hasta = request.args.get('fecha_retiro_hasta', '').strip()
+
+        # Construir query base
+        query_parts = ["""
+            SELECT
+                id,
+                fecha,
+                local,
+                caja,
+                turno,
+                nro_remesa,
+                precinto,
+                monto,
+                fecha_retirada,
+                retirada_por,
+                estado_contable
+            FROM remesas_trns
+            WHERE retirada IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
+        """]
+
+        params = []
+
+        # Filtrar por local según nivel de usuario
+        if user_level < 3:
+            # Encargado: solo su local
+            user_local = session.get('local')
+            query_parts.append("AND local = %s")
+            params.append(user_local)
+        else:
+            # Auditor: filtrar por local si se especifica
+            if filtro_local:
+                query_parts.append("AND local = %s")
+                params.append(filtro_local)
+
+        # Filtros de fecha de caja
+        if filtro_fecha_desde:
+            query_parts.append("AND fecha >= %s")
+            params.append(filtro_fecha_desde)
+
+        if filtro_fecha_hasta:
+            query_parts.append("AND fecha <= %s")
+            params.append(filtro_fecha_hasta)
+
+        # Filtros de fecha de retiro
+        if filtro_retiro_desde:
+            query_parts.append("AND fecha_retirada >= %s")
+            params.append(filtro_retiro_desde)
+
+        if filtro_retiro_hasta:
+            query_parts.append("AND fecha_retirada <= %s")
+            params.append(filtro_retiro_hasta)
+
+        # Ordenar descendentemente por fecha_retirada (más recientes primero)
+        query_parts.append("ORDER BY fecha_retirada DESC, fecha DESC")
+
+        # Ejecutar query
+        query = " ".join(query_parts)
+        print(f"🔍 Query remesas retiradas: {query}")
+        print(f"📊 Params: {params}")
+
+        cur.execute(query, tuple(params))
+        remesas = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        print(f"✅ {len(remesas)} remesas retiradas encontradas")
+
+        return jsonify(success=True, remesas=remesas)
+
+    except Exception as e:
+        print("❌ ERROR listar_remesas_retiradas:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/locales-lista', methods=['GET'])
+@login_required
+def listar_locales():
+    """
+    Devuelve lista de locales únicos para filtros.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT DISTINCT local FROM remesas_trns WHERE local IS NOT NULL AND local != '' ORDER BY local")
+        rows = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        locales = [row[0] for row in rows]
+
+        return jsonify(success=True, locales=locales)
+
+    except Exception as e:
+        print("❌ ERROR listar_locales:", e)
+        return jsonify(success=False, msg=str(e)), 500
