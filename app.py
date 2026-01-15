@@ -10139,8 +10139,14 @@ def api_auditoria_remesas_listar():
         query = " ".join(query_parts)
         print(f"🔍 Query auditoría: {query}")
         print(f"📊 Params: {params}")
+        print(f"📊 Cantidad de params: {len(params)}")
 
-        cur.execute(query, tuple(params))
+        # Ejecutar con params solo si hay alguno
+        if params:
+            cur.execute(query, tuple(params))
+        else:
+            cur.execute(query)
+
         registros = cur.fetchall()
 
         cur.close()
