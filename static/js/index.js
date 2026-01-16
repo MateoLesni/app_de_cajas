@@ -208,22 +208,26 @@ document.addEventListener("DOMContentLoaded", function () {
       // === NUEVO: sólo pintamos acciones si puede actuar
       if (puedeActuar) {
         if (r.tipo === "no_retirada") {
-          // Remesas NO RETIRADAS: solo mostrar botón de eliminar (sin lápiz para marcar retirada)
-          // La marcación como retirada se hace desde la sección "Remesas No Retiradas"
+          // Remesas NO RETIRADAS: Lápiz para editar datos (no para marcar retiro) + botón eliminar
           const esMismaCaja = (r.caja === caja);
           const cajaEstaAbierta = !window.cajaCerrada;
 
-          // NIVEL 1 (cajero): Solo botón ELIMINAR si es su caja Y está abierta
+          // NIVEL 1 (cajero): Solo si es su caja Y está abierta
           if (ROLE === 1) {
             if (esMismaCaja && cajaEstaAbierta) {
-              acciones = `<button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+              acciones = `
+                <button class="btn-editar-inline" data-id="${r.id}" data-tipo="no_retirada" title="Editar">✏️</button>
+                <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>
+              `;
             }
           }
-          // NIVEL 2+ (encargado/auditor): Solo cesto para eliminar (SIN lápiz)
+          // NIVEL 2+ (encargado/auditor): Puede editar y eliminar
           else {
-            // Cesto: eliminar
             if (esMismaCaja && !localCerrado) {
-              acciones = `<button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+              acciones = `
+                <button class="btn-editar-inline" data-id="${r.id}" data-tipo="no_retirada" title="Editar">✏️</button>
+                <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>
+              `;
             }
           }
         } else if (r.tipo === "local") {
@@ -238,38 +242,139 @@ document.addEventListener("DOMContentLoaded", function () {
 
           // NIVEL 1 (cajero): Solo puede borrar si es su caja Y está abierta
           if (ROLE === 1) {
-            // Editar: siempre disponible si es su caja y está abierta
+            // Editar inline: siempre disponible si es su caja y está abierta
             if (esMismaCaja && cajaEstaAbierta) {
               acciones = `
-                <button class="btn-editar-bd" data-id="${r.id}" title="Editar (BD)">✏️</button>
-                <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar (BD)">🗑️</button>
+                <button class="btn-editar-inline" data-id="${r.id}" data-tipo="bd" title="Editar">✏️</button>
+                <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>
               `;
             }
           }
           // NIVEL 2+ (encargado/auditor): puede editar y borrar aunque la caja esté cerrada (mientras el local esté abierto)
           else {
-            acciones = `<button class="btn-editar-bd" data-id="${r.id}" title="Editar (BD)">✏️</button>`;
+            acciones = `<button class="btn-editar-inline" data-id="${r.id}" data-tipo="bd" title="Editar">✏️</button>`;
             if (esMismaCaja && !localCerrado) {
-              acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar (BD)">🗑️</button>`;
+              acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
             }
           }
         }
       }
 
+      // Agregar data-id y data-tipo a la fila para edición inline
+      if (r.id) {
+        fila.setAttribute('data-remesa-id', r.id);
+        fila.setAttribute('data-remesa-tipo', r.tipo);
+      }
+
       fila.innerHTML = `
-        <td>${formatearFecha(r.fecha)}</td>
-        <td>${r.nro_remesa ?? ""}</td>
-        <td>${r.precinto ?? ""}</td>
-        <td>$${parseFloat(r.monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-        <td>${r.retirada || ""}</td>
-        <td class="celda-retirador" data-id="${r.id || ""}">${retiradaPor}</td>
-        <td>${acciones}</td>
+        <td class="col-fecha">${formatearFecha(r.fecha)}</td>
+        <td class="col-nro-remesa" data-field="nro_remesa">${r.nro_remesa ?? ""}</td>
+        <td class="col-precinto" data-field="precinto">${r.precinto ?? ""}</td>
+        <td class="col-monto" data-field="monto">$${parseFloat(r.monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+        <td class="col-retirada">${r.retirada || ""}</td>
+        <td class="col-retirada-por">${retiradaPor}</td>
+        <td class="col-acciones">${acciones}</td>
       `;
       tablaPreview.appendChild(fila);
     });
 
     // refuerza visibilidad de botones del formulario
     toggleAccionesVisibles(puedeActuar);
+  }
+
+  // === Función para hacer una fila editable inline ===
+  function hacerFilaEditable(fila, remesaId, tipo) {
+    // Guardar valores originales
+    const nroRemesaCell = fila.querySelector('.col-nro-remesa');
+    const precintoCell = fila.querySelector('.col-precinto');
+    const montoCell = fila.querySelector('.col-monto');
+    const accionesCell = fila.querySelector('.col-acciones');
+
+    const originalNroRemesa = nroRemesaCell.textContent.trim();
+    const originalPrecinto = precintoCell.textContent.trim();
+    const originalMontoText = montoCell.textContent.trim();
+    // Quitar el símbolo $ y los separadores de miles
+    const originalMonto = originalMontoText.replace('$', '').replace(/\./g, '').replace(',', '.');
+
+    // Crear inputs
+    nroRemesaCell.innerHTML = `<input type="text" class="input-inline" value="${originalNroRemesa}" style="width: 100%; padding: 4px;">`;
+    precintoCell.innerHTML = `<input type="text" class="input-inline" value="${originalPrecinto}" style="width: 100%; padding: 4px;">`;
+    montoCell.innerHTML = `<input type="number" class="input-inline" value="${originalMonto}" step="0.01" style="width: 100%; padding: 4px;">`;
+
+    // Botones de guardar y cancelar
+    accionesCell.innerHTML = `
+      <button class="btn-guardar-inline" data-id="${remesaId}" data-tipo="${tipo}" title="Guardar">💾</button>
+      <button class="btn-cancelar-inline" title="Cancelar">❌</button>
+    `;
+
+    // Focus en el primer input
+    nroRemesaCell.querySelector('input').focus();
+
+    // Función para restaurar valores originales
+    function restaurarFila() {
+      nroRemesaCell.textContent = originalNroRemesa;
+      precintoCell.textContent = originalPrecinto;
+      montoCell.innerHTML = originalMontoText;
+      // Restaurar botones de acción originales
+      const puedeActuar = canActUI();
+      if (puedeActuar) {
+        if (tipo === 'no_retirada' || tipo === 'bd') {
+          accionesCell.innerHTML = `
+            <button class="btn-editar-inline" data-id="${remesaId}" data-tipo="${tipo}" title="Editar">✏️</button>
+            <button class="btn-borrar-bd" data-id="${remesaId}" title="Borrar">🗑️</button>
+          `;
+        }
+      } else {
+        accionesCell.innerHTML = '';
+      }
+    }
+
+    // Handler para cancelar
+    const btnCancelar = accionesCell.querySelector('.btn-cancelar-inline');
+    btnCancelar.addEventListener('click', restaurarFila);
+
+    // Handler para guardar
+    const btnGuardar = accionesCell.querySelector('.btn-guardar-inline');
+    btnGuardar.addEventListener('click', async () => {
+      const nuevoNroRemesa = nroRemesaCell.querySelector('input').value.trim();
+      const nuevoPrecinto = precintoCell.querySelector('input').value.trim();
+      const nuevoMonto = montoCell.querySelector('input').value.trim();
+
+      if (!nuevoNroRemesa || !nuevoMonto) {
+        alert("Número de remesa y monto son obligatorios");
+        return;
+      }
+
+      // Hacer PUT request
+      try {
+        const response = await fetch(`/remesas/${remesaId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nro_remesa: nuevoNroRemesa,
+            precinto: nuevoPrecinto,
+            monto: nuevoMonto
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          alert("✅ Remesa actualizada");
+          // Recargar la tabla
+          await refrescarEstadoCaja({ reRender: false });
+          if (window.OrqTabs) OrqTabs.reload('remesas');
+          else legacyReload();
+        } else {
+          alert("❌ " + (data.msg || "Error al actualizar"));
+          restaurarFila();
+        }
+      } catch (error) {
+        console.error("Error al actualizar remesa:", error);
+        alert("❌ Error de red");
+        restaurarFila();
+      }
+    });
   }
 
   // === Listeners de la tabla ===
@@ -303,20 +408,15 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // BD: EDITAR
-    if (e.target.classList.contains("btn-editar-bd")) {
+    // EDITAR INLINE: remesas BD o no retiradas
+    if (e.target.classList.contains("btn-editar-inline")) {
       const id = e.target.dataset.id;
-      const filaBD = (remesasHoy[caja] || []).find(x => String(x.id) === String(id));
-      if (!filaBD) { alert("No se encontró el registro en BD."); return; }
-      document.getElementById("nro_remesa").value   = filaBD.nro_remesa || "";
-      document.getElementById("precinto").value     = filaBD.precinto   || "";
-      document.getElementById("monto").value        = (filaBD.monto != null ? filaBD.monto : "");
-      document.getElementById("retirada").value     = filaBD.retirada || "No";
-      document.getElementById("retirada_por").value = filaBD.retirada_por || "";
-      editBDId = id;
-      idxEdicionActual = null;
-      btnAnadir.style.display = "none";
-      btnActualizar.style.display = canActUI() ? "inline-block" : "none";
+      const tipo = e.target.dataset.tipo;
+      const fila = tablaPreview.querySelector(`tr[data-remesa-id="${id}"][data-remesa-tipo="${tipo}"]`);
+      if (!fila) { alert("No se encontró la fila."); return; }
+
+      // Hacer la fila editable
+      hacerFilaEditable(fila, id, tipo);
       return;
     }
 

@@ -963,8 +963,19 @@ def remesas_guardar_lote():
             try:   monto = float(monto_str or 0)
             except: monto = 0.0
 
-            retirada     = (t.get('retirada') or "No").strip()
+            # Convertir retirada a numérico: 1 (retirada) o 0 (no retirada)
+            retirada_raw = (t.get('retirada') or "No").strip()
+            if retirada_raw in ('Sí', 'Si', 'sí', 'si', 'SI', 'SÍ', '1', 1, True):
+                retirada = 1
+            else:
+                retirada = 0
+
             retirada_por = (t.get('retirada_por') or "").strip()
+
+            # Validar: si retirada=1, retirada_por es obligatorio
+            if retirada == 1 and not retirada_por:
+                raise ValueError(f"Remesa '{nro_remesa}': cuando está marcada como retirada, es obligatorio indicar quién la retiró")
+
             f_ret        = t.get('fecha_retirada')
             fecha_ret    = _normalize_fecha(f_ret) if f_ret else None
 
@@ -1121,15 +1132,36 @@ def remesas_update(remesa_id):
             m = str(data.get('monto', '0')).replace('.', '').replace(',', '.')
             try: add("monto", float(m or 0))
             except: return jsonify(success=False, msg="Monto inválido"), 400
+
+        # Convertir retirada a numérico
         if 'retirada' in data:
-            r = (data.get('retirada') or "").strip()
-            if r not in ('Sí', 'No'): return jsonify(success=False, msg="retirada inválida"), 400
-            add("retirada", r)
+            r_raw = data.get('retirada')
+            if str(r_raw).strip() in ('Sí', 'Si', 'sí', 'si', 'SI', 'SÍ', '1', 1, True):
+                r_numeric = 1
+            elif str(r_raw).strip() in ('No', 'no', 'NO', '0', 0, False, ''):
+                r_numeric = 0
+            else:
+                return jsonify(success=False, msg=f"retirada inválida: {r_raw}"), 400
+            add("retirada", r_numeric)
+
         if 'retirada_por' in data:
             add("retirada_por", (data.get('retirada_por') or "").strip())
         if 'fecha_retirada' in data:
             f = data.get('fecha_retirada')
             add("fecha_retirada", _normalize_fecha(f) if f else None)
+
+        # Validar: si se está marcando como retirada, debe tener retirada_por
+        if 'retirada' in datos_nuevos and datos_nuevos['retirada'] == 1:
+            # Obtener retirada_por del request o de la BD actual
+            retirada_por_value = datos_nuevos.get('retirada_por')
+            if not retirada_por_value:
+                # Verificar si ya existe en BD
+                cur.execute("SELECT retirada_por FROM remesas_trns WHERE id=%s", (remesa_id,))
+                existing = cur.fetchone()
+                retirada_por_value = existing.get('retirada_por') if existing else None
+
+            if not retirada_por_value or not retirada_por_value.strip():
+                return jsonify(success=False, msg="Cuando una remesa está marcada como retirada, es obligatorio indicar quién la retiró"), 400
 
         if not sets:
             return jsonify(success=False, msg="Sin cambios"), 400
