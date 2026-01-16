@@ -258,7 +258,6 @@ document.addEventListener("DOMContentLoaded", function () {
         <td class="col-nro-remesa" data-field="nro_remesa">${r.nro_remesa ?? ""}</td>
         <td class="col-precinto" data-field="precinto">${r.precinto ?? ""}</td>
         <td class="col-monto" data-field="monto">$${parseFloat(r.monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-        <td class="col-retirada">${r.retirada || ""}</td>
         <td class="col-retirada-por">${retiradaPor}</td>
         <td class="col-acciones">${acciones}</td>
       `;
