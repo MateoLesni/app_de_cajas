@@ -208,7 +208,8 @@ document.addEventListener("DOMContentLoaded", function () {
       // === NUEVO: sólo pintamos acciones si puede actuar
       if (puedeActuar) {
         if (r.tipo === "no_retirada") {
-          // Remesas NO RETIRADAS: lógica según nivel de usuario
+          // Remesas NO RETIRADAS: solo mostrar botón de eliminar (sin lápiz para marcar retirada)
+          // La marcación como retirada se hace desde la sección "Remesas No Retiradas"
           const esMismaCaja = (r.caja === caja);
           const cajaEstaAbierta = !window.cajaCerrada;
 
@@ -217,19 +218,12 @@ document.addEventListener("DOMContentLoaded", function () {
             if (esMismaCaja && cajaEstaAbierta) {
               acciones = `<button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
             }
-            // Si la caja está cerrada o es otra caja: sin botones
           }
-          // NIVEL 2+ (encargado/auditor): Lápiz para marcar retirada + Cesto para eliminar
+          // NIVEL 2+ (encargado/auditor): Solo cesto para eliminar (SIN lápiz)
           else {
-            // Lápiz: marca como retirada="Sí" (encargado/auditor)
-            // Siempre disponible para nivel 2+ mientras el local no esté cerrado
-            acciones = `<button class="btn-editar-retirador" data-id="${r.id}" data-valor="${retiradaPor}" title="Marcar quién y cuándo retiró">✏️</button>`;
-
             // Cesto: eliminar
-            // Para nivel 2+ (encargado): disponible aunque la caja esté cerrada (mientras el local esté abierto)
-            // Para nivel 1 (cajero): solo si la caja está abierta
             if (esMismaCaja && !localCerrado) {
-              acciones += ` <button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
+              acciones = `<button class="btn-borrar-bd" data-id="${r.id}" title="Borrar">🗑️</button>`;
             }
           }
         } else if (r.tipo === "local") {
@@ -285,100 +279,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // === NUEVO: si no puede actuar, ignora cualquier botón
     if (!canActUI() && e.target.closest("button")) {
       alert("No tenés permisos para editar/borrar en esta caja.");
-      return;
-    }
-
-    // NO RETIRADA: editar "retirada_por" y marcar retirada="Sí" (con fecha elegible)
-    if (e.target.classList.contains("btn-editar-retirador")) {
-      const id = e.target.dataset.id;
-      const valorAnterior = e.target.dataset.valor;
-      const celda = tablaPreview.querySelector(`.celda-retirador[data-id="${id}"]`);
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.value = valorAnterior;
-      input.placeholder = "Retirada por...";
-      input.classList.add("input-retirador");
-
-      const dateInput = document.createElement("input");
-      dateInput.type = "date";
-      const hoyISO = new Date().toISOString().slice(0,10);
-      const defaultDate = (document.getElementById("fechaGlobal")?.value || hoyISO);
-      dateInput.value = defaultDate;
-      dateInput.classList.add("input-fecha-retirada");
-      dateInput.title = "Fecha en la que se retiró";
-
-      const cancelar = document.createElement("button");
-      cancelar.innerText = "❌";
-      cancelar.classList.add("btn-cancelar-retirador");
-
-      celda.innerHTML = "";
-      const wrap = document.createElement("div");
-      wrap.style.display = "flex";
-      wrap.style.gap = "6px";
-      wrap.style.alignItems = "center";
-      wrap.appendChild(input);
-      wrap.appendChild(dateInput);
-      wrap.appendChild(cancelar);
-      celda.appendChild(wrap);
-      input.focus();
-
-      cancelandoEdicion = false;
-      cancelar.addEventListener("mousedown", () => cancelandoEdicion = true);
-      cancelar.addEventListener("click", () => {
-        celda.textContent = valorAnterior;
-        cancelandoEdicion = false;
-      });
-
-      const confirmarCambio = () => {
-        if (cancelandoEdicion) return;
-
-        const nuevoValor = (input.value || "").trim();
-        if (!nuevoValor) { celda.textContent = valorAnterior; return; }
-
-        const fechaRet = (dateInput.value || "").trim();
-        if (!fechaRet) { alert("Seleccioná una fecha de retirada"); return; }
-
-        fetch("/actualizar_retirada", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id,
-            retirada: "Sí",  // Marcar como RETIRADA (la saca de NO RETIRADAS)
-            retirada_por: nuevoValor,
-            fecha_retirada: fechaRet
-          })
-        })
-        .then(res => res.json())
-        .then(async data => {
-          if (data.success) {
-            await refrescarEstadoCaja({ reRender: false });
-            if (window.OrqTabs) OrqTabs.reload('remesas');
-            else legacyReload();
-          } else {
-            alert("Error al actualizar.");
-            celda.textContent = valorAnterior;
-          }
-        })
-        .catch(() => {
-          alert("Error de red.");
-          celda.textContent = valorAnterior;
-        });
-      };
-
-      input.addEventListener("keydown", ev => { if (ev.key === "Enter") confirmarCambio(); });
-      dateInput.addEventListener("keydown", ev => { if (ev.key === "Enter") confirmarCambio(); });
-
-      const maybeConfirmOnBlur = () => {
-        setTimeout(() => {
-          const act = document.activeElement;
-          const stillEditing = (act === input || act === dateInput || act === cancelar);
-          if (!stillEditing && !cancelandoEdicion) confirmarCambio();
-          cancelandoEdicion = false;
-        }, 100);
-      };
-      input.addEventListener("blur", maybeConfirmOnBlur);
-      dateInput.addEventListener("blur", maybeConfirmOnBlur);
       return;
     }
 

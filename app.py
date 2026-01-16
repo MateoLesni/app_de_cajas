@@ -992,6 +992,12 @@ def remesas_guardar_lote():
 @login_required
 def remesas_actualizar_retirada():
     """
+    ⚠️ DEPRECADO: Este endpoint ya no se usa desde el frontend.
+    Las remesas se marcan como retiradas desde la sección "Remesas No Retiradas"
+    usando el endpoint /api/remesas-no-retiradas/<id>/marcar-retirada
+
+    Se mantiene temporalmente por compatibilidad.
+
     Body: { "id": 123, "retirada": "Sí"|"No", "retirada_por": "...", "fecha_retirada": "YYYY-MM-DD" (opcional) }
 
     Permisos especiales: Este endpoint permite editar 'retirada_por' y 'fecha_retirada'
