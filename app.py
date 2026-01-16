@@ -861,7 +861,7 @@ def remesas_no_retiradas():
         sql = f"""
           SELECT t.id, t.caja, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno
           FROM remesas_trns t
-          WHERE t.retirada='No'
+          WHERE (t.retirada='No' OR t.retirada=0 OR t.retirada IS NULL OR t.retirada='')
             AND t.caja=%s
             AND t.local=%s
             AND DATE(t.fecha)=%s
@@ -897,7 +897,7 @@ def remesas_hoy():
           SELECT t.id, t.fecha, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.ult_mod, t.turno, t.local, t.caja
           FROM remesas_trns t
           WHERE t.caja=%s AND DATE(t.fecha)=%s AND t.local=%s AND t.turno=%s
-            AND t.retirada='Sí'
+            AND (t.retirada='Sí' OR t.retirada='Si' OR t.retirada=1 OR t.retirada='sí' OR t.retirada='si')
             {g.read_scope}   -- L2: cajas cerradas (match tolerante). L3: locales cerrados.
           ORDER BY t.id ASC
         """
