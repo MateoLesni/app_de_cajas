@@ -9817,17 +9817,15 @@ def marcar_remesa_retirada(remesa_id):
             'estado_contable': 'Local'
         }
 
-        # Actualizar remesa y cambiar estado a TRAN
+        # Actualizar remesa (mantener estado LOCAL hasta que tesorería la procese)
         cur.execute("""
             UPDATE remesas_trns
             SET retirada = 1,
                 retirada_por = %s,
                 fecha_retirada = %s,
-                estado_contable = 'TRAN',
-                fecha_estado_tran = %s,
                 ult_mod = NOW()
             WHERE id = %s
-        """, (retirada_por, fecha_retirada, fecha_retirada, remesa_id))
+        """, (retirada_por, fecha_retirada, remesa_id))
 
         conn.commit()
 
@@ -9835,9 +9833,7 @@ def marcar_remesa_retirada(remesa_id):
         datos_nuevos = {
             'retirada': 1,
             'retirada_por': retirada_por,
-            'fecha_retirada': fecha_retirada,
-            'estado_contable': 'TRAN',
-            'fecha_estado_tran': fecha_retirada
+            'fecha_retirada': fecha_retirada
         }
 
         # Registrar en auditoría
