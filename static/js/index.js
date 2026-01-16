@@ -121,12 +121,10 @@ document.addEventListener("DOMContentLoaded", function () {
   // === NUEVO: muestra/oculta botones de acción del formulario
   function toggleAccionesVisibles(on) {
     const disp = on ? 'inline-block' : 'none';
-    if (btnAnadir)     btnAnadir.style.display     = disp;
-    if (btnActualizar) btnActualizar.style.display = on && editBDId ? 'inline-block' : 'none';
-    if (btnGuardar)    btnGuardar.style.display    = disp;
+    if (btnGuardar) btnGuardar.style.display = disp;
     // si querés bloquear inputs cuando no puede actuar:
     Array.from(remesaForm?.querySelectorAll('input,select,button') || []).forEach(el => {
-      if (el === btnAnadir || el === btnActualizar || el === btnGuardar) return;
+      if (el === btnGuardar) return;
       el.disabled = !on;
     });
   }
