@@ -87,8 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let localAuditado = false;
 
   // Estado en memoria (solo BD, no hay remesas "locales")
-  const remesasNoRetiradas   = {}; // BD (sin fecha)
-  const remesasHoy           = {}; // BD (de la fecha)
+  const todasLasRemesas = {}; // Todas las remesas de la caja/fecha/turno (retiradas y no retiradas)
   let cancelandoEdicion = false;
 
   function getLocalActual() {
@@ -182,11 +181,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!tablaPreview) return;
     tablaPreview.innerHTML = "";
 
-    // Solo mostramos remesas desde BD (no hay sistema "local" en memoria)
-    const todas = [
-      ...(remesasNoRetiradas[caja] || []).map(r => ({ ...r, tipo: "no_retirada" })), // NO retiradas de este turno
-      ...(remesasHoy[caja] || []).map(r => ({ ...r, tipo: "bd" }))                   // YA retiradas de este turno
-    ];
+    // Solo mostramos remesas desde BD (todas las de este turno)
+    const todas = (todasLasRemesas[caja] || []).map(r => ({
+      ...r,
+      // Clasificar según retirada: 0 o vacío = no_retirada, 1 o 'Sí' = retirada
+      tipo: (r.retirada === 1 || r.retirada === '1' || r.retirada === 'Sí' || r.retirada === 'Si') ? "bd" : "no_retirada"
+    }));
 
     const puedeActuar = canActUI();
     console.log('🔍 REMESAS mostrarVistaPrevia - localAuditado:', localAuditado, 'puedeActuar:', puedeActuar, 'canActUI():', canActUI());
@@ -418,83 +418,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Actualizar remesa en BD (botón "Actualizar Remesa")
-  btnActualizar?.addEventListener("click", async () => {
-    if (!editBDId) { alert("No hay una remesa de BD seleccionada para actualizar."); return; }
-    if (!canActUI()) { alert("No tenés permisos para actualizar en esta caja."); return; }
+  // Los botones "Añadir Remesa" y "Actualizar Remesa" fueron eliminados
+  // Ahora solo existe "Guardar Remesa" que guarda directamente en BD
 
-    const payload = {
-      nro_remesa:   document.getElementById("nro_remesa").value.trim(),
-      precinto:     document.getElementById("precinto").value.trim(),
-      monto:        document.getElementById("monto").value.trim(), // backend normaliza
-      retirada:     document.getElementById("retirada").value,
-      retirada_por: document.getElementById("retirada_por").value.trim()
-    };
-
-    fetch(`/remesas/${editBDId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(async r => {
-      if (!r.ok) {
-        const txt = await r.text();
-        if (r.status === 409) alert("Caja/Local cerrados para tu rol: no se puede actualizar.");
-        else alert("Error al actualizar: " + (txt || r.status));
-        return null;
-      }
-      return r.json();
-    })
-    .then(async data => {
-      if (!data) return;
-      if (data.success) {
-        alert("✅ Remesa actualizada");
-        editBDId = null;
-        remesaForm.reset();
-        btnActualizar.style.display = "none";
-        btnAnadir.style.display = canActUI() ? "inline-block" : "none";
-        await refrescarEstadoCaja({ reRender: false });
-        if (window.OrqTabs) OrqTabs.reload('remesas');
-        else legacyReload();
-      } else {
-        alert("❌ " + (data.msg || "No se pudo actualizar"));
-      }
-    })
-    .catch(() => alert("❌ Error de red"));
-  });
-
-  // Añadir remesa (memoria)
-  btnAnadir?.addEventListener("click", async () => {
-    if (!canActUI()) { alert("No tenés permisos para añadir en esta caja."); return; }
-    if (!fechaGlobal.value) {
-      alert("⚠️ Debe seleccionar una fecha antes de añadir una remesa.");
-      return;
-    }
-    await refrescarEstadoCaja({ reRender: false });
-    if (!canActUI()) { alert("No tenés permisos para añadir en esta caja."); return; }
-
-    const caja = cajaSelect.value;
-    const nuevaRemesa = {
-      fecha: fechaGlobal.value,
-      nro_remesa: document.getElementById("nro_remesa").value,
-      precinto: document.getElementById("precinto").value,
-      monto: document.getElementById("monto").value,
-      retirada: document.getElementById("retirada").value,
-      retirada_por: document.getElementById("retirada_por").value,
-      tipo: "local"
-    };
-    (remesasPorCaja[caja] ||= []);
-    if (idxEdicionActual !== null) {
-      remesasPorCaja[caja][idxEdicionActual] = nuevaRemesa;
-      idxEdicionActual = null;
-    } else {
-      remesasPorCaja[caja].push(nuevaRemesa);
-    }
-    remesaForm.reset();
-    mostrarVistaPrevia(caja);
-  });
-
-  // Guardar en BD
+  // Guardar remesa directamente en BD
   btnGuardar?.addEventListener("click", async () => {
     if (!canActUI()) { alert("No tenés permisos para guardar en esta caja."); return; }
     if (!fechaGlobal.value) {
@@ -505,19 +432,40 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!canActUI()) { alert("No tenés permisos para guardar en esta caja."); return; }
 
     const { local, caja, fecha, turno } = getCtx();
-    const nuevas = remesasPorCaja[caja] || [];
-    if (nuevas.length === 0) { respuestaDiv.innerText = "No hay remesas nuevas para guardar."; return; }
+
+    // Leer valores del formulario
+    const nro_remesa = document.getElementById("nro_remesa").value.trim();
+    const precinto = document.getElementById("precinto").value.trim();
+    const monto = document.getElementById("monto").value.trim();
+    const retirada = document.getElementById("retirada").value;
+    const retirada_por = document.getElementById("retirada_por").value.trim();
+
+    if (!nro_remesa || !monto) {
+      alert("⚠️ Número de remesa y monto son obligatorios.");
+      return;
+    }
+
+    // Crear array con una sola remesa
+    const remesa = {
+      fecha: fecha,
+      nro_remesa: nro_remesa,
+      precinto: precinto,
+      monto: monto,
+      retirada: retirada,
+      retirada_por: retirada_por
+    };
 
     fetch("/guardar_remesas_lote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ local, caja, remesas: nuevas, fecha, turno })
+      body: JSON.stringify({ local, caja, remesas: [remesa], fecha, turno })
     })
     .then(res => res.json())
     .then(async data => {
       if (data.success) {
-        respuestaDiv.innerText = data.msg || "Remesas guardadas correctamente.";
-        remesasPorCaja[caja] = [];
+        respuestaDiv.innerText = data.msg || "Remesa guardada correctamente.";
+        // Limpiar formulario
+        remesaForm.reset();
         await refrescarEstadoCaja({ reRender: false });
         if (window.OrqTabs) OrqTabs.reload('remesas');
         else legacyReload();
@@ -532,24 +480,20 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // ===================== Render que llama el Orquestador =====================
-  // opts.datasets = { "/remesas_no_retiradas": [...], "/remesas_hoy": [...], "/estado_caja": {...} }
+  // opts.datasets = { "/remesas_no_retiradas": [...], "/estado_caja": {...} }
   window.renderRemesas = function (_data, opts = {}) {
     const caja = cajaSelect.value;
     syncCajaHidden();
 
     const map = opts.datasets || {};
     const epNR  = Object.keys(map).find(k => k.includes('remesas_no_retiradas'));
-    const epHoy = Object.keys(map).find(k => k.includes('remesas_hoy'));
-    const epEC  = Object.keys(map).find(k => k.includes('estado_caja')); // ← NUEVO
+    const epEC  = Object.keys(map).find(k => k.includes('estado_caja'));
 
-    const arrNoRet = epNR
+    const arrTodas = epNR
       ? (Array.isArray(map[epNR]) ? map[epNR] : (map[epNR]?.items || []))
       : [];
-    const arrHoy   = epHoy
-      ? (Array.isArray(map[epHoy]) ? map[epHoy] : (map[epHoy]?.items || []))
-      : [];
 
-    // === NUEVO: sincronizar estado de caja si vino en el payload del orquestador
+    // Sincronizar estado de caja si vino en el payload del orquestador
     if (epEC && map[epEC] && typeof map[epEC] === 'object') {
       const d = map[epEC];
       window.cajaCerrada = ((d.estado ?? 1) === 0);
@@ -557,27 +501,23 @@ document.addEventListener("DOMContentLoaded", function () {
     toggleAccionesVisibles(canActUI());
 
     // Actualizar estructuras locales y render
-    remesasNoRetiradas[caja] = arrNoRet || [];
-    remesasHoy[caja]         = arrHoy   || [];
+    todasLasRemesas[caja] = arrTodas || [];
     mostrarVistaPrevia(caja);
   };
 
   // ===================== Fallback sin orquestador =====================
   function legacyReload() {
     const { local, caja, fecha, turno } = getCtx();
-    // CAMBIO: Ahora pasamos fecha a remesas_no_retiradas para que solo muestre las de la fecha actual
+    // UNIFICADO: Solo una query que trae todas las remesas de caja/fecha/turno
     const u1 = `/remesas_no_retiradas?caja=${encodeURIComponent(caja)}&local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`;
-    const u2 = `/remesas_hoy?caja=${encodeURIComponent(caja)}${fecha ? `&fecha=${encodeURIComponent(fecha)}` : ''}&local=${encodeURIComponent(local)}&turno=${encodeURIComponent(turno)}`;
     Promise.all([
       fetch(u1).then(r => r.ok ? r.json() : []).catch(()=>[]),
-      fetch(u2).then(r => r.ok ? r.json() : []).catch(()=>[]),
       fetch(`/estado_caja?local=${encodeURIComponent(local)}&caja=${encodeURIComponent(caja)}&fecha=${encodeURIComponent(fecha)}&turno=${encodeURIComponent(turno)}`)
         .then(r => r.ok ? r.json() : {estado:1}).catch(()=>({estado:1}))
-    ]).then(([noRet, hoy, est]) => {
+    ]).then(([todas, est]) => {
       window.cajaCerrada = ((est.estado ?? 1) === 0);
       toggleAccionesVisibles(canActUI());
-      remesasNoRetiradas[caja] = noRet || [];
-      remesasHoy[caja]         = hoy   || [];
+      todasLasRemesas[caja] = todas || [];
       mostrarVistaPrevia(caja);
     });
   }
@@ -585,9 +525,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ===================== Init mínimo =====================
   const cajaInicial = cajaSelect.value;
   syncCajaHidden();
-  remesasPorCaja[cajaInicial]     = remesasPorCaja[cajaInicial] || [];
-  remesasNoRetiradas[cajaInicial] = remesasNoRetiradas[cajaInicial] || [];
-  remesasHoy[cajaInicial]         = remesasHoy[cajaInicial] || [];
+  todasLasRemesas[cajaInicial] = todasLasRemesas[cajaInicial] || [];
 
   if (!window.OrqTabs) {
     (async () => {

@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tarjetas:       { endpoints: ['/tarjetas_cargadas_hoy'], render: renderTarjetas },
       rappiTab:       { endpoints: ['/rappi_cargadas'], render: renderRappi },
       pedidosyaTab:   { endpoints: ['/pedidosya_cargadas'], render: renderPedidosYa },
-      remesas:        { endpoints: ['/remesas_no_retiradas','/remesas_hoy'], render: renderRemesas },
+      remesas:        { endpoints: ['/remesas_no_retiradas'], render: renderRemesas },
       gastos:         { endpoints: ['/gastos_cargadas'], render: renderGastos },
       anticiposTab:   { endpoints: ['/estado_local'], render: renderAnticipos },
       'cierre-caja-container': { endpoints: ['/api/cierre/resumen','/estado_caja'], render: (d,o)=>window.renderResumenCaja && window.renderResumenCaja(d,o) },

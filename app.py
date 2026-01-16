@@ -834,11 +834,14 @@ def tesoreria_old_redirect():
 @app.route('/remesas_no_retiradas')
 @login_required
 def remesas_no_retiradas():
+    """
+    UNIFICADO: Trae TODAS las remesas de la caja/fecha/turno actual
+    (tanto retiradas como no retiradas)
+    """
     caja   = request.args.get("caja")
     local  = get_local_param()
     fecha  = request.args.get("fecha")
     turno  = request.args.get("turno")
-    lvl    = get_user_level()
 
     # Requiere caja, local, fecha Y turno
     if not (caja and local and fecha and turno):
@@ -847,13 +850,11 @@ def remesas_no_retiradas():
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
-        # Solo muestra remesas NO retiradas de la fecha Y turno específicos
-        # Las remesas no se "arrastran" a otros turnos ni fechas
+        # Trae TODAS las remesas de esta caja/fecha/turno
         sql = """
           SELECT t.id, t.caja, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno
           FROM remesas_trns t
-          WHERE (t.retirada='No' OR t.retirada=0 OR t.retirada IS NULL OR t.retirada='')
-            AND t.caja=%s
+          WHERE t.caja=%s
             AND t.local=%s
             AND DATE(t.fecha)=%s
             AND LOWER(t.turno) = LOWER(%s)
@@ -874,28 +875,11 @@ def remesas_no_retiradas():
 @login_required
 @with_read_scope('t')
 def remesas_hoy():
-    caja  = request.args.get("caja")
-    local = get_local_param()
-    fecha = request.args.get("fecha")
-    turno = request.args.get("turno")
-    if not (caja and local and fecha and turno):
-        return jsonify([])
-
-    conn = get_db_connection()
-    cur  = conn.cursor(dictionary=True)
-    try:
-        sql = f"""
-          SELECT t.id, t.fecha, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.ult_mod, t.turno, t.local, t.caja
-          FROM remesas_trns t
-          WHERE t.caja=%s AND DATE(t.fecha)=%s AND t.local=%s AND t.turno=%s
-            AND (t.retirada='Sí' OR t.retirada='Si' OR t.retirada=1 OR t.retirada='sí' OR t.retirada='si')
-            {g.read_scope}   -- L2: cajas cerradas (match tolerante). L3: locales cerrados.
-          ORDER BY t.id ASC
-        """
-        cur.execute(sql, (caja, _normalize_fecha(fecha), local, turno))
-        return jsonify(cur.fetchall())
-    finally:
-        cur.close(); conn.close()
+    """
+    DEPRECADO: Ya no se usa, todo se unificó en /remesas_no_retiradas
+    Se mantiene por compatibilidad
+    """
+    return jsonify([])
 
 
 # ===============================
