@@ -75,9 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const cajaSelect    = document.getElementById("cajaSelect");
   const turnoSelect   = document.getElementById("turnoSelect");
   const cajaHidden    = document.getElementById("cajaActual");
-  const btnGuardar    = document.getElementById("btnGuardarRemesas");
-  const btnAnadir     = document.getElementById("btnAnadirRemesa");
-  const btnActualizar = document.getElementById("btnActualizarRemesa");
+  const btnGuardar    = document.getElementById("btnGuardarRemesa"); // Cambiado: ahora es singular
   const remesaForm    = document.getElementById("remesaForm");
   const tablaPreview  = document.getElementById("tablaPreviewRemesas");
   const respuestaDiv  = document.getElementById("respuestaRemesa");
@@ -88,13 +86,10 @@ document.addEventListener("DOMContentLoaded", function () {
   let localCerrado = false; // (reservado p/uso L2)
   let localAuditado = false;
 
-  // Estado en memoria
-  const remesasPorCaja       = {}; // nuevas en memoria
+  // Estado en memoria (solo BD, no hay remesas "locales")
   const remesasNoRetiradas   = {}; // BD (sin fecha)
   const remesasHoy           = {}; // BD (de la fecha)
-  let idxEdicionActual = null;
   let cancelandoEdicion = false;
-  let editBDId = null;
 
   function getLocalActual() {
     // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
@@ -187,11 +182,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!tablaPreview) return;
     tablaPreview.innerHTML = "";
 
-    const remesasLocales = remesasPorCaja[caja] || [];
+    // Solo mostramos remesas desde BD (no hay sistema "local" en memoria)
     const todas = [
-      ...(remesasNoRetiradas[caja] || []).map(r => ({ ...r, tipo: "no_retirada" })), // siempre visibles
-      ...(remesasHoy[caja] || []).map(r => ({ ...r, tipo: "bd" })),                  // BD del día
-      ...remesasLocales.map((r, idx) => ({ ...r, tipo: "local", idx }))              // en memoria
+      ...(remesasNoRetiradas[caja] || []).map(r => ({ ...r, tipo: "no_retirada" })), // NO retiradas de este turno
+      ...(remesasHoy[caja] || []).map(r => ({ ...r, tipo: "bd" }))                   // YA retiradas de este turno
     ];
 
     const puedeActuar = canActUI();
@@ -230,11 +224,6 @@ document.addEventListener("DOMContentLoaded", function () {
               `;
             }
           }
-        } else if (r.tipo === "local") {
-          acciones = `
-            <button class="btn-editar-local" data-idx="${r.idx}" data-tipo="local" title="Editar">✏️</button>
-            <button class="btn-borrar-local" data-idx="${r.idx}" data-tipo="local" title="Borrar">🗑️</button>
-          `;
         } else if (r.tipo === "bd") {
           // Remesas YA RETIRADAS del día (desde BD)
           const esMismaCaja = (r.caja === caja);
@@ -384,27 +373,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // === NUEVO: si no puede actuar, ignora cualquier botón
     if (!canActUI() && e.target.closest("button")) {
       alert("No tenés permisos para editar/borrar en esta caja.");
-      return;
-    }
-
-    // LOCAL (en memoria) editar/borrar
-    if (e.target.classList.contains("btn-editar-local")) {
-      const idx = parseInt(e.target.dataset.idx);
-      const remesa = (remesasPorCaja[caja] || [])[idx];
-      if (!remesa) return;
-      idxEdicionActual = idx;
-      document.getElementById("nro_remesa").value   = remesa.nro_remesa;
-      document.getElementById("precinto").value     = remesa.precinto;
-      document.getElementById("monto").value        = remesa.monto;
-      document.getElementById("retirada").value     = remesa.retirada;
-      document.getElementById("retirada_por").value = remesa.retirada_por;
-      toggleAccionesVisibles(canActUI());
-      return;
-    }
-    if (e.target.classList.contains("btn-borrar-local")) {
-      const idx = parseInt(e.target.dataset.idx);
-      (remesasPorCaja[caja] ||= []).splice(idx, 1);
-      mostrarVistaPrevia(caja);
       return;
     }
 

@@ -836,39 +836,30 @@ def tesoreria_old_redirect():
 def remesas_no_retiradas():
     caja   = request.args.get("caja")
     local  = get_local_param()
-    fecha  = request.args.get("fecha")  # Ahora es requerida
-    turno  = request.args.get("turno")  # opcional (si lo querés usar)
+    fecha  = request.args.get("fecha")
+    turno  = request.args.get("turno")
     lvl    = get_user_level()
 
-    if not (caja and local and fecha):
+    # Requiere caja, local, fecha Y turno
+    if not (caja and local and fecha and turno):
         return jsonify([])
 
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
-        # CAMBIO: Ahora solo muestra remesas NO retiradas de la FECHA ACTUAL
-        # Las remesas no retiradas se gestionan desde /remesas-no-retiradas (nuevo botón sidebar)
-        # Por lo tanto, NO deben "arrastrarse" a fechas futuras
-
-        extra_sql = ""
-        params = [caja, local, _normalize_fecha(fecha)]
-
-        # (opcional) si querés además filtrar por turno de selección actual:
-        # if turno:
-        #     extra_sql += " AND LOWER(t.turno) = LOWER(%s)"
-        #     params.append(turno)
-
-        sql = f"""
+        # Solo muestra remesas NO retiradas de la fecha Y turno específicos
+        # Las remesas no se "arrastran" a otros turnos ni fechas
+        sql = """
           SELECT t.id, t.caja, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno
           FROM remesas_trns t
           WHERE (t.retirada='No' OR t.retirada=0 OR t.retirada IS NULL OR t.retirada='')
             AND t.caja=%s
             AND t.local=%s
             AND DATE(t.fecha)=%s
-            {extra_sql}
+            AND LOWER(t.turno) = LOWER(%s)
           ORDER BY t.id ASC
         """
-        cur.execute(sql, tuple(params))
+        cur.execute(sql, (caja, local, _normalize_fecha(fecha), turno))
         return jsonify(cur.fetchall())
     except Exception as e:
         print("❌ remesas_no_retiradas:", e)
