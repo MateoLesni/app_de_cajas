@@ -8582,8 +8582,9 @@ def api_mi_perfil_anticipos():
     user_level = get_user_level()
     allowed_locales = get_user_allowed_locales()
 
-    # Auditores (nivel 3+) y admin_anticipos (nivel 6+) ven todos los locales
-    if user_level >= 3:
+    # Solo auditores (nivel 3 y 5) y admin_anticipos (nivel 6+) ven todos los locales
+    # Nivel 4 (anticipos) debe conservar sus locales asignados
+    if user_level >= 3 and user_level != 4:
         allowed_locales = []  # [] = acceso a todos los locales
 
     return jsonify(
