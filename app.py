@@ -5527,12 +5527,11 @@ def api_resumen_local():
         anticipos_items = []
         # Removido el check de usar_snap - siempre consultar de tablas normales
         if True:  # Anticipos solo existen en tablas normales (no hay snap todavía)
-            # Total - Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
+            # Total - Nuevo sistema: usar importe_consumido (ya calculado con USD * cotización)
             anticipos_total = _qsum(
                 cur,
-                """SELECT COALESCE(SUM(ar.importe),0)
-                   FROM anticipos_recibidos ar
-                   JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+                """SELECT COALESCE(SUM(aec.importe_consumido),0)
+                   FROM anticipos_estados_caja aec
                    WHERE aec.local=%s AND DATE(aec.fecha)=%s
                      AND aec.estado = 'consumido'""",
                 (local, f),
@@ -5543,7 +5542,9 @@ def api_resumen_local():
             # Detalle (items individuales) - Nuevo sistema
             try:
                 cur.execute("""
-                    SELECT ar.id, ar.fecha_pago, ar.medio_pago, ar.observaciones, ar.importe, aec.usuario, ar.cliente, aec.caja, aec.fecha
+                    SELECT ar.id, ar.fecha_pago, ar.medio_pago, ar.observaciones, ar.importe,
+                           aec.usuario, ar.cliente, aec.caja, aec.fecha,
+                           ar.divisa, ar.cotizacion_usd, aec.importe_consumido
                     FROM anticipos_recibidos ar
                     JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
                     WHERE aec.local=%s AND DATE(aec.fecha)=%s
@@ -5553,15 +5554,33 @@ def api_resumen_local():
                 rows = cur.fetchall() or []
                 print(f"🔍 DEBUG Anticipos - Rows encontrados: {len(rows)}")
                 for r in rows:
-                    print(f"   - Cliente: {r[6]}, Fecha aec: {r[8]}, Importe: {r[4]}")
+                    divisa = r[9] or 'ARS'
+                    importe_original = float(r[4] or 0)
+                    cotizacion = float(r[10] or 0) if r[10] else None
+                    importe_pesos = float(r[11] or 0)
+
+                    # Preparar comentario con detalle USD si aplica
+                    cliente = r[6] or ''
+                    observaciones = r[3] or ''
+                    comentario_base = f"{cliente} - {observaciones}" if cliente or observaciones else ""
+
+                    if divisa == 'USD' and cotizacion:
+                        comentario = f"{comentario_base} | USD {importe_original:,.2f} x ${cotizacion:,.2f}"
+                    else:
+                        comentario = comentario_base
+
+                    print(f"   - Cliente: {cliente}, Divisa: {divisa}, Importe pesos: {importe_pesos}")
                     anticipos_items.append({
                         "id": r[0],
                         "fecha_anticipo_recibido": str(r[1]) if r[1] else "",
                         "medio_pago": r[2] or "",
-                        "comentario": f"{r[6] or ''} - {r[3] or ''}" if r[6] or r[3] else "",  # Cliente + observaciones
-                        "monto": float(r[4] or 0),
+                        "comentario": comentario,
+                        "monto": importe_pesos,  # Siempre en pesos (ya calculado)
                         "created_by": r[5] or "",  # usuario que consumió
-                        "caja": r[7] or ""  # caja donde se consumió
+                        "caja": r[7] or "",  # caja donde se consumió
+                        "divisa": divisa,
+                        "importe_original": importe_original,
+                        "cotizacion_usd": cotizacion
                     })
             except Exception as e:
                 print(f"⚠️ Error obteniendo detalle de anticipos: {e}")
