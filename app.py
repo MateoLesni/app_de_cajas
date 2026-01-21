@@ -3274,7 +3274,7 @@ def obtener_anticipos_consumidos_en_caja():
                 aec.importe_consumido, aec.observaciones_consumo,
                 ar.cliente, ar.numero_transaccion, ar.medio_pago,
                 ar.fecha_pago, ar.observaciones as observaciones_anticipo,
-                ar.divisa, ar.created_by
+                ar.divisa, ar.importe, ar.cotizacion_usd, ar.created_by
             FROM anticipos_estados_caja aec
             JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
             WHERE aec.local = %s
@@ -4360,27 +4360,7 @@ def cierre_resumen():
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
-        efectivo_base = float(row[0]) if row and row[0] is not None else 0.0
-
-        # COMPENSACIÓN: Restar anticipos en efectivo consumidos en esta caja
-        # (para evitar duplicación al crear la remesa)
-        cur.execute("""
-            SELECT COALESCE(SUM(aec.importe_consumido), 0)
-            FROM anticipos_estados_caja aec
-            JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
-            JOIN medios_anticipos ma ON ma.id = ar.medio_pago_id
-            WHERE aec.fecha = %s
-              AND aec.local = %s
-              AND aec.caja = %s
-              AND aec.turno = %s
-              AND aec.estado = 'consumido'
-              AND ma.es_efectivo = 1
-        """, (fecha, local, caja, turno))
-        row_compensacion = cur.fetchone()
-        compensacion_efectivo = float(row_compensacion[0]) if row_compensacion and row_compensacion[0] is not None else 0.0
-
-        # Efectivo final = efectivo_base - compensación
-        resumen['efectivo'] = efectivo_base - compensacion_efectivo
+        resumen['efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
 
         # tarjeta (ventas con tarjeta NO TIPS)
         cur.execute(f"""
@@ -5454,29 +5434,11 @@ def api_resumen_local():
         discovery = max((venta_total or 0.0) - (total_facturas or 0.0), 0.0)
 
         # ===== EFECTIVO (Remesas) =====
-        efectivo_remesas = _qsum(
+        efectivo_neto = _qsum(
             cur,
             f"SELECT COALESCE(SUM(monto),0) FROM {T_REMESAS} WHERE DATE(fecha)=%s AND local=%s",
             (f, local),
         )
-
-        # COMPENSACIÓN: Restar anticipos en efectivo consumidos en este local/fecha
-        compensacion_efectivo_local = _qsum(
-            cur,
-            """
-            SELECT COALESCE(SUM(aec.importe_consumido), 0)
-            FROM anticipos_estados_caja aec
-            JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
-            JOIN medios_anticipos ma ON ma.id = ar.medio_pago_id
-            WHERE aec.fecha = %s
-              AND aec.local = %s
-              AND aec.estado = 'consumido'
-              AND ma.es_efectivo = 1
-            """,
-            (f, local)
-        ) or 0.0
-
-        efectivo_neto = efectivo_remesas - compensacion_efectivo_local
 
         # ===== TARJETAS (ventas por marca) =====
         marcas = [
@@ -5719,7 +5681,7 @@ def api_resumen_local():
                 "total": info_total,
                 "efectivo": {
                     "total": float(efectivo_neto or 0.0),
-                    "remesas": float(efectivo_remesas or 0.0),
+                    "remesas": float(efectivo_neto or 0.0),
                     "neto_efectivo": float(efectivo_neto or 0.0)
                 },
                 "tarjeta": {
