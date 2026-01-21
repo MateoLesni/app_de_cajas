@@ -200,6 +200,26 @@
     $('#filtroCliente')?.addEventListener('input', debounceFilter);
     $('#filtroUsuario')?.addEventListener('input', debounceFilter);
 
+    // Mostrar/ocultar campos USD y calcular equivalencia
+    $('#divisa')?.addEventListener('change', function(e) {
+      const camposUSD = $('#camposUSD');
+      const cotizacionInput = $('#cotizacionUSD');
+
+      if (e.target.value === 'USD') {
+        camposUSD.style.display = 'block';
+        cotizacionInput.required = true;
+        calcularEquivalencia();
+      } else {
+        camposUSD.style.display = 'none';
+        cotizacionInput.required = false;
+        $('#equivalenciaPesos').style.display = 'none';
+      }
+    });
+
+    // Calcular equivalencia cuando cambian importe o cotización
+    $('#importe')?.addEventListener('input', calcularEquivalencia);
+    $('#cotizacionUSD')?.addEventListener('input', calcularEquivalencia);
+
     // Preview de imagen al seleccionar archivo
     $('#adjunto')?.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -221,6 +241,20 @@
         preview.style.display = 'none';
       }
     });
+  }
+
+  function calcularEquivalencia() {
+    const divisa = $('#divisa')?.value;
+    const importe = parseFloat($('#importe')?.value || 0);
+    const cotizacion = parseFloat($('#cotizacionUSD')?.value || 0);
+
+    if (divisa === 'USD' && importe > 0 && cotizacion > 0) {
+      const equivalente = importe * cotizacion;
+      $('#montoCalculado').textContent = money(equivalente);
+      $('#equivalenciaPesos').style.display = 'block';
+    } else {
+      $('#equivalenciaPesos').style.display = 'none';
+    }
   }
 
   // ===== CARGAR ANTICIPOS =====
@@ -305,8 +339,14 @@
             <td>${a.cliente}</td>
             <td>${a.local}</td>
             <td style="text-align:right; font-weight:600;">
-              <span style="font-size:11px; color:#6b7280; display:block;">${a.divisa || 'ARS'}</span>
-              ${money(a.importe)}
+              ${a.divisa === 'USD' && a.cotizacion_usd ? `
+                <div style="font-size:13px; color:#059669;">USD ${fmt.format(a.importe)}</div>
+                <div style="font-size:11px; color:#6b7280;">Tomado: $${fmt.format(a.cotizacion_usd)}</div>
+                <div style="font-size:12px; color:#374151;">${money(a.importe * a.cotizacion_usd)}</div>
+              ` : `
+                <span style="font-size:11px; color:#6b7280; display:block;">${a.divisa || 'ARS'}</span>
+                ${money(a.importe)}
+              `}
             </td>
             <td>${a.medio_pago || '-'}</td>
             <td>${a.created_by || '-'}</td>
@@ -332,7 +372,14 @@
     const consumidos = anticipos.filter(a => a.estado === 'consumido');
     const eliminados = anticipos.filter(a => a.estado === 'eliminado_global');
 
-    const montoPendiente = pendientes.reduce((sum, a) => sum + parseFloat(a.importe || 0), 0);
+    // Calcular monto pendiente: USD debe usar cotización, otros usan importe directo
+    const montoPendiente = pendientes.reduce((sum, a) => {
+      const importe = parseFloat(a.importe || 0);
+      if (a.divisa === 'USD' && a.cotizacion_usd) {
+        return sum + (importe * parseFloat(a.cotizacion_usd));
+      }
+      return sum + importe;
+    }, 0);
 
     $('#statPendientes').textContent = pendientes.length;
     $('#statConsumidos').textContent = consumidos.length;
@@ -548,6 +595,16 @@
       numero_transaccion: $('#numeroTransaccion').value.trim() || null,
       observaciones: $('#observaciones').value.trim() || null
     };
+
+    // Agregar cotización USD si es dólar
+    if ($('#divisa').value === 'USD') {
+      const cotizacion = parseFloat($('#cotizacionUSD').value);
+      if (!cotizacion || cotizacion <= 0) {
+        alert('⚠️  Debés ingresar la cotización del dólar');
+        return;
+      }
+      data.cotizacion_usd = cotizacion;
+    }
 
     // Agregar adjunto si existe
     if (adjuntoPath) {

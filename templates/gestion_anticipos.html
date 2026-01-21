@@ -392,6 +392,22 @@
           </select>
         </div>
 
+        <!-- Campos adicionales para USD -->
+        <div id="camposUSD" style="display:none;">
+          <div class="form-group">
+            <label for="cotizacionUSD">Cotización (tomado a) *</label>
+            <input type="number" id="cotizacionUSD" step="0.01" min="0" placeholder="1500.00">
+            <small style="display:block; margin-top:4px; color:#6b7280; font-size:12px;">
+              Ingresá a cuánto tomás el dólar en pesos
+            </small>
+          </div>
+
+          <div id="equivalenciaPesos" style="padding: 12px; background-color: #f3f4f6; border-radius: 8px; margin-top: 8px; display:none;">
+            <strong>Equivalencia en pesos:</strong>
+            <div id="montoCalculado" style="font-size: 18px; color: #059669; font-weight: bold; margin-top: 4px;"></div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="adjunto">Comprobante (imagen/PDF) *</label>
           <input type="file" id="adjunto" accept="image/*,application/pdf" required>

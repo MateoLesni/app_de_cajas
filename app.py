@@ -2535,17 +2535,22 @@ def crear_anticipo_recibido():
             result = cur.fetchone()
             medio_pago_id = result[0] if result else None
 
-        # Insertar anticipo recibido con divisa y medio_pago_id
+        # Obtener cotización USD si está presente
+        cotizacion_usd = data.get('cotizacion_usd')
+        if cotizacion_usd is not None:
+            cotizacion_usd = float(cotizacion_usd)
+
+        # Insertar anticipo recibido con divisa, medio_pago_id y cotización USD
         sql = """
             INSERT INTO anticipos_recibidos
             (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
              cliente, numero_transaccion, medio_pago, observaciones,
-             local, medio_pago_id, estado, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
+             local, medio_pago_id, cotizacion_usd, estado, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
         """
         cur.execute(sql, (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
                          cliente, numero_transaccion, medio_pago, observaciones,
-                         local, medio_pago_id, usuario))
+                         local, medio_pago_id, cotizacion_usd, usuario))
 
         anticipo_id = cur.lastrowid
 
@@ -2630,7 +2635,7 @@ def listar_anticipos_recibidos():
         sql = """
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
-                ar.tipo_cambio_fecha, ar.cliente,
+                ar.tipo_cambio_fecha, ar.cotizacion_usd, ar.cliente,
                 ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
@@ -3053,6 +3058,11 @@ def consumir_anticipo():
         tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(tz_arg)
 
+        # Calcular importe a consumir: si es USD con cotización, usar equivalente en pesos
+        importe_consumido = float(anticipo['importe'])
+        if anticipo.get('divisa') == 'USD' and anticipo.get('cotizacion_usd'):
+            importe_consumido = importe_consumido * float(anticipo['cotizacion_usd'])
+
         # Registrar consumo en estados_caja
         cur.execute("""
             INSERT INTO anticipos_estados_caja
@@ -3060,7 +3070,7 @@ def consumir_anticipo():
              timestamp_accion, importe_consumido, observaciones_consumo)
             VALUES (%s, %s, %s, %s, %s, 'consumido', %s, %s, %s, %s)
         """, (anticipo_id, local, caja, fecha, turno, usuario, ahora,
-              anticipo['importe'], observaciones_consumo))
+              importe_consumido, observaciones_consumo))
 
         # Actualizar estado global del anticipo a 'consumido'
         cur.execute("""
@@ -3073,6 +3083,12 @@ def consumir_anticipo():
 
         conn.commit()
 
+        # Preparar mensaje descriptivo
+        if anticipo.get('divisa') == 'USD' and anticipo.get('cotizacion_usd'):
+            msg_monto = f"USD {anticipo['importe']} (${importe_consumido:,.2f})"
+        else:
+            msg_monto = f"${importe_consumido:,.2f}"
+
         # Registrar en auditoría
         from modules.tabla_auditoria import registrar_auditoria
         registrar_auditoria(
@@ -3082,14 +3098,14 @@ def consumir_anticipo():
             registro_id=anticipo_id,
             datos_anteriores={'estado': 'pendiente'},
             datos_nuevos={'estado': 'consumido', 'caja': caja, 'turno': turno},
-            descripcion=f"Anticipo consumido en caja {caja}: {anticipo['cliente']} - ${anticipo['importe']}",
+            descripcion=f"Anticipo consumido en caja {caja}: {anticipo['cliente']} - {msg_monto}",
             contexto_override={'local': local, 'caja': caja, 'fecha': fecha, 'turno': turno}
         )
 
         cur.close()
         conn.close()
 
-        return jsonify(success=True, msg=f"Anticipo consumido correctamente (${anticipo['importe']})")
+        return jsonify(success=True, msg=f"Anticipo consumido correctamente ({msg_monto})")
 
     except Exception as e:
         import traceback
@@ -9317,7 +9333,7 @@ def listar_anticipos_auditor():
         sql = """
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
-                ar.tipo_cambio_fecha, ar.cliente,
+                ar.tipo_cambio_fecha, ar.cotizacion_usd, ar.cliente,
                 ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
