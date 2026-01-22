@@ -1,0 +1,432 @@
+// ==== Cuentas Corrientes: renderer integrado a OrqTabs con permisos L1/L2/L3 ====
+// Requiere que la vista principal haya seteado window.ROLE_LEVEL (int).
+// En la inicialización del Orquestador, registrá el tab con:
+// tabs: { ctasCtesTab: { endpoints: ['/ctas_ctes_cargadas'], render: window.renderCtasCtes } }
+
+document.addEventListener("DOMContentLoaded", function () {
+  // ----------- refs y key del tab -----------
+  const tabKey = "ctasCtesTab";
+  const pane = document.getElementById(tabKey);
+
+  const tablaPreview = document.getElementById("tablaPreviewCtasCtes");
+  const tablaBD = document.getElementById("tablaCtasCtesBD");
+  const form = document.getElementById("ctasCtesForm");
+  const clienteSelect = document.getElementById("clienteCtaCte");
+  const comentarioContainer = document.getElementById("comentarioCtaCteContainer");
+  const comentarioInput = document.getElementById("comentarioCtaCte");
+  const montoInput = document.getElementById("montoCtaCte");
+  const facturadaCheck = document.getElementById("facturadaCtaCte");
+
+  const cajaSelect = document.getElementById("cajaSelect");
+  const fechaGlobal = document.getElementById("fechaGlobal");
+  const turnoSelect = document.getElementById("turnoSelect");
+  const respuestaDiv = document.getElementById("respuestaCtasCtes");
+
+  // ----------- permisos y estado -----------
+  const ROLE = parseInt(window.ROLE_LEVEL || 1, 10);
+  window.cajaCerrada = window.cajaCerrada ?? false;
+  let localCerrado = false;
+  let localAuditado = false;
+
+  let ctasCtesBD = [];       // vienen del backend a través de OrqTabs
+  let ctasCtesLocal = [];    // buffer local antes de guardar
+  let idxEdicionActual = -1;
+  let clientesCtaCte = [];   // lista de clientes con cuenta corriente
+
+  // ----------- cargar clientes -----------
+  async function cargarClientes() {
+    try {
+      const res = await fetch('/api/clientes_cta_cte');
+      const data = await res.json();
+      if (data.success && data.clientes) {
+        clientesCtaCte = data.clientes;
+        // Poblar el select
+        if (clienteSelect) {
+          clienteSelect.innerHTML = '<option value="">-- Seleccionar cliente --</option>';
+          clientesCtaCte.forEach(cli => {
+            const opt = document.createElement('option');
+            opt.value = cli.id;
+            opt.textContent = cli.nombre_cliente;
+            opt.dataset.codigo = cli.codigo_oppen;
+            clienteSelect.appendChild(opt);
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Error cargando clientes:', e);
+    }
+  }
+
+  // Cargar clientes al inicio
+  cargarClientes();
+
+  // Mostrar/ocultar comentario según cliente seleccionado
+  if (clienteSelect) {
+    clienteSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      const codigo = selectedOption?.dataset?.codigo || '';
+
+      if (codigo === 'CNGCC') {
+        // Es "Otro cliente" - mostrar campo comentario
+        comentarioContainer.style.display = 'block';
+        comentarioInput.required = true;
+      } else {
+        comentarioContainer.style.display = 'none';
+        comentarioInput.required = false;
+        comentarioInput.value = '';
+      }
+    });
+  }
+
+  // ----------- estilos (centrado + overlay) -----------
+  (function ensureStyle() {
+    if (document.getElementById("ctas-ctes-style")) return;
+    const st = document.createElement("style");
+    st.id = "ctas-ctes-style";
+    st.textContent = `
+      #${tabKey} table th, #${tabKey} table td { text-align: center; vertical-align: middle; }
+      #${tabKey} { position: relative; }
+      #${tabKey} .mod-overlay {
+        position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+        background: rgba(255,255,255,.6); backdrop-filter: blur(1px); z-index: 5; pointer-events: auto;
+      }
+      #${tabKey} .mod-spinner {
+        padding:10px 14px; border-radius:8px; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.12); font-weight:600;
+      }
+      #${tabKey} .btn-edit-local,
+      #${tabKey} .btn-del-local,
+      #${tabKey} .btn-aceptar-bd,
+      #${tabKey} .btn-cancelar-bd,
+      #${tabKey} .btn-editar-bd,
+      #${tabKey} .btn-borrar-bd { cursor:pointer; }
+    `;
+    document.head.appendChild(st);
+  })();
+
+  function setLoading(on) {
+    if (!pane) return;
+    let ov = pane.querySelector(":scope > .mod-overlay");
+    if (on) {
+      if (!ov) {
+        ov = document.createElement("div");
+        ov.className = "mod-overlay";
+        ov.innerHTML = '<div class="mod-spinner">Cargando…</div>';
+        pane.appendChild(ov);
+      }
+      ov.style.display = "flex";
+      ov.style.pointerEvents = "auto";
+    } else if (ov) {
+      ov.style.display = "none";
+      ov.style.pointerEvents = "none";
+    }
+  }
+
+  // ----------- helpers -----------
+  function canActUI() {
+    if (localAuditado) return false;
+    if (ROLE === 1) return !window.cajaCerrada;
+    if (ROLE === 2) return !localCerrado;
+    if (ROLE === 3) return true;
+    return false;
+  }
+
+  function money(val) {
+    const n = parseFloat(val) || 0;
+    return "$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function getClienteNombre(clienteId) {
+    const cli = clientesCtaCte.find(c => c.id == clienteId);
+    return cli ? cli.nombre_cliente : '';
+  }
+
+  // ----------- render tablas -----------
+  function renderPreview() {
+    if (!tablaPreview) return;
+    const tbody = tablaPreview.querySelector("tbody");
+    if (!tbody) return;
+
+    if (ctasCtesLocal.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">No hay cuentas corrientes en el buffer local</td></tr>';
+      return;
+    }
+
+    let html = "";
+    ctasCtesLocal.forEach((cc, idx) => {
+      const editable = canActUI();
+      const nombreCliente = getClienteNombre(cc.cliente_id);
+      const facturadaText = cc.facturada ? 'Sí' : 'No';
+
+      html += `<tr>
+        <td>${nombreCliente}</td>
+        <td>${cc.comentario || '-'}</td>
+        <td>${money(cc.monto)}</td>
+        <td>${facturadaText}</td>
+        <td>
+          ${editable ? `
+            <button type="button" class="btn-edit-local" data-idx="${idx}">✏️</button>
+            <button type="button" class="btn-del-local" data-idx="${idx}">🗑️</button>
+          ` : ''}
+        </td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function renderBD() {
+    if (!tablaBD) return;
+    const tbody = tablaBD.querySelector("tbody");
+    if (!tbody) return;
+
+    if (ctasCtesBD.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">No hay cuentas corrientes guardadas en BD</td></tr>';
+      return;
+    }
+
+    let html = "";
+    ctasCtesBD.forEach(cc => {
+      const editable = canActUI();
+      const facturadaText = cc.facturada ? 'Sí' : 'No';
+
+      html += `<tr data-id="${cc.id}">
+        <td>${cc.nombre_cliente}</td>
+        <td>${cc.comentario || '-'}</td>
+        <td>${money(cc.monto)}</td>
+        <td>${facturadaText}</td>
+        <td>${cc.usuario || '-'}</td>
+        <td>
+          ${editable ? `
+            <button type="button" class="btn-editar-bd" data-id="${cc.id}">✏️</button>
+            <button type="button" class="btn-borrar-bd" data-id="${cc.id}">🗑️</button>
+          ` : ''}
+        </td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ----------- eventos formulario -----------
+  if (form) {
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      if (!canActUI()) {
+        alert("⚠️ No podés modificar (caja/local cerrados o auditados).");
+        return;
+      }
+
+      const clienteId = parseInt(clienteSelect.value);
+      const monto = parseFloat(montoInput.value);
+      const comentario = comentarioInput.value.trim();
+      const facturada = facturadaCheck.checked;
+
+      if (!clienteId || !monto) {
+        alert("Completá todos los campos obligatorios");
+        return;
+      }
+
+      // Validar: si es CNGCC, comentario obligatorio
+      const selectedOption = clienteSelect.options[clienteSelect.selectedIndex];
+      const codigo = selectedOption?.dataset?.codigo || '';
+      if (codigo === 'CNGCC' && !comentario) {
+        alert("Debe ingresar un comentario para 'Otro cliente'");
+        return;
+      }
+
+      const item = { cliente_id: clienteId, monto, comentario, facturada };
+
+      if (idxEdicionActual >= 0) {
+        ctasCtesLocal[idxEdicionActual] = item;
+        idxEdicionActual = -1;
+      } else {
+        ctasCtesLocal.push(item);
+      }
+
+      form.reset();
+      comentarioContainer.style.display = 'none';
+      renderPreview();
+    });
+  }
+
+  // ----------- eventos botones preview -----------
+  if (tablaPreview) {
+    tablaPreview.addEventListener("click", function(e) {
+      const btnEdit = e.target.closest(".btn-edit-local");
+      const btnDel = e.target.closest(".btn-del-local");
+
+      if (btnEdit) {
+        const idx = parseInt(btnEdit.dataset.idx);
+        const cc = ctasCtesLocal[idx];
+        if (!cc) return;
+
+        clienteSelect.value = cc.cliente_id;
+        clienteSelect.dispatchEvent(new Event('change')); // Trigger para mostrar/ocultar comentario
+        montoInput.value = cc.monto;
+        comentarioInput.value = cc.comentario || '';
+        facturadaCheck.checked = cc.facturada;
+        idxEdicionActual = idx;
+      }
+
+      if (btnDel) {
+        const idx = parseInt(btnDel.dataset.idx);
+        if (confirm("¿Eliminar esta cuenta corriente del buffer?")) {
+          ctasCtesLocal.splice(idx, 1);
+          renderPreview();
+        }
+      }
+    });
+  }
+
+  // ----------- eventos botones BD -----------
+  if (tablaBD) {
+    tablaBD.addEventListener("click", async function(e) {
+      const btnEdit = e.target.closest(".btn-editar-bd");
+      const btnDel = e.target.closest(".btn-borrar-bd");
+
+      if (btnEdit) {
+        const id = parseInt(btnEdit.dataset.id);
+        const cc = ctasCtesBD.find(c => c.id === id);
+        if (!cc) return;
+
+        const nuevoMonto = prompt("Nuevo monto:", cc.monto);
+        if (!nuevoMonto) return;
+
+        const nuevoComentario = prompt("Nuevo comentario:", cc.comentario || '');
+        const facturada = confirm("¿Está facturada?");
+
+        try {
+          setLoading(true);
+          const res = await fetch(`/ctas_ctes/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              monto: parseFloat(nuevoMonto),
+              comentario: nuevoComentario,
+              facturada: facturada
+            })
+          });
+          const data = await res.json();
+          setLoading(false);
+
+          if (data.success) {
+            alert("✅ Cuenta corriente actualizada");
+            if (window.OrqTabs) window.OrqTabs.reloadActive();
+          } else {
+            alert("❌ " + (data.msg || "Error al actualizar"));
+          }
+        } catch (err) {
+          setLoading(false);
+          alert("❌ Error de red");
+          console.error(err);
+        }
+      }
+
+      if (btnDel) {
+        const id = parseInt(btnDel.dataset.id);
+        if (!confirm("¿Eliminar esta cuenta corriente de la BD?")) return;
+
+        try {
+          setLoading(true);
+          const res = await fetch(`/ctas_ctes/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          setLoading(false);
+
+          if (data.success) {
+            alert("✅ Cuenta corriente eliminada");
+            if (window.OrqTabs) window.OrqTabs.reloadActive();
+          } else {
+            alert("❌ " + (data.msg || "Error al eliminar"));
+          }
+        } catch (err) {
+          setLoading(false);
+          alert("❌ Error de red");
+          console.error(err);
+        }
+      }
+    });
+  }
+
+  // ----------- guardar en BD -----------
+  const btnGuardar = document.getElementById("guardarCtasCtesBD");
+  if (btnGuardar) {
+    btnGuardar.addEventListener("click", async function() {
+      if (!canActUI()) {
+        alert("⚠️ No podés guardar (caja/local cerrados o auditados).");
+        return;
+      }
+
+      if (ctasCtesLocal.length === 0) {
+        alert("No hay cuentas corrientes para guardar");
+        return;
+      }
+
+      const local = cajaSelect.dataset.local || '';
+      const caja = cajaSelect.value;
+      const fecha = fechaGlobal.value;
+      const turno = turnoSelect.value;
+
+      if (!local || !caja || !fecha || !turno) {
+        alert("Falta información de caja/fecha/turno");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await fetch('/guardar_ctas_ctes_lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            local, caja, fecha, turno,
+            items: ctasCtesLocal
+          })
+        });
+        const data = await res.json();
+        setLoading(false);
+
+        if (data.success) {
+          alert("✅ Cuentas corrientes guardadas");
+          ctasCtesLocal = [];
+          renderPreview();
+          if (window.OrqTabs) window.OrqTabs.reloadActive();
+        } else {
+          alert("❌ " + (data.msg || "Error al guardar"));
+        }
+      } catch (err) {
+        setLoading(false);
+        alert("❌ Error de red");
+        console.error(err);
+      }
+    });
+  }
+
+  // ----------- renderer para OrqTabs -----------
+  window.renderCtasCtes = function(opts) {
+    if (!opts || !opts.datasets) return;
+
+    const datos = opts.datasets['/ctas_ctes_cargadas'] || {};
+    ctasCtesBD = datos.datos || [];
+
+    const estadoCaja = datos.estado_caja ?? 1;
+    const estadoLocal = datos.estado_local ?? 1;
+    window.cajaCerrada = (estadoCaja === 0);
+    localCerrado = (estadoLocal === 0);
+
+    // Verificar si está auditado
+    const local = cajaSelect?.dataset?.local || '';
+    const fecha = fechaGlobal?.value || '';
+    if (local && fecha) {
+      fetch(`/local_auditado?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+        .then(r => r.json())
+        .then(d => {
+          localAuditado = (d.auditado === true);
+        })
+        .catch(() => {});
+    }
+
+    renderBD();
+    renderPreview();
+  };
+
+  // ----------- init -----------
+  renderPreview();
+  renderBD();
+});

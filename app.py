@@ -4381,14 +4381,24 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['mercadopago'] = float(row[0]) if row and row[0] is not None else 0.0
 
-        # cuenta corriente (facturas CC - suma como medio de cobro)
+        # cuenta corriente (suma: facturas CC antiguas + nuevo sistema de ctas_ctes)
         cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
               FROM {T_FACTURAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
-        resumen['cuenta_cte'] = float(row[0]) if row and row[0] is not None else 0.0
+        cc_viejas = float(row[0]) if row and row[0] is not None else 0.0
+
+        cur.execute("""
+            SELECT COALESCE(SUM(monto),0)
+              FROM cuentas_corrientes_trns
+             WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND estado='ok'
+        """, (fecha, local, caja, turno))
+        row = cur.fetchone()
+        cc_nuevas = float(row[0]) if row and row[0] is not None else 0.0
+
+        resumen['cuenta_cte'] = cc_viejas + cc_nuevas
 
         # rappi
         cur.execute(f"""
@@ -4936,6 +4946,313 @@ def borrar_gasto(gasto_id):
         return jsonify(success=False, msg=str(e)), 500
 
 
+# ========================================================================
+# CUENTAS CORRIENTES
+# ========================================================================
+
+@app.route('/api/clientes_cta_cte')
+@login_required
+def get_clientes_cta_cte():
+    """Obtiene la lista de clientes con cuenta corriente"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        cur.execute("""
+            SELECT id, nombre_cliente, codigo_oppen
+            FROM clientes_cta_cte
+            WHERE activo = 1
+            ORDER BY
+                CASE WHEN codigo_oppen = 'CNGCC' THEN 0 ELSE 1 END,
+                nombre_cliente
+        """)
+        clientes = cur.fetchall()
+
+        cur.close()
+        conn.close()
+        return jsonify(success=True, clientes=clientes)
+
+    except Exception as e:
+        print("❌ ERROR get_clientes_cta_cte:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/ctas_ctes_cargadas')
+@login_required
+def ctas_ctes_cargadas():
+    """Obtiene las cuentas corrientes cargadas para una caja/fecha/turno"""
+    local = get_local_param()
+    caja = request.args.get('caja')
+    fecha = request.args.get('fecha')
+    turno = request.args.get('turno')
+
+    if not (local and caja and fecha and turno):
+        return jsonify(success=True, datos=[], estado_caja=1, estado_local=1)
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Estados para la UI
+        try:
+            estado_caja = 1 if is_caja_abierta(conn, local, caja, _normalize_fecha(fecha), turno) else 0
+        except Exception:
+            estado_caja = 1
+
+        try:
+            estado_local = 0 if is_local_closed(conn, local, _normalize_fecha(fecha)) else 1
+        except Exception:
+            estado_local = 1
+
+        cur.execute("""
+            SELECT
+                cc.id,
+                cc.fecha,
+                cc.local,
+                cc.caja,
+                cc.turno,
+                cc.cliente_id,
+                cli.nombre_cliente,
+                cli.codigo_oppen,
+                cc.monto,
+                cc.comentario,
+                cc.facturada,
+                cc.usuario,
+                cc.created_at
+            FROM cuentas_corrientes_trns cc
+            INNER JOIN clientes_cta_cte cli ON cli.id = cc.cliente_id
+            WHERE cc.local=%s AND cc.caja=%s AND DATE(cc.fecha)=%s AND cc.turno=%s
+              AND cc.estado = 'ok'
+            ORDER BY cc.id ASC
+        """, (local, caja, _normalize_fecha(fecha), turno))
+        rows = cur.fetchall()
+
+        cur.close()
+        conn.close()
+        return jsonify(success=True, datos=rows, estado_caja=estado_caja, estado_local=estado_local)
+
+    except Exception as e:
+        print("❌ ERROR ctas_ctes_cargadas:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/guardar_ctas_ctes_lote', methods=['POST'])
+@login_required
+def guardar_ctas_ctes_lote():
+    """Guarda un lote de cuentas corrientes"""
+    payload = request.get_json() or {}
+    caja = payload.get('caja')
+    local = payload.get('local')
+    fecha = payload.get('fecha')
+    turno = payload.get('turno')
+    items = payload.get('items', [])
+    usuario = session.get('username', 'unknown')
+
+    if not (caja and local and fecha and turno):
+        return jsonify(success=False, msg="Faltan parámetros obligatorios"), 400
+
+    if not items:
+        return jsonify(success=True)  # Nada que guardar
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        user_level = get_user_level()
+
+        # Verificar si está auditado
+        if is_local_auditado(conn, local, fecha):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones."), 403
+
+        # Verificar permisos
+        if not can_edit(conn, local, caja, turno, _normalize_fecha(fecha), user_level):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="No tenés permisos para guardar (caja/local cerrados para tu rol)."), 409
+
+        # Insertar cada cuenta corriente
+        for item in items:
+            cliente_id = item.get('cliente_id')
+            monto = item.get('monto')
+            comentario = item.get('comentario', '')
+            facturada = 1 if item.get('facturada') else 0
+
+            if not cliente_id or not monto:
+                continue
+
+            # Validar: si es CNGCC (Otro cliente), comentario es obligatorio
+            cur.execute("SELECT codigo_oppen FROM clientes_cta_cte WHERE id=%s", (cliente_id,))
+            cliente_row = cur.fetchone()
+            if cliente_row and cliente_row[0] == 'CNGCC' and not comentario:
+                cur.close()
+                conn.close()
+                return jsonify(success=False, msg="Debe ingresar un comentario para 'Otro cliente'"), 400
+
+            cur.execute("""
+                INSERT INTO cuentas_corrientes_trns
+                    (fecha, local, caja, turno, cliente_id, monto, comentario, facturada, usuario, created_at, estado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'ok')
+            """, (_normalize_fecha(fecha), local, caja, turno, cliente_id, monto, comentario, facturada, usuario))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify(success=True)
+
+    except Exception as e:
+        print("❌ ERROR guardar_ctas_ctes_lote:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/ctas_ctes/<int:cc_id>', methods=['PUT'])
+@login_required
+def editar_cta_cte(cc_id):
+    """Edita una cuenta corriente existente"""
+    payload = request.get_json() or {}
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'cuentas_corrientes_trns', cc_id)
+
+        # Obtener datos del registro
+        cur.execute("""
+            SELECT id, local, caja, fecha, turno, cliente_id
+            FROM cuentas_corrientes_trns
+            WHERE id=%s
+        """, (cc_id,))
+        row = cur.fetchone()
+
+        if not row:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Registro no encontrado"), 404
+
+        user_level = get_user_level()
+
+        # Verificar si está auditado
+        if is_local_auditado(conn, row['local'], row['fecha']):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones."), 403
+
+        # Verificar permisos
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], user_level):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="No tenés permisos para editar (caja/local cerrados para tu rol)."), 409
+
+        # Validar: si es CNGCC, comentario es obligatorio
+        comentario = payload.get('comentario', '')
+        cur.execute("SELECT codigo_oppen FROM clientes_cta_cte WHERE id=%s", (row['cliente_id'],))
+        cliente_row = cur.fetchone()
+        if cliente_row and cliente_row['codigo_oppen'] == 'CNGCC' and not comentario:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Debe ingresar un comentario para 'Otro cliente'"), 400
+
+        # Actualizar registro
+        monto = payload.get('monto')
+        facturada = 1 if payload.get('facturada') else 0
+
+        cur.execute("""
+            UPDATE cuentas_corrientes_trns
+            SET monto=%s, comentario=%s, facturada=%s
+            WHERE id=%s
+        """, (monto, comentario, facturada, cc_id))
+
+        conn.commit()
+
+        # Registrar en auditoría
+        datos_nuevos = obtener_registro_anterior(conn, 'cuentas_corrientes_trns', cc_id)
+        registrar_auditoria(
+            conn=conn,
+            accion='UPDATE',
+            tabla='cuentas_corrientes_trns',
+            registro_id=cc_id,
+            usuario=session.get('username', 'unknown'),
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=datos_nuevos
+        )
+
+        cur.close()
+        conn.close()
+        return jsonify(success=True)
+
+    except Exception as e:
+        print("❌ ERROR editar_cta_cte:", e)
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/ctas_ctes/<int:cc_id>', methods=['DELETE'])
+@login_required
+def borrar_cta_cte(cc_id):
+    """Elimina una cuenta corriente"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener registro anterior para auditoría
+        datos_anteriores = obtener_registro_anterior(conn, 'cuentas_corrientes_trns', cc_id)
+
+        cur.execute("""
+            SELECT id, local, caja, fecha, turno
+            FROM cuentas_corrientes_trns
+            WHERE id=%s
+        """, (cc_id,))
+        row = cur.fetchone()
+
+        if not row:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Registro no encontrado"), 404
+
+        user_level = get_user_level()
+
+        # Verificar si está auditado
+        if is_local_auditado(conn, row['local'], row['fecha']):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones."), 403
+
+        # Verificar permisos
+        if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], user_level):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="No tenés permisos para borrar (caja/local cerrados para tu rol)."), 409
+
+        # Marcar como eliminado
+        cur.execute("""
+            UPDATE cuentas_corrientes_trns
+            SET estado='eliminado'
+            WHERE id=%s
+        """, (cc_id,))
+
+        deleted = cur.rowcount
+        conn.commit()
+
+        # Registrar en auditoría
+        registrar_auditoria(
+            conn=conn,
+            accion='DELETE',
+            tabla='cuentas_corrientes_trns',
+            registro_id=cc_id,
+            usuario=session.get('username', 'unknown'),
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=None
+        )
+
+        cur.close()
+        conn.close()
+        return jsonify(success=True, deleted=deleted)
+
+    except Exception as e:
+        print("❌ ERROR borrar_cta_cte:", e)
+        return jsonify(success=False, msg=str(e)), 500
 
 
 
@@ -5288,13 +5605,23 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         row = cur.fetchone()
         total_cobrado += float(row[0] or 0.0) if row else 0.0
 
-        # Cuenta corriente (facturas CC)
+        # Cuenta corriente (facturas CC viejas + nuevo sistema)
         if usar_snap:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_facturas WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'", (f, local, caja, turno))
         else:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM facturas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'", (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        cc_viejas = float(row[0] or 0.0) if row else 0.0
+
+        # Nuevo sistema de cuentas corrientes (solo en facturas_trns, no hay snap aún)
+        if not usar_snap:
+            cur.execute("SELECT COALESCE(SUM(monto),0) FROM cuentas_corrientes_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND estado='ok'", (f, local, caja, turno))
+            row = cur.fetchone()
+            cc_nuevas = float(row[0] or 0.0) if row else 0.0
+        else:
+            cc_nuevas = 0.0
+
+        total_cobrado += cc_viejas + cc_nuevas
 
         # Gastos
         if usar_snap:
@@ -5623,17 +5950,25 @@ def api_resumen_local():
         facturas_b_items, facturas_b = _fetch_facturas_items('B')
         facturas_total = float(facturas_a or 0.0) + float(facturas_b or 0.0)
 
-        # Facturas CC (Cuenta Corriente)
+        # Facturas CC (Cuenta Corriente - sistema viejo)
         facturas_cc = _qsum(
             cur,
             f"SELECT COALESCE(SUM(monto),0) FROM {T_FACTURAS} WHERE DATE(fecha)=%s AND local=%s AND tipo='CC'",
             (f, local),
         )
 
+        # ===== CTA CTE nuevo sistema (cuentas_corrientes_trns) =====
+        cta_cte_nuevas = _qsum(
+            cur,
+            "SELECT COALESCE(SUM(monto),0) FROM cuentas_corrientes_trns WHERE DATE(fecha)=%s AND local=%s AND estado='ok'",
+            (f, local),
+        )
+
         # ===== CTA CTE (legacy - si existe en cuenta_corriente_trns) =====
         cta_cte_legacy = _sum_cuenta_corriente(conn, cur, f, local)
-        # Sumamos CC de facturas + cta cte legacy
-        cta_cte_total = float(facturas_cc or 0.0) + float(cta_cte_legacy or 0.0)
+
+        # Sumamos CC de facturas (viejas) + cta cte nuevo sistema + cta cte legacy
+        cta_cte_total = float(facturas_cc or 0.0) + float(cta_cte_nuevas or 0.0) + float(cta_cte_legacy or 0.0)
 
         # ===== TIPS TARJETAS (detalle por marca + total) desde tarjetas_trns =====
         tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TARJETAS, f, local)

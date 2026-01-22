@@ -281,3 +281,45 @@
 2026-01-14 23:36:34,670 - werkzeug - INFO - 127.0.0.1 - - [14/Jan/2026 23:36:34] "GET /api/remesas-retiradas/listar HTTP/1.1" 200 -
 2026-01-14 23:41:01,857 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
 2026-01-14 23:41:03,029 - werkzeug - INFO -  * Restarting with stat
+2026-01-14 23:41:11,471 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-14 23:41:12,967 - werkzeug - WARNING -  * Debugger is active!
+2026-01-14 23:41:12,975 - werkzeug - INFO -  * Debugger PIN: 563-593-695
+2026-01-15 09:13:51,970 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:13:51] "[31m[1mGET / HTTP/1.1[0m" 403 -
+2026-01-15 09:13:55,040 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:13:55] "GET /login HTTP/1.1" 200 -
+2026-01-15 09:13:55,066 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:13:55] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2026-01-15 09:13:55,818 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:13:55] "[33mGET /lgin HTTP/1.1[0m" 404 -
+2026-01-15 09:13:58,894 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:13:58] "GET /login HTTP/1.1" 200 -
+2026-01-15 09:13:58,938 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:13:58] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2026-01-15 09:14:07,136 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-15 09:14:07,137 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-15 09:14:07,150 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-15 09:14:12,372 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:12] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-01-15 09:14:14,970 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:14] "GET /auditor HTTP/1.1" 200 -
+2026-01-15 09:14:15,069 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,070 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,070 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,071 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,072 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,073 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,103 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,106 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,105 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,107 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,109 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,121 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,129 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2026-01-15 09:14:15,218 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2026-01-15 09:14:15,219 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2026-01-15 09:14:15,220 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:15] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2026-01-15 09:14:17,609 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:17] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-15 09:14:17,612 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:17] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2026-01-15 09:14:17,613 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:17] "GET /api/locales HTTP/1.1" 200 -
+2026-01-15 09:14:17,871 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:17] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2026-01-15 09:14:20,019 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:20] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-15 09:14:20,515 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:20] "GET /remesas-retiradas HTTP/1.1" 200 -
+2026-01-15 09:14:20,572 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:20] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-15 09:14:20,574 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:20] "GET /static/js/remesas_retiradas.js HTTP/1.1" 200 -
+2026-01-15 09:14:20,618 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:20] "[33mGET /api/user-info HTTP/1.1[0m" 404 -
+2026-01-15 09:14:23,713 - werkzeug - INFO - 127.0.0.1 - - [15/Jan/2026 09:14:23] "GET /api/remesas-retiradas/listar HTTP/1.1" 200 -
+2026-01-15 09:18:36,295 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-15 09:18:37,312 - werkzeug - INFO -  * Restarting with stat
