@@ -2535,22 +2535,22 @@ def crear_anticipo_recibido():
             result = cur.fetchone()
             medio_pago_id = result[0] if result else None
 
-        # Obtener cotización USD si está presente
-        cotizacion_usd = data.get('cotizacion_usd')
-        if cotizacion_usd is not None:
-            cotizacion_usd = float(cotizacion_usd)
+        # Obtener cotización de divisa si está presente (USD, EUR, BRL, etc.)
+        cotizacion_divisa = data.get('cotizacion_divisa')
+        if cotizacion_divisa is not None:
+            cotizacion_divisa = float(cotizacion_divisa)
 
-        # Insertar anticipo recibido con divisa, medio_pago_id y cotización USD
+        # Insertar anticipo recibido con divisa, medio_pago_id y cotización
         sql = """
             INSERT INTO anticipos_recibidos
             (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
              cliente, numero_transaccion, medio_pago, observaciones,
-             local, medio_pago_id, cotizacion_usd, estado, created_by)
+             local, medio_pago_id, cotizacion_divisa, estado, created_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
         """
         cur.execute(sql, (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
                          cliente, numero_transaccion, medio_pago, observaciones,
-                         local, medio_pago_id, cotizacion_usd, usuario))
+                         local, medio_pago_id, cotizacion_divisa, usuario))
 
         anticipo_id = cur.lastrowid
 
@@ -2635,7 +2635,7 @@ def listar_anticipos_recibidos():
         sql = """
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
-                ar.tipo_cambio_fecha, ar.cotizacion_usd, ar.cliente,
+                ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
                 ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
@@ -3058,10 +3058,10 @@ def consumir_anticipo():
         tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(tz_arg)
 
-        # Calcular importe a consumir: si es USD con cotización, usar equivalente en pesos
+        # Calcular importe a consumir: si es divisa extranjera con cotización, usar equivalente en pesos
         importe_consumido = float(anticipo['importe'])
-        if anticipo.get('divisa') == 'USD' and anticipo.get('cotizacion_usd'):
-            importe_consumido = importe_consumido * float(anticipo['cotizacion_usd'])
+        if anticipo.get('divisa') != 'ARS' and anticipo.get('cotizacion_divisa'):
+            importe_consumido = importe_consumido * float(anticipo['cotizacion_divisa'])
 
         # Registrar consumo en estados_caja
         cur.execute("""
@@ -3084,8 +3084,9 @@ def consumir_anticipo():
         conn.commit()
 
         # Preparar mensaje descriptivo
-        if anticipo.get('divisa') == 'USD' and anticipo.get('cotizacion_usd'):
-            msg_monto = f"USD {anticipo['importe']} (${importe_consumido:,.2f})"
+        divisa = anticipo.get('divisa', 'ARS')
+        if divisa != 'ARS' and anticipo.get('cotizacion_divisa'):
+            msg_monto = f"{divisa} {anticipo['importe']} (${importe_consumido:,.2f})"
         else:
             msg_monto = f"${importe_consumido:,.2f}"
 
@@ -3274,7 +3275,7 @@ def obtener_anticipos_consumidos_en_caja():
                 aec.importe_consumido, aec.observaciones_consumo,
                 ar.cliente, ar.numero_transaccion, ar.medio_pago,
                 ar.fecha_pago, ar.observaciones as observaciones_anticipo,
-                ar.divisa, ar.importe, ar.cotizacion_usd, ar.created_by
+                ar.divisa, ar.importe, ar.cotizacion_divisa, ar.created_by
             FROM anticipos_estados_caja aec
             JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
             WHERE aec.local = %s
@@ -4441,11 +4442,10 @@ def cierre_resumen():
 
         # ===== ANTICIPOS CONSUMIDOS =====
         # Anticipos consumidos (señas usadas para justificar faltantes)
-        # Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
+        # Nuevo sistema: usar importe_consumido (ya convertido a pesos para divisas extranjeras)
         cur.execute("""
-            SELECT COALESCE(SUM(ar.importe),0)
-              FROM anticipos_recibidos ar
-              JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+            SELECT COALESCE(SUM(aec.importe_consumido),0)
+              FROM anticipos_estados_caja aec
              WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s AND aec.turno=%s
                AND aec.estado = 'consumido'
         """, (local, caja, fecha, turno))
@@ -5544,7 +5544,7 @@ def api_resumen_local():
                 cur.execute("""
                     SELECT ar.id, ar.fecha_pago, ar.medio_pago, ar.observaciones, ar.importe,
                            aec.usuario, ar.cliente, aec.caja, aec.fecha,
-                           ar.divisa, ar.cotizacion_usd, aec.importe_consumido
+                           ar.divisa, ar.cotizacion_divisa, aec.importe_consumido
                     FROM anticipos_recibidos ar
                     JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
                     WHERE aec.local=%s AND DATE(aec.fecha)=%s
@@ -5559,13 +5559,13 @@ def api_resumen_local():
                     cotizacion = float(r[10] or 0) if r[10] else None
                     importe_pesos = float(r[11] or 0)
 
-                    # Preparar comentario con detalle USD si aplica
+                    # Preparar comentario con detalle de divisa extranjera si aplica
                     cliente = r[6] or ''
                     observaciones = r[3] or ''
                     comentario_base = f"{cliente} - {observaciones}" if cliente or observaciones else ""
 
-                    if divisa == 'USD' and cotizacion:
-                        comentario = f"{comentario_base} | USD {importe_original:,.2f} x ${cotizacion:,.2f}"
+                    if divisa != 'ARS' and cotizacion:
+                        comentario = f"{comentario_base} | {divisa} {importe_original:,.2f} x ${cotizacion:,.2f}"
                     else:
                         comentario = comentario_base
 
@@ -5580,7 +5580,7 @@ def api_resumen_local():
                         "caja": r[7] or "",  # caja donde se consumió
                         "divisa": divisa,
                         "importe_original": importe_original,
-                        "cotizacion_usd": cotizacion
+                        "cotizacion_divisa": cotizacion
                     })
             except Exception as e:
                 print(f"⚠️ Error obteniendo detalle de anticipos: {e}")
@@ -9314,7 +9314,7 @@ def listar_anticipos_auditor():
         sql = """
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
-                ar.tipo_cambio_fecha, ar.cotizacion_usd, ar.cliente,
+                ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
                 ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,

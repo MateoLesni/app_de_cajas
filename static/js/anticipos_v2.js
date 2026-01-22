@@ -422,9 +422,9 @@ document.addEventListener("DOMContentLoaded", function () {
         htmlConsumidos += `<td><strong>${a.cliente}</strong></td>`;
         htmlConsumidos += `<td>${formatDate(a.fecha_pago)}</td>`;
         htmlConsumidos += `<td style="text-align:right; font-weight:600;">
-          ${a.divisa === 'USD' && a.cotizacion_usd ? `
-            <div style="font-size:13px; color:#059669;">USD ${parseFloat(a.importe || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
-            <div style="font-size:10px; color:#6b7280;">Tomado: $${parseFloat(a.cotizacion_usd).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+          ${a.divisa !== 'ARS' && a.cotizacion_divisa ? `
+            <div style="font-size:13px; color:#059669;">${a.divisa} ${parseFloat(a.importe || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
+            <div style="font-size:10px; color:#6b7280;">Tomado: $${parseFloat(a.cotizacion_divisa).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</div>
             <div style="font-size:12px; color:#374151;">${money(a.importe_consumido)}</div>
           ` : `
             <span style="font-size:10px; color:#6b7280; display:block;">${a.divisa || 'ARS'}</span>
