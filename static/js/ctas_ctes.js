@@ -1,14 +1,11 @@
 // ==== Cuentas Corrientes: renderer integrado a OrqTabs con permisos L1/L2/L3 ====
-// Requiere que la vista principal haya seteado window.ROLE_LEVEL (int).
-// En la inicialización del Orquestador, registrá el tab con:
-// tabs: { ctasCtesTab: { endpoints: ['/ctas_ctes_cargadas'], render: window.renderCtasCtes } }
+// Guardado directo en BD sin buffer local (sin tabla preview)
 
 document.addEventListener("DOMContentLoaded", function () {
   // ----------- refs y key del tab -----------
   const tabKey = "ctasCtesTab";
   const pane = document.getElementById(tabKey);
 
-  const tablaPreview = document.getElementById("tablaPreviewCtasCtes");
   const tablaBD = document.getElementById("tablaCtasCtesBD");
   const form = document.getElementById("ctasCtesForm");
   const clienteSelect = document.getElementById("clienteCtaCte");
@@ -29,8 +26,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let localAuditado = false;
 
   let ctasCtesBD = [];       // vienen del backend a través de OrqTabs
-  let ctasCtesLocal = [];    // buffer local antes de guardar
-  let idxEdicionActual = -1;
   let clientesCtaCte = [];   // lista de clientes con cuenta corriente
 
   // ----------- cargar clientes -----------
@@ -93,10 +88,6 @@ document.addEventListener("DOMContentLoaded", function () {
       #${tabKey} .mod-spinner {
         padding:10px 14px; border-radius:8px; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.12); font-weight:600;
       }
-      #${tabKey} .btn-edit-local,
-      #${tabKey} .btn-del-local,
-      #${tabKey} .btn-aceptar-bd,
-      #${tabKey} .btn-cancelar-bd,
       #${tabKey} .btn-editar-bd,
       #${tabKey} .btn-borrar-bd { cursor:pointer; }
     `;
@@ -110,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!ov) {
         ov = document.createElement("div");
         ov.className = "mod-overlay";
-        ov.innerHTML = '<div class="mod-spinner">Cargando…</div>';
+        ov.innerHTML = '<div class="mod-spinner">Guardando…</div>';
         pane.appendChild(ov);
       }
       ov.style.display = "flex";
@@ -140,39 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return cli ? cli.nombre_cliente : '';
   }
 
-  // ----------- render tablas -----------
-  function renderPreview() {
-    if (!tablaPreview) return;
-    const tbody = tablaPreview.querySelector("tbody");
-    if (!tbody) return;
-
-    if (ctasCtesLocal.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">No hay cuentas corrientes en el buffer local</td></tr>';
-      return;
-    }
-
-    let html = "";
-    ctasCtesLocal.forEach((cc, idx) => {
-      const editable = canActUI();
-      const nombreCliente = getClienteNombre(cc.cliente_id);
-      const facturadaText = cc.facturada ? 'Sí' : 'No';
-
-      html += `<tr>
-        <td>${nombreCliente}</td>
-        <td>${cc.comentario || '-'}</td>
-        <td>${money(cc.monto)}</td>
-        <td>${facturadaText}</td>
-        <td>
-          ${editable ? `
-            <button type="button" class="btn-edit-local" data-idx="${idx}">✏️</button>
-            <button type="button" class="btn-del-local" data-idx="${idx}">🗑️</button>
-          ` : ''}
-        </td>
-      </tr>`;
-    });
-    tbody.innerHTML = html;
-  }
-
+  // ----------- render tabla BD -----------
   function renderBD() {
     if (!tablaBD) return;
     const tbody = tablaBD.querySelector("tbody");
@@ -205,12 +164,22 @@ document.addEventListener("DOMContentLoaded", function () {
     tbody.innerHTML = html;
   }
 
-  // ----------- eventos formulario -----------
+  // ----------- eventos formulario (guardar directo) -----------
   if (form) {
-    form.addEventListener("submit", function(e) {
+    form.addEventListener("submit", async function(e) {
       e.preventDefault();
       if (!canActUI()) {
         alert("⚠️ No podés modificar (caja/local cerrados o auditados).");
+        return;
+      }
+
+      const local = cajaSelect?.dataset?.local || '';
+      const caja = cajaSelect?.value || '';
+      const fecha = fechaGlobal?.value || '';
+      const turno = turnoSelect?.value || '';
+
+      if (!local || !caja || !fecha || !turno) {
+        alert("Falta información de caja/fecha/turno. Asegurate de haber seleccionado caja, fecha y turno.");
         return;
       }
 
@@ -232,46 +201,31 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const item = { cliente_id: clienteId, monto, comentario, facturada };
+      try {
+        setLoading(true);
+        const res = await fetch('/guardar_ctas_ctes_lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            local, caja, fecha, turno,
+            items: [{ cliente_id: clienteId, monto, comentario, facturada }]
+          })
+        });
+        const data = await res.json();
+        setLoading(false);
 
-      if (idxEdicionActual >= 0) {
-        ctasCtesLocal[idxEdicionActual] = item;
-        idxEdicionActual = -1;
-      } else {
-        ctasCtesLocal.push(item);
-      }
-
-      form.reset();
-      comentarioContainer.style.display = 'none';
-      renderPreview();
-    });
-  }
-
-  // ----------- eventos botones preview -----------
-  if (tablaPreview) {
-    tablaPreview.addEventListener("click", function(e) {
-      const btnEdit = e.target.closest(".btn-edit-local");
-      const btnDel = e.target.closest(".btn-del-local");
-
-      if (btnEdit) {
-        const idx = parseInt(btnEdit.dataset.idx);
-        const cc = ctasCtesLocal[idx];
-        if (!cc) return;
-
-        clienteSelect.value = cc.cliente_id;
-        clienteSelect.dispatchEvent(new Event('change')); // Trigger para mostrar/ocultar comentario
-        montoInput.value = cc.monto;
-        comentarioInput.value = cc.comentario || '';
-        facturadaCheck.checked = cc.facturada;
-        idxEdicionActual = idx;
-      }
-
-      if (btnDel) {
-        const idx = parseInt(btnDel.dataset.idx);
-        if (confirm("¿Eliminar esta cuenta corriente del buffer?")) {
-          ctasCtesLocal.splice(idx, 1);
-          renderPreview();
+        if (data.success) {
+          alert("✅ Cuenta corriente guardada");
+          form.reset();
+          comentarioContainer.style.display = 'none';
+          if (window.OrqTabs) window.OrqTabs.reloadActive();
+        } else {
+          alert("❌ " + (data.msg || "Error al guardar"));
         }
+      } catch (err) {
+        setLoading(false);
+        alert("❌ Error de red");
+        console.error(err);
       }
     });
   }
@@ -345,59 +299,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // ----------- guardar en BD -----------
-  const btnGuardar = document.getElementById("guardarCtasCtesBD");
-  if (btnGuardar) {
-    btnGuardar.addEventListener("click", async function() {
-      if (!canActUI()) {
-        alert("⚠️ No podés guardar (caja/local cerrados o auditados).");
-        return;
-      }
-
-      if (ctasCtesLocal.length === 0) {
-        alert("No hay cuentas corrientes para guardar");
-        return;
-      }
-
-      const local = cajaSelect.dataset.local || '';
-      const caja = cajaSelect.value;
-      const fecha = fechaGlobal.value;
-      const turno = turnoSelect.value;
-
-      if (!local || !caja || !fecha || !turno) {
-        alert("Falta información de caja/fecha/turno");
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const res = await fetch('/guardar_ctas_ctes_lote', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            local, caja, fecha, turno,
-            items: ctasCtesLocal
-          })
-        });
-        const data = await res.json();
-        setLoading(false);
-
-        if (data.success) {
-          alert("✅ Cuentas corrientes guardadas");
-          ctasCtesLocal = [];
-          renderPreview();
-          if (window.OrqTabs) window.OrqTabs.reloadActive();
-        } else {
-          alert("❌ " + (data.msg || "Error al guardar"));
-        }
-      } catch (err) {
-        setLoading(false);
-        alert("❌ Error de red");
-        console.error(err);
-      }
-    });
-  }
-
   // ----------- renderer para OrqTabs -----------
   window.renderCtasCtes = function(opts) {
     if (!opts || !opts.datasets) return;
@@ -423,10 +324,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     renderBD();
-    renderPreview();
   };
 
   // ----------- init -----------
-  renderPreview();
   renderBD();
 });
