@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const editable = canActUI();
       const facturadaText = cc.facturada ? 'Sí' : 'No';
 
-      html += `<tr data-id="${cc.id}">
+      html += `<tr data-id="${cc.id}" style="background-color: #d4edda;">
         <td>${cc.nombre_cliente}</td>
         <td>${cc.comentario || '-'}</td>
         <td>${money(cc.monto)}</td>
