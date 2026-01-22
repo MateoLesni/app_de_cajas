@@ -316,16 +316,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ----------- renderer para OrqTabs -----------
-  window.renderCtasCtes = function(opts) {
-    if (!opts || !opts.datasets) return;
+  window.renderCtasCtes = function(_main, opts = {}) {
+    const map = opts.datasets || {};
 
-    const datos = opts.datasets['/ctas_ctes_cargadas'] || {};
-    ctasCtesBD = datos.datos || [];
+    // Buscar el endpoint de ctas_ctes_cargadas
+    const epCtasCtes = Object.keys(map).find(k => k.includes('/ctas_ctes_cargadas'));
+    const payload = epCtasCtes ? map[epCtasCtes] : null;
 
-    const estadoCaja = datos.estado_caja ?? 1;
-    const estadoLocal = datos.estado_local ?? 1;
-    window.cajaCerrada = (estadoCaja === 0);
-    localCerrado = (estadoLocal === 0);
+    if (payload) {
+      ctasCtesBD = payload.datos || [];
+
+      // Estados de caja/local
+      if (typeof payload.estado_caja !== "undefined") {
+        window.cajaCerrada = (parseInt(payload.estado_caja, 10) === 0);
+      }
+      if (typeof payload.estado_local !== "undefined") {
+        localCerrado = (parseInt(payload.estado_local, 10) === 0);
+      }
+    }
 
     // Verificar si está auditado
     const ctx = getCtx();
