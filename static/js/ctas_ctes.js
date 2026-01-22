@@ -113,6 +113,23 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ----------- helpers -----------
+  const getLocalActual = () => {
+    // Para auditores (nivel 3): lee de #localSelect, fallback a #userLocal
+    const localSelect = document.getElementById("localSelect");
+    if (localSelect) {
+      const val = (localSelect.value || "").trim();
+      return val || (document.getElementById("userLocal")?.innerText || "").trim();
+    }
+    return (document.getElementById("userLocal")?.innerText || "").trim();
+  };
+
+  const getCtx = () => ({
+    local: getLocalActual(),
+    caja:  cajaSelect?.value || "",
+    fecha: fechaGlobal?.value || "",
+    turno: (turnoSelect?.value || "").trim()
+  });
+
   function canActUI() {
     if (localAuditado) return false;
     if (ROLE === 1) return !window.cajaCerrada;
@@ -173,12 +190,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const local = cajaSelect?.dataset?.local || '';
-      const caja = cajaSelect?.value || '';
-      const fecha = fechaGlobal?.value || '';
-      const turno = turnoSelect?.value || '';
-
-      if (!local || !caja || !fecha || !turno) {
+      const ctx = getCtx();
+      if (!ctx.local || !ctx.caja || !ctx.fecha || !ctx.turno) {
         alert("Falta información de caja/fecha/turno. Asegurate de haber seleccionado caja, fecha y turno.");
         return;
       }
@@ -207,7 +220,10 @@ document.addEventListener("DOMContentLoaded", function () {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            local, caja, fecha, turno,
+            local: ctx.local,
+            caja: ctx.caja,
+            fecha: ctx.fecha,
+            turno: ctx.turno,
             items: [{ cliente_id: clienteId, monto, comentario, facturada }]
           })
         });
@@ -312,10 +328,9 @@ document.addEventListener("DOMContentLoaded", function () {
     localCerrado = (estadoLocal === 0);
 
     // Verificar si está auditado
-    const local = cajaSelect?.dataset?.local || '';
-    const fecha = fechaGlobal?.value || '';
-    if (local && fecha) {
-      fetch(`/local_auditado?local=${encodeURIComponent(local)}&fecha=${encodeURIComponent(fecha)}`)
+    const ctx = getCtx();
+    if (ctx.local && ctx.fecha) {
+      fetch(`/local_auditado?local=${encodeURIComponent(ctx.local)}&fecha=${encodeURIComponent(ctx.fecha)}`)
         .then(r => r.json())
         .then(d => {
           localAuditado = (d.auditado === true);
