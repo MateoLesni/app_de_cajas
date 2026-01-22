@@ -727,6 +727,20 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             if rows_remesas:
                 rows.extend(rows_remesas)
 
+            # Obtener Gastos (una fila por gasto)
+            cur_pm.execute("""
+                SELECT
+                    tipo AS forma_pago,
+                    COALESCE(observaciones, tipo) AS descripcion,
+                    monto AS pagado
+                FROM gastos_trns
+                WHERE local = %s
+                  AND DATE(fecha) = %s
+            """, (local, fecha))
+            rows_gastos = cur_pm.fetchall()
+            if rows_gastos:
+                rows.extend(rows_gastos)
+
             # -------- PROPINAS (en negativo) --------
             # 1) PROPINAS de tarjetas (suma de monto_tip de tarjetas_trns)
             cur_pm.execute("""
