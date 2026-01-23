@@ -165,6 +165,12 @@
             Remesas Matricial (Tesorería)
           </a>
 
+          <a class="nav-item nav-sub-item {% if request.path == url_for('reporte_resumen_tesoreria_page') %}is-active{% endif %}"
+            href="{{ url_for('reporte_resumen_tesoreria_page') }}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            Resumen AP.
+          </a>
+
           <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
             href="{{ url_for('ui_reporteria_remesas') if false else '#' }}">
             <span class="nav-dot" aria-hidden="true"></span>
@@ -326,7 +332,7 @@
             </form>
 
             <div class="soft-divider"></div>
-
+            <h2>Registro de Facturas</h2>
             <!-- FORM 2: Comprobantes (Z/A/B/CC) -->
             <form id="ventasFacturasForm" class="form-container">
               <div id="facturasGrid" class="grid-4">

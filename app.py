@@ -6256,7 +6256,7 @@ def reporte_remesas_tesoreria_page():
 
 @app.route("/reporteria/resumen-tesoreria")
 @login_required
-@role_min_required(7)  # Tesoreros y admin_tesoreria
+@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
 def reporte_resumen_tesoreria_page():
     """
     Nuevo reporte visual de tesorería por local con formato similar a Excel de gerencia.
@@ -10023,6 +10023,7 @@ def listar_remesas_no_retiradas():
             FROM remesas_trns
             WHERE retirada NOT IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
               AND (retirada = 0 OR retirada = 'No' OR retirada IS NULL OR retirada = '')
+              AND (estado_contable IS NULL OR estado_contable != 'Archivada')
         """
         params = []
 
@@ -10336,6 +10337,7 @@ def contador_remesas_no_retiradas():
                 FROM remesas_trns
                 WHERE retirada NOT IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
                   AND (retirada = 0 OR retirada = 'No' OR retirada IS NULL OR retirada = '')
+                  AND (estado_contable IS NULL OR estado_contable != 'Archivada')
                   AND local = %s
             """, (user_local,))
         else:
@@ -10345,6 +10347,7 @@ def contador_remesas_no_retiradas():
                 FROM remesas_trns
                 WHERE retirada NOT IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
                   AND (retirada = 0 OR retirada = 'No' OR retirada IS NULL OR retirada = '')
+                  AND (estado_contable IS NULL OR estado_contable != 'Archivada')
             """)
 
         row = cur.fetchone()
