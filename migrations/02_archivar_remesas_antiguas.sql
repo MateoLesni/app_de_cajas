@@ -37,7 +37,7 @@ SELECT
     MAX(DATE(fecha)) as fecha_mas_reciente,
     COALESCE(SUM(monto), 0) as monto_total
 FROM remesas_trns
-WHERE retirada = 0
+WHERE CAST(retirada AS CHAR) NOT IN ('1', 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
   AND (estado_contable IS NULL OR estado_contable NOT IN ('TRAN', 'Archivada'))
   AND DATE(fecha) < @fecha_corte_no_retiradas;
 
@@ -49,9 +49,10 @@ WHERE estado_contable = 'TRAN'
 
 -- Paso 4: Archivar remesas No Retiradas antiguas (más de 3 días)
 -- Solo si tienen estado_contable = NULL o un valor que no sea TRAN/Archivada
+-- NOTA: retirada puede ser 0, '0', 'No', NULL, etc. (valores mixtos)
 UPDATE remesas_trns
 SET estado_contable = 'Archivada'
-WHERE retirada = 0
+WHERE CAST(retirada AS CHAR) NOT IN ('1', 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
   AND (estado_contable IS NULL OR estado_contable NOT IN ('TRAN', 'Archivada'))
   AND DATE(fecha) < @fecha_corte_no_retiradas;
 
@@ -82,7 +83,7 @@ SELECT
     MIN(DATE(fecha)) as desde,
     MAX(DATE(fecha)) as hasta
 FROM remesas_trns
-WHERE retirada = 0
+WHERE CAST(retirada AS CHAR) NOT IN ('1', 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
   AND (estado_contable IS NULL OR estado_contable NOT IN ('TRAN', 'Archivada'))
   AND DATE(fecha) >= @fecha_corte_no_retiradas;
 
