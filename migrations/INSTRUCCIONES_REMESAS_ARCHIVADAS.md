@@ -10,8 +10,24 @@ El sistema tiene remesas antiguas que nunca se retiraron o quedaron en TRAN porq
 
 ## Solución
 
-### 1. Ejecutar la migración SQL
-Ejecutá el archivo `migrations/archivar_remesas_antiguas.sql` en tu base de datos MySQL.
+### 1. Ejecutar las migraciones SQL (EN ORDEN)
+
+**IMPORTANTE**: Ejecutar en este orden:
+
+#### Paso 1: Ampliar columna estado_contable
+```bash
+mysql -u usuario -p base_datos < migrations/01_ampliar_estado_contable.sql
+```
+
+Este script:
+- Amplía `estado_contable` de VARCHAR(10) a VARCHAR(20)
+- Permite almacenar el valor 'Archivada' (9 caracteres)
+- Muestra los valores actuales en la columna
+
+#### Paso 2: Archivar remesas antiguas
+```bash
+mysql -u usuario -p base_datos < migrations/02_archivar_remesas_antiguas.sql
+```
 
 Este script:
 - Define fechas de corte configurables
