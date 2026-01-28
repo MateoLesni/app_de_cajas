@@ -332,10 +332,19 @@
       </div>
 
       <nav class="sidebar__nav">
-        <a class="nav-item" href="{{ url_for('tesoreria_home_new') }}">
-          <span class="nav-dot" aria-hidden="true"></span>
-          Inicio
-        </a>
+        {% if session.get('role_level', 1)|int >= 3 %}
+          {# Para auditores: Inicio lleva a /auditor #}
+          <a class="nav-item" href="{{ url_for('index') }}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            Inicio
+          </a>
+        {% else %}
+          {# Para tesorería: Inicio lleva a tesoreria_home_new #}
+          <a class="nav-item" href="{{ url_for('tesoreria_home_new') }}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            Inicio
+          </a>
+        {% endif %}
 
         <div class="nav-group is-open">
           <a href="javascript:void(0)"
@@ -352,15 +361,22 @@
           </a>
 
           <div class="nav-sub">
-            <a class="nav-item nav-sub-item"
-               href="{{ url_for('reporte_remesas_tesoreria_page') }}">
-              <span class="nav-dot" aria-hidden="true"></span>
-              Remesas Tesorería
-            </a>
+            {% if session.get('role_level', 1)|int < 3 %}
+              {# Solo mostrar "Remesas Tesorería" si NO es auditor #}
+              <a class="nav-item nav-sub-item"
+                 href="{{ url_for('reporte_remesas_tesoreria_page') }}">
+                <span class="nav-dot" aria-hidden="true"></span>
+                Remesas Tesorería
+              </a>
+            {% endif %}
             <a class="nav-item nav-sub-item is-active"
                href="{{ url_for('reporte_resumen_tesoreria_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
-              Resumen por Local
+              {% if session.get('role_level', 1)|int >= 3 %}
+                Apertura AP
+              {% else %}
+                Resumen por Local
+              {% endif %}
             </a>
           </div>
         </div>
