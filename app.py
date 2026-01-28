@@ -7670,61 +7670,48 @@ def api_tesoreria_resumen_por_local():
 
             # Calcular "Saldo anterior" (remesas ANTERIORES al día anterior - acumulado histórico)
             # Si hoy es 13/01, muestra remesas anteriores a 12/01 en estado 'Local' (no retiradas)
-            # IMPORTANTE: Usar total_conversion para remesas USD
+            # IMPORTANTE: Solo remesas en ARS (excluye USD)
             fecha_ayer = hoy - timedelta(days=1)
             cur.execute("""
-                SELECT SUM(
-                    CASE
-                        WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
-                        ELSE monto
-                    END
-                ) as saldo_historico
+                SELECT SUM(monto) as saldo_historico
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) < %s
                   AND estado_contable = 'Local'
                   AND retirada = 0
+                  AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
             """, (local, fecha_ayer))
             saldo_anterior_data = cur.fetchone()
             datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico']) if saldo_anterior_data and saldo_anterior_data['saldo_historico'] else 0
 
             # Calcular "Saldo a retirar" (remesas del DÍA ANTERIOR no retiradas)
             # Si hoy es 13/01, muestra remesas de 12/01 en estado 'Local' (físicamente en el local)
-            # IMPORTANTE: Usar total_conversion para remesas USD
+            # IMPORTANTE: Solo remesas en ARS (excluye USD)
             cur.execute("""
-                SELECT SUM(
-                    CASE
-                        WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
-                        ELSE monto
-                    END
-                ) as saldo_pendiente
+                SELECT SUM(monto) as saldo_pendiente
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) = %s
                   AND estado_contable = 'Local'
                   AND retirada = 0
+                  AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
             """, (local, fecha_ayer))
             saldo_data = cur.fetchone()
             datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente']) if saldo_data and saldo_data['saldo_pendiente'] else 0
 
         # Calcular "No Enviados" (remesas en estado 'Local', ordenadas por relevancia)
-        # IMPORTANTE: Usar total_conversion para remesas USD en monto y relevancia
+        # IMPORTANTE: Solo remesas en ARS (excluye USD)
         cur.execute("""
             SELECT
                 local,
                 fecha as fecha_caja,
-                CASE
-                    WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
-                    ELSE monto
-                END as monto,
+                monto,
                 DATEDIFF(CURDATE(), fecha) as dias_transcurridos,
-                (CASE
-                    WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
-                    ELSE monto
-                END * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
+                (monto * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
             FROM remesas_trns
             WHERE estado_contable = 'Local'
               AND retirada = 0
+              AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
             ORDER BY relevancia DESC
             LIMIT 50
         """)
