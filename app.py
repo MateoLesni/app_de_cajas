@@ -942,8 +942,8 @@ def remesas_guardar_lote():
         sql = """
           INSERT INTO remesas_trns
           (usuario, local, caja, turno, fecha, nro_remesa, precinto, monto, retirada, retirada_por, fecha_retirada,
-           divisa, monto_usd, cotizacion_divisa, ult_mod, estado)
-          VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),'revision')
+           divisa, monto_usd, cotizacion_divisa, estado_contable, ult_mod, estado)
+          VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'Local',NOW(),'revision')
         """
         inserted = 0
         for t in remesas:
@@ -7669,7 +7669,7 @@ def api_tesoreria_resumen_por_local():
                 }
 
             # Calcular "Saldo anterior" (remesas ANTERIORES al día anterior - acumulado histórico)
-            # Si hoy es 13/01, muestra TODAS las remesas anteriores a 12/01 que no fueron retiradas
+            # Si hoy es 13/01, muestra remesas anteriores a 12/01 en estado 'Local' (no retiradas)
             # IMPORTANTE: Usar total_conversion para remesas USD
             fecha_ayer = hoy - timedelta(days=1)
             cur.execute("""
@@ -7682,13 +7682,14 @@ def api_tesoreria_resumen_por_local():
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) < %s
+                  AND estado_contable = 'Local'
                   AND retirada = 0
             """, (local, fecha_ayer))
             saldo_anterior_data = cur.fetchone()
             datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico']) if saldo_anterior_data and saldo_anterior_data['saldo_historico'] else 0
 
             # Calcular "Saldo a retirar" (remesas del DÍA ANTERIOR no retiradas)
-            # Si hoy es 13/01, muestra TODAS las remesas de 12/01 que están físicamente en el local
+            # Si hoy es 13/01, muestra remesas de 12/01 en estado 'Local' (físicamente en el local)
             # IMPORTANTE: Usar total_conversion para remesas USD
             cur.execute("""
                 SELECT SUM(
@@ -7700,12 +7701,13 @@ def api_tesoreria_resumen_por_local():
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) = %s
+                  AND estado_contable = 'Local'
                   AND retirada = 0
             """, (local, fecha_ayer))
             saldo_data = cur.fetchone()
             datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente']) if saldo_data and saldo_data['saldo_pendiente'] else 0
 
-        # Calcular "No Enviados" (TODAS las remesas pendientes, ordenadas por relevancia)
+        # Calcular "No Enviados" (remesas en estado 'Local', ordenadas por relevancia)
         # IMPORTANTE: Usar total_conversion para remesas USD en monto y relevancia
         cur.execute("""
             SELECT
@@ -7721,7 +7723,8 @@ def api_tesoreria_resumen_por_local():
                     ELSE monto
                 END * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
             FROM remesas_trns
-            WHERE retirada = 0
+            WHERE estado_contable = 'Local'
+              AND retirada = 0
             ORDER BY relevancia DESC
             LIMIT 50
         """)
