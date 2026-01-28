@@ -16,6 +16,24 @@ tabButtons.forEach(button => {
     const pane = document.getElementById(tabId);
     if (pane) pane.classList.add('active');
 
+    // ===== IMPORTANTE: Al cambiar de pestaña, resetear formulario USD de remesas =====
+    // Esto previene confusión ya que el 95% de la carga es en pesos
+    const checkboxDolares = document.getElementById("son_dolares");
+    const usdFieldsContainer = document.getElementById("usd_fields_container");
+    const montoARSContainer = document.getElementById("monto_ars_container");
+    const inputMonto = document.getElementById("monto");
+    const inputMontoUSD = document.getElementById("monto_usd");
+    const inputCotizacion = document.getElementById("cotizacion_divisa");
+    const inputTotalConversion = document.getElementById("total_conversion");
+
+    if (checkboxDolares) checkboxDolares.checked = false;
+    if (usdFieldsContainer) usdFieldsContainer.style.display = "none";
+    if (montoARSContainer) montoARSContainer.style.display = "block";
+    if (inputMonto) inputMonto.required = true;
+    if (inputMontoUSD) inputMontoUSD.value = "";
+    if (inputCotizacion) inputCotizacion.value = "";
+    if (inputTotalConversion) inputTotalConversion.value = "";
+
     // Importante: emitir evento tipo Bootstrap para que el orquestador lo capte
     const ev = new CustomEvent('shown.bs.tab', { bubbles: true, detail: { tabKey: tabId } });
     this.dispatchEvent(ev);
@@ -633,6 +651,16 @@ document.addEventListener("DOMContentLoaded", function () {
         respuestaDiv.innerText = data.msg || "Remesa guardada correctamente.";
         // Limpiar formulario
         remesaForm.reset();
+
+        // ===== IMPORTANTE: Resetear checkbox USD y volver a modo pesos =====
+        if (checkboxDolares) checkboxDolares.checked = false;
+        if (usdFieldsContainer) usdFieldsContainer.style.display = "none";
+        if (montoARSContainer) montoARSContainer.style.display = "block";
+        if (inputMonto) inputMonto.required = true;
+        if (inputMontoUSD) inputMontoUSD.value = "";
+        if (inputCotizacion) inputCotizacion.value = "";
+        if (inputTotalConversion) inputTotalConversion.value = "";
+
         await refrescarEstadoCaja({ reRender: false });
         if (window.OrqTabs) OrqTabs.reload('remesas');
         else legacyReload();
