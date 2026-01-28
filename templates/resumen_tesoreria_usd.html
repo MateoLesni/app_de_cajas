@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Apertura AP USD</title>
+  <title>AP Efectivo USD</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -373,7 +373,7 @@
                href="{{ url_for('reporte_resumen_tesoreria_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
               {% if session.get('role_level', 1)|int >= 3 %}
-                Apertura AP
+                AP Efectivo
               {% else %}
                 Resumen por Local
               {% endif %}
@@ -381,7 +381,7 @@
             <a class="nav-item nav-sub-item is-active"
                href="{{ url_for('reporte_resumen_tesoreria_usd_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
-              Apertura AP USD
+              AP Efectivo USD
             </a>
           </div>
         </div>
@@ -396,7 +396,7 @@
     <main class="content-main" role="main">
       <div class="tesoreria-container">
         <div class="header-section">
-          <h1>Apertura AP USD</h1>
+          <h1>AP Efectivo USD</h1>
           <div class="controls-section">
             <div class="date-selector">
               <label for="fechaConsulta">Fecha:</label>

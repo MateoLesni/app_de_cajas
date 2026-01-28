@@ -355,7 +355,7 @@
   // ----------------------- Integración con filtros/tabs -------
   function wireGlobalEvents() {
     // refrescar chip en cada uploader cuando cambian filtros
-    ['cajaSelect','turnoSelect','fechaGlobal'].forEach(id=>{
+    ['cajaSelect','turnoSelect','fechaGlobal','localSelect'].forEach(id=>{
       const el = document.getElementById(id);
       el?.addEventListener('change', () => {
         $all('.img-uploader').forEach(c => c.__updateChip && c.__updateChip());
@@ -413,7 +413,8 @@
         'remesas':'remesas',
         'rappiTab':'rappi',
         'pedidosyaTab':'pedidosya',
-        'gastos':'gastos'
+        'gastos':'gastos',
+        'ctasCtesTab':'ctas_ctes'
       };
       return map[pane.id] || slug(pane.id);
     }

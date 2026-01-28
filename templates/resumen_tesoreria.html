@@ -373,7 +373,7 @@
                href="{{ url_for('reporte_resumen_tesoreria_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
               {% if session.get('role_level', 1)|int >= 3 %}
-                Apertura AP
+                AP Efectivo
               {% else %}
                 Resumen por Local
               {% endif %}
@@ -381,7 +381,7 @@
             <a class="nav-item nav-sub-item"
                href="{{ url_for('reporte_resumen_tesoreria_usd_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
-              Apertura AP USD
+              AP Efectivo USD
             </a>
           </div>
         </div>

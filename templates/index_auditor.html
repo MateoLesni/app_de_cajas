@@ -156,12 +156,12 @@
           <a class="nav-item nav-sub-item {% if request.path == url_for('reporte_resumen_tesoreria_page') %}is-active{% endif %}"
             href="{{ url_for('reporte_resumen_tesoreria_page') }}">
             <span class="nav-dot" aria-hidden="true"></span>
-            Apertura AP
+            AP Efectivo
           </a>
           <a class="nav-item nav-sub-item {% if request.path == url_for('reporte_resumen_tesoreria_usd_page') %}is-active{% endif %}"
             href="{{ url_for('reporte_resumen_tesoreria_usd_page') }}">
             <span class="nav-dot" aria-hidden="true"></span>
-            Apertura AP USD
+            AP Efectivo USD
           </a>
         </div>
       </div>
@@ -810,6 +810,9 @@
 
               <button type="submit" class="btn-custom btn-save">💾 Guardar Cuenta Corriente</button>
             </form>
+
+            <!-- Adjuntador de imágenes -->
+            <div class="img-uploader" id="uploader-ctas-ctes" data-tab="ctas_ctes" data-title="Adjuntar imágenes - Cuentas Corrientes" style="margin-top:24px;"></div>
 
             <!-- Tabla de BD -->
             <h3 style="margin-top:24px;">Cuentas Corrientes guardadas</h3>
