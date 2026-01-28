@@ -714,11 +714,15 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 rows.append(row_py)
 
             # Obtener Remesas (una fila por remesa)
+            # Para remesas USD, usar total_conversion (monto convertido a ARS)
             cur_pm.execute("""
                 SELECT
                     'REMESAS' AS forma_pago,
                     CONCAT('Remesa ', nro_remesa) AS descripcion,
-                    monto AS pagado
+                    CASE
+                        WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
+                        ELSE monto
+                    END AS pagado
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) = %s
@@ -800,9 +804,14 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 discovery_val = venta_total_sistema - total_facturas_zab
 
                 # 2. Calcular total_cobrado
-                # Remesas
+                # Remesas (usar total_conversion para USD, monto para ARS)
                 cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
+                    SELECT COALESCE(SUM(
+                        CASE
+                            WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
+                            ELSE monto
+                        END
+                    ), 0) AS total
                     FROM remesas_trns
                     WHERE local = %s AND DATE(fecha) = %s
                 """, (local, fecha))

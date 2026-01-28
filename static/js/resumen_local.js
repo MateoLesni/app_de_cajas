@@ -291,8 +291,16 @@
     setMoneyWithCopy("rl-cash", Number(ef.total ?? 0));
     setMoneyWithCopy("rl-remesas", Number(ef.remesas ?? 0));
     setMoneyWithCopy("rl-cash-neto", Number(ef.neto_efectivo ?? 0));
-    setMoneyWithCopy("rl-remesas-ret-total", Number(ef.retiradas_total ?? 0));
-    setMoneyWithCopy("rl-remesas-no-ret-total", Number(ef.no_retiradas_total ?? 0));
+
+    // Combinar todas las remesas (retiradas + no retiradas) y ordenar
+    const todasRemesas = [...(ef.retiradas || []), ...(ef.no_retiradas || [])];
+    // Ordenar por número de remesa
+    todasRemesas.sort((a, b) => {
+      const numA = parseInt(a.nro_remesa) || 0;
+      const numB = parseInt(b.nro_remesa) || 0;
+      return numA - numB;
+    });
+    renderRemesasTable("rl-remesas-items", todasRemesas);
 
     // Tarjetas
     const tj = info?.tarjeta || {};
@@ -1247,4 +1255,70 @@
       }, 200);
     }
   });
+
+  /**
+   * Renderiza la tabla de remesas (retiradas o no retiradas)
+   * @param {string} tbodyId - ID del tbody donde renderizar
+   * @param {Array} remesas - Array de remesas a mostrar
+   */
+  function renderRemesasTable(tbodyId, remesas) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    // Limpiar contenido previo
+    tbody.innerHTML = '';
+
+    if (!remesas || remesas.length === 0) {
+      tbody.innerHTML = '<tr class="muted"><td colspan="4">Sin remesas…</td></tr>';
+      return;
+    }
+
+    // Renderizar cada remesa
+    remesas.forEach(remesa => {
+      const tr = document.createElement('tr');
+
+      // Nro Remesa
+      const tdRemesa = document.createElement('td');
+      tdRemesa.style.textAlign = 'center';
+      tdRemesa.textContent = remesa.nro_remesa || '—';
+      tr.appendChild(tdRemesa);
+
+      // Nro Precinto
+      const tdPrecinto = document.createElement('td');
+      tdPrecinto.style.textAlign = 'center';
+      tdPrecinto.textContent = remesa.precinto || '—';
+      tr.appendChild(tdPrecinto);
+
+      // Monto (con formato especial para USD)
+      const tdMonto = document.createElement('td');
+      tdMonto.style.textAlign = 'center';
+
+      if (remesa.divisa === 'USD' && remesa.monto_usd) {
+        const montoUSD = parseFloat(remesa.monto_usd || 0).toLocaleString('es-AR', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        });
+        const totalARS = parseFloat(remesa.total_conversion || 0).toLocaleString('es-AR', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        });
+        tdMonto.innerHTML = `${montoUSD} USD<br><span class="muted" style="font-size: 0.85em;">($${totalARS})</span>`;
+      } else {
+        const montoARS = parseFloat(remesa.monto || 0).toLocaleString('es-AR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+        tdMonto.textContent = `$${montoARS}`;
+      }
+      tr.appendChild(tdMonto);
+
+      // Estado
+      const tdEstado = document.createElement('td');
+      tdEstado.style.textAlign = 'center';
+      tdEstado.textContent = remesa.retirada === 1 ? 'Retirada' : 'No Retirada';
+      tr.appendChild(tdEstado);
+
+      tbody.appendChild(tr);
+    });
+  }
 })();

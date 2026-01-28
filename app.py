@@ -862,9 +862,10 @@ def remesas_no_retiradas():
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
-        # Trae TODAS las remesas de esta caja/fecha/turno
+        # Trae TODAS las remesas de esta caja/fecha/turno (incluye campos USD)
         sql = """
-          SELECT t.id, t.caja, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno
+          SELECT t.id, t.caja, t.nro_remesa, t.precinto, t.monto, t.retirada, t.retirada_por, t.fecha, t.turno,
+                 t.divisa, t.monto_usd, t.cotizacion_divisa, t.total_conversion
           FROM remesas_trns t
           WHERE t.caja=%s
             AND t.local=%s
@@ -915,7 +916,10 @@ def remesas_guardar_lote():
           "monto": "12.345,67" | 12345.67,
           "retirada": "Sí"|"No",
           "retirada_por": "Nombre",
-          "fecha_retirada": "YYYY-MM-DD"   # opcional
+          "fecha_retirada": "YYYY-MM-DD",   # opcional
+          "divisa": "ARS"|"USD",            # opcional (default ARS)
+          "monto_usd": "123,45",            # opcional (solo si divisa=USD)
+          "cotizacion_divisa": "1.234,56"   # opcional (solo si divisa=USD)
         }, ...
       ]
     }
@@ -937,18 +941,41 @@ def remesas_guardar_lote():
     try:
         sql = """
           INSERT INTO remesas_trns
-          (usuario, local, caja, turno, fecha, nro_remesa, precinto, monto, retirada, retirada_por, fecha_retirada, ult_mod, estado)
-          VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),'revision')
+          (usuario, local, caja, turno, fecha, nro_remesa, precinto, monto, retirada, retirada_por, fecha_retirada,
+           divisa, monto_usd, cotizacion_divisa, ult_mod, estado)
+          VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW(),'revision')
         """
         inserted = 0
         for t in remesas:
             nro_remesa   = (t.get('nro_remesa') or "").strip()
             precinto     = (t.get('precinto') or "").strip()
 
-            # monto saneado
+            # ===== NUEVO: Leer divisa y campos USD =====
+            divisa = (t.get('divisa') or 'ARS').strip().upper()
+
+            # monto saneado (para ARS)
             monto_str = str(t.get('monto', '0')).replace('.', '').replace(',', '.')
             try:   monto = float(monto_str or 0)
             except: monto = 0.0
+
+            # ===== NUEVO: Procesar campos USD =====
+            monto_usd = None
+            cotizacion_divisa = None
+
+            if divisa == 'USD':
+                # Sanear monto_usd
+                monto_usd_str = str(t.get('monto_usd', '0')).replace('.', '').replace(',', '.')
+                try:   monto_usd = float(monto_usd_str or 0)
+                except: monto_usd = 0.0
+
+                # Sanear cotizacion_divisa
+                cotizacion_str = str(t.get('cotizacion_divisa', '0')).replace('.', '').replace(',', '.')
+                try:   cotizacion_divisa = float(cotizacion_str or 0)
+                except: cotizacion_divisa = 0.0
+
+                # Validar que ambos campos estén presentes
+                if not monto_usd or not cotizacion_divisa:
+                    raise ValueError(f"Remesa '{nro_remesa}': para remesas USD, monto_usd y cotizacion_divisa son obligatorios")
 
             # Convertir retirada a numérico: 1 (retirada) o 0 (no retirada)
             retirada_raw = (t.get('retirada') or "No").strip()
@@ -967,7 +994,8 @@ def remesas_guardar_lote():
             fecha_ret    = _normalize_fecha(f_ret) if f_ret else None
 
             cur.execute(sql, (usuario, local, caja, turno, fecha,
-                              nro_remesa, precinto, monto, retirada, retirada_por, fecha_ret))
+                              nro_remesa, precinto, monto, retirada, retirada_por, fecha_ret,
+                              divisa, monto_usd, cotizacion_divisa))
             inserted += cur.rowcount
 
         conn.commit()
@@ -1115,10 +1143,37 @@ def remesas_update(remesa_id):
             add("nro_remesa", (data.get('nro_remesa') or "").strip())
         if 'precinto' in data:
             add("precinto", (data.get('precinto') or "").strip())
-        if 'monto' in data:
-            m = str(data.get('monto', '0')).replace('.', '').replace(',', '.')
-            try: add("monto", float(m or 0))
-            except: return jsonify(success=False, msg="Monto inválido"), 400
+
+        # ===== NUEVO: Soporte para campos USD =====
+        if 'divisa' in data:
+            divisa = (data.get('divisa') or 'ARS').strip().upper()
+            add("divisa", divisa)
+
+            if divisa == 'USD':
+                # Si es USD, procesar campos USD
+                if 'monto_usd' in data:
+                    monto_usd_str = str(data.get('monto_usd', '0')).replace('.', '').replace(',', '.')
+                    try:
+                        monto_usd = float(monto_usd_str or 0)
+                        add("monto_usd", monto_usd)
+                    except:
+                        return jsonify(success=False, msg="Monto USD inválido"), 400
+
+                if 'cotizacion_divisa' in data:
+                    cotizacion_str = str(data.get('cotizacion_divisa', '0')).replace('.', '').replace(',', '.')
+                    try:
+                        cotizacion = float(cotizacion_str or 0)
+                        add("cotizacion_divisa", cotizacion)
+                    except:
+                        return jsonify(success=False, msg="Cotización inválida"), 400
+
+                # El trigger calculará total_conversion automáticamente
+        else:
+            # Si no viene divisa pero viene monto, es una remesa ARS tradicional
+            if 'monto' in data:
+                m = str(data.get('monto', '0')).replace('.', '').replace(',', '.')
+                try: add("monto", float(m or 0))
+                except: return jsonify(success=False, msg="Monto inválido"), 400
 
         # Convertir retirada a numérico
         if 'retirada' in data:
@@ -4389,9 +4444,14 @@ def cierre_resumen():
         resumen['discovery'] = float(resumen['venta_total'] - total_facturas_zab)
 
         # ===== Ingresos / medios de cobro =====
-        # efectivo (remesas)
+        # efectivo (remesas) - usar total_conversion para remesas USD
         cur.execute(f"""
-            SELECT COALESCE(SUM(monto),0)
+            SELECT COALESCE(SUM(
+                CASE
+                    WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
+                    ELSE monto
+                END
+            ),0)
               FROM {T_REMESAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
         """, (fecha, local, caja, turno))
@@ -5451,10 +5511,18 @@ def auditoria():
 from flask import request, jsonify, session, make_response
 
 def _qsum(cur, sql, params):
-    """Suma segura: devuelve float siempre."""
+    """Suma segura: devuelve float siempre. Funciona con cursores de tupla o dictionary."""
     cur.execute(sql, params)
     row = cur.fetchone()
-    return float(row[0]) if row and row[0] is not None else 0.0
+    if not row:
+        return 0.0
+    # Si es un diccionario, tomar el primer valor
+    if isinstance(row, dict):
+        val = next(iter(row.values())) if row else None
+    else:
+        # Si es una tupla/lista, tomar el primer elemento
+        val = row[0] if row else None
+    return float(val) if val is not None else 0.0
 
 def _leftpad(num, width):
     try:
@@ -5539,6 +5607,14 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
 
     Retorna: lista de dicts [{'caja': 'Caja 1', 'turno': 'MAÑANA', 'diferencia': -100.50, 'descargo': 'Faltó...'}]
     """
+    def _extract_first_value(row):
+        """Helper para extraer primer valor de dict o tupla"""
+        if not row:
+            return None
+        if isinstance(row, dict):
+            return next(iter(row.values())) if row else None
+        return row[0]
+
     f = _normalize_fecha(fecha)
     resultado = []
 
@@ -5577,8 +5653,13 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
     cajas_turnos = cur.fetchall()
 
     for ct in cajas_turnos:
-        caja = ct[0]
-        turno = ct[1]
+        # Manejar tanto diccionarios como tuplas
+        if isinstance(ct, dict):
+            caja = ct.get('caja')
+            turno = ct.get('turno')
+        else:
+            caja = ct[0]
+            turno = ct[1]
 
         # Calcular venta_total para esta caja/turno
         if usar_snap:
@@ -5595,18 +5676,32 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
             """, (f, local, caja, turno))
 
         row = cur.fetchone()
-        venta_total = float(row[0] or 0.0) if row else 0.0
+        venta_total = float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Calcular total_cobrado (efectivo + tarjeta + mp + rappi + pedidosya + cuenta_cte + gastos)
         total_cobrado = 0.0
 
-        # Efectivo (remesas)
+        # Efectivo (remesas) - usar total_conversion para USD
         if usar_snap:
-            cur.execute("SELECT COALESCE(SUM(monto),0) FROM snap_remesas WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+            cur.execute("""
+                SELECT COALESCE(SUM(
+                    CASE
+                        WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
+                        ELSE monto
+                    END
+                ),0) FROM snap_remesas WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+            """, (f, local, caja, turno))
         else:
-            cur.execute("SELECT COALESCE(SUM(monto),0) FROM remesas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
+            cur.execute("""
+                SELECT COALESCE(SUM(
+                    CASE
+                        WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
+                        ELSE monto
+                    END
+                ),0) FROM remesas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+            """, (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Tarjetas
         if usar_snap:
@@ -5614,7 +5709,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         else:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM tarjetas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # MercadoPago (NORMAL)
         if usar_snap:
@@ -5622,7 +5717,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         else:
             cur.execute("SELECT COALESCE(SUM(importe),0) FROM mercadopago_trns WHERE DATE(fecha)=%s AND local=%s AND tipo='NORMAL' AND caja=%s AND turno=%s", (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Rappi
         if usar_snap:
@@ -5630,7 +5725,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         else:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM rappi_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # PedidosYa
         if usar_snap:
@@ -5638,7 +5733,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         else:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM pedidosya_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Cuenta corriente (facturas CC viejas + nuevo sistema)
         if usar_snap:
@@ -5646,13 +5741,13 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         else:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM facturas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND tipo='CC'", (f, local, caja, turno))
         row = cur.fetchone()
-        cc_viejas = float(row[0] or 0.0) if row else 0.0
+        cc_viejas = float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Nuevo sistema de cuentas corrientes (solo en facturas_trns, no hay snap aún)
         if not usar_snap:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM cuentas_corrientes_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s AND estado='ok'", (f, local, caja, turno))
             row = cur.fetchone()
-            cc_nuevas = float(row[0] or 0.0) if row else 0.0
+            cc_nuevas = float(_extract_first_value(row) or 0.0) if row else 0.0
         else:
             cc_nuevas = 0.0
 
@@ -5664,7 +5759,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         else:
             cur.execute("SELECT COALESCE(SUM(monto),0) FROM gastos_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s", (f, local, caja, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Anticipos Consumidos - SIEMPRE consultar de tablas normales
         # (no hay snap_anticipos todavía, se agregará en futuras versiones)
@@ -5677,7 +5772,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
               AND aec.estado = 'consumido'
         """, (local, caja, f, turno))
         row = cur.fetchone()
-        total_cobrado += float(row[0] or 0.0) if row else 0.0
+        total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Calcular diferencia
         diferencia = total_cobrado - venta_total
@@ -5693,7 +5788,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                 LIMIT 1
             """, (local, caja, turno, f))
             row_obs = cur.fetchone()
-            descargo = (row_obs[0] or '').strip() if row_obs else ''
+            descargo = (_extract_first_value(row_obs) or '').strip() if row_obs else ''
 
             resultado.append({
                 'caja': caja,
@@ -5730,7 +5825,7 @@ def api_resumen_local():
         return jsonify(error="Fecha inválida (formato esperado YYYY-MM-DD)"), 400
 
     conn = get_db_connection()
-    cur  = conn.cursor()
+    cur  = conn.cursor(dictionary=True)
     try:
         # Verificar si el local está cerrado (siempre necesitamos este dato para el payload)
         cur.execute("""
@@ -5739,7 +5834,7 @@ def api_resumen_local():
             WHERE local=%s AND fecha=%s
         """, (local, f))
         row = cur.fetchone()
-        local_cerrado = (row is not None and row[0] is not None and int(row[0]) == 0)
+        local_cerrado = (row is not None and row.get('min_estado') is not None and int(row.get('min_estado')) == 0)
 
         # Determinar si usar tablas snap o normales
         usar_snap = False
@@ -5795,11 +5890,48 @@ def api_resumen_local():
         # Discovery = Venta Total - (Z + A + B + CC)
         discovery = max((venta_total or 0.0) - (total_facturas or 0.0), 0.0)
 
-        # ===== EFECTIVO (Remesas) =====
+        # ===== EFECTIVO (Remesas) - usar total_conversion para USD =====
         efectivo_neto = _qsum(
             cur,
-            f"SELECT COALESCE(SUM(monto),0) FROM {T_REMESAS} WHERE DATE(fecha)=%s AND local=%s",
+            f"""SELECT COALESCE(SUM(
+                CASE
+                    WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
+                    ELSE monto
+                END
+            ),0) FROM {T_REMESAS} WHERE DATE(fecha)=%s AND local=%s""",
             (f, local),
+        )
+
+        # Detalle de remesas retiradas
+        cur.execute(
+            f"""SELECT id, nro_remesa, precinto, monto, divisa, monto_usd, cotizacion_divisa, total_conversion, fecha, retirada
+                FROM {T_REMESAS}
+                WHERE local=%s AND DATE(fecha)=%s AND retirada = 1
+                ORDER BY fecha DESC, id DESC""",
+            (local, f)
+        )
+        remesas_retiradas = cur.fetchall()
+
+        # Detalle de remesas no retiradas
+        cur.execute(
+            f"""SELECT id, nro_remesa, precinto, monto, divisa, monto_usd, cotizacion_divisa, total_conversion, fecha, retirada
+                FROM {T_REMESAS}
+                WHERE local=%s AND DATE(fecha)=%s AND retirada = 0
+                ORDER BY fecha DESC, id DESC""",
+            (local, f)
+        )
+        remesas_no_retiradas = cur.fetchall()
+
+        # Calcular totales de remesas retiradas y no retiradas
+        retiradas_total = sum(
+            float(r['total_conversion'] or 0) if r.get('divisa') == 'USD' and r.get('total_conversion') is not None
+            else float(r['monto'] or 0)
+            for r in remesas_retiradas
+        )
+        no_retiradas_total = sum(
+            float(r['total_conversion'] or 0) if r.get('divisa') == 'USD' and r.get('total_conversion') is not None
+            else float(r['monto'] or 0)
+            for r in remesas_no_retiradas
         )
 
         # ===== TARJETAS (ventas por marca) =====
@@ -5871,9 +6003,15 @@ def api_resumen_local():
             )
             rows = cur.fetchall() or []
             for r in rows:
-                tipo_codigo = r[0]
-                tipo_desc = r[1]
-                monto_tipo = float(r[2] or 0)
+                # Manejar tanto diccionarios como tuplas
+                if isinstance(r, dict):
+                    tipo_codigo = r.get('tipo')
+                    tipo_desc = r.get('descripcion')
+                    monto_tipo = float(r.get('total') or 0)
+                else:
+                    tipo_codigo = r[0]
+                    tipo_desc = r[1]
+                    monto_tipo = float(r[2] or 0)
                 gastos_detalle[tipo_codigo] = {
                     "descripcion": tipo_desc,
                     "monto": monto_tipo
@@ -5916,14 +6054,33 @@ def api_resumen_local():
                 rows = cur.fetchall() or []
                 print(f"🔍 DEBUG Anticipos - Rows encontrados: {len(rows)}")
                 for r in rows:
-                    divisa = r[9] or 'ARS'
-                    importe_original = float(r[4] or 0)
-                    cotizacion = float(r[10] or 0) if r[10] else None
-                    importe_pesos = float(r[11] or 0)
+                    # Manejar tanto diccionarios como tuplas
+                    if isinstance(r, dict):
+                        divisa = r.get('divisa') or 'ARS'
+                        importe_original = float(r.get('importe') or 0)
+                        cotizacion = float(r.get('cotizacion_divisa') or 0) if r.get('cotizacion_divisa') else None
+                        importe_pesos = float(r.get('importe_consumido') or 0)
+                        cliente = r.get('cliente') or ''
+                        observaciones = r.get('observaciones') or ''
+                        anticipo_id = r.get('id')
+                        fecha_pago = r.get('fecha_pago')
+                        medio_pago = r.get('medio_pago') or ''
+                        usuario = r.get('usuario') or ''
+                        caja = r.get('caja') or ''
+                    else:
+                        divisa = r[9] or 'ARS'
+                        importe_original = float(r[4] or 0)
+                        cotizacion = float(r[10] or 0) if r[10] else None
+                        importe_pesos = float(r[11] or 0)
+                        cliente = r[6] or ''
+                        observaciones = r[3] or ''
+                        anticipo_id = r[0]
+                        fecha_pago = r[1]
+                        medio_pago = r[2] or ''
+                        usuario = r[5] or ''
+                        caja = r[7] or ''
 
                     # Preparar comentario con detalle de divisa extranjera si aplica
-                    cliente = r[6] or ''
-                    observaciones = r[3] or ''
                     comentario_base = f"{cliente} - {observaciones}" if cliente or observaciones else ""
 
                     if divisa != 'ARS' and cotizacion:
@@ -5933,13 +6090,13 @@ def api_resumen_local():
 
                     print(f"   - Cliente: {cliente}, Divisa: {divisa}, Importe pesos: {importe_pesos}")
                     anticipos_items.append({
-                        "id": r[0],
-                        "fecha_anticipo_recibido": str(r[1]) if r[1] else "",
-                        "medio_pago": r[2] or "",
+                        "id": anticipo_id,
+                        "fecha_anticipo_recibido": str(fecha_pago) if fecha_pago else "",
+                        "medio_pago": medio_pago,
                         "comentario": comentario,
                         "monto": importe_pesos,  # Siempre en pesos (ya calculado)
-                        "created_by": r[5] or "",  # usuario que consumió
-                        "caja": r[7] or "",  # caja donde se consumió
+                        "created_by": usuario,  # usuario que consumió
+                        "caja": caja,  # caja donde se consumió
                         "divisa": divisa,
                         "importe_original": importe_original,
                         "cotizacion_divisa": cotizacion
@@ -5965,9 +6122,15 @@ def api_resumen_local():
                 rows = cur.fetchall() or []
                 items = []
                 for r in rows:
-                    pv = r[0]
-                    nro = r[1]
-                    monto = float(r[2] or 0)
+                    # Manejar tanto diccionarios como tuplas
+                    if isinstance(r, dict):
+                        pv = r.get('punto_venta')
+                        nro = r.get('nro_factura')
+                        monto = float(r.get('monto') or 0)
+                    else:
+                        pv = r[0]
+                        nro = r[1]
+                        monto = float(r[2] or 0)
                     item = {
                         "pv": str(pv) if pv is not None else "0",
                         "punto_venta": str(pv) if pv is not None else "0",
@@ -6071,7 +6234,13 @@ def api_resumen_local():
                 "efectivo": {
                     "total": float(efectivo_neto or 0.0),
                     "remesas": float(efectivo_neto or 0.0),
-                    "neto_efectivo": float(efectivo_neto or 0.0)
+                    "neto_efectivo": float(efectivo_neto or 0.0),
+                    "retiradas": remesas_retiradas,
+                    "retiradas_total": float(retiradas_total),
+                    "retiradas_count": len(remesas_retiradas),
+                    "no_retiradas": remesas_no_retiradas,
+                    "no_retiradas_total": float(no_retiradas_total),
+                    "no_retiradas_count": len(remesas_no_retiradas)
                 },
                 "tarjeta": {
                     "total": tarjeta_total,
@@ -6117,9 +6286,13 @@ def api_resumen_local():
         return resp
 
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR en /api/resumen_local: {str(e)}")
+        print(f"Traceback completo:\n{error_trace}")
         try: conn.rollback()
         except: ...
-        return jsonify(error=str(e)), 500
+        return jsonify(error=str(e), traceback=error_trace if app.debug else None), 500
     finally:
         try: cur.close()
         except: ...
@@ -6158,9 +6331,15 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns", tipo='Z')
                     rows = cur.fetchall() or []
                     items = []
                     for r in rows:
-                        pv = r[0]
-                        nz = r[1]
-                        monto = float(r[2] or 0)
+                        # Manejar tanto diccionarios como tuplas
+                        if isinstance(r, dict):
+                            pv = r.get('pv')
+                            nz = r.get('znum')
+                            monto = float(r.get('total') or 0)
+                        else:
+                            pv = r[0]
+                            nz = r[1]
+                            monto = float(r[2] or 0)
                         item = {
                             "pv": str(pv) if pv is not None else "0",
                             "punto_venta": str(pv) if pv is not None else "0",
@@ -6191,8 +6370,13 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns", tipo='Z')
                 rows = cur.fetchall() or []
                 items = []
                 for r in rows:
-                    nz = r[0]
-                    monto = float(r[1] or 0)
+                    # Manejar tanto diccionarios como tuplas
+                    if isinstance(r, dict):
+                        nz = r.get('znum')
+                        monto = float(r.get('total') or 0)
+                    else:
+                        nz = r[0]
+                        monto = float(r[1] or 0)
                     item = {
                         "pv": "0",
                         "punto_venta": "0",
@@ -6300,6 +6484,19 @@ def reporte_resumen_tesoreria_page():
     - Incluye sección 'No Enviados' con cálculo de relevancia
     """
     return render_template("resumen_tesoreria.html")
+
+
+@app.route("/reporteria/resumen-tesoreria-usd")
+@login_required
+@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
+def reporte_resumen_tesoreria_usd_page():
+    """
+    Reporte visual de tesorería USD - Similar a resumen-tesoreria pero:
+    - Solo muestra remesas en USD
+    - Montos en dólares con 2 decimales
+    - Incluye cotización promedio por fecha
+    """
+    return render_template("resumen_tesoreria_usd.html")
 
 
 # Helpers DB
@@ -7570,6 +7767,179 @@ def api_tesoreria_resumen_por_local():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/tesoreria/resumen-por-local-usd', methods=['GET'])
+@login_required
+@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
+def api_tesoreria_resumen_por_local_usd():
+    """
+    Reporte de tesorería USD - Similar a resumen-por-local pero:
+    - Solo muestra remesas en USD (divisa='USD')
+    - Los montos se muestran en USD (monto_usd)
+    - Incluye cotización promedio
+    - Calcula diferencias en USD
+    """
+    from datetime import datetime, timedelta
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener fecha del parámetro o usar fecha actual
+        fecha_param = request.args.get('fecha')
+        if fecha_param:
+            try:
+                hoy = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+            except:
+                hoy = datetime.now().date()
+        else:
+            hoy = datetime.now().date()
+
+        es_lunes = hoy.weekday() == 0  # 0 = Lunes
+
+        # Determinar fechas a mostrar
+        if es_lunes:
+            viernes = hoy - timedelta(days=3)
+            sabado = hoy - timedelta(days=2)
+            domingo = hoy - timedelta(days=1)
+            fechas = [viernes, sabado, domingo]
+            fecha_labels = [
+                viernes.strftime('%d/%m'),
+                sabado.strftime('%d/%m'),
+                domingo.strftime('%d/%m')
+            ]
+        else:
+            fechas = [hoy]
+            fecha_labels = [hoy.strftime('%d/%m')]
+
+        # Obtener todos los locales activos
+        cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
+        todos_locales = [r['local'] for r in cur.fetchall() if r['local']]
+
+        # Definir segmentos
+        segmento2 = ['Nómade', 'Polo House']
+        segmento3 = ['Narda Sucre']
+        segmento1 = [l for l in todos_locales if l not in segmento2 and l not in segmento3]
+
+        segmentos = [
+            {'nombre': 'Principal', 'locales': segmento1},
+            {'nombre': 'Segmento 2', 'locales': segmento2},
+            {'nombre': 'Narda Sucre', 'locales': segmento3}
+        ]
+
+        datos_por_local = {}
+
+        for local in todos_locales:
+            datos_por_local[local] = {
+                'saldo_anterior': 0,
+                'saldo_a_retirar': 0
+            }
+
+            for idx, fecha in enumerate(fechas):
+                fecha_label = fecha_labels[idx]
+
+                # Remesas USD retiradas en esta fecha (teórico en USD)
+                cur.execute("""
+                    SELECT
+                        SUM(r.monto_usd) as tran_total_usd,
+                        AVG(r.cotizacion_divisa) as cotizacion_promedio,
+                        COUNT(*) as cantidad_tran
+                    FROM remesas_trns r
+                    WHERE r.local = %s
+                      AND DATE(r.fecha_retirada) = %s
+                      AND r.divisa = 'USD'
+                      AND (r.retirada = 1 OR r.estado_contable IN ('TRAN', 'Contabilizada'))
+                """, (local, fecha))
+                tran_data = cur.fetchone()
+                tran_total_usd = float(tran_data['tran_total_usd']) if tran_data and tran_data['tran_total_usd'] else 0
+                cotizacion_promedio = float(tran_data['cotizacion_promedio']) if tran_data and tran_data['cotizacion_promedio'] else 0
+
+                # TODO: En el futuro, si tesorería registra montos reales en USD,
+                # agregar query a tabla tesoreria_recibido_usd (a crear)
+                # Por ahora, real_total_usd = 0
+                real_total_usd = 0
+
+                diferencia = real_total_usd - tran_total_usd
+
+                datos_por_local[local][fecha_label] = {
+                    'tran': tran_total_usd,
+                    'real': real_total_usd,
+                    'diferencia': diferencia,
+                    'cotizacion': cotizacion_promedio
+                }
+
+            # Saldo anterior (remesas USD anteriores al día anterior en estado Local)
+            fecha_ayer = hoy - timedelta(days=1)
+            cur.execute("""
+                SELECT SUM(monto_usd) as saldo_historico_usd
+                FROM remesas_trns
+                WHERE local = %s
+                  AND DATE(fecha) < %s
+                  AND divisa = 'USD'
+                  AND estado_contable = 'Local'
+                  AND estado_contable != 'Archivada'
+                  AND retirada = 0
+            """, (local, fecha_ayer))
+            saldo_anterior_data = cur.fetchone()
+            datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico_usd']) if saldo_anterior_data and saldo_anterior_data['saldo_historico_usd'] else 0
+
+            # Saldo a retirar (remesas USD del día anterior en estado Local)
+            cur.execute("""
+                SELECT SUM(monto_usd) as saldo_pendiente_usd
+                FROM remesas_trns
+                WHERE local = %s
+                  AND DATE(fecha) = %s
+                  AND divisa = 'USD'
+                  AND estado_contable = 'Local'
+                  AND estado_contable != 'Archivada'
+                  AND retirada = 0
+            """, (local, fecha_ayer))
+            saldo_data = cur.fetchone()
+            datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente_usd']) if saldo_data and saldo_data['saldo_pendiente_usd'] else 0
+
+        # No Enviados (remesas USD en estado Local)
+        cur.execute("""
+            SELECT
+                local,
+                fecha as fecha_caja,
+                monto_usd as monto,
+                cotizacion_divisa,
+                DATEDIFF(CURDATE(), fecha) as dias_transcurridos,
+                (monto_usd * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
+            FROM remesas_trns
+            WHERE divisa = 'USD'
+              AND estado_contable = 'Local'
+              AND retirada = 0
+              AND estado_contable != 'Archivada'
+            ORDER BY relevancia DESC
+            LIMIT 50
+        """)
+        no_enviados = cur.fetchall()
+
+        # Convertir fechas a string
+        for item in no_enviados:
+            if item.get('fecha_caja'):
+                item['fecha_caja'] = item['fecha_caja'].isoformat()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(
+            success=True,
+            es_lunes=es_lunes,
+            fechas=fecha_labels,
+            fechas_full=[f.strftime('%Y-%m-%d') for f in fechas],
+            segmentos=segmentos,
+            datos=datos_por_local,
+            no_enviados=no_enviados
+        )
+
+    except Exception as e:
+        print(f"❌ ERROR resumen-por-local-usd: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
 # NUEVO: Endpoint para registrar monto real recibido por tesorería
 @app.route("/api/tesoreria/registrar-recibido", methods=['POST'])
 @login_required
@@ -8750,9 +9120,10 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
     cur.execute("""
         INSERT INTO snap_remesas
         (snapshot_id, id_src, usuario, local, caja, turno, fecha, nro_remesa, precinto, monto,
-         retirada, retirada_por, fecha_retirada, ult_mod, estado)
+         retirada, retirada_por, fecha_retirada, ult_mod, estado, divisa, monto_usd, cotizacion_divisa, total_conversion)
         SELECT %s, r.id, r.usuario, r.local, r.caja, r.turno, DATE(r.fecha), r.nro_remesa,
-               r.precinto, r.monto, r.retirada, r.retirada_por, r.fecha_retirada, r.ult_mod, r.estado
+               r.precinto, r.monto, r.retirada, r.retirada_por, r.fecha_retirada, r.ult_mod, r.estado,
+               r.divisa, r.monto_usd, r.cotizacion_divisa, r.total_conversion
           FROM remesas_trns r
          WHERE r.local=%s AND DATE(r.fecha)=%s AND r.turno=%s
     """, (snapshot_id, local, f, turno))

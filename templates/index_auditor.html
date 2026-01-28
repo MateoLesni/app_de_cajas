@@ -158,6 +158,11 @@
             <span class="nav-dot" aria-hidden="true"></span>
             Apertura AP
           </a>
+          <a class="nav-item nav-sub-item {% if request.path == url_for('reporte_resumen_tesoreria_usd_page') %}is-active{% endif %}"
+            href="{{ url_for('reporte_resumen_tesoreria_usd_page') }}">
+            <span class="nav-dot" aria-hidden="true"></span>
+            Apertura AP USD
+          </a>
         </div>
       </div>
 
@@ -672,12 +677,45 @@
                 <label for="precinto">N° Precinto:</label>
                 <input type="text" id="precinto" name="precinto" required>
               </div>
-              <div class="form-group">
+
+              <!-- Campo Monto ARS (se oculta si son dólares) -->
+              <div class="form-group" id="monto_ars_container">
                 <label for="monto">Monto:</label>
                 <div class="input-money"><span>$</span>
-                  <input type="text" id="monto" name="monto" class="currency-input" placeholder="0,00" required>
+                  <input type="text" id="monto" name="monto" class="currency-input" placeholder="0,00">
                 </div>
               </div>
+
+              <!-- Checkbox para indicar si la remesa es en USD -->
+              <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="son_dolares" name="son_dolares" style="width: auto; margin: 0;">
+                <label for="son_dolares" style="margin: 0; cursor: pointer;">Son dólares (USD)</label>
+              </div>
+
+              <!-- Campos USD (hidden by default) -->
+              <div id="usd_fields_container" style="display: none;">
+                <div class="form-group">
+                  <label for="monto_usd">Monto en USD:</label>
+                  <div class="input-money"><span>USD</span>
+                    <input type="number" id="monto_usd" name="monto_usd" step="0.01" placeholder="0.00" style="padding-left: 50px;">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="cotizacion_divisa">Cotización en pesos:</label>
+                  <div class="input-money"><span>$</span>
+                    <input type="number" id="cotizacion_divisa" name="cotizacion_divisa" step="0.01" placeholder="0.00">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="total_conversion_display">Total convertido:</label>
+                  <div class="input-money"><span>$</span>
+                    <input type="text" id="total_conversion_display" readonly placeholder="0,00" style="background-color: #f5f5f5; cursor: not-allowed;">
+                  </div>
+                </div>
+              </div>
+
               <div class="form-group">
                 <label for="retirada">¿Retirada?</label>
                 <select id="retirada" name="retirada" required>

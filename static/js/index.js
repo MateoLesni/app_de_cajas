@@ -253,11 +253,21 @@ document.addEventListener("DOMContentLoaded", function () {
         fila.setAttribute('data-remesa-tipo', r.tipo);
       }
 
+      // Formatear monto según divisa
+      let montoDisplay = '';
+      if (r.divisa === 'USD' && r.monto_usd) {
+        const montoUSD = parseFloat(r.monto_usd ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const totalARS = parseFloat(r.total_conversion ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0 });
+        montoDisplay = `${montoUSD} USD ($${totalARS})`;
+      } else {
+        montoDisplay = `$${parseFloat(r.monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+      }
+
       fila.innerHTML = `
         <td class="col-fecha">${formatearFecha(r.fecha)}</td>
         <td class="col-nro-remesa" data-field="nro_remesa">${r.nro_remesa ?? ""}</td>
         <td class="col-precinto" data-field="precinto">${r.precinto ?? ""}</td>
-        <td class="col-monto" data-field="monto">$${parseFloat(r.monto ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+        <td class="col-monto" data-field="monto">${montoDisplay}</td>
         <td class="col-retirada-por">${retiradaPor}</td>
         <td class="col-acciones">${acciones}</td>
       `;
@@ -270,6 +280,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // === Función para hacer una fila editable inline ===
   function hacerFilaEditable(fila, remesaId, tipo) {
+    // Buscar datos completos de la remesa
+    const caja = cajaSelect.value;
+    const remesa = (todasLasRemesas[caja] || []).find(r => r.id == remesaId);
+    const esUSD = remesa && remesa.divisa === 'USD';
+
     // Guardar valores originales
     const nroRemesaCell = fila.querySelector('.col-nro-remesa');
     const precintoCell = fila.querySelector('.col-precinto');
@@ -279,18 +294,66 @@ document.addEventListener("DOMContentLoaded", function () {
     const originalNroRemesa = nroRemesaCell.textContent.trim();
     const originalPrecinto = precintoCell.textContent.trim();
     const originalMontoText = montoCell.textContent.trim();
-    // Quitar el símbolo $ y los separadores de miles
-    const originalMonto = originalMontoText.replace('$', '').replace(/\./g, '').replace(',', '.');
 
-    // Crear inputs
+    // Crear inputs básicos
     nroRemesaCell.innerHTML = `<input type="text" class="input-inline" value="${originalNroRemesa}" style="width: 100%; padding: 4px;">`;
     precintoCell.innerHTML = `<input type="text" class="input-inline" value="${originalPrecinto}" style="width: 100%; padding: 4px;">`;
-    montoCell.innerHTML = `<input type="number" class="input-inline" value="${originalMonto}" step="0.01" style="width: 100%; padding: 4px;">`;
+
+    // Si es USD, mostrar campos USD con cálculo automático
+    if (esUSD) {
+      const montoUSD = remesa.monto_usd || 0;
+      const cotizacion = remesa.cotizacion_divisa || 0;
+
+      montoCell.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div>
+            <div style="font-size: 10px; color: #888; margin-bottom: 2px; font-weight: 500;">Monto en USD</div>
+            <input type="number" class="input-inline-usd" value="${montoUSD}" step="1" style="width: 100%; padding: 4px; font-size: 13px; border: 1px solid #ccc; border-radius: 3px;">
+          </div>
+          <div>
+            <div style="font-size: 10px; color: #888; margin-bottom: 2px; font-weight: 500;">Cotización en pesos</div>
+            <input type="number" class="input-inline-cotizacion" value="${cotizacion}" step="0.01" style="width: 100%; padding: 4px; font-size: 13px; border: 1px solid #ccc; border-radius: 3px;">
+          </div>
+          <div>
+            <div style="font-size: 10px; color: #888; margin-bottom: 2px; font-weight: 500;">Total convertido</div>
+            <input type="text" class="input-inline-total-conv" readonly style="width: 100%; padding: 4px; background-color: #f5f5f5; font-size: 12px; color: #666; border: 1px solid #ddd; border-radius: 3px; cursor: not-allowed;">
+          </div>
+        </div>
+      `;
+
+      // Función para calcular total_conversion en edición inline
+      const inputUSD = montoCell.querySelector('.input-inline-usd');
+      const inputCotiz = montoCell.querySelector('.input-inline-cotizacion');
+      const inputTotal = montoCell.querySelector('.input-inline-total-conv');
+
+      function calcularTotalInline() {
+        const usd = parseFloat(inputUSD.value) || 0;
+        const cot = parseFloat(inputCotiz.value) || 0;
+        if (usd > 0 && cot > 0) {
+          const total = usd * cot;
+          inputTotal.value = `= $${total.toLocaleString('es-AR', { minimumFractionDigits: 0 })}`;
+        } else {
+          inputTotal.value = '';
+        }
+      }
+
+      // Calcular inicialmente
+      calcularTotalInline();
+
+      // Recalcular cuando cambien los valores
+      inputUSD.addEventListener('input', calcularTotalInline);
+      inputCotiz.addEventListener('input', calcularTotalInline);
+
+    } else {
+      // Si es ARS, mostrar input de monto normal
+      const originalMonto = originalMontoText.replace('$', '').replace(/\./g, '').replace(',', '.');
+      montoCell.innerHTML = `<input type="number" class="input-inline" value="${originalMonto}" step="0.01" style="width: 100%; padding: 4px;">`;
+    }
 
     // Botones de guardar y cancelar
     accionesCell.innerHTML = `
-      <button class="btn-guardar-inline" data-id="${remesaId}" data-tipo="${tipo}" title="Guardar">💾</button>
-      <button class="btn-cancelar-inline" title="Cancelar">❌</button>
+      <button class="btn-guardar-inline" data-id="${remesaId}" data-tipo="${tipo}" title="Guardar" style="background-color: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 16px;">✓</button>
+      <button class="btn-cancelar-inline" title="Cancelar" style="background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-left: 4px;">✕</button>
     `;
 
     // Focus en el primer input
@@ -324,11 +387,37 @@ document.addEventListener("DOMContentLoaded", function () {
     btnGuardar.addEventListener('click', async () => {
       const nuevoNroRemesa = nroRemesaCell.querySelector('input').value.trim();
       const nuevoPrecinto = precintoCell.querySelector('input').value.trim();
-      const nuevoMonto = montoCell.querySelector('input').value.trim();
 
-      if (!nuevoNroRemesa || !nuevoMonto) {
-        alert("Número de remesa y monto son obligatorios");
-        return;
+      let bodyData = {
+        nro_remesa: nuevoNroRemesa,
+        precinto: nuevoPrecinto
+      };
+
+      // Si es USD, validar y enviar campos USD
+      if (esUSD) {
+        const inputUSD = montoCell.querySelector('.input-inline-usd');
+        const inputCotiz = montoCell.querySelector('.input-inline-cotizacion');
+        const nuevoMontoUSD = inputUSD?.value.trim();
+        const nuevaCotizacion = inputCotiz?.value.trim();
+
+        if (!nuevoNroRemesa || !nuevoMontoUSD || !nuevaCotizacion) {
+          alert("Número de remesa, monto USD y cotización son obligatorios");
+          return;
+        }
+
+        bodyData.divisa = 'USD';
+        bodyData.monto_usd = nuevoMontoUSD;
+        bodyData.cotizacion_divisa = nuevaCotizacion;
+      } else {
+        // Si es ARS, validar y enviar monto normal
+        const nuevoMonto = montoCell.querySelector('input')?.value.trim();
+
+        if (!nuevoNroRemesa || !nuevoMonto) {
+          alert("Número de remesa y monto son obligatorios");
+          return;
+        }
+
+        bodyData.monto = nuevoMonto;
       }
 
       // Hacer PUT request
@@ -336,11 +425,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const response = await fetch(`/remesas/${remesaId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nro_remesa: nuevoNroRemesa,
-            precinto: nuevoPrecinto,
-            monto: nuevoMonto
-          })
+          body: JSON.stringify(bodyData)
         });
 
         const data = await response.json();
@@ -418,6 +503,67 @@ document.addEventListener("DOMContentLoaded", function () {
   // Los botones "Añadir Remesa" y "Actualizar Remesa" fueron eliminados
   // Ahora solo existe "Guardar Remesa" que guarda directamente en BD
 
+  // ===== NUEVO: Lógica para checkbox "Son dólares" y cálculo automático =====
+  const checkboxDolares = document.getElementById("son_dolares");
+  const usdFieldsContainer = document.getElementById("usd_fields_container");
+  const montoARSContainer = document.getElementById("monto_ars_container");
+  const inputMonto = document.getElementById("monto");
+  const inputMontoUSD = document.getElementById("monto_usd");
+  const inputCotizacion = document.getElementById("cotizacion_divisa");
+  const inputTotalConversion = document.getElementById("total_conversion");
+
+  // Mostrar/ocultar campos según checkbox
+  checkboxDolares?.addEventListener("change", () => {
+    const esDolares = checkboxDolares.checked;
+
+    // Toggle campos USD
+    if (usdFieldsContainer) {
+      usdFieldsContainer.style.display = esDolares ? "block" : "none";
+    }
+
+    // Toggle campo Monto ARS (ocultar si es USD)
+    if (montoARSContainer) {
+      montoARSContainer.style.display = esDolares ? "none" : "block";
+    }
+
+    // Ajustar required
+    if (inputMonto) {
+      inputMonto.required = !esDolares;
+    }
+
+    // Limpiar campos según lo que se desmarca
+    if (esDolares) {
+      // Si marca USD, limpiar campo ARS
+      if (inputMonto) inputMonto.value = "";
+    } else {
+      // Si desmarca USD, limpiar campos USD
+      if (inputMontoUSD) inputMontoUSD.value = "";
+      if (inputCotizacion) inputCotizacion.value = "";
+      if (inputTotalConversion) inputTotalConversion.value = "";
+    }
+  });
+
+  // Calcular total_conversion automáticamente
+  function calcularTotalConversion() {
+    if (!checkboxDolares?.checked) return;
+
+    const montoUSD = parseFloat(inputMontoUSD?.value.replace(/[^\d,-]/g, "").replace(",", ".")) || 0;
+    const cotizacion = parseFloat(inputCotizacion?.value.replace(/[^\d,-]/g, "").replace(",", ".")) || 0;
+
+    if (montoUSD > 0 && cotizacion > 0) {
+      const total = montoUSD * cotizacion;
+      if (inputTotalConversion) {
+        inputTotalConversion.value = total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+    } else {
+      if (inputTotalConversion) inputTotalConversion.value = "";
+    }
+  }
+
+  // Listeners para recalcular cuando cambian monto_usd o cotizacion
+  inputMontoUSD?.addEventListener("input", calcularTotalConversion);
+  inputCotizacion?.addEventListener("input", calcularTotalConversion);
+
   // Guardar remesa directamente en BD
   btnGuardar?.addEventListener("click", async () => {
     if (!canActUI()) { alert("No tenés permisos para guardar en esta caja."); return; }
@@ -437,9 +583,29 @@ document.addEventListener("DOMContentLoaded", function () {
     const retirada = document.getElementById("retirada").value;
     const retirada_por = document.getElementById("retirada_por").value.trim();
 
-    if (!nro_remesa || !monto) {
-      alert("⚠️ Número de remesa y monto son obligatorios.");
+    // ===== NUEVO: Leer valores USD =====
+    const son_dolares = checkboxDolares?.checked || false;
+    const monto_usd = son_dolares ? (inputMontoUSD?.value.trim() || "") : null;
+    const cotizacion_divisa = son_dolares ? (inputCotizacion?.value.trim() || "") : null;
+
+    // Validaciones
+    if (!nro_remesa) {
+      alert("⚠️ Número de remesa es obligatorio.");
       return;
+    }
+
+    if (son_dolares) {
+      // Si es USD, validar que monto_usd y cotizacion estén presentes
+      if (!monto_usd || !cotizacion_divisa) {
+        alert("⚠️ Para remesas en USD, debe ingresar el monto en dólares y la cotización.");
+        return;
+      }
+    } else {
+      // Si es ARS, validar que monto esté presente
+      if (!monto) {
+        alert("⚠️ Monto es obligatorio.");
+        return;
+      }
     }
 
     // Crear array con una sola remesa
@@ -449,7 +615,11 @@ document.addEventListener("DOMContentLoaded", function () {
       precinto: precinto,
       monto: monto,
       retirada: retirada,
-      retirada_por: retirada_por
+      retirada_por: retirada_por,
+      // ===== NUEVO: Campos USD =====
+      divisa: son_dolares ? "USD" : "ARS",
+      monto_usd: son_dolares ? monto_usd : null,
+      cotizacion_divisa: son_dolares ? cotizacion_divisa : null
     };
 
     fetch("/guardar_remesas_lote", {

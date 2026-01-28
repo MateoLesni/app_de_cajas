@@ -247,38 +247,20 @@
                     <div class="sub-acc acc" aria-expanded="false">
                       <div class="sl-row"><span class="label">Efectivo</span><span class="amount r" id="rl-cash">0,00</span></div>
                       <div class="acc-body">
+                        <!-- Tabla de todas las remesas -->
                         <table class="sl-table">
-                          <tr><td>Remesas</td><td class="r" id="rl-remesas">0,00</td></tr>
-                          <tr><td>Neto efectivo</td><td class="r" id="rl-cash-neto">0,00</td></tr>
+                          <thead>
+                            <tr>
+                              <th style="text-align: center; width: 15%;">Nro Remesa</th>
+                              <th style="text-align: center; width: 20%;">Nro Precinto</th>
+                              <th style="text-align: center; width: 40%;">Monto</th>
+                              <th style="text-align: center; width: 25%;">Retirada</th>
+                            </tr>
+                          </thead>
+                          <tbody id="rl-remesas-items">
+                            <tr class="muted"><td colspan="4" style="text-align: center;">Sin remesas…</td></tr>
+                          </tbody>
                         </table>
-
-                        <!-- Remesas retiradas -->
-                        <div class="sub-acc acc" aria-expanded="false">
-                          <div class="sl-row">
-                            <span class="label">Remesas retiradas</span>
-                            <span class="amount r"><span id="rl-remesas-ret-total">0,00</span> <span class="muted">(<span id="rl-remesas-ret-count">0</span>)</span></span>
-                          </div>
-                          <div class="acc-body">
-                            <table class="sl-table">
-                              <thead><tr><th>#</th><th>Fecha</th><th class="r">Monto</th></tr></thead>
-                              <tbody id="rl-remesas-ret-items"><tr class="muted"><td colspan="3">Sin datos…</td></tr></tbody>
-                            </table>
-                          </div>
-                        </div>
-
-                        <!-- Remesas no retiradas -->
-                        <div class="sub-acc acc" aria-expanded="false">
-                          <div class="sl-row">
-                            <span class="label">Remesas no retiradas</span>
-                            <span class="amount r"><span id="rl-remesas-no-ret-total">0,00</span> <span class="muted">(<span id="rl-remesas-no-ret-count">0</span>)</span></span>
-                          </div>
-                          <div class="acc-body">
-                            <table class="sl-table">
-                              <thead><tr><th>#</th><th>Fecha</th><th class="r">Monto</th></tr></thead>
-                              <tbody id="rl-remesas-no-ret-items"><tr class="muted"><td colspan="3">Sin datos…</td></tr></tbody>
-                            </table>
-                          </div>
-                        </div>
                       </div>
                     </div>
 

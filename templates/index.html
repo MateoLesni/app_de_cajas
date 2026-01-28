@@ -143,7 +143,7 @@
 
         <div class="mb-3">
           <label for="fechaGlobal" class="form-label">Seleccioná una fecha de carga:</label>
-          <input type="date" id="fechaGlobal" class="form-control date-modern" required>
+          <input type="date" id="fechaGlobal" class="form-control date-modern" required max="{{ today }}">
         </div>
 
         <!-- Tabs -->
@@ -233,7 +233,7 @@
             </form>
 
             <div class="soft-divider"></div>
-
+            <h2>Registro de Facturas</h2>
             <!-- FORM 2: Comprobantes (Z/A/B/CC) -->
             <form id="ventasFacturasForm" class="form-container">
               <div id="facturasGrid" class="grid-4">
@@ -635,12 +635,48 @@
                 <label for="precinto">N° Precinto:</label>
                 <input type="text" id="precinto" name="precinto" required>
               </div>
-              <div class="form-group">
+              <!-- Campo Monto ARS (se oculta si son dólares) -->
+              <div class="form-group" id="monto_ars_container">
                 <label for="monto">Monto:</label>
                 <div class="input-money"><span>$</span>
-                  <input type="text" id="monto" name="monto" class="currency-input" placeholder="0,00" required>
+                  <input type="text" id="monto" name="monto" class="currency-input" placeholder="0,00">
                 </div>
               </div>
+
+              <!-- Checkbox para indicar si la remesa es en USD -->
+              <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="son_dolares" name="son_dolares" style="width: auto; margin: 0;">
+                <label for="son_dolares" style="margin: 0; cursor: pointer;">Son dólares (USD)</label>
+              </div>
+
+              <!-- Campos que aparecen solo cuando son_dolares está marcado -->
+              <div id="usd_fields_container" style="display: none;">
+                <div class="form-group">
+                  <label for="monto_usd">Monto en USD:</label>
+                  <div class="input-money"><span>USD</span>
+                    <input type="text" id="monto_usd" name="monto_usd" class="currency-input" placeholder="0,00">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="cotizacion_divisa">Cotización (USD → ARS):</label>
+                  <div class="input-money"><span>$</span>
+                    <input type="text" id="cotizacion_divisa" name="cotizacion_divisa" class="currency-input" placeholder="0,00">
+                  </div>
+                  <small style="color: #666; font-size: 0.85em; margin-top: 4px; display: block;">
+                    A cuánto se tomó el dólar en pesos
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="total_conversion">Total convertido (ARS):</label>
+                  <div class="input-money"><span>$</span>
+                    <input type="text" id="total_conversion" name="total_conversion" class="currency-input" placeholder="0,00" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+                  </div>
+                  <small style="color: #666; font-size: 0.85em; margin-top: 4px; display: block;">
+                    Monto USD × Cotización (calculado automáticamente)
+                  </small>
+                </div>
+              </div>
+
               <div class="form-group">
                 <label for="retirada">¿Retirada?</label>
                 <select id="retirada" name="retirada" required>

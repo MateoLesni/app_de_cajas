@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Resumen Tesorería por Local</title>
+  <title>Apertura AP USD</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -369,7 +369,7 @@
                 Remesas Tesorería
               </a>
             {% endif %}
-            <a class="nav-item nav-sub-item is-active"
+            <a class="nav-item nav-sub-item"
                href="{{ url_for('reporte_resumen_tesoreria_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
               {% if session.get('role_level', 1)|int >= 3 %}
@@ -378,7 +378,7 @@
                 Resumen por Local
               {% endif %}
             </a>
-            <a class="nav-item nav-sub-item"
+            <a class="nav-item nav-sub-item is-active"
                href="{{ url_for('reporte_resumen_tesoreria_usd_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
               Apertura AP USD
@@ -396,7 +396,7 @@
     <main class="content-main" role="main">
       <div class="tesoreria-container">
         <div class="header-section">
-          <h1>Resumen Tesorería por Local</h1>
+          <h1>Apertura AP USD</h1>
           <div class="controls-section">
             <div class="date-selector">
               <label for="fechaConsulta">Fecha:</label>
@@ -473,7 +473,7 @@ async function cargarResumenTesoreria() {
 
     try {
         const fechaSeleccionada = document.getElementById('fechaConsulta').value;
-        const url = `/api/tesoreria/resumen-por-local${fechaSeleccionada ? '?fecha=' + fechaSeleccionada : ''}`;
+        const url = `/api/tesoreria/resumen-por-local-usd${fechaSeleccionada ? '?fecha=' + fechaSeleccionada : ''}`;
 
         const response = await fetch(url);
         const data = await response.json();
@@ -753,7 +753,8 @@ function renderizarNoEnviados(noEnviados) {
 
 function formatearMonto(valor) {
     if (!valor || valor === 0) return '-';
-    return '$' + Math.round(parseFloat(valor)).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    // Formato USD con 2 decimales
+    return 'USD ' + parseFloat(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatearFecha(fechaStr) {

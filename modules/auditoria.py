@@ -269,8 +269,14 @@ def auditor_resumen_api():
 
             # -------- REMESAS (UNA FILA POR REMESA) --------
             # Tabla: remesas_trns(local, fecha, nro_remesa, monto, turno, caja, ...)
+            # Para remesas USD, usar total_conversion (monto convertido a ARS)
             sql_rem = f"""
-                SELECT t.nro_remesa, t.monto
+                SELECT
+                    t.nro_remesa,
+                    CASE
+                        WHEN t.divisa = 'USD' AND t.total_conversion IS NOT NULL THEN t.total_conversion
+                        ELSE t.monto
+                    END AS monto_efectivo
                 FROM remesas_trns t
                 WHERE t.local = %s
                   AND DATE(t.fecha) = DATE(%s)
@@ -288,7 +294,7 @@ def auditor_resumen_api():
                     "cuotas": "",
                     "nro_lote": "",
                     "cheque_cupon": "",
-                    "pagado": _n0(rrem.get("monto")),
+                    "pagado": _n0(rrem.get("monto_efectivo")),
                 })
 
             # -------- GASTOS --------
@@ -422,9 +428,14 @@ def auditor_resumen_api():
                 discovery_val = venta_total_sistema - total_facturas_zab
 
                 # 4. Calcular total_cobrado para DIFERENCIA
-                # efectivo (remesas)
+                # efectivo (remesas) - usar total_conversion para remesas USD
                 cur.execute(f"""
-                    SELECT COALESCE(SUM(t.monto), 0) AS total
+                    SELECT COALESCE(SUM(
+                        CASE
+                            WHEN t.divisa = 'USD' AND t.total_conversion IS NOT NULL THEN t.total_conversion
+                            ELSE t.monto
+                        END
+                    ), 0) AS total
                     FROM remesas_trns t
                     WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
                     {g.read_scope}
