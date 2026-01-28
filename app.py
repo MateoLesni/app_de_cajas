@@ -7669,7 +7669,7 @@ def api_tesoreria_resumen_por_local():
                 }
 
             # Calcular "Saldo anterior" (remesas ANTERIORES al día anterior - acumulado histórico)
-            # Si hoy es 13/01, muestra remesas Local anteriores a 12/01 (del 11/01 hacia atrás)
+            # Si hoy es 13/01, muestra TODAS las remesas anteriores a 12/01 que no fueron retiradas
             # IMPORTANTE: Usar total_conversion para remesas USD
             fecha_ayer = hoy - timedelta(days=1)
             cur.execute("""
@@ -7682,14 +7682,13 @@ def api_tesoreria_resumen_por_local():
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) < %s
-                  AND estado_contable = 'Local'
                   AND retirada = 0
             """, (local, fecha_ayer))
             saldo_anterior_data = cur.fetchone()
             datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico']) if saldo_anterior_data and saldo_anterior_data['saldo_historico'] else 0
 
-            # Calcular "Saldo a retirar" (remesas del DÍA ANTERIOR en estado Local)
-            # Si hoy es 13/01, muestra remesas Local de 12/01
+            # Calcular "Saldo a retirar" (remesas del DÍA ANTERIOR no retiradas)
+            # Si hoy es 13/01, muestra TODAS las remesas de 12/01 que están físicamente en el local
             # IMPORTANTE: Usar total_conversion para remesas USD
             cur.execute("""
                 SELECT SUM(
@@ -7701,7 +7700,6 @@ def api_tesoreria_resumen_por_local():
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) = %s
-                  AND estado_contable = 'Local'
                   AND retirada = 0
             """, (local, fecha_ayer))
             saldo_data = cur.fetchone()
