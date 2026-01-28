@@ -4332,39 +4332,11 @@ def cierre_resumen():
     if not local or not caja or not fecha or not turno:
         return jsonify(error="Parámetros insuficientes"), 400
 
-    # Control de visibilidad por rol (igual que facturas)
+    # Control de visibilidad por rol
+    # MODIFICADO: Permitir a encargados y auditores ver datos antes del cierre
+    # para que puedan verificar remesas USD que crean
     lvl = get_user_level()
     conn = get_db_connection()
-
-    # Nivel 2 (encargado): solo puede ver si la caja está cerrada
-    if lvl == 2:
-        cur_check = conn.cursor()
-        cur_check.execute("""
-            SELECT COUNT(*) FROM cajas_estado
-            WHERE local=%s AND caja=%s AND fecha_operacion=%s AND turno=%s AND estado=0
-        """, (local, caja, _normalize_fecha(fecha), turno))
-        row = cur_check.fetchone()
-        cur_check.close()
-        if not row or row[0] == 0:
-            # Caja no cerrada, retornar resumen vacío
-            conn.close()
-            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b',
-                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','anticipos','discovery','total_cobrado']})
-
-    # Nivel 3 (auditor): solo puede ver si el local está cerrado
-    if lvl >= 3:
-        cur_check = conn.cursor()
-        cur_check.execute("""
-            SELECT COUNT(*) FROM cierres_locales
-            WHERE local=%s AND DATE(fecha)=%s AND estado=0
-        """, (local, _normalize_fecha(fecha)))
-        row = cur_check.fetchone()
-        cur_check.close()
-        if not row or row[0] == 0:
-            # Local no cerrado, retornar resumen vacío
-            conn.close()
-            return jsonify({k: 0.0 for k in ['venta_total','venta_z','facturas_a','facturas_b',
-                'efectivo','tarjeta','mercadopago','rappi','pedidosya','gastos','cuenta_cte','tips','anticipos','discovery','total_cobrado']})
 
     cur  = conn.cursor()
 
