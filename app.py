@@ -7864,7 +7864,6 @@ def api_tesoreria_resumen_por_local_usd():
                   AND DATE(fecha) < %s
                   AND divisa = 'USD'
                   AND estado_contable = 'Local'
-                  AND estado_contable != 'Archivada'
                   AND retirada = 0
             """, (local, fecha_ayer))
             saldo_anterior_data = cur.fetchone()
@@ -7878,7 +7877,6 @@ def api_tesoreria_resumen_por_local_usd():
                   AND DATE(fecha) = %s
                   AND divisa = 'USD'
                   AND estado_contable = 'Local'
-                  AND estado_contable != 'Archivada'
                   AND retirada = 0
             """, (local, fecha_ayer))
             saldo_data = cur.fetchone()
@@ -7897,7 +7895,6 @@ def api_tesoreria_resumen_por_local_usd():
             WHERE divisa = 'USD'
               AND estado_contable = 'Local'
               AND retirada = 0
-              AND estado_contable != 'Archivada'
             ORDER BY relevancia DESC
             LIMIT 50
         """)
