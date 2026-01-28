@@ -4356,7 +4356,7 @@ def cierre_resumen():
         # Determinar tablas a usar
         if local_cerrado:
             T_VENTAS = "snap_ventas"
-            T_REMESAS = "snap_remesas"
+            T_REMESAS = "remesas_trns"  # Siempre remesas_trns (auditores editan post-cierre, igual que facturas)
             T_TARJETAS = "snap_tarjetas"
             T_MP = "snap_mercadopago"
             T_RAPPI = "snap_rappi"
@@ -5819,10 +5819,10 @@ def api_resumen_local():
             usar_snap = local_cerrado
 
         # Tablas según el flag usar_snap
-        # IMPORTANTE: Facturas siempre se leen de facturas_trns porque los auditores
-        # pueden agregar/editar facturas incluso después del cierre del local
+        # IMPORTANTE: Facturas y Remesas siempre se leen de *_trns porque los auditores
+        # pueden agregar/editar estos datos incluso después del cierre del local
         if usar_snap:
-            T_REMESAS    = "snap_remesas"
+            T_REMESAS    = "remesas_trns"   # SIEMPRE leer de remesas_trns (auditores editan post-cierre)
             T_TARJETAS   = "snap_tarjetas"
             T_MP         = "snap_mercadopago"
             T_RAPPI      = "snap_rappi"
