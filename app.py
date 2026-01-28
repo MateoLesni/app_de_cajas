@@ -7705,7 +7705,7 @@ def api_tesoreria_resumen_por_local():
             saldo_data = cur.fetchone()
             datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente']) if saldo_data and saldo_data['saldo_pendiente'] else 0
 
-        # Calcular "No Enviados" (remesas en estado Local, ordenadas por relevancia)
+        # Calcular "No Enviados" (TODAS las remesas pendientes, ordenadas por relevancia)
         # IMPORTANTE: Usar total_conversion para remesas USD en monto y relevancia
         cur.execute("""
             SELECT
@@ -7721,8 +7721,7 @@ def api_tesoreria_resumen_por_local():
                     ELSE monto
                 END * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
             FROM remesas_trns
-            WHERE estado_contable = 'Local'
-              AND retirada = 0
+            WHERE retirada = 0
             ORDER BY relevancia DESC
             LIMIT 50
         """)
