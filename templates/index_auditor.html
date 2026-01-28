@@ -678,18 +678,18 @@
                 <input type="text" id="precinto" name="precinto" required>
               </div>
 
+              <!-- Checkbox para indicar si la remesa es en USD -->
+              <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="son_dolares" name="son_dolares" style="width: auto; margin: 0;">
+                <label for="son_dolares" style="margin: 0; cursor: pointer;">Son dólares (USD)</label>
+              </div>
+
               <!-- Campo Monto ARS (se oculta si son dólares) -->
               <div class="form-group" id="monto_ars_container">
                 <label for="monto">Monto:</label>
                 <div class="input-money"><span>$</span>
                   <input type="text" id="monto" name="monto" class="currency-input" placeholder="0,00">
                 </div>
-              </div>
-
-              <!-- Checkbox para indicar si la remesa es en USD -->
-              <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="son_dolares" name="son_dolares" style="width: auto; margin: 0;">
-                <label for="son_dolares" style="margin: 0; cursor: pointer;">Son dólares (USD)</label>
               </div>
 
               <!-- Campos USD (hidden by default) -->
