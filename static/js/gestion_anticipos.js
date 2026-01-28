@@ -555,6 +555,10 @@
 
       // Subir adjunto
       try {
+        // IMPORTANTE: Generar ID temporal único para evitar colisiones
+        // Usamos timestamp + random para garantizar unicidad entre usuarios concurrentes
+        const tempEntityId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
         const formData = new FormData();
         formData.append('files[]', adjuntoFile);
         formData.append('tab', 'anticipos');
@@ -562,8 +566,8 @@
         formData.append('caja', 'admin');
         formData.append('turno', 'dia');
         formData.append('fecha', $('#fechaPago').value);
-        formData.append('entity_type', 'anticipo_recibido');
-        formData.append('entity_id', '0'); // temporal
+        formData.append('entity_type', 'anticipo_recibido_temp'); // marcamos como temporal
+        formData.append('entity_id', tempEntityId); // ID único temporal
 
         const uploadRes = await fetch('/files/upload', {
           method: 'POST',
@@ -577,6 +581,9 @@
         }
 
         adjuntoPath = uploadData.items[0].path;
+
+        // Guardar el tempEntityId para vinculación posterior (se usará después al crear el objeto data)
+        window._tempEntityIdForAnticipo = tempEntityId;
       } catch (error) {
         console.error('Error al subir adjunto:', error);
         alert('❌ Error al subir el comprobante');
@@ -595,6 +602,12 @@
       numero_transaccion: $('#numeroTransaccion').value.trim() || null,
       observaciones: $('#observaciones').value.trim() || null
     };
+
+    // Vincular tempEntityId si existe (para vinculación precisa de imagen)
+    if (window._tempEntityIdForAnticipo) {
+      data.temp_entity_id = window._tempEntityIdForAnticipo;
+      delete window._tempEntityIdForAnticipo; // limpiar para próximo uso
+    }
 
     // Agregar cotización de divisa si no es ARS
     if ($('#divisa').value !== 'ARS') {

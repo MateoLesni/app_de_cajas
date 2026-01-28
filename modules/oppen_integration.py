@@ -670,7 +670,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             if rows_tarjetas:
                 rows.extend(rows_tarjetas)
 
-            # Obtener MercadoPago
+            # Obtener MercadoPago (incluye NORMAL + TIP, como las tarjetas)
             cur_pm.execute("""
                 SELECT
                     'MERCADO PAGO' AS forma_pago,
@@ -679,7 +679,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 FROM mercadopago_trns
                 WHERE local = %s
                   AND DATE(fecha) = %s
-                  AND UPPER(tipo) = 'NORMAL'
+                  AND UPPER(tipo) IN ('NORMAL', 'TIP')
             """, (local, fecha))
             row_mp = cur_pm.fetchone()
             if row_mp and row_mp['pagado']:

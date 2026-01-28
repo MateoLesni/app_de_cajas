@@ -2524,6 +2524,7 @@ def crear_anticipo_recibido():
         medio_pago = data.get('medio_pago', '').strip() or None
         observaciones = data.get('observaciones', '').strip() or None
         adjunto_gcs_path = data.get('adjunto_gcs_path', '').strip() or None
+        temp_entity_id = data.get('temp_entity_id', '').strip() or None  # ID temporal único para vincular imagen
 
         if importe <= 0:
             return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400
@@ -2569,13 +2570,35 @@ def crear_anticipo_recibido():
         # Vincular adjunto si existe
         if adjunto_gcs_path:
             try:
-                cur.execute("""
-                    UPDATE imagenes_adjuntos
-                    SET entity_type = 'anticipo_recibido',
-                        entity_id = %s
-                    WHERE gcs_path = %s
-                      AND (entity_id IS NULL OR entity_id = 0)
-                """, (anticipo_id, adjunto_gcs_path))
+                # CRÍTICO: Usar temp_entity_id para vincular EXACTAMENTE la imagen correcta
+                # Esto evita colisiones cuando múltiples usuarios suben imágenes simultáneamente
+                if temp_entity_id:
+                    # Nueva lógica: vinculación específica por temp_entity_id
+                    cur.execute("""
+                        UPDATE imagenes_adjuntos
+                        SET entity_type = 'anticipo_recibido',
+                            entity_id = %s
+                        WHERE gcs_path = %s
+                          AND entity_type = 'anticipo_recibido_temp'
+                          AND entity_id = %s
+                          AND estado = 'active'
+                    """, (anticipo_id, adjunto_gcs_path, temp_entity_id))
+
+                    rows_affected = cur.rowcount
+                    if rows_affected == 0:
+                        print(f"⚠️  Warning: No se encontró imagen temporal con temp_entity_id={temp_entity_id}")
+                    elif rows_affected > 1:
+                        print(f"⚠️  Warning: Se vincularon {rows_affected} imágenes (se esperaba solo 1)")
+                else:
+                    # Lógica antigua (retrocompatibilidad): buscar por gcs_path sin vincular
+                    cur.execute("""
+                        UPDATE imagenes_adjuntos
+                        SET entity_type = 'anticipo_recibido',
+                            entity_id = %s
+                        WHERE gcs_path = %s
+                          AND (entity_id IS NULL OR entity_id = 0 OR entity_type = 'anticipo_recibido_temp')
+                          AND estado = 'active'
+                    """, (anticipo_id, adjunto_gcs_path))
             except Exception as e:
                 print(f"⚠️  Warning: No se pudo vincular adjunto: {e}")
 
