@@ -306,8 +306,8 @@ CLOSED_BOX_SUBQUERY = """
   EXISTS (
     SELECT 1
     FROM cajas_estado cc
-    WHERE cc.local = {a}.local
-      AND cc.caja  = {a}.caja
+    WHERE cc.local COLLATE utf8mb4_unicode_ci = {a}.local COLLATE utf8mb4_unicode_ci
+      AND cc.caja COLLATE utf8mb4_unicode_ci = {a}.caja COLLATE utf8mb4_unicode_ci
       AND LOWER(cc.turno) = LOWER({a}.turno)
       AND DATE(cc.fecha_operacion) = DATE({a}.fecha)
       AND cc.id = (
@@ -329,7 +329,7 @@ CLOSED_LOCAL_SUBQUERY = """
   EXISTS (
     SELECT 1
     FROM cierres_locales cl
-    WHERE cl.local = {a}.local
+    WHERE cl.local COLLATE utf8mb4_unicode_ci = {a}.local COLLATE utf8mb4_unicode_ci
       AND DATE(cl.fecha) = DATE({a}.fecha)
       AND cl.estado = 0  -- 0 = cerrado
   )
@@ -727,7 +727,11 @@ def nuevo_registro():
     turnos = [r[0] for r in cur.fetchall()] or ['UNI']
 
     cur.close(); conn.close()
-    return render_template('index.html', cantidad_cajas=cantidad_cajas, turnos=turnos)
+
+    # Obtener fecha actual para limitar el datepicker
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    return render_template('index.html', cantidad_cajas=cantidad_cajas, turnos=turnos, today=today)
 
 
 @app.route('/encargado', endpoint='encargado')
@@ -765,10 +769,14 @@ def encargado():
         pass
 
     # IMPORTANTE: pasar las variables que la plantilla espera
+    # Obtener fecha actual para limitar el datepicker
+    today = datetime.now().strftime('%Y-%m-%d')
+
     return render_template(
         'index_encargado.html',
         cantidad_cajas=cantidad_cajas,
-        turnos=turnos
+        turnos=turnos,
+        today=today
     )
 
 
@@ -807,10 +815,14 @@ def encargado():
         pass
 
     # IMPORTANTE: pasar las variables que la plantilla espera
+    # Obtener fecha actual para limitar el datepicker
+    today = datetime.now().strftime('%Y-%m-%d')
+
     return render_template(
         'index_auditor.html',
         cantidad_cajas=cantidad_cajas,
-        turnos=turnos
+        turnos=turnos,
+        today=today
     )
 
 @app.route('/tesoreria')
@@ -7352,7 +7364,7 @@ def api_tesoreria_audit_log():
 
 @app.route('/api/tesoreria/resumen-por-local', methods=['GET'])
 @login_required
-@role_min_required(7)
+@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
 def api_tesoreria_resumen_por_local():
     """
     Nuevo reporte de tesorería agrupado por local con formato de gerencia.
@@ -7423,7 +7435,8 @@ def api_tesoreria_resumen_por_local():
 
         for local in todos_locales:
             datos_por_local[local] = {
-                'saldo_a_retirar': 0  # Remesas de HOY que no fueron retiradas
+                'saldo_anterior': 0,    # Remesas anteriores al día previo (acumulado histórico)
+                'saldo_a_retirar': 0    # Remesas del día anterior que no fueron retiradas
             }
 
             for idx, fecha in enumerate(fechas):
@@ -7463,9 +7476,23 @@ def api_tesoreria_resumen_por_local():
                     'diferencia': diferencia
                 }
 
+            # Calcular "Saldo anterior" (remesas ANTERIORES al día anterior - acumulado histórico)
+            # Si hoy es 13/01, muestra remesas Local anteriores a 12/01 (del 11/01 hacia atrás)
+            fecha_ayer = hoy - timedelta(days=1)
+            cur.execute("""
+                SELECT SUM(monto) as saldo_historico
+                FROM remesas_trns
+                WHERE local = %s
+                  AND DATE(fecha) < %s
+                  AND estado_contable = 'Local'
+                  AND estado_contable != 'Archivada'
+                  AND retirada = 0
+            """, (local, fecha_ayer))
+            saldo_anterior_data = cur.fetchone()
+            datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico']) if saldo_anterior_data and saldo_anterior_data['saldo_historico'] else 0
+
             # Calcular "Saldo a retirar" (remesas del DÍA ANTERIOR en estado Local)
             # Si hoy es 13/01, muestra remesas Local de 12/01
-            fecha_ayer = hoy - timedelta(days=1)
             cur.execute("""
                 SELECT SUM(monto) as saldo_pendiente
                 FROM remesas_trns
@@ -8042,11 +8069,15 @@ def carga_datos_encargado():
 
     cur.close(); conn.close()
 
+    # Obtener fecha actual para limitar el datepicker
+    today = datetime.now().strftime('%Y-%m-%d')
+
     # Renderiza copia del index (tu HTML clon)
     return render_template('index_encargado.html',
                            cantidad_cajas=cantidad_cajas,
                            turnos=turnos,
-                           role_level=get_user_level())
+                           role_level=get_user_level(),
+                           today=today)
 
 
 
@@ -10166,12 +10197,14 @@ def marcar_remesa_retirada(remesa_id):
             'estado_contable': 'Local'
         }
 
-        # Actualizar remesa (mantener estado LOCAL hasta que tesorería la procese)
+        # Actualizar remesa: marcar como retirada y cambiar estado a TRAN
         cur.execute("""
             UPDATE remesas_trns
             SET retirada = 1,
                 retirada_por = %s,
                 fecha_retirada = %s,
+                fecha_marca_retirada = NOW(),
+                estado_contable = 'TRAN',
                 ult_mod = NOW()
             WHERE id = %s
         """, (retirada_por, fecha_retirada, remesa_id))

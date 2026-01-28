@@ -523,6 +523,12 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
     thLocal.textContent = 'Locales';
     headerRow.appendChild(thLocal);
 
+    // Columna Saldo anterior (antes de las fechas)
+    const thSaldoAnterior = document.createElement('th');
+    thSaldoAnterior.className = 'saldo-header';
+    thSaldoAnterior.textContent = 'Saldo anterior';
+    headerRow.appendChild(thSaldoAnterior);
+
     // Columnas de fechas
     fechas.forEach(fecha => {
         const thFecha = document.createElement('th');
@@ -558,6 +564,12 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
     thLocalEmpty.className = 'local-header';
     thLocalEmpty.textContent = '';
     subHeaderRow.appendChild(thLocalEmpty);
+
+    // Espacio vacío para columna Saldo anterior
+    const thSaldoAnteriorEmpty = document.createElement('th');
+    thSaldoAnteriorEmpty.className = 'saldo-header';
+    thSaldoAnteriorEmpty.textContent = '';
+    subHeaderRow.appendChild(thSaldoAnteriorEmpty);
 
     fechas.forEach(() => {
         const thTeorico = document.createElement('th');
@@ -606,6 +618,13 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
         row.appendChild(tdLocal);
 
         const datosLocal = datosGlobal[local] || {};
+
+        // Saldo Anterior (acumulado histórico) - DESPUÉS de Local, ANTES de fechas
+        const tdSaldoAnterior = document.createElement('td');
+        tdSaldoAnterior.className = 'amount saldo-anterior-value';
+        tdSaldoAnterior.textContent = formatearMonto(datosLocal.saldo_anterior || 0);
+        row.appendChild(tdSaldoAnterior);
+
         let totalFDS = 0;
 
         // Columnas de fechas
@@ -660,7 +679,7 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
         tdApProyectada.textContent = formatearMonto(totalFDS);
         row.appendChild(tdApProyectada);
 
-        // Saldo a Retirar
+        // Saldo a Retirar (día anterior)
         const tdSaldo = document.createElement('td');
         tdSaldo.className = 'amount saldo-value';
         tdSaldo.textContent = formatearMonto(datosLocal.saldo_a_retirar || 0);

@@ -153,28 +153,10 @@
 
         <!-- Subitems con leve sangría -->
         <div class="nav-sub">
-          <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
-            href="{{ url_for('ui_reporteria_remesas') }}">
-            <span class="nav-dot" aria-hidden="true"></span>
-            Remesas (Detalle)
-          </a>
-
-          <a class="nav-item nav-sub-item {% if request.path == url_for('reporte_remesas_tesoreria_page') %}is-active{% endif %}"
-            href="{{ url_for('reporte_remesas_tesoreria_page') }}">
-            <span class="nav-dot" aria-hidden="true"></span>
-            Remesas Matricial (Tesorería)
-          </a>
-
           <a class="nav-item nav-sub-item {% if request.path == url_for('reporte_resumen_tesoreria_page') %}is-active{% endif %}"
             href="{{ url_for('reporte_resumen_tesoreria_page') }}">
             <span class="nav-dot" aria-hidden="true"></span>
-            Resumen AP.
-          </a>
-
-          <a class="nav-item nav-sub-item {% if request.path == url_for('ui_reporteria_remesas') %}is-active{% endif %}"
-            href="{{ url_for('ui_reporteria_remesas') if false else '#' }}">
-            <span class="nav-dot" aria-hidden="true"></span>
-            Cuentas Corrientes
+            Apertura AP
           </a>
         </div>
       </div>
@@ -243,7 +225,7 @@
 
         <div class="mb-3">
           <label for="fechaGlobal" class="form-label">Seleccioná una fecha de carga:</label>
-          <input type="date" id="fechaGlobal" class="form-control date-modern" required>
+          <input type="date" id="fechaGlobal" class="form-control date-modern" required max="{{ today }}">
         </div>
 
         <!-- Tabs -->

@@ -385,7 +385,7 @@ def auditor_resumen_api():
                 row_venta = cur.fetchone()
                 venta_total_sistema = float(row_venta['total']) if row_venta else 0.0
 
-                # 2. Obtener suma de facturas Z, A, B
+                # 2. Obtener suma de facturas Z, A, B, CC (antiguas)
                 cur.execute(f"""
                     SELECT COALESCE(SUM(t.monto), 0) AS total
                     FROM facturas_trns t
@@ -394,9 +394,30 @@ def auditor_resumen_api():
                     {g.read_scope}
                 """, (local, fecha))
                 row_facturas = cur.fetchone()
-                total_facturas_zab = float(row_facturas['total']) if row_facturas else 0.0
+                total_facturas_zab_cc_antiguas = float(row_facturas['total']) if row_facturas else 0.0
 
-                # 3. Calcular DISCOVERY (venta_total - facturas Z+A+B)
+                # 2b. Obtener suma de cuentas corrientes nuevas (cuentas_corrientes_trns)
+                try:
+                    sql_cc_nuevas = f"""
+                        SELECT COALESCE(SUM(t.monto), 0) AS total
+                        FROM cuentas_corrientes_trns t
+                        WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                        {g.read_scope}
+                    """
+                    cur.execute(sql_cc_nuevas, (local, fecha))
+                    row_cc_nuevas = cur.fetchone()
+                    total_cc_nuevas = float(row_cc_nuevas['total']) if row_cc_nuevas else 0.0
+                except Exception as e:
+                    # Log para debugging - capturar el error y el SQL generado
+                    print(f"ERROR en query cuentas_corrientes_trns: {e}")
+                    print(f"SQL generado: {sql_cc_nuevas}")
+                    print(f"g.read_scope: {g.read_scope}")
+                    total_cc_nuevas = 0.0
+
+                # Total facturas para DISCOVERY
+                total_facturas_zab = total_facturas_zab_cc_antiguas + total_cc_nuevas
+
+                # 3. Calcular DISCOVERY (venta_total - facturas Z+A+B+CC)
                 # El valor se invierte de signo para el recibo (lógica contable)
                 discovery_val = venta_total_sistema - total_facturas_zab
 
@@ -456,7 +477,7 @@ def auditor_resumen_api():
                 """, (local, fecha))
                 gastos_total = float(cur.fetchone()['total'] or 0.0)
 
-                # cuenta corriente (facturas CC - suma como medio de cobro)
+                # cuenta corriente - facturas CC antiguas
                 cur.execute(f"""
                     SELECT COALESCE(SUM(t.monto), 0) AS total
                     FROM facturas_trns t
@@ -464,7 +485,24 @@ def auditor_resumen_api():
                     AND t.tipo = 'CC'
                     {g.read_scope}
                 """, (local, fecha))
-                cta_cte_total = float(cur.fetchone()['total'] or 0.0)
+                cta_cte_facturas = float(cur.fetchone()['total'] or 0.0)
+
+                # cuenta corriente - nueva tabla cuentas_corrientes_trns
+                try:
+                    cur.execute(f"""
+                        SELECT COALESCE(SUM(t.monto), 0) AS total
+                        FROM cuentas_corrientes_trns t
+                        WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                        {g.read_scope}
+                    """, (local, fecha))
+                    cta_cte_nueva = float(cur.fetchone()['total'] or 0.0)
+                except Exception as e:
+                    print(f"ERROR en query cuentas_corrientes_trns (total cta cte): {e}")
+                    print(f"g.read_scope: {g.read_scope}")
+                    cta_cte_nueva = 0.0
+
+                # Total cuenta corriente (antiguas + nuevas)
+                cta_cte_total = cta_cte_facturas + cta_cte_nueva
 
                 # 5. Calcular total_cobrado y DIFERENCIA
                 # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
@@ -544,7 +582,7 @@ def auditor_facturas_api():
 
     try:
         with conn.cursor(dictionary=True) as cur:
-            # Consultar facturas_trns
+            # Consultar facturas_trns (antiguas)
             sql = f"""
                 SELECT t.tipo, t.punto_venta, t.nro_factura,
                  t.monto, t.comentario
@@ -578,6 +616,43 @@ def auditor_facturas_api():
                 rows.append({
                     "tipo": tipo,
                     "id_comentario": id_comentario,
+                    "importe": _n0(monto),
+                    "comentario": comentario_col,
+                })
+
+            # Consultar cuentas corrientes nuevas de cuentas_corrientes_trns
+            try:
+                sql_cc = f"""
+                    SELECT t.id, t.cliente_id, t.monto, t.comentario, cl.nombre_cliente
+                    FROM cuentas_corrientes_trns t
+                    LEFT JOIN clientes_cta_cte cl ON t.cliente_id = cl.id
+                    WHERE t.local = %s
+                      AND DATE(t.fecha) = DATE(%s)
+                      {g.read_scope}
+                    ORDER BY t.id
+                """
+                cur.execute(sql_cc, (local, fecha))
+                cc_rows = cur.fetchall()
+            except Exception as e:
+                print(f"ERROR en query cuentas_corrientes_trns (detalle): {e}")
+                print(f"SQL: {sql_cc}")
+                print(f"g.read_scope: {g.read_scope}")
+                cc_rows = []
+
+            for r in cc_rows:
+                monto = r.get("monto") or 0
+                nombre_cliente = r.get("nombre_cliente") or f"Cliente ID {r.get('cliente_id')}"
+                comentario_db = (r.get("comentario") or "").strip()
+
+                # Si hay comentario adicional, agregarlo al nombre del cliente
+                if comentario_db:
+                    comentario_col = f"{nombre_cliente} - {comentario_db}"
+                else:
+                    comentario_col = nombre_cliente
+
+                rows.append({
+                    "tipo": "CC",
+                    "id_comentario": str(r.get("id") or ""),
                     "importe": _n0(monto),
                     "comentario": comentario_col,
                 })
