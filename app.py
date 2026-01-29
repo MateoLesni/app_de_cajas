@@ -817,12 +817,14 @@ def encargado():
     # IMPORTANTE: pasar las variables que la plantilla espera
     # Obtener fecha actual para limitar el datepicker
     today = datetime.now().strftime('%Y-%m-%d')
+    nivel_usuario = get_user_level()
 
     return render_template(
         'index_auditor.html',
         cantidad_cajas=cantidad_cajas,
         turnos=turnos,
-        today=today
+        today=today,
+        nivel_usuario=nivel_usuario
     )
 
 @app.route('/tesoreria')
@@ -6445,30 +6447,60 @@ def reporte_remesas_tesoreria_page():
     return render_template("reporte_remesas_tesoreria.html")
 
 
+@app.route("/reporteria/ap-efectivo")
+@login_required
+@role_min_required(3)  # Auditores (nivel 3+)
+def reporte_ap_efectivo_page():
+    """
+    Reporte AP Efectivo (Operaciones) - Versión simplificada para uso diario.
+    - "Efectivo" = todas las remesas del día (retiradas + no retiradas)
+    - Sin columnas Real y Diferencia
+    - AP Proyectada = Saldo Anterior + Efectivo - Saldo a Retirar
+    """
+    nivel_usuario = get_user_level()
+    return render_template("ap_efectivo.html", nivel_usuario=nivel_usuario)
+
+
+@app.route("/reporteria/ap-efectivo-usd")
+@login_required
+@role_min_required(3)  # Auditores (nivel 3+)
+def reporte_ap_efectivo_usd_page():
+    """
+    Reporte AP Efectivo USD (Operaciones) - Versión simplificada para uso diario.
+    Similar a ap-efectivo pero para remesas en dólares.
+    """
+    nivel_usuario = get_user_level()
+    return render_template("ap_efectivo_usd.html", nivel_usuario=nivel_usuario)
+
+
 @app.route("/reporteria/resumen-tesoreria")
 @login_required
-@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
+@role_min_required(4)  # Solo Tesoreros (nivel 4+) y admin_tesoreria
 def reporte_resumen_tesoreria_page():
     """
     Nuevo reporte visual de tesorería por local con formato similar a Excel de gerencia.
     - Detecta automáticamente si es lunes (muestra fin de semana: Vie, Sáb, Dom)
     - Días normales: solo fecha actual (TRAN vs Real)
     - Incluye sección 'No Enviados' con cálculo de relevancia
+    - ACCESO RESTRINGIDO: Solo tesoreros (nivel 4+)
     """
-    return render_template("resumen_tesoreria.html")
+    nivel_usuario = get_user_level()
+    return render_template("resumen_tesoreria.html", nivel_usuario=nivel_usuario)
 
 
 @app.route("/reporteria/resumen-tesoreria-usd")
 @login_required
-@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
+@role_min_required(4)  # Solo Tesoreros (nivel 4+) y admin_tesoreria
 def reporte_resumen_tesoreria_usd_page():
     """
     Reporte visual de tesorería USD - Similar a resumen-tesoreria pero:
     - Solo muestra remesas en USD
     - Montos en dólares con 2 decimales
     - Incluye cotización promedio por fecha
+    - ACCESO RESTRINGIDO: Solo tesoreros (nivel 4+)
     """
-    return render_template("resumen_tesoreria_usd.html")
+    nivel_usuario = get_user_level()
+    return render_template("resumen_tesoreria_usd.html", nivel_usuario=nivel_usuario)
 
 
 # Helpers DB
@@ -7554,9 +7586,353 @@ def api_tesoreria_audit_log():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/operaciones/ap-efectivo', methods=['GET'])
+@login_required
+@role_min_required(3)  # Auditores (nivel 3+)
+def api_operaciones_ap_efectivo():
+    """
+    Reporte AP Efectivo (Operaciones) - Versión simplificada para uso operativo diario.
+
+    Diferencias con versión Tesorería:
+    - "Efectivo" = TODAS las remesas del día anterior (retiradas + no retiradas)
+    - Sin columnas Real y Diferencia
+    - AP Proyectada = Saldo Anterior + Efectivo - Saldo a Retirar
+    - Saldo a Retirar = 0 para todos EXCEPTO "Ribs Infanta" y "W Infanta"
+    """
+    from datetime import datetime, timedelta
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener fecha del parámetro o usar fecha actual
+        fecha_param = request.args.get('fecha')
+        if fecha_param:
+            try:
+                hoy = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+            except:
+                hoy = datetime.now().date()
+        else:
+            hoy = datetime.now().date()
+
+        es_lunes = hoy.weekday() == 0  # 0 = Lunes
+
+        # Determinar fechas a mostrar
+        if es_lunes:
+            # Fin de semana: Viernes, Sábado, Domingo
+            viernes = hoy - timedelta(days=3)
+            sabado = hoy - timedelta(days=2)
+            domingo = hoy - timedelta(days=1)
+            fechas = [viernes, sabado, domingo]
+            fecha_labels = [
+                viernes.strftime('%d/%m'),
+                sabado.strftime('%d/%m'),
+                domingo.strftime('%d/%m')
+            ]
+        else:
+            # Solo hoy
+            fechas = [hoy]
+            fecha_labels = [hoy.strftime('%d/%m')]
+
+        # Obtener todos los locales activos
+        cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
+        todos_locales = [r['local'] for r in cur.fetchall() if r['local']]
+
+        # Definir segmentos
+        segmento2 = ['Nómade', 'Polo House']
+        segmento3 = ['Narda Sucre']
+        segmento1 = [l for l in todos_locales if l not in segmento2 and l not in segmento3]
+
+        segmentos = [
+            {'nombre': 'Principal', 'locales': segmento1},
+            {'nombre': 'Segmento 2', 'locales': segmento2},
+            {'nombre': 'Narda Sucre', 'locales': segmento3}
+        ]
+
+        # Locales especiales que SÍ tienen saldo a retirar calculado
+        locales_con_saldo_retirar = ['Ribs Infanta', 'W Infanta']
+
+        # Para cada local, obtener datos por fecha
+        datos_por_local = {}
+        fecha_ayer = hoy - timedelta(days=1)
+
+        for local in todos_locales:
+            datos_por_local[local] = {
+                'saldo_anterior': 0,
+                'saldo_a_retirar': 0
+            }
+
+            for idx, fecha in enumerate(fechas):
+                fecha_label = fecha_labels[idx]
+
+                # Calcular fecha -1 del filtro (día anterior a la fecha del reporte)
+                fecha_efectivo = fecha - timedelta(days=1)
+
+                # EFECTIVO = TODAS las remesas del día ANTERIOR a la fecha del reporte
+                # Sin filtro de estado_contable ni retirada - TODAS LAS REMESAS sin importar estado
+                cur.execute("""
+                    SELECT SUM(monto) as efectivo_total
+                    FROM remesas_trns
+                    WHERE local = %s
+                      AND DATE(fecha) = %s
+                      AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
+                """, (local, fecha_efectivo))
+                efectivo_data = cur.fetchone()
+                efectivo_total = float(efectivo_data['efectivo_total']) if efectivo_data and efectivo_data['efectivo_total'] else 0
+
+                # Guardar solo efectivo (sin real ni diferencia)
+                datos_por_local[local][fecha_label] = {
+                    'efectivo': efectivo_total
+                }
+
+            # Calcular "Saldo anterior" (igual que antes)
+            cur.execute("""
+                SELECT SUM(monto) as saldo_historico
+                FROM remesas_trns
+                WHERE local = %s
+                  AND DATE(fecha) < %s
+                  AND estado_contable = 'Local'
+                  AND retirada = 0
+                  AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
+            """, (local, fecha_ayer))
+            saldo_anterior_data = cur.fetchone()
+            datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico']) if saldo_anterior_data and saldo_anterior_data['saldo_historico'] else 0
+
+            # Calcular "Saldo a retirar"
+            # Solo para Ribs Infanta y W Infanta - resto en 0
+            if local in locales_con_saldo_retirar:
+                cur.execute("""
+                    SELECT SUM(monto) as saldo_pendiente
+                    FROM remesas_trns
+                    WHERE local = %s
+                      AND DATE(fecha) = %s
+                      AND estado_contable = 'Local'
+                      AND retirada = 0
+                      AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
+                """, (local, fecha_ayer))
+                saldo_data = cur.fetchone()
+                datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente']) if saldo_data and saldo_data['saldo_pendiente'] else 0
+            else:
+                datos_por_local[local]['saldo_a_retirar'] = 0  # Hardcodeado en 0
+
+        # Calcular "No Enviados" (igual que antes)
+        cur.execute("""
+            SELECT
+                local,
+                fecha as fecha_caja,
+                monto,
+                DATEDIFF(CURDATE(), fecha) as dias_transcurridos,
+                (monto * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
+            FROM remesas_trns
+            WHERE estado_contable = 'Local'
+              AND retirada = 0
+              AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
+            ORDER BY relevancia DESC
+            LIMIT 50
+        """)
+        no_enviados = cur.fetchall()
+
+        # Convertir fechas a string
+        for item in no_enviados:
+            if item.get('fecha_caja'):
+                item['fecha_caja'] = item['fecha_caja'].isoformat()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(
+            success=True,
+            es_lunes=es_lunes,
+            fechas=fecha_labels,
+            fechas_full=[f.strftime('%Y-%m-%d') for f in fechas],
+            segmentos=segmentos,
+            datos=datos_por_local,
+            no_enviados=no_enviados
+        )
+
+    except Exception as e:
+        print(f"❌ ERROR ap-efectivo: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/operaciones/ap-efectivo-usd', methods=['GET'])
+@login_required
+@role_min_required(3)  # Auditores (nivel 3+)
+def api_operaciones_ap_efectivo_usd():
+    """
+    Reporte AP Efectivo USD (Operaciones) - Versión simplificada para uso operativo diario.
+
+    Diferencias con versión Tesorería:
+    - "Efectivo" = TODAS las remesas USD del día anterior (retiradas + no retiradas)
+    - Sin columnas Real y Diferencia
+    - AP Proyectada = Saldo Anterior + Efectivo - Saldo a Retirar
+    - Saldo a Retirar = 0 para todos EXCEPTO "Ribs Infanta" y "W Infanta"
+    """
+    from datetime import datetime, timedelta
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Obtener fecha del parámetro o usar fecha actual
+        fecha_param = request.args.get('fecha')
+        if fecha_param:
+            try:
+                hoy = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+            except:
+                hoy = datetime.now().date()
+        else:
+            hoy = datetime.now().date()
+
+        es_lunes = hoy.weekday() == 0  # 0 = Lunes
+
+        # Determinar fechas a mostrar
+        if es_lunes:
+            viernes = hoy - timedelta(days=3)
+            sabado = hoy - timedelta(days=2)
+            domingo = hoy - timedelta(days=1)
+            fechas = [viernes, sabado, domingo]
+            fecha_labels = [
+                viernes.strftime('%d/%m'),
+                sabado.strftime('%d/%m'),
+                domingo.strftime('%d/%m')
+            ]
+        else:
+            fechas = [hoy]
+            fecha_labels = [hoy.strftime('%d/%m')]
+
+        # Obtener todos los locales activos
+        cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
+        todos_locales = [r['local'] for r in cur.fetchall() if r['local']]
+
+        # Definir segmentos
+        segmento2 = ['Nómade', 'Polo House']
+        segmento3 = ['Narda Sucre']
+        segmento1 = [l for l in todos_locales if l not in segmento2 and l not in segmento3]
+
+        segmentos = [
+            {'nombre': 'Principal', 'locales': segmento1},
+            {'nombre': 'Segmento 2', 'locales': segmento2},
+            {'nombre': 'Narda Sucre', 'locales': segmento3}
+        ]
+
+        # Locales especiales que SÍ tienen saldo a retirar calculado
+        locales_con_saldo_retirar = ['Ribs Infanta', 'W Infanta']
+
+        datos_por_local = {}
+        fecha_ayer = hoy - timedelta(days=1)
+
+        for local in todos_locales:
+            datos_por_local[local] = {
+                'saldo_anterior': 0,
+                'saldo_a_retirar': 0
+            }
+
+            for idx, fecha in enumerate(fechas):
+                fecha_label = fecha_labels[idx]
+
+                # Calcular fecha -1 del filtro (día anterior a la fecha del reporte)
+                fecha_efectivo = fecha - timedelta(days=1)
+
+                # EFECTIVO = TODAS las remesas USD del día ANTERIOR a la fecha del reporte
+                # Sin filtro de estado_contable ni retirada - TODAS LAS REMESAS sin importar estado
+                cur.execute("""
+                    SELECT
+                        SUM(monto_usd) as efectivo_total_usd,
+                        AVG(cotizacion_divisa) as cotizacion_promedio
+                    FROM remesas_trns
+                    WHERE local = %s
+                      AND DATE(fecha) = %s
+                      AND divisa = 'USD'
+                """, (local, fecha_efectivo))
+                efectivo_data = cur.fetchone()
+                efectivo_total_usd = float(efectivo_data['efectivo_total_usd']) if efectivo_data and efectivo_data['efectivo_total_usd'] else 0
+                cotizacion_promedio = float(efectivo_data['cotizacion_promedio']) if efectivo_data and efectivo_data['cotizacion_promedio'] else 0
+
+                # Guardar solo efectivo (sin real ni diferencia)
+                datos_por_local[local][fecha_label] = {
+                    'efectivo': efectivo_total_usd,
+                    'cotizacion': cotizacion_promedio
+                }
+
+            # Calcular "Saldo anterior" (igual que antes)
+            cur.execute("""
+                SELECT SUM(monto_usd) as saldo_historico_usd
+                FROM remesas_trns
+                WHERE local = %s
+                  AND DATE(fecha) < %s
+                  AND divisa = 'USD'
+                  AND estado_contable = 'Local'
+                  AND retirada = 0
+            """, (local, fecha_ayer))
+            saldo_anterior_data = cur.fetchone()
+            datos_por_local[local]['saldo_anterior'] = float(saldo_anterior_data['saldo_historico_usd']) if saldo_anterior_data and saldo_anterior_data['saldo_historico_usd'] else 0
+
+            # Calcular "Saldo a retirar"
+            # Solo para Ribs Infanta y W Infanta - resto en 0
+            if local in locales_con_saldo_retirar:
+                cur.execute("""
+                    SELECT SUM(monto_usd) as saldo_pendiente_usd
+                    FROM remesas_trns
+                    WHERE local = %s
+                      AND DATE(fecha) = %s
+                      AND divisa = 'USD'
+                      AND estado_contable = 'Local'
+                      AND retirada = 0
+                """, (local, fecha_ayer))
+                saldo_data = cur.fetchone()
+                datos_por_local[local]['saldo_a_retirar'] = float(saldo_data['saldo_pendiente_usd']) if saldo_data and saldo_data['saldo_pendiente_usd'] else 0
+            else:
+                datos_por_local[local]['saldo_a_retirar'] = 0  # Hardcodeado en 0
+
+        # No Enviados (remesas USD en estado Local)
+        cur.execute("""
+            SELECT
+                local,
+                fecha as fecha_caja,
+                monto_usd as monto,
+                cotizacion_divisa,
+                DATEDIFF(CURDATE(), fecha) as dias_transcurridos,
+                (monto_usd * (DATEDIFF(CURDATE(), fecha) + 1)) as relevancia
+            FROM remesas_trns
+            WHERE divisa = 'USD'
+              AND estado_contable = 'Local'
+              AND retirada = 0
+            ORDER BY relevancia DESC
+            LIMIT 50
+        """)
+        no_enviados = cur.fetchall()
+
+        # Convertir fechas a string
+        for item in no_enviados:
+            if item.get('fecha_caja'):
+                item['fecha_caja'] = item['fecha_caja'].isoformat()
+
+        cur.close()
+        conn.close()
+
+        return jsonify(
+            success=True,
+            es_lunes=es_lunes,
+            fechas=fecha_labels,
+            fechas_full=[f.strftime('%Y-%m-%d') for f in fechas],
+            segmentos=segmentos,
+            datos=datos_por_local,
+            no_enviados=no_enviados
+        )
+
+    except Exception as e:
+        print(f"❌ ERROR ap-efectivo-usd: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
 @app.route('/api/tesoreria/resumen-por-local', methods=['GET'])
 @login_required
-@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
+@role_min_required(4)  # Solo Tesoreros (nivel 4+) y admin_tesoreria
 def api_tesoreria_resumen_por_local():
     """
     Nuevo reporte de tesorería agrupado por local con formato de gerencia.
@@ -7744,7 +8120,7 @@ def api_tesoreria_resumen_por_local():
 
 @app.route('/api/tesoreria/resumen-por-local-usd', methods=['GET'])
 @login_required
-@role_min_required(3)  # Auditores (nivel 3+), Tesoreros y admin_tesoreria
+@role_min_required(4)  # Solo Tesoreros (nivel 4+) y admin_tesoreria
 def api_tesoreria_resumen_por_local_usd():
     """
     Reporte de tesorería USD - Similar a resumen-por-local pero:

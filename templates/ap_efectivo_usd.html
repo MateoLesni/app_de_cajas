@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AP Tesorería</title>
+  <title>AP Efectivo USD</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -374,12 +374,13 @@
               <span class="nav-dot" aria-hidden="true"></span>
               AP Efectivo
             </a>
-            <a class="nav-item nav-sub-item"
+            <a class="nav-item nav-sub-item is-active"
                href="{{ url_for('reporte_ap_efectivo_usd_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
               AP Efectivo USD
             </a>
-            <a class="nav-item nav-sub-item is-active"
+            {% if nivel_usuario >= 4 %}
+            <a class="nav-item nav-sub-item"
                href="{{ url_for('reporte_resumen_tesoreria_page') }}">
               <span class="nav-dot" aria-hidden="true"></span>
               AP Tesorería
@@ -389,6 +390,7 @@
               <span class="nav-dot" aria-hidden="true"></span>
               AP Tesorería USD
             </a>
+            {% endif %}
           </div>
         </div>
 
@@ -402,7 +404,7 @@
     <main class="content-main" role="main">
       <div class="tesoreria-container">
         <div class="header-section">
-          <h1>AP Tesorería</h1>
+          <h1>AP Efectivo USD</h1>
           <div class="controls-section">
             <div class="date-selector">
               <label for="fechaConsulta">Fecha:</label>
@@ -479,7 +481,7 @@ async function cargarResumenTesoreria() {
 
     try {
         const fechaSeleccionada = document.getElementById('fechaConsulta').value;
-        const url = `/api/tesoreria/resumen-por-local${fechaSeleccionada ? '?fecha=' + fechaSeleccionada : ''}`;
+        const url = `/api/operaciones/ap-efectivo-usd${fechaSeleccionada ? '?fecha=' + fechaSeleccionada : ''}`;
 
         const response = await fetch(url);
         const data = await response.json();
@@ -560,12 +562,12 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
     fechas.forEach(fecha => {
         const thFecha = document.createElement('th');
         thFecha.className = 'date-header';
-        thFecha.colSpan = 3;
+        thFecha.colSpan = 1;  // Solo "Efectivo", no más Real y Dif
         thFecha.textContent = fecha;
         headerRow.appendChild(thFecha);
     });
 
-    // Columna Total FDS (solo si es lunes) + Ap Proyectada + Saldo a Retirar
+    // Columna Total FDS (solo si es lunes)
     if (esLunes) {
         const thTotal = document.createElement('th');
         thTotal.className = 'saldo-header';
@@ -573,6 +575,19 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
         headerRow.appendChild(thTotal);
     }
 
+    // Columna de Cotización (mostrar cotización promedio del día)
+    const thCotizacion = document.createElement('th');
+    thCotizacion.className = 'saldo-header';
+    thCotizacion.textContent = 'Cotización';
+    headerRow.appendChild(thCotizacion);
+
+    // Columna de Conversión a ARS
+    const thConversion = document.createElement('th');
+    thConversion.className = 'saldo-header';
+    thConversion.textContent = 'Conversión ARS';
+    headerRow.appendChild(thConversion);
+
+    // Orden final: AP Proyectada, Saldo a Retirar al final (última columna)
     const thAp = document.createElement('th');
     thAp.className = 'saldo-header';
     thAp.textContent = 'Ap Proyectada';
@@ -599,17 +614,9 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
     subHeaderRow.appendChild(thSaldoAnteriorEmpty);
 
     fechas.forEach(() => {
-        const thTeorico = document.createElement('th');
-        thTeorico.textContent = 'Teórico';
-        subHeaderRow.appendChild(thTeorico);
-
-        const thReal = document.createElement('th');
-        thReal.textContent = 'Real';
-        subHeaderRow.appendChild(thReal);
-
-        const thDif = document.createElement('th');
-        thDif.textContent = 'Dif.';
-        subHeaderRow.appendChild(thDif);
+        const thEfectivo = document.createElement('th');
+        thEfectivo.textContent = 'Efectivo';
+        subHeaderRow.appendChild(thEfectivo);
     });
 
     if (esLunes) {
@@ -619,6 +626,18 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
         subHeaderRow.appendChild(thTotalEmpty);
     }
 
+    // Espacios vacíos para Cotización y Conversión
+    const thCotizacionEmpty = document.createElement('th');
+    thCotizacionEmpty.className = 'saldo-header';
+    thCotizacionEmpty.textContent = '';
+    subHeaderRow.appendChild(thCotizacionEmpty);
+
+    const thConversionEmpty = document.createElement('th');
+    thConversionEmpty.className = 'saldo-header';
+    thConversionEmpty.textContent = '';
+    subHeaderRow.appendChild(thConversionEmpty);
+
+    // Espacios vacíos para AP Proyectada y Saldo a Retirar (sin sub-headers)
     const thApEmpty = document.createElement('th');
     thApEmpty.className = 'saldo-header';
     thApEmpty.textContent = '';
@@ -653,43 +672,21 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
         row.appendChild(tdSaldoAnterior);
 
         let totalFDS = 0;
+        let cotizacionPromedio = 0;
 
         // Columnas de fechas
         fechas.forEach(fecha => {
-            const datosFecha = datosLocal[fecha] || { tran: 0, real: 0, diferencia: 0 };
-            totalFDS += datosFecha.tran;
-
-            const tdTeorico = document.createElement('td');
-            tdTeorico.className = 'amount teorico-value';
-            tdTeorico.textContent = formatearMonto(datosFecha.tran);
-            row.appendChild(tdTeorico);
-
-            const tdReal = document.createElement('td');
-            tdReal.className = 'amount real-value';
-            tdReal.textContent = formatearMonto(datosFecha.real);
-            row.appendChild(tdReal);
-
-            const tdDif = document.createElement('td');
-            tdDif.className = 'amount diff-value';
-            const diferencia = datosFecha.diferencia;
-
-            // Formatear diferencia con signo
-            if (diferencia > 0) {
-                tdDif.textContent = '+' + formatearMonto(diferencia);
-                tdDif.classList.add('positivo');
-            } else if (diferencia < 0) {
-                tdDif.textContent = formatearMonto(diferencia);
-                tdDif.classList.add('negativo');
-            } else {
-                // Si ambos (tran y real) tienen valor, mostrar 0, sino mostrar -
-                if (datosFecha.tran > 0 || datosFecha.real > 0) {
-                    tdDif.textContent = '$0';
-                } else {
-                    tdDif.textContent = '-';
-                }
+            const datosFecha = datosLocal[fecha] || { efectivo: 0, cotizacion: 0 };
+            totalFDS += datosFecha.efectivo;
+            // Guardar última cotización disponible
+            if (datosFecha.cotizacion > 0) {
+                cotizacionPromedio = datosFecha.cotizacion;
             }
 
-            row.appendChild(tdDif);
+            const tdEfectivo = document.createElement('td');
+            tdEfectivo.className = 'amount teorico-value';
+            tdEfectivo.textContent = formatearMonto(datosFecha.efectivo);
+            row.appendChild(tdEfectivo);
         });
 
         // Total FDS (solo si es lunes)
@@ -700,16 +697,37 @@ function crearTablaSegmento(segmento, fechas, datosGlobal, esLunes) {
             row.appendChild(tdTotalFDS);
         }
 
-        // Ap Proyectada (Total FDS por ahora)
+        // Cotización promedio
+        const tdCotizacion = document.createElement('td');
+        tdCotizacion.className = 'amount';
+        tdCotizacion.textContent = cotizacionPromedio > 0 ? cotizacionPromedio.toFixed(2) : '-';
+        row.appendChild(tdCotizacion);
+
+        // Conversión a ARS (Total FDS * Cotización)
+        const conversionARS = totalFDS * cotizacionPromedio;
+        const tdConversion = document.createElement('td');
+        tdConversion.className = 'amount';
+        // Formatear como ARS (pesos) en lugar de USD
+        tdConversion.textContent = conversionARS > 0
+            ? '$' + parseFloat(conversionARS).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '-';
+        row.appendChild(tdConversion);
+
+        // Calcular AP Proyectada = Saldo Anterior + Efectivo - Saldo a Retirar
+        const saldoAnterior = datosLocal.saldo_anterior || 0;
+        const saldoARetirar = datosLocal.saldo_a_retirar || 0;
+        const apProyectada = saldoAnterior + totalFDS - saldoARetirar;
+
+        // Orden final: AP Proyectada PRIMERO (con negrita), Saldo a Retirar al final
         const tdApProyectada = document.createElement('td');
         tdApProyectada.className = 'amount ap-proyectada-value';
-        tdApProyectada.textContent = formatearMonto(totalFDS);
+        tdApProyectada.style.fontWeight = 'bold';  // Negrita para destacar
+        tdApProyectada.textContent = formatearMonto(apProyectada);
         row.appendChild(tdApProyectada);
 
-        // Saldo a Retirar (día anterior)
         const tdSaldo = document.createElement('td');
         tdSaldo.className = 'amount saldo-value';
-        tdSaldo.textContent = formatearMonto(datosLocal.saldo_a_retirar || 0);
+        tdSaldo.textContent = formatearMonto(saldoARetirar);
         row.appendChild(tdSaldo);
 
         tbody.appendChild(row);
@@ -759,7 +777,8 @@ function renderizarNoEnviados(noEnviados) {
 
 function formatearMonto(valor) {
     if (!valor || valor === 0) return '-';
-    return '$' + Math.round(parseFloat(valor)).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    // Formato USD con 2 decimales
+    return 'USD ' + parseFloat(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatearFecha(fechaStr) {
