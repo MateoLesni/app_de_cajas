@@ -220,6 +220,16 @@
     $('#importe')?.addEventListener('input', calcularEquivalencia);
     $('#cotizacionUSD')?.addEventListener('input', calcularEquivalencia);
 
+    // Mostrar/ocultar campo caja según medio de pago
+    $('#medioPagoId')?.addEventListener('change', function(e) {
+      toggleCajaField();
+    });
+
+    // Cargar cajas cuando cambia el local
+    $('#local')?.addEventListener('change', function(e) {
+      loadCajasForLocal(e.target.value);
+    });
+
     // Preview de imagen al seleccionar archivo
     $('#adjunto')?.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -254,6 +264,59 @@
       $('#equivalenciaPesos').style.display = 'block';
     } else {
       $('#equivalenciaPesos').style.display = 'none';
+    }
+  }
+
+  // Mostrar/ocultar campo caja según si el medio de pago es "Efectivo"
+  function toggleCajaField() {
+    const medioPagoId = $('#medioPagoId')?.value;
+    const cajaGroup = $('#cajaGroup');
+    const cajaSelect = $('#caja');
+
+    if (!medioPagoId || !cajaGroup || !cajaSelect) return;
+
+    // Buscar el medio de pago seleccionado
+    const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == medioPagoId);
+
+    if (medioSeleccionado && medioSeleccionado.es_efectivo === 1) {
+      // Mostrar campo caja y hacerlo obligatorio
+      cajaGroup.style.display = 'block';
+      cajaSelect.required = true;
+    } else {
+      // Ocultar campo caja y quitar obligatoriedad
+      cajaGroup.style.display = 'none';
+      cajaSelect.required = false;
+      cajaSelect.value = ''; // Limpiar selección
+    }
+  }
+
+  // Cargar cajas disponibles para un local
+  async function loadCajasForLocal(local) {
+    const cajaSelect = $('#caja');
+    if (!cajaSelect || !local) return;
+
+    try {
+      const response = await fetch(`/api/locales/${encodeURIComponent(local)}/cajas`);
+      const data = await response.json();
+
+      if (data.success && data.cajas) {
+        // Limpiar opciones actuales
+        cajaSelect.innerHTML = '<option value="">Seleccione una caja</option>';
+
+        // Agregar cajas del local
+        data.cajas.forEach(caja => {
+          const option = document.createElement('option');
+          option.value = caja;
+          option.textContent = caja;
+          cajaSelect.appendChild(option);
+        });
+      } else {
+        console.error('Error al cargar cajas:', data.msg);
+        cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
+      }
+    } catch (error) {
+      console.error('Error al cargar cajas del local:', error);
+      cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
     }
   }
 
@@ -471,6 +534,10 @@
       medioPagoSelect.selectedIndex = 0; // Selecciona "-- Seleccionar medio de pago --"
     }
 
+    // Ocultar campo caja inicialmente (se mostrará si selecciona Efectivo)
+    const cajaGroup = $('#cajaGroup');
+    if (cajaGroup) cajaGroup.style.display = 'none';
+
     // Limpiar preview de adjunto
     const adjuntoInput = $('#adjunto');
     if (adjuntoInput) adjuntoInput.value = '';
@@ -500,12 +567,18 @@
     $('#fechaEvento').value = toInputDateFormat(anticipo.fecha_evento);
     $('#cliente').value = anticipo.cliente;
     $('#local').value = anticipo.local;
-    $('#caja').value = anticipo.caja || '';
     $('#importe').value = anticipo.importe;
     $('#divisa').value = anticipo.divisa || 'ARS';
     $('#medioPagoId').value = anticipo.medio_pago_id || '';
     $('#numeroTransaccion').value = anticipo.numero_transaccion || '';
     $('#observaciones').value = anticipo.observaciones || '';
+
+    // Cargar cajas del local y setear el valor después
+    await loadCajasForLocal(anticipo.local);
+    $('#caja').value = anticipo.caja || '';
+
+    // Mostrar/ocultar campo caja según el medio de pago
+    toggleCajaField();
 
     // Solo permitir editar fecha_evento y observaciones si es edición
     $('#fechaPago').disabled = true;
@@ -600,13 +673,18 @@
       fecha_evento: $('#fechaEvento').value,
       cliente: $('#cliente').value,
       local: $('#local').value,
-      caja: $('#caja').value,  // Nueva: caja que recibió el anticipo
       importe: $('#importe').value,  // Enviar como string para evitar pérdida de precisión
       divisa: $('#divisa').value,
       medio_pago_id: parseInt($('#medioPagoId').value) || null,
       numero_transaccion: $('#numeroTransaccion').value.trim() || null,
       observaciones: $('#observaciones').value.trim() || null
     };
+
+    // Agregar caja solo si hay un valor seleccionado
+    const cajaValue = $('#caja').value;
+    if (cajaValue) {
+      data.caja = cajaValue;
+    }
 
     // Vincular tempEntityId si existe (para vinculación precisa de imagen)
     if (window._tempEntityIdForAnticipo) {
@@ -630,9 +708,16 @@
       data.adjunto_gcs_path = adjuntoPath;
     }
 
-    // Validaciones
-    if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.caja || !data.importe) {
+    // Validaciones básicas
+    if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.importe) {
       alert('Por favor completá todos los campos requeridos');
+      return;
+    }
+
+    // Validar caja solo si el medio de pago es efectivo
+    const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == data.medio_pago_id);
+    if (medioSeleccionado && medioSeleccionado.es_efectivo === 1 && !data.caja) {
+      alert('⚠️  Debés seleccionar la caja que recibió el efectivo');
       return;
     }
 

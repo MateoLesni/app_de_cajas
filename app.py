@@ -2524,6 +2524,51 @@ def borrar_anticipo(anticipo_id):
 # PARTE 1: GESTIÓN DE ANTICIPOS RECIBIDOS (admin_anticipos)
 # ───────────────────────────────────────────────────────────────────
 
+@app.route('/api/locales/<local>/cajas', methods=['GET'])
+@login_required
+def get_cajas_por_local(local):
+    """
+    Obtiene las cajas disponibles para un local específico.
+    Usa LIMIT 1 para evitar duplicados por turnos múltiples.
+
+    Returns:
+        JSON con array de nombres de cajas
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # LIMIT 1 para evitar duplicados (locales con múltiples turnos)
+        cur.execute("""
+            SELECT cantidad_cajas
+            FROM locales
+            WHERE nombre = %s
+            LIMIT 1
+        """, (local,))
+
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if not result:
+            return jsonify(success=False, msg="Local no encontrado"), 404
+
+        cantidad_cajas = result[0] if result[0] else 0
+
+        # Generar array de cajas según la cantidad
+        cajas = []
+        for i in range(1, cantidad_cajas + 1):
+            cajas.append(f"Caja {i}")
+
+        # Siempre agregar "Administración" como opción adicional
+        cajas.append("Administración")
+
+        return jsonify(success=True, cajas=cajas)
+
+    except Exception as e:
+        print(f"[ERROR] get_cajas_por_local: {e}")
+        return jsonify(success=False, msg="Error al obtener cajas del local"), 500
+
 @app.route('/api/anticipos_recibidos/crear', methods=['POST'])
 @login_required
 def crear_anticipo_recibido():

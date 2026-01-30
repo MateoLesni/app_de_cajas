@@ -617,3 +617,49 @@
 2026-01-30 17:23:01,498 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-01-30 17:23:02,502 - werkzeug - WARNING -  * Debugger is active!
 2026-01-30 17:23:02,507 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 17:27:38,516 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:38] "[32mGET / HTTP/1.1[0m" 302 -
+2026-01-30 17:27:39,462 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-30 17:27:39,463 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-30 17:27:39,469 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-30 17:27:41,819 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "GET /auditor HTTP/1.1" 200 -
+2026-01-30 17:27:41,873 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,875 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,874 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,878 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,880 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,883 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,899 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "GET /static/js/resumen.js HTTP/1.1" 200 -
+2026-01-30 17:27:41,907 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,911 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/anticipos_v2.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,914 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,928 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/ctas_ctes.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,929 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,933 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,940 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:41,943 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:41] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2026-01-30 17:27:42,104 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:42] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2026-01-30 17:27:42,109 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:42] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2026-01-30 17:27:42,110 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:42] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2026-01-30 17:27:44,647 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:44] "GET /api/clientes_cta_cte HTTP/1.1" 200 -
+2026-01-30 17:27:44,687 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:44] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2026-01-30 17:27:44,692 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:44] "GET /api/locales HTTP/1.1" 200 -
+2026-01-30 17:27:44,704 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:44] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-30 17:27:44,931 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:44] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2026-01-30 17:27:47,241 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:47] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-30 17:27:47,258 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:47] "GET /api/turnos?local=Fabric%20Sushi HTTP/1.1" 200 -
+2026-01-30 17:27:49,888 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:27:49] "GET /api/cajas?local=Fabric%20Sushi HTTP/1.1" 200 -
+2026-01-30 17:28:14,355 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:14] "[32mGET /logout HTTP/1.1[0m" 302 -
+2026-01-30 17:28:14,374 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:14] "GET /login HTTP/1.1" 200 -
+2026-01-30 17:28:14,426 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:14] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2026-01-30 17:28:27,204 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:27] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-01-30 17:28:27,228 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:27] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-01-30 17:28:27,303 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:27] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 17:28:27,305 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:27] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-01-30 17:28:27,307 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:27] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 17:28:27,347 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:27] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-01-30 17:28:29,909 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:29] "GET /api/locales HTTP/1.1" 200 -
+2026-01-30 17:28:32,432 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:32] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-01-30 17:28:35,341 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:28:35] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-01-30 17:34:11,911 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 17:34:17,849 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 17:34:18,895 - werkzeug - WARNING -  * Debugger is active!
