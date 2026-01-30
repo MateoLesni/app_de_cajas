@@ -290,9 +290,12 @@
     }
   }
 
-  // Cargar cajas disponibles para un local
+  // Cargar cajas y turnos disponibles para un local
   async function loadCajasForLocal(local) {
     const cajaSelect = $('#caja');
+    const turnoSelect = $('#turno');
+    const turnoGroup = $('#turnoGroup');
+
     if (!cajaSelect || !local) return;
 
     try {
@@ -300,7 +303,7 @@
       const data = await response.json();
 
       if (data.success && data.cajas) {
-        // Limpiar opciones actuales
+        // Limpiar opciones actuales de cajas
         cajaSelect.innerHTML = '<option value="">Seleccione una caja</option>';
 
         // Agregar cajas del local
@@ -310,6 +313,26 @@
           option.textContent = caja;
           cajaSelect.appendChild(option);
         });
+
+        // Manejar turnos
+        if (data.tiene_multiples_turnos && data.turnos) {
+          // Mostrar campo turno y cargar opciones
+          turnoGroup.style.display = 'block';
+          turnoSelect.required = true;
+          turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
+
+          data.turnos.forEach(turno => {
+            const option = document.createElement('option');
+            option.value = turno;
+            option.textContent = turno;
+            turnoSelect.appendChild(option);
+          });
+        } else {
+          // Ocultar campo turno si el local tiene un solo turno
+          turnoGroup.style.display = 'none';
+          turnoSelect.required = false;
+          turnoSelect.value = '';
+        }
       } else {
         console.error('Error al cargar cajas:', data.msg);
         cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
@@ -538,6 +561,15 @@
     const cajaGroup = $('#cajaGroup');
     if (cajaGroup) cajaGroup.style.display = 'none';
 
+    // Ocultar campo turno inicialmente y limpiar
+    const turnoGroup = $('#turnoGroup');
+    const turnoSelect = $('#turno');
+    if (turnoGroup) turnoGroup.style.display = 'none';
+    if (turnoSelect) {
+      turnoSelect.value = '';
+      turnoSelect.required = false;
+    }
+
     // Limpiar preview de adjunto
     const adjuntoInput = $('#adjunto');
     if (adjuntoInput) adjuntoInput.value = '';
@@ -686,6 +718,12 @@
       data.caja = cajaValue;
     }
 
+    // Agregar turno solo si hay un valor seleccionado
+    const turnoValue = $('#turno').value;
+    if (turnoValue) {
+      data.turno = turnoValue;
+    }
+
     // Vincular tempEntityId si existe (para vinculación precisa de imagen)
     if (window._tempEntityIdForAnticipo) {
       data.temp_entity_id = window._tempEntityIdForAnticipo;
@@ -718,6 +756,14 @@
     const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == data.medio_pago_id);
     if (medioSeleccionado && medioSeleccionado.es_efectivo === 1 && !data.caja) {
       alert('⚠️  Debés seleccionar la caja que recibió el efectivo');
+      return;
+    }
+
+    // Validar turno solo si el campo turno está visible y es requerido
+    const turnoGroup = $('#turnoGroup');
+    const turnoSelect = $('#turno');
+    if (turnoGroup && turnoGroup.style.display !== 'none' && turnoSelect.required && !data.turno) {
+      alert('⚠️  Debés seleccionar el turno en que se recibió el anticipo');
       return;
     }
 

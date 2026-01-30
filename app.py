@@ -2545,26 +2545,25 @@ def get_cajas_por_local(local):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # LIMIT 1 para evitar duplicados (locales con múltiples turnos)
+        # Obtener cantidad de cajas y turnos del local
         cur.execute("""
-            SELECT cantidad_cajas
+            SELECT cantidad_cajas, turnos
             FROM locales
             WHERE local = %s
-            LIMIT 1
         """, (local,))
 
-        result = cur.fetchone()
+        results = cur.fetchall()
         cur.close()
         conn.close()
 
-        if not result:
+        if not results:
             return jsonify(success=False, msg="Local no encontrado"), 404
 
-        # Convertir cantidad_cajas a entero de forma segura
+        # Convertir cantidad_cajas a entero de forma segura (usar primera fila)
         cantidad_cajas = 0
-        if result[0] is not None:
+        if results[0][0] is not None:
             try:
-                cantidad_cajas = int(result[0])
+                cantidad_cajas = int(results[0][0])
             except (ValueError, TypeError):
                 cantidad_cajas = 0
 
@@ -2576,7 +2575,22 @@ def get_cajas_por_local(local):
         # Siempre agregar "Administración" como opción adicional
         cajas.append("Administración")
 
-        return jsonify(success=True, cajas=cajas)
+        # Obtener turnos únicos (puede haber múltiples filas para el mismo local)
+        turnos = []
+        for row in results:
+            turno = row[1]  # Columna 'turnos'
+            if turno and turno not in turnos:
+                turnos.append(turno)
+
+        # Determinar si tiene múltiples turnos
+        tiene_multiples_turnos = len(turnos) > 1
+
+        return jsonify(
+            success=True,
+            cajas=cajas,
+            turnos=turnos,
+            tiene_multiples_turnos=tiene_multiples_turnos
+        )
 
     except Exception as e:
         print(f"[ERROR] get_cajas_por_local: {e}")
@@ -2631,6 +2645,7 @@ def crear_anticipo_recibido():
         cliente = data['cliente'].strip()
         local = data['local'].strip()
         caja = data.get('caja', '').strip() or None  # Caja que recibió el anticipo
+        turno = data.get('turno', '').strip() or None  # Turno en que se recibió (solo locales con múltiples turnos)
 
         # Validar permiso sobre el local específico
         if not can_user_access_local_for_anticipos(local):
@@ -2680,17 +2695,17 @@ def crear_anticipo_recibido():
             except (InvalidOperation, ValueError):
                 return jsonify(success=False, msg="La cotización debe ser un número válido"), 400
 
-        # Insertar anticipo recibido con divisa, medio_pago_id, cotización y caja
+        # Insertar anticipo recibido con divisa, medio_pago_id, cotización, caja y turno
         sql = """
             INSERT INTO anticipos_recibidos
             (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
              cliente, numero_transaccion, medio_pago, observaciones,
-             local, caja, medio_pago_id, cotizacion_divisa, estado, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
+             local, caja, turno, medio_pago_id, cotizacion_divisa, estado, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
         """
         cur.execute(sql, (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
                          cliente, numero_transaccion, medio_pago, observaciones,
-                         local, caja, medio_pago_id, cotizacion_divisa, usuario))
+                         local, caja, turno, medio_pago_id, cotizacion_divisa, usuario))
 
         anticipo_id = cur.lastrowid
 
