@@ -5578,16 +5578,18 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
         "MAS DELIVERY"
     ]
 
-    breakdown = {m: 0.0 for m in marcas}
+    # Inicializar breakdown fuera del try para que esté disponible en el except
+    breakdown = {}
 
     try:
-        # SUMAR POR MARCA
+        # SUMAR POR MARCA - Usar COLLATE para evitar conflictos de collation
         for marca in marcas:
             cur.execute(
                 f"""
                 SELECT COALESCE(SUM(monto_tip),0)
                 FROM {table_name}
-                WHERE DATE(fecha)=%s AND local=%s AND UPPER(tarjeta)=%s
+                WHERE DATE(fecha)=%s AND local=%s
+                  AND UPPER(tarjeta) COLLATE utf8mb4_unicode_ci = %s
                 """,
                 (fecha, local, marca.upper())
             )
@@ -5628,9 +5630,12 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
 
         return breakdown, total_real  # Retornar el total REAL (no solo marcas conocidas)
     except Exception as e:
+        import traceback
         print(f"❌ Error en _sum_tips_tarjetas_breakdown: {e}")
-        # Si falla, dejamos todo en 0
-        return breakdown, 0.0
+        print(f"   Tipo de error: {type(e).__name__}")
+        traceback.print_exc()
+        # Si falla, devolver breakdown vacío y total 0
+        return {}, 0.0
 
 
 def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
@@ -5983,7 +5988,8 @@ def api_resumen_local():
                 f"""
                 SELECT COALESCE(SUM(monto),0)
                 FROM {table_name}
-                WHERE DATE(fecha)=%s AND local=%s AND UPPER(tarjeta)=%s
+                WHERE DATE(fecha)=%s AND local=%s
+                  AND UPPER(tarjeta) COLLATE utf8mb4_unicode_ci = %s
                 """,
                 (f, local, marca.upper()),
             ) or 0.0
@@ -6037,7 +6043,7 @@ def api_resumen_local():
                 f"""
                 SELECT g.tipo, COALESCE(tg.descripcion, g.tipo) as descripcion, SUM(g.monto) as total
                 FROM {T_GASTOS} g
-                LEFT JOIN tipos_gastos tg ON g.tipo = tg.codigo
+                LEFT JOIN tipos_gastos tg ON g.tipo COLLATE utf8mb4_unicode_ci = tg.codigo COLLATE utf8mb4_unicode_ci
                 WHERE DATE(g.fecha)=%s AND g.local=%s
                 GROUP BY g.tipo, tg.descripcion
                 ORDER BY tg.orden, g.tipo
