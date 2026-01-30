@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tips:        'resTips',
     discovery:   'resDiscovery',
     anticipos:   'resAnticipos',
+    anticipos_efectivo: 'resAnticiposEfectivo',
   };
 
   // ====== Helpers ======
@@ -87,10 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function aplicarResumenAUI(resumen, estadoOverride = null) {
     // 1) Campos simples
     for (const [k, id] of Object.entries(campos)) {
-      setTextIf(id, formatMoneda(safeNum(resumen[k])));
+      // Formateo especial para anticipos_efectivo (mostrar con signo negativo)
+      if (k === 'anticipos_efectivo') {
+        const val = safeNum(resumen[k]);
+        setTextIf(id, val > 0 ? '-' + formatMoneda(val) : formatMoneda(0));
+      } else {
+        setTextIf(id, formatMoneda(safeNum(resumen[k])));
+      }
     }
 
-    // 2) Total cobrado (incluye gastos)
+    // 2) Total cobrado (incluye gastos, resta anticipos en efectivo)
     let totalCobrado = safeNum(resumen.total_cobrado);
     if (!totalCobrado) {
       totalCobrado =
@@ -101,7 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
         safeNum(resumen.pedidosya) +
         safeNum(resumen.cuenta_cte) +
         safeNum(resumen.facturas_cc) +
-        safeNum(resumen.gastos);
+        safeNum(resumen.gastos) +
+        safeNum(resumen.anticipos) -
+        safeNum(resumen.anticipos_efectivo);
     }
     setTextIf('totalCobrado', formatMoneda(totalCobrado));
     setTextIf('resTotalCobradoVentas', formatMoneda(totalCobrado));

@@ -4531,11 +4531,36 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['anticipos'] = float(row[0]) if row and row[0] is not None else 0.0
 
+        # ===== ANTICIPOS RECIBIDOS EN EFECTIVO =====
+        # Anticipos recibidos en efectivo en la fecha_pago (fecha de la caja)
+        # Estos se RESTAN del total cobrado porque se convertirán en remesas
+        # Incluye conversión a ARS para divisas extranjeras (USD, EUR, etc.)
+        cur.execute("""
+            SELECT COALESCE(SUM(
+                CASE
+                    WHEN ar.divisa = 'USD' AND ar.cotizacion_divisa IS NOT NULL
+                    THEN ar.importe * ar.cotizacion_divisa
+                    WHEN ar.divisa = 'ARS' OR ar.divisa IS NULL
+                    THEN ar.importe
+                    ELSE ar.importe
+                END
+            ), 0)
+            FROM anticipos_recibidos ar
+            INNER JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
+            WHERE DATE(ar.fecha_pago) = %s
+              AND ar.local = %s
+              AND ma.es_efectivo = 1
+              AND ar.estado != 'eliminado_global'
+        """, (fecha, local))
+        row = cur.fetchone()
+        resumen['anticipos_efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
+
         # ===== Total cobrado (medios de cobro + gastos)
         # Las facturas A, B, Z son informativas y NO suman al cobrado
         # Las facturas CC sí suman porque son cuenta corriente (medio de cobro)
         # Los gastos SÍ suman al total cobrado (justifican la venta)
         # Los anticipos consumidos SÍ suman al total cobrado (justifican faltantes)
+        # Los anticipos recibidos en efectivo RESTAN del total cobrado (se convertirán en remesas)
         resumen['total_cobrado'] = sum([
             resumen.get('efectivo',0.0),
             resumen.get('tarjeta',0.0),
@@ -4545,6 +4570,7 @@ def cierre_resumen():
             resumen.get('cuenta_cte',0.0),  # Cuenta corriente (facturas CC)
             resumen.get('gastos',0.0),      # Gastos justifican la venta
             resumen.get('anticipos',0.0),   # Anticipos consumidos justifican faltantes
+            -resumen.get('anticipos_efectivo',0.0),  # RESTA: anticipos recibidos en efectivo
         ])
 
         # ===== Estado de caja (por turno)
@@ -7670,6 +7696,7 @@ def api_operaciones_ap_efectivo():
 
                 # EFECTIVO = TODAS las remesas del día ANTERIOR a la fecha del reporte
                 # Sin filtro de estado_contable ni retirada - TODAS LAS REMESAS sin importar estado
+                # Incluye remesas creadas a partir de anticipos en efectivo (mismo día)
                 cur.execute("""
                     SELECT SUM(monto) as efectivo_total
                     FROM remesas_trns
@@ -7838,6 +7865,7 @@ def api_operaciones_ap_efectivo_usd():
 
                 # EFECTIVO = TODAS las remesas USD del día ANTERIOR a la fecha del reporte
                 # Sin filtro de estado_contable ni retirada - TODAS LAS REMESAS sin importar estado
+                # Incluye remesas creadas a partir de anticipos en efectivo (mismo día)
                 cur.execute("""
                     SELECT
                         SUM(monto_usd) as efectivo_total_usd,

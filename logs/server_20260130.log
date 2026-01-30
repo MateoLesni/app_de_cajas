@@ -1,0 +1,178 @@
+2026-01-30 09:06:59,092 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 09:06:59,891 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 09:06:59,899 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 09:07:20,746 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 09:07:24,262 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 09:07:24,772 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 09:07:24,775 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 09:08:16,033 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:16] "[32mGET / HTTP/1.1[0m" 302 -
+2026-01-30 09:08:16,743 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-30 09:08:16,744 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-30 09:08:16,747 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-30 09:08:18,952 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:18] "GET /auditor HTTP/1.1" 200 -
+2026-01-30 09:08:18,978 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:18] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,102 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,103 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,105 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,105 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,104 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,105 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,156 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/anticipos_v2.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,157 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,159 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/ctas_ctes.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,158 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,159 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,168 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,173 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,547 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:19,643 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2026-01-30 09:08:19,644 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2026-01-30 09:08:19,644 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:19] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2026-01-30 09:08:22,136 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:22] "GET /api/clientes_cta_cte HTTP/1.1" 200 -
+2026-01-30 09:08:22,138 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:22] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2026-01-30 09:08:22,143 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:22] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-30 09:08:22,172 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:22] "GET /api/locales HTTP/1.1" 200 -
+2026-01-30 09:08:22,357 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:22] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2026-01-30 09:08:23,919 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:23] "GET /reporteria/ap-efectivo HTTP/1.1" 200 -
+2026-01-30 09:08:23,956 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:23] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 09:08:23,958 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:23] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 09:08:24,628 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:24] "GET /api/turnos?local=Cruza%20Polo HTTP/1.1" 200 -
+2026-01-30 09:08:24,758 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:24] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-30 09:08:36,651 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:08:36] "GET /api/operaciones/ap-efectivo?fecha=2026-01-30 HTTP/1.1" 200 -
+2026-01-30 09:18:13,576 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:18:13] "GET /reporteria/ap-efectivo HTTP/1.1" 200 -
+2026-01-30 09:18:13,609 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:18:13] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 09:18:13,614 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:18:13] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 09:18:27,674 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:18:27] "GET /api/operaciones/ap-efectivo?fecha=2026-01-30 HTTP/1.1" 200 -
+2026-01-30 09:21:23,150 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:21:23] "GET /reporteria/ap-efectivo HTTP/1.1" 200 -
+2026-01-30 09:21:23,184 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:21:23] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 09:21:23,186 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:21:23] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 09:21:36,088 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:21:36] "GET /api/operaciones/ap-efectivo?fecha=2026-01-30 HTTP/1.1" 200 -
+2026-01-30 09:28:42,484 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:28:42] "GET /reporteria/ap-efectivo HTTP/1.1" 200 -
+2026-01-30 09:28:42,530 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:28:42] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 09:28:42,541 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:28:42] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 09:28:55,997 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:28:55] "GET /api/operaciones/ap-efectivo?fecha=2026-01-30 HTTP/1.1" 200 -
+2026-01-30 09:30:58,723 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:30:58] "GET /reporteria/ap-efectivo HTTP/1.1" 200 -
+2026-01-30 09:30:58,748 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:30:58] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 09:30:58,749 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:30:58] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 09:31:11,669 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 09:31:11] "GET /api/operaciones/ap-efectivo?fecha=2026-01-30 HTTP/1.1" 200 -
+2026-01-30 10:06:55,142 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 10:07:13,551 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 10:07:14,627 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 10:07:14,637 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 10:10:38,101 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 10:10:43,853 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 10:10:44,918 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 10:10:44,928 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 10:10:54,702 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 10:10:59,953 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 10:11:00,952 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 10:11:00,957 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 10:15:04,434 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 10:15:09,084 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 10:15:09,967 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 10:15:09,975 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 10:18:41,456 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:41] "[32mGET / HTTP/1.1[0m" 302 -
+2026-01-30 10:18:41,607 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:41] "GET /login?next=/? HTTP/1.1" 200 -
+2026-01-30 10:18:41,671 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:41] "[36mGET /static/css/login.css HTTP/1.1[0m" 304 -
+2026-01-30 10:18:41,829 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:41] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-01-30 10:18:46,081 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-30 10:18:46,082 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-30 10:18:46,129 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-30 10:18:51,841 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:51] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-01-30 10:18:54,815 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "GET /auditor HTTP/1.1" 200 -
+2026-01-30 10:18:54,884 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "GET /static/js/ctas_ctes.js HTTP/1.1" 200 -
+2026-01-30 10:18:54,887 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,886 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,888 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "GET /static/js/index.js HTTP/1.1" 200 -
+2026-01-30 10:18:54,888 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,889 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,921 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,930 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,930 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,946 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "GET /static/js/anticipos_v2.js HTTP/1.1" 200 -
+2026-01-30 10:18:54,953 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,959 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,966 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2026-01-30 10:18:54,974 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "GET /static/js/adjuntador.js HTTP/1.1" 200 -
+2026-01-30 10:18:54,981 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:54] "GET /static/js/orqtabs_init.js HTTP/1.1" 200 -
+2026-01-30 10:18:55,076 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:55] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2026-01-30 10:18:55,076 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:55] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2026-01-30 10:18:55,079 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:55] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2026-01-30 10:18:57,545 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:57] "GET /api/clientes_cta_cte HTTP/1.1" 200 -
+2026-01-30 10:18:57,551 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:57] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-30 10:18:57,608 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:57] "GET /api/locales HTTP/1.1" 200 -
+2026-01-30 10:18:57,876 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:57] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2026-01-30 10:18:57,915 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:18:57] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2026-01-30 10:19:00,243 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:00] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-01-30 10:19:07,778 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:07] "GET /api/turnos?local=Fabric%20Sushi HTTP/1.1" 200 -
+2026-01-30 10:19:10,354 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:10] "GET /api/cajas?local=Fabric%20Sushi HTTP/1.1" 200 -
+2026-01-30 10:19:13,644 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:13] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:19:13,667 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:13] "GET /facturas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:19:13,779 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:13] "GET /ventas_cargadas?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:19:16,165 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:16] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:19:16,264 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:16] "GET /estado_caja?local=Fabric%20Sushi&caja=Caja%201&fecha=2026-01-28&turno=Turno%20día HTTP/1.1" 200 -
+2026-01-30 10:19:16,277 - app - INFO - [estado_local] Consultando: local=Fabric Sushi, fecha=2026-01-28
+2026-01-30 10:19:17,177 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:17] "GET /api/cierre/resumen?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:19:19,787 - app - INFO - [estado_local] Resultado: count=1, estado=0 (CERRADO)
+2026-01-30 10:19:19,790 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:19] "GET /estado_local?local=Fabric%20Sushi&fecha=2026-01-28 HTTP/1.1" 200 -
+2026-01-30 10:19:19,794 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:19:19] "GET /api/estado_auditoria?local=Fabric%20Sushi&fecha=2026-01-28 HTTP/1.1" 200 -
+2026-01-30 10:20:02,739 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:20:02] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-27&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:20:05,681 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:20:05] "GET /api/cierre/resumen?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-27&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:20:11,513 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:20:11] "GET /estado_caja?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:20:14,518 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:20:14] "GET /api/cierre/resumen?local=Fabric+Sushi&caja=Caja+1&fecha=2026-01-28&turno=Turno+día HTTP/1.1" 200 -
+2026-01-30 10:28:47,993 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:47] "GET /resumen-local HTTP/1.1" 200 -
+2026-01-30 10:28:48,031 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:48] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 10:28:48,050 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:48] "GET /static/js/resumen_local.js HTTP/1.1" 200 -
+2026-01-30 10:28:48,074 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:48] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2026-01-30 10:28:50,604 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:50] "GET /api/locales_options HTTP/1.1" 200 -
+2026-01-30 10:28:50,619 - app - INFO - [estado_local] Consultando: local=Heladeria AT LOVE, fecha=2025-12-10
+2026-01-30 10:28:53,146 - app - INFO - [estado_local] Resultado: count=1, estado=0 (CERRADO)
+2026-01-30 10:28:53,147 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:53] "GET /estado_local?local=Heladeria%20AT%20LOVE&fecha=2025-12-10 HTTP/1.1" 200 -
+2026-01-30 10:28:55,974 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:28:55] "GET /api/estado_auditoria?local=Heladeria%20AT%20LOVE&fecha=2025-12-10 HTTP/1.1" 200 -
+2026-01-30 10:29:02,708 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:02] "GET /api/resumen_local?local=Heladeria%20AT%20LOVE&fecha=2025-12-10&source=admin&_t=1769779730633 HTTP/1.1" 200 -
+2026-01-30 10:29:02,726 - app - INFO - [estado_local] Consultando: local=Heladeria AT LOVE, fecha=2025-12-10
+2026-01-30 10:29:05,196 - app - INFO - [estado_local] Resultado: count=1, estado=0 (CERRADO)
+2026-01-30 10:29:05,198 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:05] "GET /estado_local?fecha=2025-12-10&local=Heladeria%20AT%20LOVE&_t=1769779742722 HTTP/1.1" 200 -
+2026-01-30 10:29:07,816 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:12,548 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:12] "GET /files/summary_media?fecha=2025-12-10&local=Heladeria+AT+LOVE&_t=1769779745203 HTTP/1.1" 200 -
+2026-01-30 10:29:12,564 - app - INFO - [estado_local] Consultando: local=Heladeria AT LOVE, fecha=2025-12-10
+2026-01-30 10:29:12,568 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:12,569 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:12,570 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:15,341 - app - INFO - [estado_local] Resultado: count=1, estado=0 (CERRADO)
+2026-01-30 10:29:15,343 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:15] "GET /estado_local?local=Heladeria%20AT%20LOVE&fecha=2025-12-10 HTTP/1.1" 200 -
+2026-01-30 10:29:15,949 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:15] "[32mGET /files/view?id=heladeria-at-love/ventas-z/2025/12/10/caja-1/turno-noche/a893b6f3ad74411786f17e93e3c0ee3a__1000464052.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:16,003 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:16] "[32mGET /files/view?id=heladeria-at-love/remesas/2025/12/10/caja-1/turno-noche/b936e5ade6f44857b02be1a2658462a4__1000464021.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:16,087 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:16] "[32mGET /files/view?id=heladeria-at-love/remesas/2025/12/10/caja-1/turno-dia/cd626524a9b04364866be0236d930185__image.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:17,674 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:17,936 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:17] "GET /api/estado_auditoria?local=Heladeria%20AT%20LOVE&fecha=2025-12-10 HTTP/1.1" 200 -
+2026-01-30 10:29:17,947 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:18,254 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:20,488 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:20] "GET /api/anticipos_recibidos/listar?local=Heladeria+AT+LOVE&fecha_desde=2025-12-10&fecha_hasta=2025-12-10&estado=consumido HTTP/1.1" 200 -
+2026-01-30 10:29:20,744 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:20] "[32mGET /files/view?id=heladeria-at-love/ventas-z/2025/12/10/caja-1/turno-dia/a0712574436344be8e720a8ec6adc9ef__image.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:21,036 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:21] "[32mGET /files/view?id=heladeria-at-love/mercadopago/2025/12/10/caja-1/turno-noche/c97135a63d964bb9bd94a23525ea71f1__1000464045.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:21,329 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:21] "[32mGET /files/view?id=heladeria-at-love/mercadopago/2025/12/10/caja-1/turno-dia/8513c6ef0c1544369b56dda1720543c1__image.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:22,729 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:23,389 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-01-30 10:29:25,495 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:25] "[32mGET /files/view?id=heladeria-at-love/tarjetas/2025/12/10/caja-1/turno-noche/09ced63cf0eb469c8f03633d5864a7f7__1000464044.jpg HTTP/1.1[0m" 302 -
+2026-01-30 10:29:26,235 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 10:29:26] "[32mGET /files/view?id=heladeria-at-love/tarjetas/2025/12/10/caja-1/turno-dia/ba2c551cdd7849f8aa492cae7a32e869__image.jpg HTTP/1.1[0m" 302 -
+2026-01-30 11:28:39,165 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 11:28:46,547 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 11:28:47,744 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 11:28:47,753 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 11:31:58,177 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 11:32:02,909 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 11:32:03,750 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 11:32:03,757 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 11:32:28,511 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 11:32:32,844 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 11:32:33,656 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 11:32:33,664 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 11:33:44,310 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 11:33:49,631 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 11:33:50,554 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 11:33:50,560 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 11:34:02,036 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 11:34:07,423 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 11:34:08,380 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 11:34:08,386 - werkzeug - INFO -  * Debugger PIN: 131-510-401
