@@ -679,3 +679,20 @@
 2026-01-30 17:46:41,552 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
 2026-01-30 17:46:46,973 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-01-30 17:46:47,932 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 17:46:47,937 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 17:49:37,712 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:37] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-01-30 17:49:37,758 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:37] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 17:49:37,766 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:37] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 17:49:37,767 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:37] "[36mGET /static/js/gestion_anticipos.js HTTP/1.1[0m" 304 -
+2026-01-30 17:49:37,790 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:37] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-01-30 17:49:38,577 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-30 17:49:38,578 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-30 17:49:38,581 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-30 17:49:40,765 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:40] "GET /api/locales HTTP/1.1" 200 -
+2026-01-30 17:49:43,439 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:43] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-01-30 17:49:46,306 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:49:46] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-01-30 17:50:22,769 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:50:22] "[31m[1mGET /api/locales/Local_Test/cajas HTTP/1.1[0m" 403 -
+2026-01-30 17:51:41,206 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 17:51:46,069 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 17:51:46,934 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 17:51:46,942 - werkzeug - INFO -  * Debugger PIN: 131-510-401

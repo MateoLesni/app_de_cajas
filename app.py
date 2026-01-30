@@ -2531,9 +2531,15 @@ def get_cajas_por_local(local):
     Obtiene las cajas disponibles para un local específico.
     Usa LIMIT 1 para evitar duplicados por turnos múltiples.
 
+    Accesible para usuarios nivel 4+ (anticipos y admin_anticipos)
+
     Returns:
         JSON con array de nombres de cajas
     """
+    user_level = get_user_level()
+    if user_level < 4:
+        return jsonify(success=False, msg="No tenés permisos para acceder a esta información"), 403
+
     try:
         conn = get_db_connection()
         cur = conn.cursor()
