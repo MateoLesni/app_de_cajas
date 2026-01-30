@@ -6168,8 +6168,10 @@ def api_resumen_local():
         # Sumamos CC de facturas (viejas) + cta cte nuevo sistema + cta cte legacy
         cta_cte_total = float(facturas_cc or 0.0) + float(cta_cte_nuevas or 0.0) + float(cta_cte_legacy or 0.0)
 
-        # ===== TIPS TARJETAS (detalle por marca + total) desde tarjetas_trns =====
-        tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TARJETAS, f, local)
+        # ===== TIPS TARJETAS (detalle por marca + total) =====
+        # IMPORTANTE: Tips siempre desde tarjetas_trns (no snap_tarjetas)
+        # Razón: snap_tarjetas no tiene columna monto_tip, y auditores pueden editar tips post-cierre
+        tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, "tarjetas_trns", f, local)
         tips_total = float(tips_tarj_total or 0.0) + float(tips_mp or 0.0)
 
         # ===== Totales del panel =====
