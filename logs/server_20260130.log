@@ -600,3 +600,20 @@
 2026-01-30 16:00:12,255 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-01-30 16:00:12,786 - werkzeug - WARNING -  * Debugger is active!
 2026-01-30 16:00:12,789 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 17:05:59,923 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-30 17:05:59,931 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-30 17:05:59,955 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-30 17:06:05,037 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:06:05] "GET /estado_caja?local=Local_Test&caja=Caja+1&fecha=2026-01-22&turno=Turno+noche HTTP/1.1" 200 -
+2026-01-30 17:06:10,161 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:06:10] "[35m[1mGET /api/cierre/resumen?local=Local_Test&caja=Caja+1&fecha=2026-01-22&turno=Turno+noche HTTP/1.1[0m" 500 -
+2026-01-30 17:22:17,367 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 17:22:24,336 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 17:22:25,456 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 17:22:25,464 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 17:22:30,025 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 17:22:35,421 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 17:22:36,468 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 17:22:36,476 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 17:22:55,756 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 17:23:01,498 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 17:23:02,502 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 17:23:02,507 - werkzeug - INFO -  * Debugger PIN: 131-510-401

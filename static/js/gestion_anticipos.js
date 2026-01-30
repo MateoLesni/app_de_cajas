@@ -459,6 +459,7 @@
     $('#fechaEvento').value = '';
     $('#cliente').value = '';
     $('#local').value = '';
+    $('#caja').value = '';
     $('#importe').value = '';
     $('#numeroTransaccion').value = '';
     $('#observaciones').value = '';
@@ -499,6 +500,7 @@
     $('#fechaEvento').value = toInputDateFormat(anticipo.fecha_evento);
     $('#cliente').value = anticipo.cliente;
     $('#local').value = anticipo.local;
+    $('#caja').value = anticipo.caja || '';
     $('#importe').value = anticipo.importe;
     $('#divisa').value = anticipo.divisa || 'ARS';
     $('#medioPagoId').value = anticipo.medio_pago_id || '';
@@ -509,6 +511,7 @@
     $('#fechaPago').disabled = true;
     $('#cliente').disabled = true;
     $('#local').disabled = true;
+    $('#caja').disabled = true;
     $('#importe').disabled = true;
     $('#divisa').disabled = true;
     $('#medioPagoId').disabled = true;
@@ -527,6 +530,7 @@
     $('#fechaPago').disabled = false;
     $('#cliente').disabled = false;
     $('#local').disabled = false;
+    $('#caja').disabled = false;
     $('#importe').disabled = false;
     $('#divisa').disabled = false;
     $('#medioPagoId').disabled = false;
@@ -596,6 +600,7 @@
       fecha_evento: $('#fechaEvento').value,
       cliente: $('#cliente').value,
       local: $('#local').value,
+      caja: $('#caja').value,  // Nueva: caja que recibió el anticipo
       importe: $('#importe').value,  // Enviar como string para evitar pérdida de precisión
       divisa: $('#divisa').value,
       medio_pago_id: parseInt($('#medioPagoId').value) || null,
@@ -626,7 +631,7 @@
     }
 
     // Validaciones
-    if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.importe) {
+    if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.caja || !data.importe) {
       alert('Por favor completá todos los campos requeridos');
       return;
     }
@@ -647,6 +652,7 @@
         delete data.fecha_pago;
         delete data.cliente;
         delete data.local;
+        delete data.caja;
         delete data.importe;
         delete data.divisa;
         delete data.medio_pago_id;

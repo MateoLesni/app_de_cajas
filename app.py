@@ -2572,6 +2572,7 @@ def crear_anticipo_recibido():
 
         cliente = data['cliente'].strip()
         local = data['local'].strip()
+        caja = data.get('caja', '').strip() or None  # Caja que recibió el anticipo
 
         # Validar permiso sobre el local específico
         if not can_user_access_local_for_anticipos(local):
@@ -2621,17 +2622,17 @@ def crear_anticipo_recibido():
             except (InvalidOperation, ValueError):
                 return jsonify(success=False, msg="La cotización debe ser un número válido"), 400
 
-        # Insertar anticipo recibido con divisa, medio_pago_id y cotización
+        # Insertar anticipo recibido con divisa, medio_pago_id, cotización y caja
         sql = """
             INSERT INTO anticipos_recibidos
             (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
              cliente, numero_transaccion, medio_pago, observaciones,
-             local, medio_pago_id, cotizacion_divisa, estado, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
+             local, caja, medio_pago_id, cotizacion_divisa, estado, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', %s)
         """
         cur.execute(sql, (fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
                          cliente, numero_transaccion, medio_pago, observaciones,
-                         local, medio_pago_id, cotizacion_divisa, usuario))
+                         local, caja, medio_pago_id, cotizacion_divisa, usuario))
 
         anticipo_id = cur.lastrowid
 
@@ -4546,6 +4547,7 @@ def cierre_resumen():
         # Anticipos recibidos en efectivo en la fecha_pago (fecha de la caja)
         # Estos se RESTAN del total cobrado porque se convertirán en remesas
         # Incluye conversión a ARS para divisas extranjeras (USD, EUR, etc.)
+        # IMPORTANTE: Filtra por la caja específica que recibió el anticipo
         cur.execute("""
             SELECT COALESCE(SUM(
                 CASE
@@ -4560,9 +4562,10 @@ def cierre_resumen():
             INNER JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
             WHERE DATE(ar.fecha_pago) = %s
               AND ar.local = %s
+              AND ar.caja = %s
               AND ma.es_efectivo = 1
               AND ar.estado != 'eliminado_global'
-        """, (fecha, local))
+        """, (fecha, local, caja))
         row = cur.fetchone()
         resumen['anticipos_efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
 

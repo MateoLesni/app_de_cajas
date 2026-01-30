@@ -52,6 +52,7 @@ Con medio (se incluyen): Y
 - **Fecha evento:** Fecha futura
 - **Cliente:** "TEST - Cliente Prueba"
 - **Local:** (Tu local de prueba)
+- **Caja:** Caja 1 ← **OBLIGATORIO** (la que recibió el efectivo)
 - **Medio de pago:** Efectivo ← **OBLIGATORIO**
 - **Divisa:** ARS
 - **Importe:** $50,000
@@ -62,6 +63,7 @@ Con medio (se incluyen): Y
 **Abrir:** Cierre de Caja → Resumen
 
 **Fecha:** Hoy
+**Caja:** Caja 1 ← **Misma que el anticipo**
 
 **Debe mostrar:**
 ```
