@@ -2549,7 +2549,7 @@ def get_cajas_por_local(local):
         cur.execute("""
             SELECT cantidad_cajas
             FROM locales
-            WHERE nombre = %s
+            WHERE local = %s
             LIMIT 1
         """, (local,))
 

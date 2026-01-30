@@ -712,3 +712,19 @@
 2026-01-30 17:54:44,246 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-01-30 17:54:44,850 - werkzeug - WARNING -  * Debugger is active!
 2026-01-30 17:54:44,855 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-01-30 17:56:53,684 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:53] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-01-30 17:56:53,717 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:53] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-01-30 17:56:53,723 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:53] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-01-30 17:56:53,724 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:53] "[36mGET /static/js/gestion_anticipos.js HTTP/1.1[0m" 304 -
+2026-01-30 17:56:53,730 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:53] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-01-30 17:56:54,427 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-01-30 17:56:54,427 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-01-30 17:56:54,429 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-01-30 17:56:56,406 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:56] "GET /api/locales HTTP/1.1" 200 -
+2026-01-30 17:56:58,984 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:56:58] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-01-30 17:57:01,683 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:57:01] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-01-30 17:57:19,509 - werkzeug - INFO - 127.0.0.1 - - [30/Jan/2026 17:57:19] "[35m[1mGET /api/locales/Local_Test/cajas HTTP/1.1[0m" 500 -
+2026-01-30 17:58:49,199 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-01-30 17:58:51,823 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-01-30 17:58:52,260 - werkzeug - WARNING -  * Debugger is active!
+2026-01-30 17:58:52,264 - werkzeug - INFO -  * Debugger PIN: 131-510-401
