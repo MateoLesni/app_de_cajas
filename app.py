@@ -2558,10 +2558,18 @@ def crear_anticipo_recibido():
             return jsonify(success=False, msg=f"Campo requerido faltante: {field}"), 400
 
     try:
+        from decimal import Decimal, InvalidOperation
+
         # Parsear y validar datos
         fecha_pago = _normalize_fecha(data['fecha_pago'])
         fecha_evento = _normalize_fecha(data['fecha_evento'])
-        importe = float(data['importe'])
+
+        # Usar Decimal para evitar pérdida de precisión en importes
+        try:
+            importe = Decimal(str(data['importe']))
+        except (InvalidOperation, ValueError):
+            return jsonify(success=False, msg="El importe debe ser un número válido"), 400
+
         cliente = data['cliente'].strip()
         local = data['local'].strip()
 
@@ -2608,7 +2616,10 @@ def crear_anticipo_recibido():
         # Obtener cotización de divisa si está presente (USD, EUR, BRL, etc.)
         cotizacion_divisa = data.get('cotizacion_divisa')
         if cotizacion_divisa is not None:
-            cotizacion_divisa = float(cotizacion_divisa)
+            try:
+                cotizacion_divisa = Decimal(str(cotizacion_divisa))
+            except (InvalidOperation, ValueError):
+                return jsonify(success=False, msg="La cotización debe ser un número válido"), 400
 
         # Insertar anticipo recibido con divisa, medio_pago_id y cotización
         sql = """

@@ -596,7 +596,7 @@
       fecha_evento: $('#fechaEvento').value,
       cliente: $('#cliente').value,
       local: $('#local').value,
-      importe: parseFloat($('#importe').value),
+      importe: $('#importe').value,  // Enviar como string para evitar pérdida de precisión
       divisa: $('#divisa').value,
       medio_pago_id: parseInt($('#medioPagoId').value) || null,
       numero_transaccion: $('#numeroTransaccion').value.trim() || null,
@@ -611,12 +611,13 @@
 
     // Agregar cotización de divisa si no es ARS
     if ($('#divisa').value !== 'ARS') {
-      const cotizacion = parseFloat($('#cotizacionUSD').value);
+      const cotizacionStr = $('#cotizacionUSD').value;
+      const cotizacion = parseFloat(cotizacionStr);
       if (!cotizacion || cotizacion <= 0) {
         alert('⚠️  Debés ingresar la cotización de la divisa');
         return;
       }
-      data.cotizacion_divisa = cotizacion;
+      data.cotizacion_divisa = cotizacionStr;  // Enviar como string para evitar pérdida de precisión
     }
 
     // Agregar adjunto si existe
@@ -630,7 +631,9 @@
       return;
     }
 
-    if (data.importe <= 0) {
+    // Validar que el importe sea un número válido mayor a cero
+    const importeNum = parseFloat(data.importe);
+    if (isNaN(importeNum) || importeNum <= 0) {
       alert('El importe debe ser mayor a cero');
       return;
     }
