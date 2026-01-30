@@ -2553,7 +2553,13 @@ def get_cajas_por_local(local):
         if not result:
             return jsonify(success=False, msg="Local no encontrado"), 404
 
-        cantidad_cajas = result[0] if result[0] else 0
+        # Convertir cantidad_cajas a entero de forma segura
+        cantidad_cajas = 0
+        if result[0] is not None:
+            try:
+                cantidad_cajas = int(result[0])
+            except (ValueError, TypeError):
+                cantidad_cajas = 0
 
         # Generar array de cajas según la cantidad
         cajas = []
