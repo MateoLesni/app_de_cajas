@@ -4358,8 +4358,8 @@ def cierre_resumen():
         # Determinar tablas a usar
         if local_cerrado:
             T_VENTAS = "snap_ventas"
-            T_REMESAS = "remesas_trns"  # Siempre remesas_trns (auditores editan post-cierre, igual que facturas)
-            T_TARJETAS = "snap_tarjetas"
+            T_REMESAS = "remesas_trns"  # Siempre remesas_trns (auditores editan post-cierre)
+            T_TARJETAS = "tarjetas_trns"  # Siempre tarjetas_trns (auditores editan post-cierre)
             T_MP = "snap_mercadopago"
             T_RAPPI = "snap_rappi"
             T_PEDIDOSYA = "snap_pedidosya"
@@ -4432,7 +4432,7 @@ def cierre_resumen():
         row = cur.fetchone()
         resumen['efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
 
-        # tarjeta (ventas con tarjeta NO TIPS)
+        # tarjeta (ventas con tarjeta SIN TIPS)
         cur.execute(f"""
             SELECT COALESCE(SUM(monto),0)
               FROM {T_TARJETAS}
