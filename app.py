@@ -7634,9 +7634,9 @@ def api_operaciones_ap_efectivo():
             fechas = [hoy]
             fecha_labels = [hoy.strftime('%d/%m')]
 
-        # Obtener todos los locales activos
+        # Obtener todos los locales activos (excluyendo Local_Test)
         cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
-        todos_locales = [r['local'] for r in cur.fetchall() if r['local']]
+        todos_locales = [r['local'] for r in cur.fetchall() if r['local'] and r['local'] != 'Local_Test']
 
         # Definir segmentos
         segmento2 = ['Nómade', 'Polo House']
@@ -7803,9 +7803,9 @@ def api_operaciones_ap_efectivo_usd():
             fechas = [hoy]
             fecha_labels = [hoy.strftime('%d/%m')]
 
-        # Obtener todos los locales activos
+        # Obtener todos los locales activos (excluyendo Local_Test)
         cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
-        todos_locales = [r['local'] for r in cur.fetchall() if r['local']]
+        todos_locales = [r['local'] for r in cur.fetchall() if r['local'] and r['local'] != 'Local_Test']
 
         # Definir segmentos
         segmento2 = ['Nómade', 'Polo House']
