@@ -5581,6 +5581,7 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
     breakdown = {m: 0.0 for m in marcas}
 
     try:
+        # SUMAR POR MARCA
         for marca in marcas:
             cur.execute(
                 f"""
@@ -5592,12 +5593,33 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
             )
             row = cur.fetchone()
             breakdown[marca] = float(row[0] or 0.0) if row else 0.0
-    except Exception:
-        # Si falla, dejamos todo en 0
-        pass
 
-    total_tarjetas = float(sum(breakdown.values()))
-    return breakdown, total_tarjetas
+        # SUMA TOTAL DE TODAS LAS MARCAS CONOCIDAS
+        total_por_marcas = float(sum(breakdown.values()))
+
+        # SUMA TOTAL DE TODOS LOS TIPS (incluyendo marcas no listadas)
+        cur.execute(
+            f"""
+            SELECT COALESCE(SUM(monto_tip),0)
+            FROM {table_name}
+            WHERE DATE(fecha)=%s AND local=%s
+            """,
+            (fecha, local)
+        )
+        row = cur.fetchone()
+        total_real = float(row[0] or 0.0) if row else 0.0
+
+        # Si hay diferencia, agregamos una categoría "OTROS" para las marcas no listadas
+        if total_real > total_por_marcas:
+            otros = total_real - total_por_marcas
+            breakdown['OTROS'] = otros
+            print(f"⚠️  Tips en marcas no listadas: Local={local}, Fecha={fecha}, Otros={otros}")
+
+        return breakdown, total_real  # Retornar el total REAL (no solo marcas conocidas)
+    except Exception as e:
+        print(f"❌ Error en _sum_tips_tarjetas_breakdown: {e}")
+        # Si falla, dejamos todo en 0
+        return breakdown, 0.0
 
 
 def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
@@ -6169,9 +6191,19 @@ def api_resumen_local():
         cta_cte_total = float(facturas_cc or 0.0) + float(cta_cte_nuevas or 0.0) + float(cta_cte_legacy or 0.0)
 
         # ===== TIPS TARJETAS (detalle por marca + total) =====
-        # IMPORTANTE: Tips siempre desde tarjetas_trns (no snap_tarjetas)
-        # Razón: snap_tarjetas no tiene columna monto_tip, y auditores pueden editar tips post-cierre
-        tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, "tarjetas_trns", f, local)
+        # IMPORTANTE: Si usar_snap=True (Operación), intentamos snap_tarjetas pero puede no tener monto_tip
+        # Si usar_snap=False (Administración), usamos tarjetas_trns que SÍ tiene monto_tip
+        if usar_snap:
+            # Modo Operación: intentar snap_tarjetas, pero si falla (no tiene monto_tip), usar tarjetas_trns
+            try:
+                tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TARJETAS, f, local)
+            except Exception as e:
+                print(f"⚠️  snap_tarjetas no tiene monto_tip, usando tarjetas_trns: {e}")
+                tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, "tarjetas_trns", f, local)
+        else:
+            # Modo Administración: usar tarjetas_trns directamente
+            tips_tarj_breakdown, tips_tarj_total = _sum_tips_tarjetas_breakdown(cur, T_TARJETAS, f, local)
+
         tips_total = float(tips_tarj_total or 0.0) + float(tips_mp or 0.0)
 
         # ===== Totales del panel =====
