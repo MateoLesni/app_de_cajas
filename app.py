@@ -476,6 +476,7 @@ def login_required(view):
             'eliminar_anticipo_recibido',
             'api_locales',
             'api_locales_options',
+            'get_cajas_por_local',  # Endpoint para obtener cajas de un local
             'auditoria.auditoria_locales',  # Endpoint /api/locales en blueprint auditoria
             'files_upload',
             'files_list',
