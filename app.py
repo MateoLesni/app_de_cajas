@@ -4636,9 +4636,10 @@ def cierre_resumen():
             WHERE DATE(ar.fecha_pago) = %s
               AND ar.local = %s
               AND ar.caja = %s
+              AND (ar.turno = %s OR ar.turno IS NULL)
               AND ma.es_efectivo = 1
               AND ar.estado != 'eliminado_global'
-        """, (fecha, local, caja))
+        """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['anticipos_efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
 

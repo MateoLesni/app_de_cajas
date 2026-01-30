@@ -11,6 +11,7 @@
   let localesDisponibles = [];
   let anticiposData = [];
   let mediosPagoDisponibles = [];
+  let localTieneMultiplesTurnos = false;  // Se actualiza al cargar cajas del local
   let userProfile = {
     level: 0,
     allowed_locales: [],
@@ -267,11 +268,13 @@
     }
   }
 
-  // Mostrar/ocultar campo caja según si el medio de pago es "Efectivo"
+  // Mostrar/ocultar campo caja y turno según si el medio de pago es "Efectivo"
   function toggleCajaField() {
     const medioPagoId = $('#medioPagoId')?.value;
     const cajaGroup = $('#cajaGroup');
     const cajaSelect = $('#caja');
+    const turnoGroup = $('#turnoGroup');
+    const turnoSelect = $('#turno');
 
     if (!medioPagoId || !cajaGroup || !cajaSelect) return;
 
@@ -282,11 +285,24 @@
       // Mostrar campo caja y hacerlo obligatorio
       cajaGroup.style.display = 'block';
       cajaSelect.required = true;
+
+      // Mostrar campo turno SOLO si el local tiene múltiples turnos
+      if (localTieneMultiplesTurnos && turnoGroup && turnoSelect) {
+        turnoGroup.style.display = 'block';
+        turnoSelect.required = true;
+      }
     } else {
       // Ocultar campo caja y quitar obligatoriedad
       cajaGroup.style.display = 'none';
       cajaSelect.required = false;
       cajaSelect.value = ''; // Limpiar selección
+
+      // Ocultar campo turno
+      if (turnoGroup && turnoSelect) {
+        turnoGroup.style.display = 'none';
+        turnoSelect.required = false;
+        turnoSelect.value = '';
+      }
     }
   }
 
@@ -294,7 +310,6 @@
   async function loadCajasForLocal(local) {
     const cajaSelect = $('#caja');
     const turnoSelect = $('#turno');
-    const turnoGroup = $('#turnoGroup');
 
     if (!cajaSelect || !local) return;
 
@@ -314,11 +329,11 @@
           cajaSelect.appendChild(option);
         });
 
-        // Manejar turnos
-        if (data.tiene_multiples_turnos && data.turnos) {
-          // Mostrar campo turno y cargar opciones
-          turnoGroup.style.display = 'block';
-          turnoSelect.required = true;
+        // Guardar si el local tiene múltiples turnos (NO mostrar el campo aún)
+        localTieneMultiplesTurnos = data.tiene_multiples_turnos || false;
+
+        // Cargar opciones de turnos (pero NO mostrar el campo hasta que seleccionen Efectivo)
+        if (localTieneMultiplesTurnos && data.turnos && turnoSelect) {
           turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
 
           data.turnos.forEach(turno => {
@@ -327,11 +342,6 @@
             option.textContent = turno;
             turnoSelect.appendChild(option);
           });
-        } else {
-          // Ocultar campo turno si el local tiene un solo turno
-          turnoGroup.style.display = 'none';
-          turnoSelect.required = false;
-          turnoSelect.value = '';
         }
       } else {
         console.error('Error al cargar cajas:', data.msg);
