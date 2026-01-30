@@ -5586,7 +5586,7 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
         for marca in marcas:
             cur.execute(
                 f"""
-                SELECT COALESCE(SUM(monto_tip),0)
+                SELECT COALESCE(SUM(monto_tip),0) as total_tip
                 FROM {table_name}
                 WHERE DATE(fecha)=%s AND local=%s
                   AND UPPER(tarjeta) COLLATE utf8mb4_unicode_ci = %s
@@ -5594,7 +5594,14 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
                 (fecha, local, marca.upper())
             )
             row = cur.fetchone()
-            breakdown[marca] = float(row[0] or 0.0) if row else 0.0
+            # Manejar tanto diccionarios como tuplas
+            if row:
+                if isinstance(row, dict):
+                    breakdown[marca] = float(row.get('total_tip') or 0.0)
+                else:
+                    breakdown[marca] = float(row[0] or 0.0)
+            else:
+                breakdown[marca] = 0.0
 
         # Agrupar variantes con y sin acento en una sola categoría
         breakdown_agrupado = {}
@@ -5613,14 +5620,21 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
         # SUMA TOTAL DE TODOS LOS TIPS (incluyendo marcas no listadas)
         cur.execute(
             f"""
-            SELECT COALESCE(SUM(monto_tip),0)
+            SELECT COALESCE(SUM(monto_tip),0) as total_tip
             FROM {table_name}
             WHERE DATE(fecha)=%s AND local=%s
             """,
             (fecha, local)
         )
         row = cur.fetchone()
-        total_real = float(row[0] or 0.0) if row else 0.0
+        # Manejar tanto diccionarios como tuplas
+        if row:
+            if isinstance(row, dict):
+                total_real = float(row.get('total_tip') or 0.0)
+            else:
+                total_real = float(row[0] or 0.0)
+        else:
+            total_real = 0.0
 
         # Si hay diferencia, agregamos una categoría "OTROS" para las marcas no listadas
         if total_real > total_por_marcas:
