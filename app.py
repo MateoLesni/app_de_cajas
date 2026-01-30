@@ -5568,10 +5568,12 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
     Devuelve dict con tips por marca desde tarjetas_trns (usando columna monto_tip).
     Suma por tarjeta (marca normalizada).
     """
+    # IMPORTANTE: Solo incluir versión sin acento porque COLLATE utf8mb4_unicode_ci
+    # ya hace matching insensible a acentos. Si incluimos ambas variantes se duplican los montos.
     marcas = [
-        "VISA", "VISA DEBITO", "VISA DÉBITO", "VISA PREPAGO",
-        "MASTERCARD", "MASTERCARD DEBITO", "MASTERCARD DÉBITO", "MASTERCARD PREPAGO",
-        "CABAL", "CABAL DEBITO", "CABAL DÉBITO",
+        "VISA", "VISA DEBITO", "VISA PREPAGO",
+        "MASTERCARD", "MASTERCARD DEBITO", "MASTERCARD PREPAGO",
+        "CABAL", "CABAL DEBITO",
         "AMEX", "MAESTRO",
         "NARANJA", "DECIDIR", "DINERS",
         "PAGOS INMEDIATOS",
@@ -5602,17 +5604,6 @@ def _sum_tips_tarjetas_breakdown(cur, table_name, fecha, local):
                     breakdown[marca] = float(row[0] or 0.0)
             else:
                 breakdown[marca] = 0.0
-
-        # Agrupar variantes con y sin acento en una sola categoría
-        breakdown_agrupado = {}
-        for marca, monto in breakdown.items():
-            # Normalizar nombre (quitar acentos para agrupar)
-            marca_sin_acento = marca.replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")
-            if marca_sin_acento in breakdown_agrupado:
-                breakdown_agrupado[marca_sin_acento] += monto
-            else:
-                breakdown_agrupado[marca_sin_acento] = monto
-        breakdown = breakdown_agrupado  # Reemplazar con versión agrupada
 
         # SUMA TOTAL DE TODAS LAS MARCAS CONOCIDAS
         total_por_marcas = float(sum(breakdown.values()))
@@ -5987,10 +5978,12 @@ def api_resumen_local():
         )
 
         # ===== TARJETAS (ventas por marca) =====
+        # IMPORTANTE: Solo incluir versión sin acento porque COLLATE utf8mb4_unicode_ci
+        # ya hace matching insensible a acentos. Si incluimos ambas variantes se duplican los montos.
         marcas = [
-            "VISA", "VISA DEBITO", "VISA DÉBITO", "VISA PREPAGO",
-            "MASTERCARD", "MASTERCARD DEBITO", "MASTERCARD DÉBITO", "MASTERCARD PREPAGO",
-            "CABAL", "CABAL DEBITO", "CABAL DÉBITO",
+            "VISA", "VISA DEBITO", "VISA PREPAGO",
+            "MASTERCARD", "MASTERCARD DEBITO", "MASTERCARD PREPAGO",
+            "CABAL", "CABAL DEBITO",
             "AMEX", "MAESTRO",
             "NARANJA", "DECIDIR", "DINERS",
             "PAGOS INMEDIATOS",
@@ -6009,16 +6002,6 @@ def api_resumen_local():
             ) or 0.0
 
         tarjetas_det = {m: _sum_tarjeta_from(T_TARJETAS, m) for m in marcas}
-        # Agrupar variantes con y sin acento en una sola categoría para el display
-        tarjetas_det_agrupado = {}
-        for marca, monto in tarjetas_det.items():
-            # Normalizar nombre (quitar acentos para agrupar)
-            marca_sin_acento = marca.replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")
-            if marca_sin_acento in tarjetas_det_agrupado:
-                tarjetas_det_agrupado[marca_sin_acento] += monto
-            else:
-                tarjetas_det_agrupado[marca_sin_acento] = monto
-        tarjetas_det = tarjetas_det_agrupado  # Reemplazar con versión agrupada
         tarjeta_total = float(sum(tarjetas_det.values()))
 
         # ===== MP, Rappi, PedidosYa =====
