@@ -5905,6 +5905,31 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         row = cur.fetchone()
         total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
+        # Anticipos Recibidos en Efectivo - RESTAR del total cobrado
+        # (porque se convertirán en remesas y ya están incluidos en efectivo)
+        cur.execute("""
+            SELECT COALESCE(SUM(
+                CASE
+                    WHEN ar.divisa = 'USD' AND ar.cotizacion_divisa IS NOT NULL
+                    THEN ar.importe * ar.cotizacion_divisa
+                    WHEN ar.divisa = 'ARS' OR ar.divisa IS NULL
+                    THEN ar.importe
+                    ELSE ar.importe
+                END
+            ), 0)
+            FROM anticipos_recibidos ar
+            INNER JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
+            WHERE DATE(ar.fecha_pago) = %s
+              AND ar.local = %s
+              AND ar.caja = %s
+              AND (ar.turno = %s OR ar.turno IS NULL)
+              AND ma.es_efectivo = 1
+              AND ar.estado != 'eliminado_global'
+        """, (f, local, caja, turno))
+        row = cur.fetchone()
+        anticipos_efectivo = float(_extract_first_value(row) or 0.0) if row else 0.0
+        total_cobrado -= anticipos_efectivo  # RESTA del total cobrado
+
         # Calcular diferencia
         diferencia = total_cobrado - venta_total
 
@@ -6318,10 +6343,35 @@ def api_resumen_local():
 
         tips_total = float(tips_tarj_total or 0.0) + float(tips_mp or 0.0)
 
+        # ===== ANTICIPOS RECIBIDOS EN EFECTIVO =====
+        # Anticipos recibidos en efectivo que se RESTAN del total cobrado
+        # (porque se convertirán en remesas)
+        # SIEMPRE consultar de tablas normales (no hay snap todavía)
+        anticipos_efectivo_total = _qsum(
+            cur,
+            """SELECT COALESCE(SUM(
+                CASE
+                    WHEN ar.divisa = 'USD' AND ar.cotizacion_divisa IS NOT NULL
+                    THEN ar.importe * ar.cotizacion_divisa
+                    WHEN ar.divisa = 'ARS' OR ar.divisa IS NULL
+                    THEN ar.importe
+                    ELSE ar.importe
+                END
+            ), 0)
+            FROM anticipos_recibidos ar
+            INNER JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
+            WHERE DATE(ar.fecha_pago) = %s
+              AND ar.local = %s
+              AND ma.es_efectivo = 1
+              AND ar.estado != 'eliminado_global'""",
+            (f, local),
+        ) or 0.0
+
         # ===== Totales del panel =====
         # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
         # Los TIPS tampoco suman al total cobrado
-        # Suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC), gastos, anticipos
+        # Suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC), gastos, anticipos consumidos
+        # Restan: anticipos recibidos en efectivo
         total_cobrado = float(sum([
             efectivo_neto or 0.0,
             tarjeta_total or 0.0,
@@ -6331,6 +6381,7 @@ def api_resumen_local():
             cta_cte_total or 0.0,  # Cuenta corriente (facturas CC)
             gastos_total or 0.0,   # Gastos justifican la venta
             anticipos_total or 0.0,  # Anticipos consumidos
+            -anticipos_efectivo_total,  # RESTA: anticipos recibidos en efectivo
         ]))
 
         info_total = float(sum([
@@ -6412,6 +6463,9 @@ def api_resumen_local():
                 "anticipos": {
                     "total": float(anticipos_total or 0.0),
                     "items": anticipos_items
+                },
+                "anticipos_efectivo": {
+                    "total": float(anticipos_efectivo_total or 0.0)
                 },
                 "cuenta_cte": {
                     "total": float(cta_cte_total or 0.0),
