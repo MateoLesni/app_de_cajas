@@ -309,20 +309,23 @@ document.addEventListener("DOMContentLoaded", function () {
     setLoading(true);
 
     try {
-      // Construir URLs para ambos endpoints
+      // Construir URLs para ambos endpoints + endpoint de anticipos en efectivo recibidos
       const urlDisponibles = `/api/anticipos/disponibles?local=${encodeURIComponent(ctx.local)}&caja=${encodeURIComponent(ctx.caja)}&fecha=${encodeURIComponent(ctx.fecha)}&turno=${encodeURIComponent(ctx.turno)}`;
       const urlConsumidos = `/api/anticipos/consumidos_en_caja?local=${encodeURIComponent(ctx.local)}&caja=${encodeURIComponent(ctx.caja)}&fecha=${encodeURIComponent(ctx.fecha)}&turno=${encodeURIComponent(ctx.turno)}`;
+      const urlEfectivoRecibidos = `/api/anticipos/efectivo_recibidos?local=${encodeURIComponent(ctx.local)}&caja=${encodeURIComponent(ctx.caja)}&fecha=${encodeURIComponent(ctx.fecha)}&turno=${encodeURIComponent(ctx.turno)}`;
 
-      // Ejecutar ambos fetches EN PARALELO para mayor velocidad
-      const [resDisponibles, resConsumidos] = await Promise.all([
+      // Ejecutar todos los fetches EN PARALELO para mayor velocidad
+      const [resDisponibles, resConsumidos, resEfectivoRecibidos] = await Promise.all([
         fetch(urlDisponibles),
-        fetch(urlConsumidos)
+        fetch(urlConsumidos),
+        fetch(urlEfectivoRecibidos)
       ]);
 
       // Procesar respuestas en paralelo
-      const [dataDisponibles, dataConsumidos] = await Promise.all([
+      const [dataDisponibles, dataConsumidos, dataEfectivoRecibidos] = await Promise.all([
         resDisponibles.json(),
-        resConsumidos.json()
+        resConsumidos.json(),
+        resEfectivoRecibidos.json()
       ]);
 
       // Actualizar datos disponibles
@@ -341,6 +344,11 @@ document.addEventListener("DOMContentLoaded", function () {
         anticiposConsumidos = [];
       }
 
+      // Mostrar alerta de anticipos en efectivo recibidos
+      if (dataEfectivoRecibidos.success) {
+        mostrarAlertaAnticiposEfectivo(dataEfectivoRecibidos.anticipos || [], dataEfectivoRecibidos.total || 0);
+      }
+
       // Renderizar TODO junto una vez que AMBOS fetches terminaron
       renderAnticipos();
 
@@ -350,6 +358,39 @@ document.addEventListener("DOMContentLoaded", function () {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Mostrar alerta de anticipos en efectivo recibidos
+  function mostrarAlertaAnticiposEfectivo(anticipos, total) {
+    const alerta = document.getElementById('alerta-anticipos-efectivo');
+    const texto = document.getElementById('alerta-anticipos-texto');
+
+    if (!alerta || !texto) return;
+
+    if (anticipos.length === 0 || total === 0) {
+      // No hay anticipos en efectivo, ocultar alerta
+      alerta.style.display = 'none';
+      return;
+    }
+
+    // Formatear monto total
+    const montoFormateado = new Intl.NumberFormat('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(total);
+
+    // Crear mensaje
+    const cantidadTexto = anticipos.length === 1 ? '1 anticipo' : `${anticipos.length} anticipos`;
+    const mensaje = `
+      Se ${anticipos.length === 1 ? 'ha recibido' : 'han recibido'} <strong>${cantidadTexto}</strong> en efectivo en esta caja el día de hoy,
+      por un total de <strong>$${montoFormateado}</strong>.
+      <br><br>
+      <strong>⚠️ Importante:</strong> Debés cargar ${anticipos.length === 1 ? 'una remesa' : 'remesas'} con este monto en esta caja y turno
+      para que el resumen cierre correctamente.
+    `;
+
+    texto.innerHTML = mensaje;
+    alerta.style.display = 'block';
   }
 
   // Renderizar anticipos

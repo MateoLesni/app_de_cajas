@@ -801,6 +801,21 @@
               Anticipos/señas que corresponden a esta caja para la fecha seleccionada.
             </p>
 
+            <!-- Alerta de anticipos en efectivo recibidos (se muestra dinámicamente) -->
+            <div id="alerta-anticipos-efectivo" style="display:none; background:#fef3c7; border-left:4px solid #f59e0b; padding:14px 16px; margin-bottom:20px; border-radius:6px;">
+              <div style="display:flex; align-items:start; gap:12px;">
+                <span style="font-size:24px; flex-shrink:0;">⚠️</span>
+                <div style="flex:1;">
+                  <strong style="color:#92400e; display:block; margin-bottom:6px; font-size:15px;">
+                    Anticipo(s) en Efectivo Recibido(s)
+                  </strong>
+                  <p id="alerta-anticipos-texto" style="color:#78350f; margin:0; font-size:14px; line-height:1.5;">
+                    <!-- Texto dinámico -->
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Lista de anticipos disponibles -->
             <div id="anticipos-disponibles-container" style="margin-bottom: 24px;">
               <h4>Anticipos para consumir:</h4>

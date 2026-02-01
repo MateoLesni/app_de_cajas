@@ -310,8 +310,18 @@
   async function loadCajasForLocal(local) {
     const cajaSelect = $('#caja');
     const turnoSelect = $('#turno');
+    const cajaGroup = $('#cajaGroup');
+    const turnoGroup = $('#turnoGroup');
 
-    if (!cajaSelect || !local) return;
+    // Si no hay local seleccionado, limpiar y ocultar campos
+    if (!cajaSelect || !local) {
+      if (cajaGroup) cajaGroup.style.display = 'none';
+      if (turnoGroup) turnoGroup.style.display = 'none';
+      if (cajaSelect) cajaSelect.innerHTML = '<option value="">Seleccione una caja</option>';
+      if (turnoSelect) turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
+      localTieneMultiplesTurnos = false;
+      return;
+    }
 
     try {
       const response = await fetch(`/api/locales/${encodeURIComponent(local)}/cajas`);
@@ -329,27 +339,39 @@
           cajaSelect.appendChild(option);
         });
 
-        // Guardar si el local tiene múltiples turnos (NO mostrar el campo aún)
+        // Guardar si el local tiene múltiples turnos
         localTieneMultiplesTurnos = data.tiene_multiples_turnos || false;
 
-        // Cargar opciones de turnos (pero NO mostrar el campo hasta que seleccionen Efectivo)
-        if (localTieneMultiplesTurnos && data.turnos && turnoSelect) {
+        // Cargar opciones de turnos
+        if (turnoSelect) {
           turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
 
-          data.turnos.forEach(turno => {
-            const option = document.createElement('option');
-            option.value = turno;
-            option.textContent = turno;
-            turnoSelect.appendChild(option);
-          });
+          if (localTieneMultiplesTurnos && data.turnos) {
+            data.turnos.forEach(turno => {
+              const option = document.createElement('option');
+              option.value = turno;
+              option.textContent = turno;
+              turnoSelect.appendChild(option);
+            });
+          }
         }
+
+        // Actualizar visibilidad de campos según medio de pago ya seleccionado
+        // (solo mostrar si ya tienen Efectivo seleccionado)
+        toggleCajaField();
       } else {
         console.error('Error al cargar cajas:', data.msg);
         cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
+        if (cajaGroup) cajaGroup.style.display = 'none';
+        if (turnoGroup) turnoGroup.style.display = 'none';
+        localTieneMultiplesTurnos = false;
       }
     } catch (error) {
       console.error('Error al cargar cajas del local:', error);
       cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
+      if (cajaGroup) cajaGroup.style.display = 'none';
+      if (turnoGroup) turnoGroup.style.display = 'none';
+      localTieneMultiplesTurnos = false;
     }
   }
 

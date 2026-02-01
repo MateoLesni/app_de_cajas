@@ -2687,6 +2687,38 @@ def crear_anticipo_recibido():
             result = cur.fetchone()
             medio_pago_id = result[0] if result else None
 
+        # Validar si el medio de pago es efectivo
+        es_efectivo = False
+        if medio_pago_id:
+            cur.execute("SELECT es_efectivo FROM medios_anticipos WHERE id = %s", (medio_pago_id,))
+            result = cur.fetchone()
+            es_efectivo = (result and result[0] == 1) if result else False
+
+        # VALIDACIÓN ESTRICTA: Si es efectivo, caja es OBLIGATORIA
+        if es_efectivo:
+            if not caja:
+                cur.close()
+                conn.close()
+                return jsonify(
+                    success=False,
+                    msg="⚠️  Caja es obligatoria para anticipos en efectivo. Seleccioná la caja que recibió el dinero."
+                ), 400
+
+            # Verificar si el local tiene múltiples turnos
+            cur.execute("SELECT turnos FROM locales WHERE local = %s LIMIT 1", (local,))
+            result = cur.fetchone()
+            turnos_del_local = result[0] if result else None
+
+            # Si el local tiene múltiples turnos (contiene coma), el turno es OBLIGATORIO
+            if turnos_del_local and ',' in turnos_del_local:
+                if not turno:
+                    cur.close()
+                    conn.close()
+                    return jsonify(
+                        success=False,
+                        msg=f"⚠️  Turno es obligatorio para anticipos en efectivo en este local. Seleccioná el turno en que se recibió el dinero."
+                    ), 400
+
         # Obtener cotización de divisa si está presente (USD, EUR, BRL, etc.)
         cotizacion_divisa = data.get('cotizacion_divisa')
         if cotizacion_divisa is not None:
@@ -3483,6 +3515,90 @@ def obtener_anticipos_consumidos_en_caja():
         import traceback
         traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos/efectivo_recibidos', methods=['GET'])
+@login_required
+def obtener_anticipos_efectivo_recibidos():
+    """
+    Obtener anticipos en efectivo recibidos en una caja/turno específico.
+    Sirve para alertar al usuario que debe cargar remesas con esos montos.
+
+    Params:
+    - local
+    - caja
+    - fecha (fecha_pago)
+    - turno
+
+    Returns:
+    {
+        "success": true,
+        "anticipos": [...],
+        "total": 12345.67  # Total en ARS (incluyendo conversión de USD)
+    }
+    """
+    local = get_local_param()
+    caja = request.args.get('caja', '').strip()
+    fecha = request.args.get('fecha', '').strip()
+    turno = request.args.get('turno', 'UNI').strip().upper()
+
+    if not (local and caja and fecha):
+        return jsonify(success=False, msg="Local, caja y fecha son requeridos"), 400
+
+    fecha_norm = _normalize_fecha(fecha)
+    if not fecha_norm:
+        return jsonify(success=False, msg="Formato de fecha inválido"), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Buscar anticipos en efectivo recibidos en esta caja/turno/fecha
+        cur.execute("""
+            SELECT
+                ar.id,
+                ar.cliente,
+                ar.importe,
+                ar.divisa,
+                ar.cotizacion_divisa,
+                ma.nombre as medio_pago,
+                CASE
+                    WHEN ar.divisa = 'USD' AND ar.cotizacion_divisa IS NOT NULL
+                    THEN ar.importe * ar.cotizacion_divisa
+                    WHEN ar.divisa = 'ARS' OR ar.divisa IS NULL
+                    THEN ar.importe
+                    ELSE ar.importe
+                END as importe_ars
+            FROM anticipos_recibidos ar
+            INNER JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
+            WHERE DATE(ar.fecha_pago) = %s
+              AND ar.local = %s
+              AND ar.caja = %s
+              AND (ar.turno = %s OR ar.turno IS NULL)
+              AND ma.es_efectivo = 1
+              AND ar.estado != 'eliminado_global'
+            ORDER BY ar.created_at DESC
+        """, (fecha_norm, local, caja, turno))
+
+        anticipos = cur.fetchall() or []
+
+        # Calcular total
+        total = sum(float(a['importe_ars']) for a in anticipos)
+
+        cur.close()
+        conn.close()
+
+        return jsonify(
+            success=True,
+            anticipos=anticipos,
+            total=total
+        )
+
+    except Exception as e:
+        print(f"❌ Error en /api/anticipos/efectivo_recibidos: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=f"Error: {str(e)}"), 500
 
 
 @app.route('/api/anticipos/validar_cierre_local', methods=['GET'])
