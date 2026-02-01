@@ -2572,9 +2572,6 @@ def get_cajas_por_local(local):
         for i in range(1, cantidad_cajas + 1):
             cajas.append(f"Caja {i}")
 
-        # Siempre agregar "Administración" como opción adicional
-        cajas.append("Administración")
-
         # Obtener turnos únicos (puede haber múltiples filas para el mismo local)
         turnos = []
         for row in results:
