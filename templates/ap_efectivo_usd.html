@@ -800,8 +800,8 @@ function renderizarNoEnviados(noEnviados) {
 
 function formatearMonto(valor) {
     if (!valor || valor === 0) return '-';
-    // Formato USD con 2 decimales
-    return 'USD ' + parseFloat(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Formato USD con 2 decimales (sin prefijo USD)
+    return parseFloat(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatearFecha(fechaStr) {
@@ -815,7 +815,7 @@ function formatearFecha(fechaStr) {
 
 function formatearMontoARS(valor) {
     if (!valor || valor === 0) return '-';
-    return '$' + parseFloat(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return parseFloat(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // Función para generar PDF (idéntico al diseño web)
@@ -828,11 +828,12 @@ function generarPDF() {
     doc.setFont(undefined, 'bold');
     doc.text('AP Efectivo USD', 148, 12, { align: 'center' });
 
-    // Fecha del reporte
+    // Fecha del reporte (sin emoji para evitar caracteres extraños)
     const fechaIndicador = document.getElementById('dateIndicator').textContent;
+    const fechaTexto = fechaIndicador.replace(/📅/g, '').trim();
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text(fechaIndicador, 148, 18, { align: 'center' });
+    doc.text(fechaTexto, 148, 18, { align: 'center' });
 
     let yPos = 25;
 
@@ -843,48 +844,39 @@ function generarPDF() {
     const esLunes = datosGlobales.es_lunes;
 
     segmentos.forEach((segmento, segIdx) => {
-        // Calcular ancho total de la tabla para centrar el título
-        const anchoTotalTabla = 40 + 22 + (fechas.length * 20) + (esLunes ? 20 : 0) + 20 + 25 + 24 + 24;
-        const margenIzq = (297 - anchoTotalTabla) / 2;
-
-        // Título del segmento (con fondo gris #d1d5db como en la web, centrado)
+        // Título del segmento (sin cálculo de ancho previo, se ajustará después)
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
         doc.setFillColor(209, 213, 219); // #d1d5db
         doc.setTextColor(31, 41, 55); // #1f2937
-        doc.rect(margenIzq, yPos - 4, anchoTotalTabla, 5, 'F');
-        doc.text(`Fecha: ${fechas_full[0]} - Locales: ${segmento.nombre}`, margenIzq + 1, yPos);
+
+        const tituloTexto = `Fecha: ${fechas_full[0]} - Locales: ${segmento.nombre}`;
+        const anchoTexto = doc.getTextWidth(tituloTexto) + 4;
+        const margenIzq = (297 - anchoTexto) / 2;
+
+        doc.rect(margenIzq, yPos - 4, anchoTexto, 5, 'F');
+        doc.text(tituloTexto, margenIzq + 2, yPos);
         yPos += 3;
 
-        // Calcular anchos de columna (ajustados para fin de semana)
-        // Si es fin de semana (3 fechas), reducir anchos para que entre todo
-        const anchoLocal = esLunes ? 35 : 40;
-        const anchoSaldoAnt = esLunes ? 20 : 22;
-        const anchoFecha = esLunes ? 17 : 20;
-        const anchoTotalFDS = esLunes ? 18 : 20;
-        const anchoCotiz = esLunes ? 17 : 20;
-        const anchoConv = esLunes ? 22 : 25;
-        const anchoAP = esLunes ? 22 : 24;
-        const anchoSaldo = esLunes ? 22 : 24;
-
         // PRIMERA FILA DE HEADERS
+        // Las columnas se auto-ajustarán al contenido más ancho
         const headers1 = [
-            { content: 'Locales', rowSpan: 2, styles: { halign: 'left', fontStyle: 'bold', cellWidth: anchoLocal } },
-            { content: 'Saldo anterior', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoSaldoAnt } }
+            { content: 'Locales', rowSpan: 2, styles: { halign: 'left', fontStyle: 'bold' } },
+            { content: 'Saldo anterior', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } }
         ];
 
         fechas.forEach(f => {
-            headers1.push({ content: f, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoFecha } });
+            headers1.push({ content: f, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } });
         });
 
         if (esLunes) {
-            headers1.push({ content: 'Total FDS', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoTotalFDS } });
+            headers1.push({ content: 'Total FDS', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
         }
 
-        headers1.push({ content: 'Cotización', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoCotiz } });
-        headers1.push({ content: 'Conversión ARS', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoConv } });
-        headers1.push({ content: 'Ap Proyectada', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoAP } });
-        headers1.push({ content: 'Saldo a retirar', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold', cellWidth: anchoSaldo } });
+        headers1.push({ content: 'Cotización', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
+        headers1.push({ content: 'Conversión ARS', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
+        headers1.push({ content: 'Ap Proyectada', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
+        headers1.push({ content: 'Saldo a retirar', rowSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } });
 
         // SEGUNDA FILA DE HEADERS (sub-headers)
         const headers2 = ['', '']; // Vacíos para Local y Saldo anterior
@@ -944,21 +936,23 @@ function generarPDF() {
             rows.push(row);
         });
 
-        // Generar tabla con jsPDF-AutoTable
+        // Generar tabla con jsPDF-AutoTable (auto-ajuste de columnas)
         doc.autoTable({
             head: [headers1, headers2],
             body: rows,
             startY: yPos,
             theme: 'grid',
-            margin: { left: margenIzq }, // Centrar en página landscape usando el mismo margen del título
-            tableWidth: 'auto',
+            tableWidth: 'auto', // Auto-ajustar al contenido
+            margin: { left: 14, right: 14 }, // Márgenes simétricos
             styles: {
                 fontSize: 9,
-                cellPadding: 2,
+                cellPadding: 3,
                 lineColor: [209, 213, 219], // #d1d5db
                 lineWidth: 0.1,
                 textColor: [0, 0, 0],
-                halign: 'center'
+                halign: 'center',
+                overflow: 'linebreak',
+                cellWidth: 'auto' // Auto-ajustar cada columna
             },
             headStyles: {
                 fillColor: [209, 213, 219], // #d1d5db (fondo gris claro)
@@ -966,11 +960,13 @@ function generarPDF() {
                 fontStyle: 'bold',
                 fontSize: 9,
                 lineColor: [156, 163, 175], // #9ca3af
-                lineWidth: 0.2
+                lineWidth: 0.2,
+                minCellWidth: 18 // Ancho mínimo para headers
             },
             bodyStyles: {
                 fillColor: [255, 255, 255],
-                textColor: [0, 0, 0]
+                textColor: [0, 0, 0],
+                minCellWidth: 18 // Ancho mínimo para datos
             },
             alternateRowStyles: {
                 fillColor: [255, 255, 255]
@@ -994,17 +990,18 @@ function generarPDF() {
             yPos = 20;
         }
 
-        // Calcular ancho de tabla No Enviados y centrar
-        const anchoTablaNoEnviados = 60 + 35 + 35 + 45; // 175mm total
-        const margenNoEnviados = (297 - anchoTablaNoEnviados) / 2;
-
         // Título con fondo gris #d1d5db (centrado)
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
         doc.setFillColor(209, 213, 219);
         doc.setTextColor(31, 41, 55);
-        doc.rect(margenNoEnviados, yPos - 4, anchoTablaNoEnviados, 5, 'F');
-        doc.text('No Enviados (Pendientes de Retiro)', margenNoEnviados + 1, yPos);
+
+        const tituloNoEnviados = 'No Enviados (Pendientes de Retiro)';
+        const anchoTituloNoEnviados = doc.getTextWidth(tituloNoEnviados) + 4;
+        const margenNoEnviados = (297 - anchoTituloNoEnviados) / 2;
+
+        doc.rect(margenNoEnviados, yPos - 4, anchoTituloNoEnviados, 5, 'F');
+        doc.text(tituloNoEnviados, margenNoEnviados + 2, yPos);
         yPos += 3;
 
         const noEnviadosHeaders = ['Local', 'Fecha Caja', 'Monto', 'Días Transcurridos'];
@@ -1020,13 +1017,15 @@ function generarPDF() {
             body: noEnviadosRows,
             startY: yPos,
             theme: 'grid',
-            margin: { left: margenNoEnviados }, // Centrar tabla No Enviados usando el mismo margen del título
+            tableWidth: 'auto', // Auto-ajustar al contenido
+            margin: { left: 14, right: 14 }, // Márgenes simétricos
             styles: {
                 fontSize: 10,
-                cellPadding: 2,
+                cellPadding: 3,
                 lineColor: [209, 213, 219],
                 lineWidth: 0.1,
-                textColor: [0, 0, 0]
+                textColor: [0, 0, 0],
+                cellWidth: 'auto' // Auto-ajustar cada columna
             },
             headStyles: {
                 fillColor: [209, 213, 219], // #d1d5db (igual que las tablas principales)
@@ -1035,12 +1034,6 @@ function generarPDF() {
                 fontSize: 10,
                 lineColor: [156, 163, 175],
                 lineWidth: 0.2
-            },
-            columnStyles: {
-                0: { cellWidth: 60 },
-                1: { cellWidth: 35 },
-                2: { cellWidth: 35 },
-                3: { cellWidth: 45 }
             }
         });
     }
