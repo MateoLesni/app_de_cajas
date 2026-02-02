@@ -7957,6 +7957,8 @@ def api_operaciones_ap_efectivo():
         es_lunes = hoy.weekday() == 0  # 0 = Lunes
 
         # Determinar fechas a mostrar
+        # IMPORTANTE: Las fechas de las COLUMNAS son el día ANTERIOR al filtro
+        # Porque el filtro es "el día que abro la caja" y la columna es "el día que se vendió"
         if es_lunes:
             # Fin de semana: Viernes, Sábado, Domingo
             viernes = hoy - timedelta(days=3)
@@ -7969,9 +7971,10 @@ def api_operaciones_ap_efectivo():
                 domingo.strftime('%d/%m')
             ]
         else:
-            # Solo hoy
-            fechas = [hoy]
-            fecha_labels = [hoy.strftime('%d/%m')]
+            # Solo día anterior (el día que se vendió)
+            dia_anterior = hoy - timedelta(days=1)
+            fechas = [dia_anterior]
+            fecha_labels = [dia_anterior.strftime('%d/%m')]
 
         # Obtener todos los locales activos (excluyendo Local_Test)
         cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
@@ -8004,19 +8007,18 @@ def api_operaciones_ap_efectivo():
             for idx, fecha in enumerate(fechas):
                 fecha_label = fecha_labels[idx]
 
-                # Calcular fecha -1 del filtro (día anterior a la fecha del reporte)
-                fecha_efectivo = fecha - timedelta(days=1)
-
-                # EFECTIVO = TODAS las remesas del día ANTERIOR a la fecha del reporte
+                # EFECTIVO = TODAS las remesas del MISMO día de la columna
+                # Las columnas ya muestran el día anterior (calculado arriba)
+                # Así que consultamos remesas del MISMO día que dice la columna (fecha)
                 # Sin filtro de estado_contable ni retirada - TODAS LAS REMESAS sin importar estado
-                # Incluye remesas creadas a partir de anticipos en efectivo (mismo día)
+                # Incluye remesas creadas a partir de anticipos en efectivo
                 cur.execute("""
                     SELECT SUM(monto) as efectivo_total
                     FROM remesas_trns
                     WHERE local = %s
                       AND DATE(fecha) = %s
                       AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
-                """, (local, fecha_efectivo))
+                """, (local, fecha))
                 efectivo_data = cur.fetchone()
                 efectivo_total = float(efectivo_data['efectivo_total']) if efectivo_data and efectivo_data['efectivo_total'] else 0
 
@@ -8308,6 +8310,8 @@ def api_tesoreria_resumen_por_local():
         es_lunes = hoy.weekday() == 0  # 0 = Lunes
 
         # Determinar fechas a mostrar
+        # IMPORTANTE: Las fechas de las COLUMNAS son el día ANTERIOR al filtro
+        # Porque el filtro es "el día que abro la caja" y la columna es "el día que se vendió"
         if es_lunes:
             # Fin de semana: Viernes, Sábado, Domingo
             viernes = hoy - timedelta(days=3)
@@ -8320,9 +8324,10 @@ def api_tesoreria_resumen_por_local():
                 domingo.strftime('%d/%m')
             ]
         else:
-            # Solo hoy
-            fechas = [hoy]
-            fecha_labels = [hoy.strftime('%d/%m')]
+            # Solo día anterior (el día que se vendió)
+            dia_anterior = hoy - timedelta(days=1)
+            fechas = [dia_anterior]
+            fecha_labels = [dia_anterior.strftime('%d/%m')]
 
         # Obtener todos los locales activos
         cur.execute("SELECT DISTINCT local FROM locales ORDER BY local")
