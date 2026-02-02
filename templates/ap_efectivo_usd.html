@@ -761,12 +761,15 @@ function renderizarNoEnviados(noEnviados) {
     const noEnviadosSection = document.getElementById('noEnviadosSection');
     const noEnviadosBody = document.getElementById('noEnviadosBody');
 
-    if (!noEnviados || noEnviados.length === 0) {
+    // Filtrar Local_Test
+    const noEnviadosFiltrados = (noEnviados || []).filter(item => item.local !== 'Local_Test');
+
+    if (noEnviadosFiltrados.length === 0) {
         noEnviadosBody.innerHTML = '<tr><td colspan="4" class="empty-message">✅ No hay remesas pendientes de retiro</td></tr>';
     } else {
         noEnviadosBody.innerHTML = '';
 
-        noEnviados.forEach(item => {
+        noEnviadosFiltrados.forEach(item => {
             const row = document.createElement('tr');
 
             const tdLocal = document.createElement('td');
@@ -853,15 +856,16 @@ function generarPDF() {
         doc.text(`Fecha: ${fechas_full[0]} - Locales: ${segmento.nombre}`, margenIzq + 1, yPos);
         yPos += 3;
 
-        // Calcular anchos de columna (más amplios y balanceados)
-        const anchoLocal = 40;
-        const anchoSaldoAnt = 22;
-        const anchoFecha = 20;
-        const anchoTotalFDS = 20;
-        const anchoCotiz = 20;
-        const anchoConv = 25;
-        const anchoAP = 24;
-        const anchoSaldo = 24;
+        // Calcular anchos de columna (ajustados para fin de semana)
+        // Si es fin de semana (3 fechas), reducir anchos para que entre todo
+        const anchoLocal = esLunes ? 35 : 40;
+        const anchoSaldoAnt = esLunes ? 20 : 22;
+        const anchoFecha = esLunes ? 17 : 20;
+        const anchoTotalFDS = esLunes ? 18 : 20;
+        const anchoCotiz = esLunes ? 17 : 20;
+        const anchoConv = esLunes ? 22 : 25;
+        const anchoAP = esLunes ? 22 : 24;
+        const anchoSaldo = esLunes ? 22 : 24;
 
         // PRIMERA FILA DE HEADERS
         const headers1 = [
@@ -982,8 +986,8 @@ function generarPDF() {
         }
     });
 
-    // Sección "No Enviados" (idéntica a la web)
-    const noEnviados = datosGlobales.no_enviados || [];
+    // Sección "No Enviados" (filtrar Local_Test)
+    const noEnviados = (datosGlobales.no_enviados || []).filter(item => item.local !== 'Local_Test');
     if (noEnviados.length > 0) {
         if (yPos > 160) {
             doc.addPage();
