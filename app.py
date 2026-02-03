@@ -364,19 +364,75 @@ def _ctx_from_request():
         'turno': request.args.get('turno') or data.get('turno'),
     }
 
+def get_user_locales(user_id):
+    """
+    Obtiene todos los locales asignados a un usuario desde user_locales.
+
+    Args:
+        user_id: ID del usuario
+
+    Returns:
+        list: Lista de locales ['Local1', 'Local2', ...]
+              Si no hay en user_locales, fallback a users.local
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Intentar obtener de user_locales
+        cur.execute("""
+            SELECT local
+            FROM user_locales
+            WHERE user_id = %s
+            ORDER BY local
+        """, (user_id,))
+
+        locales = [row['local'] for row in cur.fetchall()]
+
+        # Si no hay en user_locales, fallback a users.local
+        if not locales:
+            cur.execute("SELECT local FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+            if user and user.get('local'):
+                locales = [user['local']]
+
+        cur.close()
+        conn.close()
+
+        return locales
+    except Exception as e:
+        logger.error(f"Error obteniendo locales del usuario {user_id}: {e}")
+        # Fallback a session['local']
+        return [session.get('local')] if session.get('local') else []
+
 def get_local_param():
     """
     Obtiene el local según el nivel del usuario:
-    - Nivel 3 (auditor): Usa request.args.get('local') si existe y no está vacío, sino session
-    - Nivel 1-2: Usa session['local'] siempre (no pueden cambiar de local)
+    - Nivel 3-4 (Auditor/Jefe): Usa request.args.get('local'), fallback a session
+    - Nivel 2 (Encargado): Usa request.args.get('local') SI está en available_locales
+    - Nivel 1 (Cajero): Solo session['local']
     """
     lvl = get_user_level()
+
     if lvl >= 3:
-        # Auditor: prioridad al parámetro si no está vacío, fallback a session
+        # Auditor/Jefe: prioridad al parámetro, fallback a session
         local_param = (request.args.get('local') or '').strip()
         return local_param if local_param else session.get('local')
+
+    elif lvl == 2:
+        # NUEVO: Encargado puede seleccionar entre sus locales asignados
+        local_param = (request.args.get('local') or '').strip()
+        available = session.get('available_locales', [])
+
+        # Si el parámetro está en la lista de locales permitidos, usarlo
+        if local_param and local_param in available:
+            return local_param
+
+        # Sino, usar el local de sesión
+        return session.get('local')
+
     else:
-        # Cajero/Encargado: solo su local de sesión
+        # Cajero: solo su local de sesión
         return session.get('local')
 
 def read_scope_sql(alias: str = 't') -> str:
@@ -9002,9 +9058,14 @@ from mysql.connector import Error
 # ---------- Decoradores mínimos ----------
 
 # ---------- (Re)usar la función create_user ----------
-def create_user(username, password_plain, role_name, local, society, pages_slugs, status='active'):
+def create_user(username, password_plain, role_name, local, society, pages_slugs, status='active', locales=None):
     """
     Crea usuario, asegura pages y relaciones. Devuelve dict con {user_id}
+
+    Args:
+        locales: Lista de locales para asignar al usuario (opcional).
+                 Si se proporciona, se insertan en user_locales.
+                 Si no, se usa el local principal.
     """
     user_id = str(uuid.uuid4())
     pw_hash = bcrypt.hashpw(password_plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -9030,6 +9091,24 @@ def create_user(username, password_plain, role_name, local, society, pages_slugs
             INSERT INTO users (id, username, password, role_id, local, society, status, created_at)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (user_id, username, pw_hash, role_id, local, society, status, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+
+        # NUEVO: Insertar locales en user_locales si se proporcionan
+        if locales and len(locales) > 0:
+            for loc in locales:
+                loc_trimmed = loc.strip()
+                if loc_trimmed:
+                    cur.execute("""
+                        INSERT INTO user_locales (user_id, local)
+                        VALUES (%s, %s)
+                        ON DUPLICATE KEY UPDATE user_id=user_id
+                    """, (user_id, loc_trimmed))
+        else:
+            # Si no se proporcionan locales, insertar solo el local principal
+            cur.execute("""
+                INSERT INTO user_locales (user_id, local)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE user_id=user_id
+            """, (user_id, local))
 
         # Asegurar páginas y vincular
         for slug in pages_slugs:
@@ -9070,6 +9149,7 @@ def api_create_user():
     local    = (data.get('local') or '').strip()
     society  = (data.get('society') or '').strip()
     pages    = data.get('pages') or []
+    locales  = data.get('locales') or []  # NUEVO: Lista de locales
 
     # Validaciones base
     if not (username and password and role and local and society):
@@ -9084,8 +9164,11 @@ def api_create_user():
     # Sanitizar pages
     pages = [str(p).strip() for p in pages if str(p).strip()]
 
+    # Sanitizar locales
+    locales = [str(loc).strip() for loc in locales if str(loc).strip()]
+
     try:
-        out = create_user(username, password, role, local, society, pages, status=status)
+        out = create_user(username, password, role, local, society, pages, status=status, locales=locales)
         return jsonify(success=True, user_id=out['user_id'])
     except ValueError as ve:
         return jsonify(success=False, msg=str(ve)), 409
@@ -9212,6 +9295,15 @@ def login():
     session['role']       = user.get('role_name')                 # 'cajero'|'encargado'|'auditor'|'jefe_auditor'
     session['role_level'] = int(user.get('role_level') or 1)      # 1|2|3|4
     session['pages']      = user.get('pages') or []
+
+    # NUEVO: Cargar locales disponibles para el usuario
+    user_locales = get_user_locales(user['id'])
+    session['available_locales'] = user_locales  # Lista de locales
+
+    # Si el usuario tiene múltiples locales, usar el primero como default
+    if user_locales:
+        session['local'] = user_locales[0]
+
     _update_last_access(user['id'])
 
     # Si vino por HTML -> redirigir respetando next y rol
@@ -12189,3 +12281,23 @@ def listar_locales():
     except Exception as e:
         print("❌ ERROR listar_locales:", e)
         return jsonify(success=False, msg=str(e)), 500
+
+@app.route('/api/user/locales', methods=['GET'])
+@login_required
+def get_current_user_locales_endpoint():
+    """
+    Retorna los locales disponibles para el usuario actual.
+    Usado por el frontend para mostrar el selector de locales.
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'ok': False, 'msg': 'No autenticado'}), 401
+
+    locales = session.get('available_locales', [])
+    current_local = get_local_param()
+
+    return jsonify({
+        'ok': True,
+        'locales': locales,
+        'current_local': current_local
+    })

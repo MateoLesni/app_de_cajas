@@ -58,11 +58,31 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="row-1">
         <div>
-          <label for="local">Local</label>
+          <label for="local">Local Principal (obligatorio)</label>
           <input id="local" name="local" required placeholder="Ej: Ribs Infanta">
+          <small style="color: #64748b; font-size: 12px;">Este será el local por defecto del usuario</small>
         </div>
+      </div>
+
+      <!-- NUEVO: Selector de múltiples locales -->
+      <fieldset style="margin-top:12px;" id="multiLocalFieldset">
+        <legend style="padding:0 6px;">Locales Adicionales (opcional - solo para Encargados)</legend>
+        <div id="localesAdicionalesContainer" style="margin-bottom: 12px;">
+          <small style="color: #64748b; display: block; margin-bottom: 8px;">
+            Agrega más locales si este usuario necesita gestionar múltiples locales
+          </small>
+          <div id="localesList" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Locales adicionales se agregarán aquí dinámicamente -->
+          </div>
+          <button type="button" id="btnAgregarLocal" class="btn secondary" style="margin-top: 8px; width: 100%;">
+            + Agregar otro local
+          </button>
+        </div>
+      </fieldset>
+
+      <div class="row-1">
         <div>
           <label for="society">Sociedad</label>
           <input id="society" name="society" required placeholder="Ej: Ribs SA">

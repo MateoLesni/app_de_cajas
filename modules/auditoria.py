@@ -634,7 +634,7 @@ def auditor_facturas_api():
             # Consultar cuentas corrientes nuevas de cuentas_corrientes_trns
             try:
                 sql_cc = f"""
-                    SELECT t.id, t.cliente_id, t.monto, t.comentario, cl.nombre_cliente
+                    SELECT t.id, t.cliente_id, t.monto, t.comentario, t.facturada, t.punto_venta, t.nro_comanda, t.usuario, cl.nombre_cliente
                     FROM cuentas_corrientes_trns t
                     LEFT JOIN clientes_cta_cte cl ON t.cliente_id = cl.id
                     WHERE t.local = %s
