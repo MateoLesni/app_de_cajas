@@ -9,6 +9,7 @@
   let userLocal = ''; // Local del usuario logueado
 
   let localesDisponibles = [];
+  let localInputCounter = 0; // Contador para IDs únicos de inputs de locales
 
   // ===== INICIALIZACIÓN =====
   document.addEventListener('DOMContentLoaded', async () => {
@@ -45,6 +46,63 @@
 
   function setupEventListeners() {
     $('#btnNuevoUsuario')?.addEventListener('click', () => abrirModal());
+
+    // Event listener para agregar locales adicionales
+    $('#btnAgregarLocalModal')?.addEventListener('click', agregarLocalInput);
+
+    // Event listener para detectar cambio de rol y mostrar/ocultar selector de múltiples locales
+    // SOLO para Auditores (nivel 3) que están creando Encargados
+    $('#rol')?.addEventListener('change', function() {
+      const multiLocalContainer = $('#multiLocalContainer');
+      const localesListModal = $('#localesListModal');
+
+      // Solo mostrar si es Auditor (nivel 3) creando Encargado
+      if (userLevel === 3 && this.value === 'encargado') {
+        multiLocalContainer.style.display = 'block';
+      } else {
+        multiLocalContainer.style.display = 'none';
+        // Limpiar locales adicionales si cambia de rol
+        localesListModal.innerHTML = '';
+      }
+    });
+  }
+
+  function agregarLocalInput() {
+    const localesListModal = $('#localesListModal');
+    const inputId = `localExtraModal${localInputCounter++}`;
+
+    const localItem = document.createElement('div');
+    localItem.className = 'local-item-modal';
+    localItem.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+    localItem.innerHTML = `
+      <select
+        id="${inputId}"
+        class="local-extra-modal"
+        style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;"
+      >
+        <option value="">Seleccione un local adicional</option>
+        ${localesDisponibles.map(l => {
+          const localNombre = typeof l === 'string' ? l : (l.local || l.nombre || String(l));
+          return `<option value="${localNombre}">${localNombre}</option>`;
+        }).join('')}
+      </select>
+      <button type="button" class="btn-remove-local-modal" style="
+        padding: 8px 12px;
+        border: none;
+        background: #dc2626;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+      ">✕</button>
+    `;
+
+    localesListModal.appendChild(localItem);
+
+    // Event listener para eliminar
+    localItem.querySelector('.btn-remove-local-modal').addEventListener('click', () => {
+      localItem.remove();
+    });
   }
 
   // ===== CARGAR USUARIOS =====
@@ -110,10 +168,22 @@
     const rolSelect = $('#rol');
     const localSelect = $('#local');
     const localGroup = localSelect.closest('.form-group');
+    const multiLocalContainer = $('#multiLocalContainer');
+    const localesListModal = $('#localesListModal');
 
     // Limpiar formulario
     $('#userId').value = userId || '';
     $('#username').value = '';
+
+    // Limpiar locales adicionales
+    if (localesListModal) {
+      localesListModal.innerHTML = '';
+    }
+
+    // Ocultar selector de múltiples locales por defecto
+    if (multiLocalContainer) {
+      multiLocalContainer.style.display = 'none';
+    }
 
     // Configurar roles disponibles según nivel
     rolSelect.innerHTML = getRolesOptions();
@@ -208,17 +278,46 @@
       return;
     }
 
+    // Recolectar locales adicionales (solo para Encargados creados por Auditores)
+    const localesAdicionales = Array.from($$('.local-extra-modal'))
+      .map(select => select.value.trim())
+      .filter(val => val !== '');
+
+    // Crear lista completa de locales (principal + adicionales)
+    const todosLosLocales = [local, ...localesAdicionales];
+
+    // Validar que no haya locales duplicados
+    const localesUnicos = new Set(todosLosLocales);
+    if (localesUnicos.size !== todosLosLocales.length) {
+      alert('⚠️ Hay locales duplicados. Cada local debe ser único.');
+      return;
+    }
+
     try {
+      const payload = {
+        username,
+        rol,
+        local
+      };
+
+      // Solo incluir locales si hay más de uno (para Encargados con múltiples locales)
+      if (todosLosLocales.length > 1) {
+        payload.locales = todosLosLocales;
+      }
+
       const response = await fetch('/api/usuarios/crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, rol, local })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ Usuario "${username}" creado correctamente.\n\n⚠️ IMPORTANTE: El usuario debe ingresar con su nombre de usuario y cualquier contraseña que elija.\nLa contraseña que ingrese la primera vez será su contraseña definitiva.`);
+        const localesMsg = todosLosLocales.length > 1
+          ? ` con ${todosLosLocales.length} locales asignados`
+          : '';
+        alert(`✅ Usuario "${username}" creado correctamente${localesMsg}.\n\n⚠️ IMPORTANTE: El usuario debe ingresar con su nombre de usuario y cualquier contraseña que elija.\nLa contraseña que ingrese la primera vez será su contraseña definitiva.`);
         cerrarModal();
         await loadUsers();
       } else {

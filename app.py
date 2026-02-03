@@ -10386,6 +10386,10 @@ def api_usuarios_crear():
     username = data.get('username', '').strip()
     rol = data.get('rol', '').strip()
     local = data.get('local', '').strip()
+    locales = data.get('locales') or []  # NUEVO: Lista de locales para múltiples locales
+
+    # Sanitizar locales
+    locales = [str(loc).strip() for loc in locales if str(loc).strip()]
 
     # Validación básica
     if not (username and rol):
@@ -10436,7 +10440,9 @@ def api_usuarios_crear():
         # El usuario establecerá su propia contraseña la primera vez que se logee
         dummy_password = '__PRIMER_LOGIN_PENDIENTE__'  # Contraseña temporal que nunca se usará
         pages_slugs = ['index', 'resumen_local']  # Páginas por defecto
-        result = create_user(username, dummy_password, rol, local, society, pages_slugs, status='active')
+
+        # NUEVO: Pasar locales si se proporcionan (para Encargados con múltiples locales)
+        result = create_user(username, dummy_password, rol, local, society, pages_slugs, status='active', locales=locales if locales else None)
 
         # Marcar como primer login pendiente
         conn = get_db_connection()

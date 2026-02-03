@@ -244,10 +244,24 @@
         </div>
 
         <div class="form-group">
-          <label for="local">Local</label>
+          <label for="local">Local Principal</label>
           <select id="local">
             <option value="">Seleccione un local</option>
           </select>
+        </div>
+
+        <!-- NUEVO: Selector de múltiples locales para Encargados -->
+        <div class="form-group" id="multiLocalContainer" style="display: none;">
+          <label>Locales Adicionales (opcional)</label>
+          <small style="color: #64748b; display: block; margin-bottom: 8px; font-size: 12px;">
+            Agrega más locales si este Encargado necesita gestionar múltiples locales
+          </small>
+          <div id="localesListModal" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+            <!-- Locales adicionales se agregarán aquí dinámicamente -->
+          </div>
+          <button type="button" id="btnAgregarLocalModal" class="btn-secondary" style="width: 100%;">
+            + Agregar otro local
+          </button>
         </div>
 
         <div class="modal-footer">
