@@ -18,6 +18,96 @@ import random
 logger = logging.getLogger(__name__)
 
 
+def log_sync_attempt(
+    conn,
+    sync_type: str,
+    registro_id: Optional[int],
+    local: str,
+    fecha: str,
+    fecha_auditado: str,
+    local_auditado: str,
+    status: str,
+    sernr_oppen: Optional[int] = None,
+    error_message: Optional[str] = None,
+    request_payload: Optional[dict] = None,
+    response_payload: Optional[dict] = None
+) -> bool:
+    """
+    Registra un intento de sincronización en la tabla oppen_sync_log.
+
+    Args:
+        conn: Conexión a la base de datos
+        sync_type: Tipo de sincronización ('factura', 'cuenta_corriente', 'recibo')
+        registro_id: ID del registro original (puede ser None para recibos)
+        local: Local del registro
+        fecha: Fecha del registro
+        fecha_auditado: Fecha en que se marcó como auditado
+        local_auditado: Local que fue auditado
+        status: Estado del intento ('success', 'failed', 'pending')
+        sernr_oppen: SerNr devuelto por Oppen (si fue exitoso)
+        error_message: Mensaje de error (si falló)
+        request_payload: Datos enviados a Oppen (opcional)
+        response_payload: Respuesta de Oppen (opcional)
+
+    Returns:
+        bool: True si se registró correctamente, False en caso contrario
+    """
+    try:
+        import json
+
+        cur = conn.cursor()
+
+        # Convertir payloads a JSON string para MySQL
+        # MySQL JSON column acepta strings JSON válidos
+        request_json = json.dumps(request_payload, ensure_ascii=False) if request_payload else None
+        response_json = json.dumps(response_payload, ensure_ascii=False) if response_payload else None
+
+        cur.execute("""
+            INSERT INTO oppen_sync_log (
+                sync_type,
+                registro_id,
+                local,
+                fecha,
+                fecha_auditado,
+                local_auditado,
+                status,
+                sernr_oppen,
+                error_message,
+                request_payload,
+                response_payload
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
+        """, (
+            sync_type,
+            registro_id,
+            local,
+            fecha,
+            fecha_auditado,
+            local_auditado,
+            status,
+            sernr_oppen,
+            error_message,
+            request_json,
+            response_json
+        ))
+
+        conn.commit()
+        cur.close()
+
+        logger.debug(f"📝 Log registrado: {sync_type} {registro_id} - {status}")
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Error registrando log de sync: {e}")
+        logger.error(f"   Detalles - sync_type: {sync_type}, registro_id: {registro_id}, local: {local}")
+        logger.error(f"   request_payload type: {type(request_payload)}")
+        logger.error(f"   response_payload type: {type(response_payload)}")
+        import traceback
+        logger.error(f"   Traceback: {traceback.format_exc()}")
+        return False
+
+
 class OppenAPIError(Exception):
     """Excepción personalizada para errores de la API de Oppen"""
     pass
@@ -302,13 +392,15 @@ class OppenClient:
             logger.error(f"❌ {error_msg}")
             return False, error_msg, None
 
-    def sync_facturas_batch(self, facturas: List[Dict[str, Any]], conn=None) -> Dict[str, Any]:
+    def sync_facturas_batch(self, facturas: List[Dict[str, Any]], conn=None, fecha_auditado: str = None, local_auditado: str = None) -> Dict[str, Any]:
         """
         Sincroniza un lote de facturas con Oppen.
 
         Args:
             facturas: Lista de diccionarios con datos de facturas
             conn: Conexión a BD (opcional) para guardar sernr_oppen
+            fecha_auditado: Fecha en que se marcó como auditado (para logging)
+            local_auditado: Local que fue auditado (para logging)
 
         Returns:
             Dict con el resultado de la sincronización:
@@ -357,6 +449,22 @@ class OppenClient:
         for factura in facturas:
             success, message, response_data = self.create_invoice(factura)
 
+            # Preparar datos para logging
+            factura_fecha = str(factura.get('fecha', ''))
+            if ' ' in factura_fecha:
+                factura_fecha = factura_fecha.split()[0]  # Obtener solo la fecha
+
+            factura_local = factura.get('local', '')
+            factura_id = factura.get('id')
+
+            # Construir payload para logging (no incluimos el payload completo para ahorrar espacio)
+            request_payload_log = {
+                'tipo': factura['tipo'],
+                'punto_venta': factura['punto_venta'],
+                'nro_factura': factura['nro_factura'],
+                'monto': factura['monto']
+            }
+
             if success and response_data:
                 # Obtener SerNr generado por Oppen
                 sernr_oppen = response_data.get('SerNr')
@@ -389,8 +497,39 @@ class OppenClient:
                         logger.error(f"⚠️ Error guardando SerNr en BD: {e}")
                         logger.error(f"   Valor SerNr que causó error: {sernr_oppen}")
 
+                # Log sync exitoso
+                if conn and fecha_auditado and local_auditado:
+                    log_sync_attempt(
+                        conn=conn,
+                        sync_type='factura',
+                        registro_id=factura_id,
+                        local=factura_local,
+                        fecha=factura_fecha,
+                        fecha_auditado=fecha_auditado,
+                        local_auditado=local_auditado,
+                        status='success',
+                        sernr_oppen=sernr_oppen,
+                        request_payload=request_payload_log,
+                        response_payload={'SerNr': sernr_oppen, 'OfficialSerNr': official_sernr}
+                    )
+
                 resultados['exitosas'] += 1
             else:
+                # Log sync fallido
+                if conn and fecha_auditado and local_auditado:
+                    log_sync_attempt(
+                        conn=conn,
+                        sync_type='factura',
+                        registro_id=factura_id,
+                        local=factura_local,
+                        fecha=factura_fecha,
+                        fecha_auditado=fecha_auditado,
+                        local_auditado=local_auditado,
+                        status='failed',
+                        error_message=message,
+                        request_payload=request_payload_log
+                    )
+
                 resultados['fallidas'] += 1
                 resultados['errores'].append({
                     'factura': f"{factura['tipo']} {factura['punto_venta']}-{factura['nro_factura']}",
@@ -644,9 +783,14 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
         logger.info(f"📦 Encontradas {len(facturas)} facturas A/B/Z para sincronizar")
 
-        # 4. Crear cliente y sincronizar (pasamos conn para guardar SerNr)
+        # 4. Crear cliente y sincronizar (pasamos conn y datos de auditoría para logging)
         client = OppenClient()
-        resultado = client.sync_facturas_batch(facturas, conn=conn)
+        resultado = client.sync_facturas_batch(
+            facturas,
+            conn=conn,
+            fecha_auditado=fecha,
+            local_auditado=local
+        )
         resultado['label_oppen'] = label_oppen
 
         return resultado
@@ -835,6 +979,14 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                 # Crear factura en Oppen
                 success, message, response_data = client.create_cuenta_corriente_invoice(cc_invoice_data)
 
+                # Preparar datos para logging
+                request_payload_log = {
+                    'cc_id': cc['id'],
+                    'cliente': nombre_cliente,
+                    'monto': cc['monto'],
+                    'official_sernr': official_sernr
+                }
+
                 if success and response_data:
                     sernr_oppen = response_data.get('SerNr')
                     logger.info(f"✅ Factura CC creada: ID {cc['id']} → SerNr {sernr_oppen}")
@@ -854,6 +1006,21 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                         except Exception as e:
                             logger.error(f"⚠️ Error guardando SerNr en BD para CC ID {cc['id']}: {e}")
 
+                    # Log sync exitoso
+                    log_sync_attempt(
+                        conn=conn,
+                        sync_type='cuenta_corriente',
+                        registro_id=cc['id'],
+                        local=local,
+                        fecha=str(trans_date),
+                        fecha_auditado=fecha,
+                        local_auditado=local,
+                        status='success',
+                        sernr_oppen=sernr_oppen,
+                        request_payload=request_payload_log,
+                        response_payload={'SerNr': sernr_oppen, 'OfficialSerNr': official_sernr}
+                    )
+
                     resultados['exitosas'] += 1
                     resultados['facturas_creadas'].append({
                         'cc_id': cc['id'],
@@ -862,6 +1029,20 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                         'monto': cc['monto']
                     })
                 else:
+                    # Log sync fallido
+                    log_sync_attempt(
+                        conn=conn,
+                        sync_type='cuenta_corriente',
+                        registro_id=cc['id'],
+                        local=local,
+                        fecha=str(trans_date),
+                        fecha_auditado=fecha,
+                        local_auditado=local,
+                        status='failed',
+                        error_message=message,
+                        request_payload=request_payload_log
+                    )
+
                     resultados['fallidas'] += 1
                     resultados['errores'].append({
                         'cc_id': cc['id'],
@@ -1296,8 +1477,31 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
         success, message, response_data = client.create_receipt(recibo_data)
 
+        # Preparar datos resumidos para logging (no guardamos todos los PayModes para ahorrar espacio)
+        request_payload_log = {
+            'num_invoices': len(invoices),
+            'num_paymodes': len(pay_modes),
+            'total_facturas': total_facturas
+        }
+
         if success:
             sernr = response_data.get('SerNr') if response_data else None
+
+            # Log sync exitoso
+            log_sync_attempt(
+                conn=conn,
+                sync_type='recibo',
+                registro_id=None,  # Recibo no tiene ID en nuestra BD
+                local=local,
+                fecha=fecha,
+                fecha_auditado=fecha,
+                local_auditado=local,
+                status='success',
+                sernr_oppen=sernr,
+                request_payload=request_payload_log,
+                response_payload={'SerNr': sernr} if sernr else None
+            )
+
             return {
                 'success': True,
                 'message': f'Recibo creado con {len(invoices)} facturas y {len(pay_modes)} medios de pago',
@@ -1305,6 +1509,20 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 'sernr': sernr,
             }
         else:
+            # Log sync fallido
+            log_sync_attempt(
+                conn=conn,
+                sync_type='recibo',
+                registro_id=None,
+                local=local,
+                fecha=fecha,
+                fecha_auditado=fecha,
+                local_auditado=local,
+                status='failed',
+                error_message=message,
+                request_payload=request_payload_log
+            )
+
             return {
                 'success': False,
                 'message': f'Error creando recibo: {message}',
