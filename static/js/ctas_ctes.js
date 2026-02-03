@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const comentarioContainer = document.getElementById("comentarioCtaCteContainer");
   const comentarioInput = document.getElementById("comentarioCtaCte");
   const montoInput = document.getElementById("montoCtaCte");
+  const puntoVentaInput = document.getElementById("puntoVentaCtaCte");
+  const nroComandaInput = document.getElementById("nroComandaCtaCte");
   const facturadaCheck = document.getElementById("facturadaCtaCte");
 
   const cajaSelect = document.getElementById("cajaSelect");
@@ -27,6 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let ctasCtesBD = [];       // vienen del backend a través de OrqTabs
   let clientesCtaCte = [];   // lista de clientes con cuenta corriente
+  let filaEditando = null;   // fila que está en modo edición
 
   // ----------- cargar clientes -----------
   async function cargarClientes() {
@@ -89,7 +92,19 @@ document.addEventListener("DOMContentLoaded", function () {
         padding:10px 14px; border-radius:8px; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.12); font-weight:600;
       }
       #${tabKey} .btn-editar-bd,
-      #${tabKey} .btn-borrar-bd { cursor:pointer; }
+      #${tabKey} .btn-borrar-bd,
+      #${tabKey} .btn-guardar-edit,
+      #${tabKey} .btn-cancelar-edit { cursor:pointer; margin: 0 2px; }
+      #${tabKey} .row-cta-cte.editing { background-color: #fff3cd !important; }
+      #${tabKey} .row-cta-cte.editing input,
+      #${tabKey} .row-cta-cte.editing select {
+        width: 100%;
+        padding: 4px 6px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
     `;
     document.head.appendChild(st);
   })();
@@ -155,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!tbody) return;
 
     if (ctasCtesBD.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">No hay cuentas corrientes guardadas en BD</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#999;">No hay cuentas corrientes guardadas en BD</td></tr>';
       return;
     }
 
@@ -163,14 +178,18 @@ document.addEventListener("DOMContentLoaded", function () {
     ctasCtesBD.forEach(cc => {
       const editable = canActUI();
       const facturadaText = cc.facturada ? 'Sí' : 'No';
+      const sernrOppen = cc.sernr_oppen ? `<span style="color: #059669; font-weight: 600;">${cc.sernr_oppen}</span>` : '-';
 
-      html += `<tr data-id="${cc.id}" style="background-color: #d4edda;">
-        <td>${cc.nombre_cliente}</td>
-        <td>${cc.comentario || '-'}</td>
-        <td>${money(cc.monto)}</td>
-        <td>${facturadaText}</td>
-        <td>${cc.usuario || '-'}</td>
-        <td>
+      html += `<tr data-id="${cc.id}" class="row-cta-cte" style="background-color: #d4edda;">
+        <td class="td-cliente">${cc.nombre_cliente}</td>
+        <td class="td-comentario" data-value="${cc.comentario || ''}">${cc.comentario || '-'}</td>
+        <td class="td-monto" data-value="${cc.monto}">${money(cc.monto)}</td>
+        <td class="td-facturada" data-value="${cc.facturada ? 1 : 0}">${facturadaText}</td>
+        <td class="td-punto-venta" data-value="${cc.punto_venta || ''}">${cc.punto_venta || '-'}</td>
+        <td class="td-nro-comanda" data-value="${cc.nro_comanda || ''}">${cc.nro_comanda || '-'}</td>
+        <td class="td-sernr-oppen">${sernrOppen}</td>
+        <td class="td-usuario">${cc.usuario || '-'}</td>
+        <td class="td-acciones">
           ${editable ? `
             <button type="button" class="btn-editar-bd" data-id="${cc.id}">✏️</button>
             <button type="button" class="btn-borrar-bd" data-id="${cc.id}">🗑️</button>
@@ -200,9 +219,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const monto = parseFloat(montoInput.value);
       const comentario = comentarioInput.value.trim();
       const facturada = facturadaCheck.checked;
+      const puntoVenta = puntoVentaInput.value ? parseInt(puntoVentaInput.value) : null;
+      const nroComanda = nroComandaInput.value ? parseInt(nroComandaInput.value) : null;
 
-      if (!clienteId || !monto) {
-        alert("Completá todos los campos obligatorios");
+      if (!clienteId || !monto || !nroComanda) {
+        alert("Completá todos los campos obligatorios (incluyendo Nro. Comanda)");
         return;
       }
 
@@ -224,7 +245,14 @@ document.addEventListener("DOMContentLoaded", function () {
             caja: ctx.caja,
             fecha: ctx.fecha,
             turno: ctx.turno,
-            items: [{ cliente_id: clienteId, monto, comentario, facturada }]
+            items: [{
+              cliente_id: clienteId,
+              monto,
+              comentario,
+              facturada,
+              punto_venta: puntoVenta,
+              nro_comanda: nroComanda
+            }]
           })
         });
         const data = await res.json();
@@ -246,48 +274,154 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // ----------- funciones de edición inline -----------
+  function iniciarEdicion(row) {
+    // Si ya hay otra fila en edición, cancelarla
+    if (filaEditando && filaEditando !== row) {
+      cancelarEdicion(filaEditando);
+    }
+
+    filaEditando = row;
+    row.classList.add('editing');
+
+    const tdComentario = row.querySelector('.td-comentario');
+    const tdMonto = row.querySelector('.td-monto');
+    const tdFacturada = row.querySelector('.td-facturada');
+    const tdPuntoVenta = row.querySelector('.td-punto-venta');
+    const tdNroComanda = row.querySelector('.td-nro-comanda');
+    const tdAcciones = row.querySelector('.td-acciones');
+
+    // Convertir celdas en inputs
+    const comentarioVal = tdComentario.dataset.value || '';
+    const montoVal = tdMonto.dataset.value || '';
+    const facturadaVal = tdFacturada.dataset.value || '0';
+    const puntoVentaVal = tdPuntoVenta.dataset.value || '';
+    const nroComandaVal = tdNroComanda.dataset.value || '';
+
+    tdComentario.innerHTML = `<input type="text" class="edit-comentario" value="${comentarioVal}" placeholder="Comentario">`;
+    tdMonto.innerHTML = `<input type="number" class="edit-monto" value="${montoVal}" step="0.01" required>`;
+    tdFacturada.innerHTML = `<select class="edit-facturada">
+      <option value="0" ${facturadaVal === '0' ? 'selected' : ''}>No</option>
+      <option value="1" ${facturadaVal === '1' ? 'selected' : ''}>Sí</option>
+    </select>`;
+    tdPuntoVenta.innerHTML = `<input type="number" class="edit-punto-venta" value="${puntoVentaVal}" placeholder="Pto. Venta" min="1" max="9999">`;
+    tdNroComanda.innerHTML = `<input type="number" class="edit-nro-comanda" value="${nroComandaVal}" placeholder="Nro. Comanda" required min="1">`;
+
+    // Cambiar botones de acciones
+    tdAcciones.innerHTML = `
+      <button type="button" class="btn-guardar-edit" data-id="${row.dataset.id}">💾</button>
+      <button type="button" class="btn-cancelar-edit">❌</button>
+    `;
+  }
+
+  function cancelarEdicion(row) {
+    if (!row) return;
+
+    const id = parseInt(row.dataset.id);
+    const cc = ctasCtesBD.find(c => c.id === id);
+    if (!cc) return;
+
+    row.classList.remove('editing');
+
+    const tdComentario = row.querySelector('.td-comentario');
+    const tdMonto = row.querySelector('.td-monto');
+    const tdFacturada = row.querySelector('.td-facturada');
+    const tdPuntoVenta = row.querySelector('.td-punto-venta');
+    const tdNroComanda = row.querySelector('.td-nro-comanda');
+    const tdAcciones = row.querySelector('.td-acciones');
+
+    // Restaurar valores originales
+    tdComentario.innerHTML = cc.comentario || '-';
+    tdMonto.innerHTML = money(cc.monto);
+    tdFacturada.innerHTML = cc.facturada ? 'Sí' : 'No';
+    tdPuntoVenta.innerHTML = cc.punto_venta || '-';
+    tdNroComanda.innerHTML = cc.nro_comanda || '-';
+
+    // Restaurar botones
+    tdAcciones.innerHTML = `
+      <button type="button" class="btn-editar-bd" data-id="${cc.id}">✏️</button>
+      <button type="button" class="btn-borrar-bd" data-id="${cc.id}">🗑️</button>
+    `;
+
+    filaEditando = null;
+  }
+
+  async function guardarEdicion(row) {
+    const id = parseInt(row.dataset.id);
+
+    const comentario = row.querySelector('.edit-comentario').value.trim();
+    const monto = parseFloat(row.querySelector('.edit-monto').value);
+    const facturada = parseInt(row.querySelector('.edit-facturada').value) === 1;
+    const puntoVentaVal = row.querySelector('.edit-punto-venta').value.trim();
+    const nroComandaVal = row.querySelector('.edit-nro-comanda').value.trim();
+
+    if (!monto || isNaN(monto)) {
+      alert("El monto es obligatorio y debe ser un número válido");
+      return;
+    }
+
+    if (!nroComandaVal || isNaN(parseInt(nroComandaVal))) {
+      alert("El Nro. Comanda es obligatorio y debe ser un número");
+      return;
+    }
+
+    const puntoVenta = puntoVentaVal ? parseInt(puntoVentaVal) : null;
+    const nroComanda = parseInt(nroComandaVal);
+
+    try {
+      setLoading(true);
+      const res = await fetch(`/ctas_ctes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          monto,
+          comentario,
+          punto_venta: puntoVenta,
+          nro_comanda: nroComanda,
+          facturada
+        })
+      });
+      const data = await res.json();
+      setLoading(false);
+
+      if (data.success) {
+        alert("✅ Cuenta corriente actualizada");
+        filaEditando = null;
+        if (window.OrqTabs) window.OrqTabs.reloadActive();
+      } else {
+        alert("❌ " + (data.msg || "Error al actualizar"));
+      }
+    } catch (err) {
+      setLoading(false);
+      alert("❌ Error de red");
+      console.error(err);
+    }
+  }
+
   // ----------- eventos botones BD -----------
   if (tablaBD) {
     tablaBD.addEventListener("click", async function(e) {
       const btnEdit = e.target.closest(".btn-editar-bd");
       const btnDel = e.target.closest(".btn-borrar-bd");
+      const btnGuardar = e.target.closest(".btn-guardar-edit");
+      const btnCancelar = e.target.closest(".btn-cancelar-edit");
 
       if (btnEdit) {
-        const id = parseInt(btnEdit.dataset.id);
-        const cc = ctasCtesBD.find(c => c.id === id);
-        if (!cc) return;
+        const row = btnEdit.closest('tr');
+        iniciarEdicion(row);
+        return;
+      }
 
-        const nuevoMonto = prompt("Nuevo monto:", cc.monto);
-        if (!nuevoMonto) return;
+      if (btnCancelar) {
+        const row = btnCancelar.closest('tr');
+        cancelarEdicion(row);
+        return;
+      }
 
-        const nuevoComentario = prompt("Nuevo comentario:", cc.comentario || '');
-        const facturada = confirm("¿Está facturada?");
-
-        try {
-          setLoading(true);
-          const res = await fetch(`/ctas_ctes/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              monto: parseFloat(nuevoMonto),
-              comentario: nuevoComentario,
-              facturada: facturada
-            })
-          });
-          const data = await res.json();
-          setLoading(false);
-
-          if (data.success) {
-            alert("✅ Cuenta corriente actualizada");
-            if (window.OrqTabs) window.OrqTabs.reloadActive();
-          } else {
-            alert("❌ " + (data.msg || "Error al actualizar"));
-          }
-        } catch (err) {
-          setLoading(false);
-          alert("❌ Error de red");
-          console.error(err);
-        }
+      if (btnGuardar) {
+        const row = btnGuardar.closest('tr');
+        await guardarEdicion(row);
+        return;
       }
 
       if (btnDel) {

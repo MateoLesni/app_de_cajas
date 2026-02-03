@@ -5313,6 +5313,9 @@ def ctas_ctes_cargadas():
                 cc.monto,
                 cc.comentario,
                 cc.facturada,
+                cc.punto_venta,
+                cc.nro_comanda,
+                cc.sernr_oppen,
                 cc.usuario,
                 cc.created_at
             FROM cuentas_corrientes_trns cc
@@ -5352,7 +5355,7 @@ def guardar_ctas_ctes_lote():
 
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True)
 
         user_level = get_user_level()
 
@@ -5374,23 +5377,41 @@ def guardar_ctas_ctes_lote():
             monto = item.get('monto')
             comentario = item.get('comentario', '')
             facturada = 1 if item.get('facturada') else 0
+            punto_venta = item.get('punto_venta')  # Opcional
+            nro_comanda = item.get('nro_comanda')  # Obligatorio
 
-            if not cliente_id or not monto:
-                continue
+            if not cliente_id or not monto or not nro_comanda:
+                cur.close()
+                conn.close()
+                return jsonify(success=False, msg="Faltan campos obligatorios (cliente, monto o nro_comanda)"), 400
 
             # Validar: si es CNGCC (Otro cliente), comentario es obligatorio
             cur.execute("SELECT codigo_oppen FROM clientes_cta_cte WHERE id=%s", (cliente_id,))
             cliente_row = cur.fetchone()
-            if cliente_row and cliente_row[0] == 'CNGCC' and not comentario:
+            if cliente_row and cliente_row['codigo_oppen'] == 'CNGCC' and not comentario:
                 cur.close()
                 conn.close()
                 return jsonify(success=False, msg="Debe ingresar un comentario para 'Otro cliente'"), 400
 
+            # Validar: nro_comanda NO debe existir ya para este local
+            cur.execute("""
+                SELECT COUNT(*) as count
+                FROM cuentas_corrientes_trns
+                WHERE local = %s
+                  AND nro_comanda = %s
+                  AND estado = 'ok'
+            """, (local, nro_comanda))
+            duplicado = cur.fetchone()
+            if duplicado and duplicado['count'] > 0:
+                cur.close()
+                conn.close()
+                return jsonify(success=False, msg=f"El Nro. Comanda {nro_comanda} ya existe para el local {local}. Por favor, ingresá un número diferente."), 400
+
             cur.execute("""
                 INSERT INTO cuentas_corrientes_trns
-                    (fecha, local, caja, turno, cliente_id, monto, comentario, facturada, usuario, created_at, estado)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'ok')
-            """, (_normalize_fecha(fecha), local, caja, turno, cliente_id, monto, comentario, facturada, usuario))
+                    (fecha, local, caja, turno, cliente_id, monto, comentario, facturada, punto_venta, nro_comanda, usuario, created_at, estado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'ok')
+            """, (_normalize_fecha(fecha), local, caja, turno, cliente_id, monto, comentario, facturada, punto_venta, nro_comanda, usuario))
 
         conn.commit()
         cur.close()
@@ -5454,12 +5475,34 @@ def editar_cta_cte(cc_id):
         # Actualizar registro
         monto = payload.get('monto')
         facturada = 1 if payload.get('facturada') else 0
+        punto_venta = payload.get('punto_venta')  # Opcional
+        nro_comanda = payload.get('nro_comanda')  # Obligatorio
+
+        if not nro_comanda:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="El Nro. Comanda es obligatorio"), 400
+
+        # Validar: nro_comanda NO debe existir ya para este local (excepto en este mismo registro)
+        cur.execute("""
+            SELECT COUNT(*) as count
+            FROM cuentas_corrientes_trns
+            WHERE local = %s
+              AND nro_comanda = %s
+              AND estado = 'ok'
+              AND id != %s
+        """, (row['local'], nro_comanda, cc_id))
+        duplicado = cur.fetchone()
+        if duplicado and duplicado['count'] > 0:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f"El Nro. Comanda {nro_comanda} ya existe para el local {row['local']}. Por favor, ingresá un número diferente."), 400
 
         cur.execute("""
             UPDATE cuentas_corrientes_trns
-            SET monto=%s, comentario=%s, facturada=%s
+            SET monto=%s, comentario=%s, facturada=%s, punto_venta=%s, nro_comanda=%s
             WHERE id=%s
-        """, (monto, comentario, facturada, cc_id))
+        """, (monto, comentario, facturada, punto_venta, nro_comanda, cc_id))
 
         conn.commit()
 
@@ -5470,7 +5513,6 @@ def editar_cta_cte(cc_id):
             accion='UPDATE',
             tabla='cuentas_corrientes_trns',
             registro_id=cc_id,
-            usuario=session.get('username', 'unknown'),
             datos_anteriores=datos_anteriores,
             datos_nuevos=datos_nuevos
         )
@@ -9646,8 +9688,9 @@ def api_marcar_auditado():
         # ========== SINCRONIZACIÓN AUTOMÁTICA CON OPPEN ==========
         # Enviar facturas a Oppen después de marcar como auditado
         try:
-            from modules.oppen_integration import sync_facturas_to_oppen, sync_recibo_to_oppen
+            from modules.oppen_integration import sync_facturas_to_oppen, sync_cuentas_corrientes_to_oppen, sync_recibo_to_oppen
 
+            # PASO 1: Crear facturas A, B y Z
             print(f"🔄 Iniciando sincronización de facturas con Oppen para {local} - {f}...")
             resultado_oppen = sync_facturas_to_oppen(conn, local, f)
 
@@ -9656,7 +9699,7 @@ def api_marcar_auditado():
 
             if resultado_oppen['success']:
                 if resultado_oppen['total'] > 0:
-                    msg_oppen = f"\n✅ {resultado_oppen['exitosas']} factura(s) enviada(s) a Oppen exitosamente"
+                    msg_oppen = f"\n✅ {resultado_oppen['exitosas']} factura(s) A/B/Z enviada(s) a Oppen exitosamente"
                 else:
                     msg_oppen = "\nℹ️ No había facturas para sincronizar con Oppen"
             else:
@@ -9666,8 +9709,31 @@ def api_marcar_auditado():
                     primer_error = resultado_oppen['errores'][0]
                     msg_oppen += f"\nPrimer error: {primer_error.get('error', 'Error desconocido')}"
 
-            # ========== CREAR RECIBO EN OPPEN ==========
-            # Después de crear facturas, crear el recibo vinculando las facturas Z
+            # PASO 2: Crear facturas de Cuentas Corrientes
+            msg_cc = ""
+            resultado_cc = None
+            try:
+                print(f"🔄 Creando facturas de Cuentas Corrientes en Oppen para {local} - {f}...")
+                resultado_cc = sync_cuentas_corrientes_to_oppen(conn, local, f)
+
+                if resultado_cc['total'] > 0:
+                    if resultado_cc['success']:
+                        msg_cc = f"\n✅ {resultado_cc['exitosas']} factura(s) de Cuentas Corrientes creada(s) en Oppen"
+                    else:
+                        msg_cc = f"\n⚠️ {resultado_cc['exitosas']}/{resultado_cc['total']} facturas CC creadas (algunas fallaron)"
+                        if resultado_cc['errores']:
+                            primer_error_cc = resultado_cc['errores'][0]
+                            msg_cc += f"\nPrimer error: {primer_error_cc.get('error', 'Error desconocido')}"
+                else:
+                    msg_cc = "\nℹ️ No había cuentas corrientes para facturar"
+
+            except Exception as e:
+                logger.error(f"Error creando facturas CC: {e}")
+                msg_cc = f"\n⚠️ Error creando facturas de Cuentas Corrientes: {str(e)}"
+
+            # PASO 3: CREAR RECIBO EN OPPEN
+            # Después de crear facturas A/B/Z y Cuentas Corrientes, crear el recibo vinculando las facturas A, B y Z
+            # (las Cuentas Corrientes NO se vinculan al recibo porque son tiques individuales)
             msg_recibo = ""
             resultado_recibo = None
 
@@ -9692,8 +9758,9 @@ def api_marcar_auditado():
 
             return jsonify(
                 success=True,
-                msg=msg_base + msg_oppen + msg_recibo,
+                msg=msg_base + msg_oppen + msg_cc + msg_recibo,
                 oppen_sync=resultado_oppen,
+                cc_sync=resultado_cc,
                 recibo_sync=resultado_recibo
             )
 

@@ -407,6 +407,92 @@ class OppenClient:
 
         return resultados
 
+    def create_cuenta_corriente_invoice(self, cc_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict]]:
+        """
+        Crea una factura de cuenta corriente (Tique B) en Oppen.
+
+        Args:
+            cc_data: Diccionario con:
+                - TransDate: fecha de la transacción (YYYY-MM-DD)
+                - CustCode: código del cliente en Oppen (ej: "CNGCC" para Consumidor Final)
+                - Labels: label del local (ej: "BT212")
+                - Name: descripción del cajero (va en Items[0].Name)
+                - Price: monto de la cuenta corriente
+                - Office: "200" para facturada=0, "100" para facturada=1
+                - VATCode: "3" para facturada=0 (sin IVA), "5" para facturada=1 (21% IVA)
+                - OfficialSerNr: formato "{punto_venta:04d}-{nro_comanda:08d}"
+
+        Returns:
+            Tuple[bool, str, Optional[Dict]]
+        """
+        if not self.token:
+            return False, "No autenticado. Llamar a authenticate() primero.", None
+
+        url = f"{self.BASE_URL}/genericapi/ApiNg/Invoice"
+
+        try:
+            # Calcular fecha de vencimiento
+            if isinstance(cc_data['TransDate'], str):
+                trans_date = datetime.strptime(cc_data['TransDate'], '%Y-%m-%d').date()
+            else:
+                trans_date = cc_data['TransDate']
+
+            due_date = trans_date + timedelta(days=self.PAYMENT_DAYS)
+
+            # Para facturas históricas, asegurar que DueDate no esté en el pasado
+            today = datetime.now().date()
+            if due_date < today:
+                due_date = today + timedelta(days=self.PAYMENT_DAYS)
+
+            # Construir payload para Tique B de Cuenta Corriente
+            payload = {
+                "OfficialSerNr": cc_data["OfficialSerNr"],
+                "CustCode": cc_data.get("CustCode", self.DEFAULT_CUSTOMER),
+                "TransDate": str(trans_date),
+                "DueDate": str(due_date),
+                "Office": cc_data["Office"],
+                "Labels": cc_data.get("Labels", ""),
+                "createUser": "API",
+                "Status": 1,  # Aprobado
+                "VoucherCode": "082",  # Tique B
+                "DocType": 1,
+                "InvoiceType": 0,
+                "Items": [
+                    {
+                        "ArtCode": "271240051",  # Artículo genérico
+                        "Name": cc_data["Name"],  # Descripción del cajero
+                        "Qty": 1,
+                        "Price": float(cc_data["Price"]),
+                        "VATCode": cc_data["VATCode"]
+                    }
+                ]
+            }
+
+            logger.info(f"📤 Enviando factura CC {cc_data['OfficialSerNr']} (${cc_data['Price']})...")
+            logger.debug(f"📦 Payload CC: {payload}")
+
+            response = self.session.post(url, json=payload, timeout=30)
+
+            if response.status_code in [200, 201]:
+                response_data = response.json()
+                logger.info(f"✅ Factura CC creada exitosamente en Oppen")
+                import json
+                logger.info(json.dumps(response_data, indent=2, ensure_ascii=False))
+                return True, "Factura CC creada exitosamente", response_data
+            else:
+                error_msg = f"Error HTTP {response.status_code}: {response.text}"
+                logger.error(f"❌ {error_msg}")
+                return False, error_msg, None
+
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Error de conexión: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return False, error_msg, None
+        except Exception as e:
+            error_msg = f"Error inesperado: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            return False, error_msg, None
+
     def create_receipt(self, recibo_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict]]:
         """
         Crea un recibo en Oppen.
@@ -487,7 +573,7 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
     """
     Función principal para sincronizar todas las facturas de un local/fecha con Oppen.
 
-    Solo sincroniza facturas tipo B y Z (ignora A, CC y otros tipos).
+    Solo sincroniza facturas tipo A, B y Z (ignora CC y otros tipos).
 
     Args:
         conn: Conexión a la base de datos MySQL
@@ -517,7 +603,7 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
         logger.info(f"📋 Label Oppen para {local}: {label_oppen}")
 
-        # 2. Obtener todas las facturas del local/fecha (SOLO tipo B y Z)
+        # 2. Obtener todas las facturas del local/fecha (SOLO tipo A, B y Z)
         cur.execute("""
             SELECT
                 id,
@@ -534,21 +620,21 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             WHERE local = %s
               AND DATE(fecha) = %s
               AND estado = 'ok'
-              AND tipo IN ('B', 'Z')
+              AND tipo IN ('A', 'B', 'Z')
             ORDER BY tipo, punto_venta, nro_factura
         """, (local, fecha))
 
         facturas = cur.fetchall()
 
         if not facturas:
-            logger.warning(f"⚠️ No se encontraron facturas B o Z para {local} en {fecha}")
+            logger.warning(f"⚠️ No se encontraron facturas A, B o Z para {local} en {fecha}")
             return {
                 'total': 0,
                 'exitosas': 0,
                 'fallidas': 0,
                 'errores': [],
                 'success': True,
-                'message': 'No hay facturas B o Z para sincronizar',
+                'message': 'No hay facturas A, B o Z para sincronizar',
                 'label_oppen': label_oppen
             }
 
@@ -556,7 +642,7 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         for factura in facturas:
             factura['label_oppen'] = label_oppen
 
-        logger.info(f"📦 Encontradas {len(facturas)} facturas B/Z para sincronizar")
+        logger.info(f"📦 Encontradas {len(facturas)} facturas A/B/Z para sincronizar")
 
         # 4. Crear cliente y sincronizar (pasamos conn para guardar SerNr)
         client = OppenClient()
@@ -578,12 +664,253 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         cur.close()
 
 
+def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
+    """
+    Crea facturas en Oppen para todas las cuentas corrientes de un local/fecha.
+
+    Esta función se ejecuta DESPUÉS de sync_facturas_to_oppen (facturas Z)
+    y ANTES de sync_recibo_to_oppen.
+
+    Args:
+        conn: Conexión a la base de datos
+        local: Nombre del local
+        fecha: Fecha en formato YYYY-MM-DD
+
+    Returns:
+        Dict con el resultado de la sincronización:
+        {
+            'total': int,
+            'exitosas': int,
+            'fallidas': int,
+            'errores': List[Dict],
+            'success': bool,
+            'facturas_creadas': List[Dict]
+        }
+    """
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # 1. Obtener label de Oppen para el local
+        cur.execute("""
+            SELECT cod_oppen
+            FROM labels_oppen
+            WHERE local = %s
+            LIMIT 1
+        """, (local,))
+
+        label_row = cur.fetchone()
+        label_oppen = label_row['cod_oppen'] if label_row else local
+
+        logger.info(f"📋 Procesando cuentas corrientes para {local} ({label_oppen}) - {fecha}")
+
+        # 2. Obtener todas las cuentas corrientes del local/fecha con datos del cliente
+        cur.execute("""
+            SELECT
+                cc.id,
+                cc.fecha,
+                cc.cliente_id,
+                cc.monto,
+                cc.comentario,
+                cc.facturada,
+                cc.punto_venta,
+                cc.nro_comanda,
+                cl.codigo_oppen,
+                cl.nombre_cliente
+            FROM cuentas_corrientes_trns cc
+            LEFT JOIN clientes_cta_cte cl ON cc.cliente_id = cl.id
+            WHERE cc.local = %s
+              AND DATE(cc.fecha) = %s
+              AND cc.estado = 'ok'
+            ORDER BY cc.id
+        """, (local, fecha))
+
+        cuentas_corrientes = cur.fetchall()
+
+        if not cuentas_corrientes:
+            logger.info(f"ℹ️ No hay cuentas corrientes para {local} en {fecha}")
+            return {
+                'total': 0,
+                'exitosas': 0,
+                'fallidas': 0,
+                'errores': [],
+                'success': True,
+                'message': 'No hay cuentas corrientes para sincronizar',
+                'facturas_creadas': []
+            }
+
+        logger.info(f"📦 Encontradas {len(cuentas_corrientes)} cuentas corrientes para facturar")
+
+        # 3. Autenticar con Oppen
+        client = OppenClient()
+        try:
+            client.authenticate()
+        except OppenAPIError as e:
+            return {
+                'total': len(cuentas_corrientes),
+                'exitosas': 0,
+                'fallidas': len(cuentas_corrientes),
+                'errores': [{'error': f'Error de autenticación: {str(e)}', 'cc_id': None}],
+                'success': False,
+                'facturas_creadas': []
+            }
+
+        # 4. Crear factura para cada cuenta corriente
+        resultados = {
+            'total': len(cuentas_corrientes),
+            'exitosas': 0,
+            'fallidas': 0,
+            'errores': [],
+            'facturas_creadas': []
+        }
+
+        for cc in cuentas_corrientes:
+            try:
+                # Parsear fecha
+                if isinstance(cc['fecha'], str):
+                    # Intentar diferentes formatos de fecha
+                    fecha_str = cc['fecha'].strip()
+                    if ' ' in fecha_str:
+                        # Formato con hora: "YYYY-MM-DD HH:MM:SS"
+                        trans_date = datetime.strptime(fecha_str.split()[0], '%Y-%m-%d').date()
+                    else:
+                        # Formato solo fecha: "YYYY-MM-DD"
+                        trans_date = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                elif hasattr(cc['fecha'], 'date'):
+                    # Es un objeto datetime
+                    trans_date = cc['fecha'].date()
+                else:
+                    # Ya es un objeto date
+                    trans_date = cc['fecha']
+
+                # Determinar código de cliente en Oppen
+                codigo_oppen = cc.get('codigo_oppen')
+                if not codigo_oppen or codigo_oppen == 'CNGCC':
+                    # Es "Otro cliente" o sin código → usar Consumidor Final
+                    cust_code = "C00001"  # Consumidor Final
+                else:
+                    cust_code = codigo_oppen
+
+                # Construir descripción
+                # Si es CNGCC (Otro cliente), usar el comentario del cajero
+                # Si no, usar el nombre del cliente + comentario adicional si existe
+                nombre_cliente = cc.get('nombre_cliente', '')
+                comentario_adicional = (cc.get('comentario') or '').strip()
+
+                if codigo_oppen == 'CNGCC' or not codigo_oppen:
+                    # Otro cliente: usar comentario como descripción principal
+                    description = comentario_adicional if comentario_adicional else "Cuenta Corriente"
+                else:
+                    # Cliente conocido: nombre + comentario si existe
+                    if comentario_adicional:
+                        description = f"{nombre_cliente} - {comentario_adicional}"
+                    else:
+                        description = nombre_cliente
+
+                # Determinar Office y VATCode según facturada
+                facturada = cc.get('facturada', 0)
+                if facturada == 1:
+                    office = "100"
+                    vat_code = "5"  # 21% IVA
+                else:
+                    office = "200"
+                    vat_code = "3"  # Sin IVA
+
+                # Generar OfficialSerNr
+                punto_venta = cc.get('punto_venta') or 1
+                nro_comanda = cc.get('nro_comanda') or cc['id']
+                official_sernr = f"{int(punto_venta):04d}-{int(nro_comanda):08d}"
+
+                # Preparar datos para la factura
+                cc_invoice_data = {
+                    "TransDate": str(trans_date),
+                    "CustCode": cust_code,
+                    "Labels": label_oppen,
+                    "Name": description,
+                    "Price": float(cc['monto']),
+                    "Office": office,
+                    "VATCode": vat_code,
+                    "OfficialSerNr": official_sernr
+                }
+
+                # Crear factura en Oppen
+                success, message, response_data = client.create_cuenta_corriente_invoice(cc_invoice_data)
+
+                if success and response_data:
+                    sernr_oppen = response_data.get('SerNr')
+                    logger.info(f"✅ Factura CC creada: ID {cc['id']} → SerNr {sernr_oppen}")
+
+                    # Guardar SerNr en la BD para rastreo
+                    if sernr_oppen:
+                        try:
+                            cur_update = conn.cursor()
+                            cur_update.execute("""
+                                UPDATE cuentas_corrientes_trns
+                                SET sernr_oppen = %s
+                                WHERE id = %s
+                            """, (sernr_oppen, cc['id']))
+                            conn.commit()
+                            cur_update.close()
+                            logger.info(f"✅ SerNr {sernr_oppen} guardado en BD para Cuenta Corriente ID {cc['id']}")
+                        except Exception as e:
+                            logger.error(f"⚠️ Error guardando SerNr en BD para CC ID {cc['id']}: {e}")
+
+                    resultados['exitosas'] += 1
+                    resultados['facturas_creadas'].append({
+                        'cc_id': cc['id'],
+                        'sernr_oppen': sernr_oppen,
+                        'official_sernr': official_sernr,
+                        'monto': cc['monto']
+                    })
+                else:
+                    resultados['fallidas'] += 1
+                    resultados['errores'].append({
+                        'cc_id': cc['id'],
+                        'official_sernr': official_sernr,
+                        'error': message
+                    })
+
+            except Exception as e:
+                logger.error(f"❌ Error procesando CC ID {cc['id']}: {str(e)}")
+                resultados['fallidas'] += 1
+                resultados['errores'].append({
+                    'cc_id': cc['id'],
+                    'error': str(e)
+                })
+
+        resultados['success'] = resultados['fallidas'] == 0
+
+        logger.info(
+            f"✨ Sincronización de Cuentas Corrientes completada: "
+            f"{resultados['exitosas']} exitosas, "
+            f"{resultados['fallidas']} fallidas de {resultados['total']} totales"
+        )
+
+        return resultados
+
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo cuentas corrientes de BD: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'total': 0,
+            'exitosas': 0,
+            'fallidas': 0,
+            'errores': [{'error': f'Error de base de datos: {str(e)}', 'cc_id': None}],
+            'success': False,
+            'facturas_creadas': []
+        }
+    finally:
+        cur.close()
+
+
 def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
     """
-    Crea un recibo en Oppen vinculando todas las facturas Z del día.
+    Crea un recibo en Oppen vinculando todas las facturas A, B y Z del día.
+
+    NO vincula facturas tipo CC (Cuentas Corrientes), ya que son facturas individuales a clientes.
 
     Esta función debe ejecutarse DESPUÉS de sync_facturas_to_oppen,
-    ya que necesita los sernr_oppen de las facturas Z.
+    ya que necesita los sernr_oppen de las facturas A, B y Z.
 
     Usa el endpoint /api/auditoria/resumen para obtener los PayModes
     (mismo endpoint que usa "Carga masiva").
@@ -614,40 +941,40 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
         logger.info(f"📋 Creando recibo para {local} ({label_oppen}) - {fecha}")
 
-        # 2. Obtener facturas Z con sus SerNr de Oppen y montos
+        # 2. Obtener facturas A, B y Z con sus SerNr de Oppen y montos (excluye CC)
         cur.execute("""
-            SELECT id, sernr_oppen, monto
+            SELECT id, tipo, sernr_oppen, monto
             FROM facturas_trns
             WHERE local = %s
               AND DATE(fecha) = %s
               AND estado = 'ok'
-              AND tipo = 'Z'
+              AND tipo IN ('A', 'B', 'Z')
               AND sernr_oppen IS NOT NULL
-            ORDER BY id
+            ORDER BY tipo, id
         """, (local, fecha))
 
-        facturas_z = cur.fetchall()
+        facturas = cur.fetchall()
 
-        if not facturas_z:
-            logger.warning(f"⚠️ No hay facturas Z con SerNr para crear recibo")
+        if not facturas:
+            logger.warning(f"⚠️ No hay facturas A/B/Z con SerNr para crear recibo")
             return {
                 'success': True,
-                'message': 'No hay facturas Z con SerNr para crear recibo',
+                'message': 'No hay facturas A/B/Z con SerNr para crear recibo',
                 'recibo_creado': False
             }
 
         # 3. Construir lista de facturas para el recibo con montos reales
         invoices = []
         total_facturas = 0
-        for fz in facturas_z:
-            monto = float(fz.get('monto', 0))
+        for f in facturas:
+            monto = float(f.get('monto', 0))
             total_facturas += monto
             invoices.append({
-                "InvoiceNr": int(fz['sernr_oppen']),
+                "InvoiceNr": int(f['sernr_oppen']),
                 "Amount": monto,
             })
 
-        logger.info(f"📦 Vinculando {len(invoices)} facturas Z al recibo (Total: ${total_facturas:,.2f})")
+        logger.info(f"📦 Vinculando {len(invoices)} facturas A/B/Z al recibo (Total: ${total_facturas:,.2f})")
 
         # 4. Obtener PayModes directamente desde la BD
         # Consulta simplificada: obtener solo los totales por forma de pago
