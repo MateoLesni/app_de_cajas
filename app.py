@@ -8064,9 +8064,47 @@ def api_operaciones_ap_efectivo():
                 efectivo_data = cur.fetchone()
                 efectivo_total = float(efectivo_data['efectivo_total']) if efectivo_data and efectivo_data['efectivo_total'] else 0
 
+                # SOLO PARA W INFANTA Y RIBS INFANTA: Sumar remesas retiradas posteriormente
+                # Esto evita duplicar remesas que ya están en el efectivo del día que fueron creadas
+                retiradas_posteriores = 0
+                if local in locales_con_saldo_retirar:  # W Infanta y Ribs Infanta
+                    if es_lunes:
+                        # En FDS: Solo sumar remesas retiradas HOY si fueron creadas ANTES del inicio del FDS
+                        fecha_inicio_fds = fechas[0]  # Viernes
+                        cur.execute("""
+                            SELECT SUM(monto) as retiradas_posteriores
+                            FROM remesas_trns
+                            WHERE local = %s
+                              AND fecha_retirada = %s
+                              AND DATE(fecha) < %s
+                              AND fecha_retirada IS NOT NULL
+                              AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
+                        """, (local, fecha, fecha_inicio_fds))
+                    else:
+                        # Martes a Viernes: Sumar remesas retiradas HOY si fueron creadas en día diferente
+                        cur.execute("""
+                            SELECT SUM(monto) as retiradas_posteriores
+                            FROM remesas_trns
+                            WHERE local = %s
+                              AND fecha_retirada = %s
+                              AND fecha_retirada != fecha
+                              AND fecha_retirada IS NOT NULL
+                              AND (divisa IS NULL OR divisa = '' OR divisa = 'ARS')
+                        """, (local, fecha))
+
+                    retiradas_data = cur.fetchone()
+                    retiradas_posteriores = float(retiradas_data['retiradas_posteriores']) if retiradas_data and retiradas_data['retiradas_posteriores'] else 0
+
+                    # DEBUG temporal
+                    if local in ['W Infanta', 'Ribs Infanta'] and retiradas_posteriores > 0:
+                        print(f"🔍 DEBUG AP Efectivo: Local={local}, Fecha columna={fecha}, Remesas retiradas posteriormente={retiradas_posteriores}")
+
+                # Sumar efectivo del día + remesas retiradas posteriormente (solo W Infanta y Ribs Infanta)
+                efectivo_total_ajustado = efectivo_total + retiradas_posteriores
+
                 # Guardar solo efectivo (sin real ni diferencia)
                 datos_por_local[local][fecha_label] = {
-                    'efectivo': efectivo_total
+                    'efectivo': efectivo_total_ajustado
                 }
 
             # Calcular "Saldo anterior" (igual que antes)
@@ -8236,9 +8274,43 @@ def api_operaciones_ap_efectivo_usd():
                 efectivo_total_usd = float(efectivo_data['efectivo_total_usd']) if efectivo_data and efectivo_data['efectivo_total_usd'] else 0
                 cotizacion_promedio = float(efectivo_data['cotizacion_promedio']) if efectivo_data and efectivo_data['cotizacion_promedio'] else 0
 
+                # SOLO PARA W INFANTA Y RIBS INFANTA: Sumar remesas USD retiradas posteriormente
+                # Esto evita duplicar remesas que ya están en el efectivo del día que fueron creadas
+                retiradas_posteriores_usd = 0
+                if local in locales_con_saldo_retirar:  # W Infanta y Ribs Infanta
+                    if es_lunes:
+                        # En FDS: Solo sumar remesas retiradas HOY si fueron creadas ANTES del inicio del FDS
+                        fecha_inicio_fds = fechas[0] - timedelta(days=1)  # Viernes -1
+                        cur.execute("""
+                            SELECT SUM(monto_usd) as retiradas_posteriores_usd
+                            FROM remesas_trns
+                            WHERE local = %s
+                              AND fecha_retirada = %s
+                              AND DATE(fecha) < %s
+                              AND fecha_retirada IS NOT NULL
+                              AND divisa = 'USD'
+                        """, (local, fecha_efectivo, fecha_inicio_fds))
+                    else:
+                        # Martes a Viernes: Sumar remesas retiradas HOY si fueron creadas en día diferente
+                        cur.execute("""
+                            SELECT SUM(monto_usd) as retiradas_posteriores_usd
+                            FROM remesas_trns
+                            WHERE local = %s
+                              AND fecha_retirada = %s
+                              AND fecha_retirada != fecha
+                              AND fecha_retirada IS NOT NULL
+                              AND divisa = 'USD'
+                        """, (local, fecha_efectivo))
+
+                    retiradas_data = cur.fetchone()
+                    retiradas_posteriores_usd = float(retiradas_data['retiradas_posteriores_usd']) if retiradas_data and retiradas_data['retiradas_posteriores_usd'] else 0
+
+                # Sumar efectivo del día + remesas retiradas posteriormente (solo W Infanta y Ribs Infanta)
+                efectivo_total_usd_ajustado = efectivo_total_usd + retiradas_posteriores_usd
+
                 # Guardar solo efectivo (sin real ni diferencia)
                 datos_por_local[local][fecha_label] = {
-                    'efectivo': efectivo_total_usd,
+                    'efectivo': efectivo_total_usd_ajustado,
                     'cotizacion': cotizacion_promedio
                 }
 
