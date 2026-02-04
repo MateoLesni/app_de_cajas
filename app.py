@@ -12387,17 +12387,10 @@ def cambiar_local():
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
-        # Society
-        cur.execute("SELECT society, cantidad_cajas FROM locales WHERE local = %s LIMIT 1", (nuevo_local,))
+        # Cantidad de cajas
+        cur.execute("SELECT cantidad_cajas FROM locales WHERE local = %s LIMIT 1", (nuevo_local,))
         local_info = cur.fetchone()
-
-        society = ''
-        cantidad_cajas = 1
-
-        if local_info:
-            society = local_info.get('society', '')
-            cantidad_cajas = int(local_info.get('cantidad_cajas', 1))
-            session['society'] = society
+        cantidad_cajas = int(local_info.get('cantidad_cajas', 1)) if local_info else 1
 
         # Turnos
         cur.execute("SELECT turnos FROM locales WHERE local = %s", (nuevo_local,))
@@ -12409,7 +12402,6 @@ def cambiar_local():
         return jsonify({
             'success': True,
             'local': nuevo_local,
-            'society': society,
             'cantidad_cajas': cantidad_cajas,
             'turnos': turnos
         })
