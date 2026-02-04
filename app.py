@@ -804,7 +804,10 @@ def encargado():
     local_param = request.args.get('local')
     available_locales = session.get('available_locales', [])
 
+    print(f"DEBUG encargado(): local_param='{local_param}', available_locales={available_locales}")
+
     if local_param and local_param in available_locales:
+        print(f"DEBUG: Actualizando sesion de '{session.get('local')}' a '{local_param}'")
         # Actualizar local en sesión
         session['local'] = local_param
         # Actualizar society según el nuevo local
@@ -815,12 +818,14 @@ def encargado():
             local_info = cur_temp.fetchone()
             if local_info and local_info.get('society'):
                 session['society'] = local_info['society']
+                print(f"DEBUG: Society actualizada a '{local_info['society']}'")
             cur_temp.close()
             conn_temp.close()
-        except:
-            pass
+        except Exception as e:
+            print(f"DEBUG: Error actualizando society: {e}")
 
     local = session.get('local')
+    print(f"DEBUG: Local final para cargar datos: '{local}'")
 
     # Default seguros si por algún motivo no hay local en sesión
     cantidad_cajas = 1
@@ -840,15 +845,20 @@ def encargado():
         cur.execute("SELECT turnos FROM locales WHERE local = %s", (local,))
         rows = cur.fetchall()
         turnos = [r[0] for r in rows] or ['UNI']
+        print(f"DEBUG encargado(): Turnos para '{local}': {turnos}")
+        print(f"DEBUG encargado(): Cantidad de cajas para '{local}': {cantidad_cajas}")
 
         cur.close(); conn.close()
-    except Exception:
+    except Exception as e:
         # En caso de fallo DB, mantenemos defaults para no romper la vista
+        print(f"DEBUG encargado(): Error cargando datos: {e}")
         pass
 
     # IMPORTANTE: pasar las variables que la plantilla espera
     # Obtener fecha actual para limitar el datepicker
     today = datetime.now().strftime('%Y-%m-%d')
+
+    print(f"DEBUG encargado(): Renderizando template con cantidad_cajas={cantidad_cajas}, turnos={turnos}")
 
     return render_template(
         'index_encargado.html',
@@ -12348,3 +12358,63 @@ def get_current_user_locales_endpoint():
         'locales': locales,
         'current_local': current_local
     })
+
+
+@app.route('/api/cambiar-local', methods=['POST'])
+@login_required
+def cambiar_local():
+    """
+    Cambia el local del usuario en la sesión y retorna los datos del nuevo local
+    (turnos, cantidad de cajas, society).
+    Solo permite cambiar a locales que el usuario tiene asignados.
+    """
+    data = request.get_json() or {}
+    nuevo_local = data.get('local', '').strip()
+
+    if not nuevo_local:
+        return jsonify({'success': False, 'msg': 'Local requerido'}), 400
+
+    # Validar que el usuario tenga acceso a este local
+    available_locales = session.get('available_locales', [])
+    if nuevo_local not in available_locales:
+        return jsonify({'success': False, 'msg': 'No tenés acceso a este local'}), 403
+
+    try:
+        # Actualizar sesión
+        session['local'] = nuevo_local
+
+        # Obtener datos del nuevo local
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Society
+        cur.execute("SELECT society, cantidad_cajas FROM locales WHERE local = %s LIMIT 1", (nuevo_local,))
+        local_info = cur.fetchone()
+
+        society = ''
+        cantidad_cajas = 1
+
+        if local_info:
+            society = local_info.get('society', '')
+            cantidad_cajas = int(local_info.get('cantidad_cajas', 1))
+            session['society'] = society
+
+        # Turnos
+        cur.execute("SELECT turnos FROM locales WHERE local = %s", (nuevo_local,))
+        turnos = [row['turnos'] for row in cur.fetchall()] or ['UNI']
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'local': nuevo_local,
+            'society': society,
+            'cantidad_cajas': cantidad_cajas,
+            'turnos': turnos
+        })
+
+    except Exception as e:
+        print(f"Error en cambiar_local: {e}")
+        return jsonify({'success': False, 'msg': f'Error al cambiar local: {str(e)}'}), 500
+
