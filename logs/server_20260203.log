@@ -1587,3 +1587,91 @@
 2026-02-03 13:22:57,526 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-02-03 13:22:58,015 - werkzeug - WARNING -  * Debugger is active!
 2026-02-03 13:22:58,019 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-02-03 15:48:48,993 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-03 15:48:49,905 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-02-03 15:48:49,906 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-03 15:48:49,910 - werkzeug - INFO -  * Restarting with stat
+2026-02-03 15:48:52,281 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-03 15:48:52,827 - werkzeug - WARNING -  * Debugger is active!
+2026-02-03 15:48:52,832 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-02-03 15:48:55,331 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:55] "[32mGET / HTTP/1.1[0m" 302 -
+2026-02-03 15:48:56,187 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-03 15:48:56,188 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-03 15:48:56,192 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-03 15:48:58,650 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "GET /auditor HTTP/1.1" 200 -
+2026-02-03 15:48:58,689 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,689 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,691 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,693 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,696 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,703 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,707 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,712 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,722 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,723 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/ctas_ctes.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,728 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/anticipos_v2.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,733 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/orquestador-tabs.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,736 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/fecha_hoy_index.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:58,740 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:58] "[36mGET /static/js/adjuntador.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:59,152 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:59] "[36mGET /static/js/orqtabs_init.js HTTP/1.1[0m" 304 -
+2026-02-03 15:48:59,185 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:59] "GET /tarjetas_cargadas_hoy?caja=Caja%201&fecha=&turno=UNI HTTP/1.1" 200 -
+2026-02-03 15:48:59,185 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:59] "[31m[1mGET /estado_local?fecha= HTTP/1.1[0m" 400 -
+2026-02-03 15:48:59,185 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:48:59] "[31m[1mGET /estado_caja?local=&caja=Caja%201&fecha=&turno=UNI HTTP/1.1[0m" 400 -
+2026-02-03 15:49:01,907 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:01] "GET /api/locales HTTP/1.1" 200 -
+2026-02-03 15:49:01,909 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:01] "GET /api/tipos_gastos HTTP/1.1" 200 -
+2026-02-03 15:49:01,913 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:01] "GET /api/clientes_cta_cte HTTP/1.1" 200 -
+2026-02-03 15:49:02,000 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:02] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-02-03 15:49:02,556 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:02] "GET /api/remesas-no-retiradas/contador HTTP/1.1" 200 -
+2026-02-03 15:49:04,564 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:04] "GET /api/turnos?local=Cruza%20Polo HTTP/1.1" 200 -
+2026-02-03 15:49:04,685 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:04] "GET /api/terminales?local= HTTP/1.1" 200 -
+2026-02-03 15:49:07,326 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:07] "GET /api/cajas?local=Cruza%20Polo HTTP/1.1" 200 -
+2026-02-03 15:49:10,244 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:10] "GET /estado_caja?local=Cruza+Polo&caja=Caja+1&fecha=2025-11-10&turno=Turno+noche HTTP/1.1" 200 -
+2026-02-03 15:49:10,378 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:10] "GET /ventas_cargadas?local=Cruza+Polo&caja=Caja+1&fecha=2025-11-10&turno=Turno+noche HTTP/1.1" 200 -
+2026-02-03 15:49:10,451 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:10] "GET /facturas_cargadas?local=Cruza+Polo&caja=Caja+1&fecha=2025-11-10&turno=Turno+noche HTTP/1.1" 200 -
+2026-02-03 15:49:13,467 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:13] "GET /estado_caja?local=Cruza%20Polo&caja=Caja%201&fecha=2025-11-10&turno=Turno%20noche HTTP/1.1" 200 -
+2026-02-03 15:49:13,480 - app - INFO - [estado_local] Consultando: local=Cruza Polo, fecha=2025-11-10
+2026-02-03 15:49:16,369 - app - INFO - [estado_local] Resultado: count=0, estado=1 (ABIERTO)
+2026-02-03 15:49:16,372 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:16] "GET /estado_local?local=Cruza%20Polo&fecha=2025-11-10 HTTP/1.1" 200 -
+2026-02-03 15:49:16,578 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:49:16] "GET /api/estado_auditoria?local=Cruza%20Polo&fecha=2025-11-10 HTTP/1.1" 200 -
+2026-02-03 15:53:31,952 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:31] "GET /gestion-usuarios HTTP/1.1" 200 -
+2026-02-03 15:53:31,983 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:31] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-03 15:53:32,000 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:32] "GET /static/js/gestion_usuarios.js HTTP/1.1" 200 -
+2026-02-03 15:53:32,000 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:32] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-02-03 15:53:32,040 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:32] "GET /api/mi_nivel HTTP/1.1" 200 -
+2026-02-03 15:53:34,506 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:34] "GET /api/locales HTTP/1.1" 200 -
+2026-02-03 15:53:37,083 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:53:37] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2026-02-03 15:58:08,035 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:08] "GET /gestion-usuarios HTTP/1.1" 200 -
+2026-02-03 15:58:08,078 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:08] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-03 15:58:08,089 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:08] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-02-03 15:58:08,089 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:08] "[36mGET /static/js/gestion_usuarios.js HTTP/1.1[0m" 304 -
+2026-02-03 15:58:08,499 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:08] "GET /api/mi_nivel HTTP/1.1" 200 -
+2026-02-03 15:58:11,706 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:11] "GET /api/locales HTTP/1.1" 200 -
+2026-02-03 15:58:14,060 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 15:58:14] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2026-02-03 16:00:52,869 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:52] "GET /gestion-usuarios HTTP/1.1" 200 -
+2026-02-03 16:00:52,901 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:52] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-03 16:00:52,910 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:52] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-02-03 16:00:52,911 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:52] "[36mGET /static/js/gestion_usuarios.js HTTP/1.1[0m" 304 -
+2026-02-03 16:00:52,968 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:52] "GET /api/mi_nivel HTTP/1.1" 200 -
+2026-02-03 16:00:55,585 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:55] "GET /api/locales HTTP/1.1" 200 -
+2026-02-03 16:00:58,157 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:00:58] "GET /api/usuarios/listar HTTP/1.1" 200 -
+2026-02-03 16:04:03,884 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-03 16:04:04,514 - werkzeug - INFO -  * Restarting with stat
+2026-02-03 16:04:08,238 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-03 16:04:09,084 - werkzeug - WARNING -  * Debugger is active!
+2026-02-03 16:04:09,089 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-02-03 16:04:14,151 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-03 16:04:14,512 - werkzeug - INFO -  * Restarting with stat
+2026-02-03 16:04:17,532 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-03 16:04:18,029 - werkzeug - WARNING -  * Debugger is active!
+2026-02-03 16:04:18,033 - werkzeug - INFO -  * Debugger PIN: 131-510-401
+2026-02-03 16:05:38,049 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:38] "GET /gestion-usuarios HTTP/1.1" 200 -
+2026-02-03 16:05:38,146 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:38] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-03 16:05:38,150 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:38] "[36mGET /static/js/sidebar.js HTTP/1.1[0m" 304 -
+2026-02-03 16:05:38,150 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:38] "GET /static/js/gestion_usuarios.js HTTP/1.1" 200 -
+2026-02-03 16:05:38,204 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:38] "GET /api/mi_nivel HTTP/1.1" 200 -
+2026-02-03 16:05:39,119 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-03 16:05:39,120 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-03 16:05:39,124 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-03 16:05:41,187 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:41] "GET /api/locales HTTP/1.1" 200 -
+2026-02-03 16:05:43,766 - werkzeug - INFO - 127.0.0.1 - - [03/Feb/2026 16:05:43] "GET /api/usuarios/listar HTTP/1.1" 200 -

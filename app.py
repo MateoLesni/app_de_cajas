@@ -6235,6 +6235,11 @@ def api_resumen_local():
     fecha_s = (request.args.get('fecha') or '').strip()
     source = (request.args.get('source') or '').strip().lower()  # 'operacion' o 'admin'
 
+    # DEBUG: Log para Encargados
+    user_level = session.get('role_level', 1)
+    available_locales = session.get('available_locales', [])
+    print(f"[api_resumen_local] Usuario nivel {user_level}, Local solicitado: '{local}', Locales disponibles: {available_locales}")
+
     if not local or not fecha_s:
         return jsonify(error="Parámetros insuficientes: fecha y local son requeridos"), 400
 
@@ -6254,15 +6259,19 @@ def api_resumen_local():
         row = cur.fetchone()
         local_cerrado = (row is not None and row.get('min_estado') is not None and int(row.get('min_estado')) == 0)
 
+        print(f"[api_resumen_local] Estado del local: {'CERRADO' if local_cerrado else 'ABIERTO'}, row={row}")
+
         # Determinar si usar tablas snap o normales
         usar_snap = False
 
         if source:
             # Si se especifica 'source', usar ese valor (para niveles 2 y 3)
             usar_snap = (source == 'operacion')
+            print(f"[api_resumen_local] Source especificado: '{source}', usar_snap={usar_snap}")
         else:
             # Lógica por defecto: si el local está cerrado, usar snapshots
             usar_snap = local_cerrado
+            print(f"[api_resumen_local] Lógica por defecto: local_cerrado={local_cerrado}, usar_snap={usar_snap}")
 
         # Tablas según el flag usar_snap
         # IMPORTANTE: Facturas y Remesas siempre se leen de *_trns porque los auditores
