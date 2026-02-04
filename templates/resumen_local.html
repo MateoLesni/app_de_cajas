@@ -135,7 +135,7 @@
             <label for="rl-local-select">Local</label>
             <select id="rl-local-select">
               {% for local in session.get('available_locales', []) %}
-                <option value="{{ local|trim|e }}" {% if local == session.get('local') %}selected{% endif %}>
+                <option value="{{ local|trim }}" {% if local == session.get('local') %}selected{% endif %}>
                   {{ local|trim|e }}
                 </option>
               {% endfor %}
@@ -146,7 +146,7 @@
           {# Cajero o Encargado con un solo local: campo readonly #}
           <div class="form-group grow">
             <label>Local</label>
-            <input id="rl-local-inline" type="text" value="{{ session['local'] }}" readonly>
+            <input id="rl-local-inline" type="text" value="{{ session['local']|trim }}" readonly>
           </div>
           {% endif %}
 

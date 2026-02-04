@@ -1268,3 +1268,14 @@
 2026-02-04 11:54:19,111 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-02-04 11:54:19,464 - werkzeug - WARNING -  * Debugger is active!
 2026-02-04 11:54:19,467 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-04 11:56:10,457 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:10] "GET /resumen-local HTTP/1.1" 200 -
+2026-02-04 11:56:10,483 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:10] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-04 11:56:10,485 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:10] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2026-02-04 11:56:10,486 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:10] "[36mGET /static/js/resumen_local.js HTTP/1.1[0m" 304 -
+2026-02-04 11:56:11,314 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-04 11:56:11,315 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-04 11:56:11,317 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-04 11:56:22,626 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:22] "GET /api/resumen_local?local=Coffee%20%26amp;%20Polo&fecha=2026-01-24&_t=1770216970602 HTTP/1.1" 200 -
+2026-02-04 11:56:22,634 - app - INFO - [estado_local] Consultando: local=Coffee &amp; Polo, fecha=2026-01-24
+2026-02-04 11:56:25,336 - app - INFO - [estado_local] Resultado: count=0, estado=1 (ABIERTO)
+2026-02-04 11:56:25,338 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:25] "GET /estado_local?fecha=2026-01-24&local=Coffee%20%26amp;%20Polo&_t=1770216982632 HTTP/1.1" 200 -
