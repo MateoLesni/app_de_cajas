@@ -157,6 +157,20 @@
           </div>
         </div>
 
+        <!-- Selector de Local (solo si tiene múltiples locales) -->
+        {% if session.get('available_locales')|length > 1 %}
+        <div class="form-group">
+          <label for="localSelect">Seleccioná un local:</label>
+          <select id="localSelect" class="form-control" required>
+            {% for local in session.get('available_locales', []) %}
+              <option value="{{ local|trim|e }}" {% if local == session.get('local') %}selected{% endif %}>
+                {{ local|trim|e }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
         <div class="form-group">
           <label for="turnoSelect">Seleccioná un turno:</label>
           <select id="turnoSelect" class="form-control" required>
@@ -1274,8 +1288,18 @@
   })();
   </script>
 
-  <!-- Multi-Local Selector para Encargados -->
-  <script src="{{ url_for('static', filename='js/multi_local_selector.js') }}"></script>
+  <!-- Script para manejar cambio de local -->
+  <script>
+    // Manejar cambio de local en Encargados con múltiples locales
+    const localSelect = document.getElementById('localSelect');
+    if (localSelect) {
+      localSelect.addEventListener('change', function() {
+        const nuevoLocal = this.value;
+        // Recargar la página con el nuevo local como parámetro
+        window.location.href = `{{ url_for('index') }}?local=${encodeURIComponent(nuevoLocal)}`;
+      });
+    }
+  </script>
 
 </body>
 </html>

@@ -124,11 +124,25 @@
           </div>
 
           {% if session.get('role_level',1) | int >= 3 %}
+          {# Auditor: select con todos los locales #}
           <div class="form-group grow">
             <label for="rl-local-select">Local</label>
             <select id="rl-local-select"></select>
           </div>
+          {% elif session.get('role_level',1) | int == 2 and session.get('available_locales')|length > 1 %}
+          {# Encargado con múltiples locales: select con sus locales asignados #}
+          <div class="form-group grow">
+            <label for="rl-local-select">Local</label>
+            <select id="rl-local-select">
+              {% for local in session.get('available_locales', []) %}
+                <option value="{{ local|trim|e }}" {% if local == session.get('local') %}selected{% endif %}>
+                  {{ local|trim|e }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
           {% else %}
+          {# Cajero o Encargado con un solo local: campo readonly #}
           <div class="form-group grow">
             <label>Local</label>
             <input id="rl-local-inline" type="text" value="{{ session['local'] }}" readonly>
@@ -875,9 +889,16 @@
     });
     // Usar la misma variable sel declarada arriba
     if (sel) sel.addEventListener('change', (e) => {
-      // Guardar local en localStorage para persistencia
-      localStorage.setItem('rl_local_selected', e.target.value);
-      refreshAll();
+      const nuevoLocal = e.target.value;
+
+      // Si es Encargado (nivel 2), recargar página para actualizar sesión
+      if (window.ROLE_LEVEL === 2) {
+        window.location.href = `{{ url_for('resumen_local') }}?local=${encodeURIComponent(nuevoLocal)}`;
+      } else {
+        // Auditor: solo guardar en localStorage y refrescar datos
+        localStorage.setItem('rl_local_selected', nuevoLocal);
+        refreshAll();
+      }
     });
 
     // Definir función de auditoría globalmente (para que esté disponible antes del if)

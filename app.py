@@ -800,6 +800,26 @@ def encargado():
     if get_user_level() < 2:
         return redirect(route_for_current_role())
 
+    # NUEVO: Si el usuario tiene múltiples locales y viene parámetro local, actualizar sesión
+    local_param = request.args.get('local')
+    available_locales = session.get('available_locales', [])
+
+    if local_param and local_param in available_locales:
+        # Actualizar local en sesión
+        session['local'] = local_param
+        # Actualizar society según el nuevo local
+        try:
+            conn_temp = get_db_connection()
+            cur_temp = conn_temp.cursor(dictionary=True)
+            cur_temp.execute("SELECT society FROM locales WHERE local = %s LIMIT 1", (local_param,))
+            local_info = cur_temp.fetchone()
+            if local_info and local_info.get('society'):
+                session['society'] = local_info['society']
+            cur_temp.close()
+            conn_temp.close()
+        except:
+            pass
+
     local = session.get('local')
 
     # Default seguros si por algún motivo no hay local en sesión
@@ -5770,6 +5790,26 @@ def api_turnos():
 @app.route("/resumen-local")
 @login_required
 def resumen_local():
+    # NUEVO: Si el usuario tiene múltiples locales y viene parámetro local, actualizar sesión
+    local_param = request.args.get('local')
+    available_locales = session.get('available_locales', [])
+
+    if local_param and local_param in available_locales:
+        # Actualizar local en sesión
+        session['local'] = local_param
+        # Actualizar society según el nuevo local
+        try:
+            conn_temp = get_db_connection()
+            cur_temp = conn_temp.cursor(dictionary=True)
+            cur_temp.execute("SELECT society FROM locales WHERE local = %s LIMIT 1", (local_param,))
+            local_info = cur_temp.fetchone()
+            if local_info and local_info.get('society'):
+                session['society'] = local_info['society']
+            cur_temp.close()
+            conn_temp.close()
+        except:
+            pass
+
     # Variables mínimas para la plantilla
     session.setdefault("username", session.get("username", "USUARIO"))
     session.setdefault("local",    session.get("local",    "Mi Local"))
