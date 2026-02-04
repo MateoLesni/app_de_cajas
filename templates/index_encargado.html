@@ -1342,13 +1342,17 @@
 
             console.log(`✅ Sesión actualizada en servidor: ${data.cantidad_cajas} cajas, ${data.turnos?.length} turnos`);
 
-            // 5. Recargar la página para aplicar el cambio de local
-            // NOTA: La recarga solo ocurre cuando VOS cambias manualmente el local,
-            // no es automática. Es necesaria porque los endpoints del servidor
-            // leen session['local'] y necesitamos que todos los scripts trabajen
-            // con el nuevo local actualizado.
-            console.log('🔄 Recargando página para aplicar cambio de local...');
-            window.location.reload();
+            // 5. Recargar solo la pestaña activa sin recargar toda la página
+            // El OrqTabs se encarga de invalidar el caché y hacer el refetch
+            // con el nuevo valor de local que quedó actualizado en la sesión del servidor
+            console.log('🔄 Recargando pestaña activa con nuevo local...');
+            if (window.OrqTabs && typeof window.OrqTabs.reloadActive === 'function') {
+              // Notificar al orquestador que los filtros cambiaron para que actualice su estado interno
+              window.OrqTabs.notifyFiltersChanged();
+            } else {
+              console.warn('⚠️ OrqTabs no disponible, recargando página completa...');
+              window.location.reload();
+            }
 
           } else {
             console.error('❌ Error al cambiar local:', data.msg);
