@@ -1478,3 +1478,26 @@
 2026-02-04 12:06:17,707 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:06:17] "[32mGET /files/view?id=coffee-polo/mercadopago/2026/01/24/caja-1/turno-noche/6a5f8faa46f3418d8f88150e30efae7f__20260124_232633.jpg HTTP/1.1[0m" 302 -
 2026-02-04 12:06:19,640 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:06:19] "GET /api/estado_auditoria?local=Coffee%20%26%20Polo&fecha=2026-01-24 HTTP/1.1" 200 -
 2026-02-04 12:06:22,435 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:06:22] "GET /api/anticipos_recibidos/listar?local=Coffee+%26+Polo&fecha_desde=2026-01-24&fecha_hasta=2026-01-24&estado=consumido HTTP/1.1" 200 -
+2026-02-04 12:25:20,898 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-04 12:25:21,233 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-02-04 12:25:21,234 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-04 12:25:21,236 - werkzeug - INFO -  * Restarting with stat
+2026-02-04 12:25:22,543 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-04 12:25:22,809 - werkzeug - WARNING -  * Debugger is active!
+2026-02-04 12:25:22,811 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-04 12:25:24,475 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:24] "[32mGET / HTTP/1.1[0m" 302 -
+2026-02-04 12:25:25,052 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-04 12:25:25,053 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-04 12:25:25,055 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-04 12:25:27,452 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "GET /auditor HTTP/1.1" 200 -
+2026-02-04 12:25:27,470 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,471 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/index.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,472 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/tarjetas.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,482 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/mercadopago.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,483 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/rappi.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,484 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/pedidosya.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,494 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/resumen.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,495 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/gastos.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,495 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/ventas.js HTTP/1.1[0m" 304 -
+2026-02-04 12:25:27,506 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:25:27] "[36mGET /static/js/ctas_ctes.js HTTP/1.1[0m" 304 -
