@@ -1279,3 +1279,9 @@
 2026-02-04 11:56:22,634 - app - INFO - [estado_local] Consultando: local=Coffee &amp; Polo, fecha=2026-01-24
 2026-02-04 11:56:25,336 - app - INFO - [estado_local] Resultado: count=0, estado=1 (ABIERTO)
 2026-02-04 11:56:25,338 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:25] "GET /estado_local?fecha=2026-01-24&local=Coffee%20%26amp;%20Polo&_t=1770216982632 HTTP/1.1" 200 -
+2026-02-04 11:56:25,348 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:56:25] "[31m[1mGET /files/summary_media?fecha=2026-01-24&local=Coffee+%26amp;+Polo&_t=1770216985340 HTTP/1.1[0m" 403 -
+2026-02-04 11:59:15,725 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-04 11:59:16,067 - werkzeug - INFO -  * Restarting with stat
+2026-02-04 11:59:18,634 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-04 11:59:18,968 - werkzeug - WARNING -  * Debugger is active!
+2026-02-04 11:59:18,971 - werkzeug - INFO -  * Debugger PIN: 114-208-757

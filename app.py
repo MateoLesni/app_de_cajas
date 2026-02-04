@@ -10182,6 +10182,72 @@ def create_snapshot_for_local(conn, local:str, fecha, turno:str, made_by:str):
 
 
 
+@app.route('/api/fix_html_entities', methods=['POST'])
+@login_required
+@role_min_required(4)  # Solo Jefe Auditor
+def fix_html_entities():
+    """
+    Endpoint temporal para corregir entidades HTML escapadas en nombres de locales.
+    Solo ejecutable por Jefe Auditor.
+    """
+    import html
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Buscar registros con nombres escapados en cierres_locales
+        cur.execute("""
+            SELECT DISTINCT local
+            FROM cierres_locales
+            WHERE local LIKE '%&amp;%'
+               OR local LIKE '%&quot;%'
+               OR local LIKE '%&lt;%'
+               OR local LIKE '%&gt;%'
+        """)
+        locales_escapados = cur.fetchall()
+
+        fixed_count = 0
+        fixed_locales = []
+
+        if locales_escapados:
+            for row in locales_escapados:
+                local_escapado = row['local']
+                local_desescapado = html.unescape(local_escapado)
+
+                if local_escapado != local_desescapado:
+                    # Actualizar el registro
+                    cur.execute("""
+                        UPDATE cierres_locales
+                        SET local = %s
+                        WHERE local = %s
+                    """, (local_desescapado, local_escapado))
+
+                    fixed_count += 1
+                    fixed_locales.append({
+                        'original': local_escapado,
+                        'fixed': local_desescapado
+                    })
+
+            conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'fixed_count': fixed_count,
+            'fixed_locales': fixed_locales,
+            'msg': f'✅ {fixed_count} locales actualizados correctamente' if fixed_count > 0 else '✅ No se encontraron locales con HTML escapado'
+        })
+
+    except Exception as e:
+        print(f"❌ Error en fix_html_entities: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'msg': f'Error: {str(e)}'}), 500
+
+
 @app.get("/estado_local")
 @login_required
 def estado_local():
