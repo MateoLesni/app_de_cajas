@@ -377,7 +377,7 @@ def get_user_locales(user_id):
     """
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True)  # FIX: Usar dictionary=True para devolver diccionarios
 
         # Intentar obtener de user_locales
         cur.execute("""
@@ -401,7 +401,8 @@ def get_user_locales(user_id):
 
         return locales
     except Exception as e:
-        logger.error(f"Error obteniendo locales del usuario {user_id}: {e}")
+        # FIX: Usar print en vez de logger que puede no estar definido
+        print(f"❌ Error obteniendo locales del usuario {user_id}: {e}")
         # Fallback a session['local']
         return [session.get('local')] if session.get('local') else []
 

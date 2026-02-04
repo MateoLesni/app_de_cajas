@@ -235,6 +235,15 @@
     }
 
     modal.classList.add('active');
+
+    // NUEVO: Verificar si debe mostrar selector de múltiples locales al abrir modal
+    // (en caso de que el rol ya esté seleccionado)
+    setTimeout(() => {
+      const rolActual = rolSelect.value;
+      if (userLevel === 3 && rolActual === 'encargado' && multiLocalContainer) {
+        multiLocalContainer.style.display = 'block';
+      }
+    }, 100);
   };
 
   window.cerrarModal = function() {
