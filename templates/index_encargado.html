@@ -1340,31 +1340,15 @@
               }
             }
 
-            console.log(`✅ Filtros actualizados: ${data.cantidad_cajas} cajas, ${data.turnos?.length} turnos`);
+            console.log(`✅ Sesión actualizada en servidor: ${data.cantidad_cajas} cajas, ${data.turnos?.length} turnos`);
 
-            // 5. Disparar eventos 'change' en los selectores para que todas las pestañas refresquen sus datos
-            // Esto simula que el usuario cambió manualmente los filtros, haciendo que los scripts carguen los nuevos datos
-            console.log('🔄 Disparando eventos de cambio para refrescar pestañas...');
-
-            // Disparar change en turno (esto hará que todas las pestañas recarguen sus datos)
-            const turnoSelect = document.getElementById('turnoSelect');
-            if (turnoSelect) {
-              turnoSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            // Disparar change en caja (algunas pestañas escuchan este evento)
-            const cajaSelect = document.getElementById('cajaSelect');
-            if (cajaSelect) {
-              cajaSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            // Disparar change en fecha (por si alguna pestaña lo necesita)
-            const fechaGlobal = document.getElementById('fechaGlobal');
-            if (fechaGlobal) {
-              fechaGlobal.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            console.log('✅ Eventos disparados. Las pestañas deberían actualizarse automáticamente.');
+            // 5. Recargar la página para aplicar el cambio de local
+            // NOTA: La recarga solo ocurre cuando VOS cambias manualmente el local,
+            // no es automática. Es necesaria porque los endpoints del servidor
+            // leen session['local'] y necesitamos que todos los scripts trabajen
+            // con el nuevo local actualizado.
+            console.log('🔄 Recargando página para aplicar cambio de local...');
+            window.location.reload();
 
           } else {
             console.error('❌ Error al cambiar local:', data.msg);
