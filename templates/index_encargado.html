@@ -1288,84 +1288,9 @@
   })();
   </script>
 
-  <!-- Script para manejar cambio de local -->
-  <script>
-    // Manejar cambio de local en Encargados con múltiples locales
-    const localSelect = document.getElementById('localFilterEncargado');
-    if (localSelect) {
-      localSelect.addEventListener('change', async function() {
-        const nuevoLocal = this.value;
-
-        console.log(`🔄 Cambiando de local a: ${nuevoLocal}`);
-
-        try {
-          // 1. Actualizar sesión en el servidor
-          const response = await fetch('/api/cambiar-local', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ local: nuevoLocal })
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            console.log(`✅ Sesión actualizada:`, data);
-
-            // 2. Actualizar info del header
-            const localDisplay = document.getElementById('userLocal');
-            if (localDisplay) localDisplay.textContent = nuevoLocal;
-
-            // 3. Actualizar selector de turnos
-            const turnoSelect = document.getElementById('turnoSelect');
-            if (turnoSelect && data.turnos) {
-              turnoSelect.innerHTML = data.turnos.map(t =>
-                `<option value="${t}">${t}</option>`
-              ).join('');
-            }
-
-            // 4. Actualizar selector de cajas
-            const cajaSelect = document.getElementById('cajaSelect');
-            const cajasCounter = document.getElementById('cajasCounter');
-            if (cajaSelect && data.cantidad_cajas) {
-              cajaSelect.innerHTML = '';
-              for (let i = 1; i <= data.cantidad_cajas; i++) {
-                const option = document.createElement('option');
-                option.value = `Caja ${i}`;
-                option.textContent = `Caja ${i}`;
-                cajaSelect.appendChild(option);
-              }
-
-              if (cajasCounter) {
-                cajasCounter.textContent = `(${data.cantidad_cajas} disponibles - usa scroll o escribe para buscar)`;
-              }
-            }
-
-            console.log(`✅ Sesión actualizada en servidor: ${data.cantidad_cajas} cajas, ${data.turnos?.length} turnos`);
-
-            // 5. Recargar solo la pestaña activa sin recargar toda la página
-            // El OrqTabs se encarga de invalidar el caché y hacer el refetch
-            // con el nuevo valor de local que quedó actualizado en la sesión del servidor
-            console.log('🔄 Recargando pestaña activa con nuevo local...');
-            if (window.OrqTabs && typeof window.OrqTabs.reloadActive === 'function') {
-              // Notificar al orquestador que los filtros cambiaron para que actualice su estado interno
-              window.OrqTabs.notifyFiltersChanged();
-            } else {
-              console.warn('⚠️ OrqTabs no disponible, recargando página completa...');
-              window.location.reload();
-            }
-
-          } else {
-            console.error('❌ Error al cambiar local:', data.msg);
-            alert(`Error al cambiar de local: ${data.msg}`);
-          }
-
-        } catch (error) {
-          console.error('❌ Error de red:', error);
-          alert('Error al cambiar de local. Intentá de nuevo.');
-        }
-      });
-    }
-  </script>
+  <!-- NOTA: El cambio de local ahora es manejado automáticamente por OrqTabs (orquestador-tabs.js)
+       que detecta el cambio en #localFilterEncargado, actualiza la sesión en el servidor,
+       y recarga la pestaña activa. No se necesita código adicional aquí. -->
 
 </body>
 </html>

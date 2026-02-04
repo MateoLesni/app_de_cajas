@@ -31,8 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Detectar si existe #localSelect (auditor) o usar #userLocal (cajero/encargado)
-  const localSelector = document.getElementById('localSelect') ? '#localSelect' : '#userLocal';
+  // Detectar selector de local según el tipo de usuario:
+  // - #localSelect: Auditores (dropdown de todos los locales)
+  // - #localFilterEncargado: Encargados con múltiples locales
+  // - #userLocal: Cajeros/Encargados de un solo local (span, solo lectura)
+  let localSelector = '#userLocal';
+  if (document.getElementById('localSelect')) {
+    localSelector = '#localSelect';
+  } else if (document.getElementById('localFilterEncargado')) {
+    localSelector = '#localFilterEncargado';
+  }
 
   OrqTabs.init({
     selLocal: localSelector,

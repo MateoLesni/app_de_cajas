@@ -391,8 +391,61 @@
       state.turno = document.querySelector(state.selTurno)?.value || 'UNI';
 
       // Cortafuegos para filtros globales (CAPTURING) + pipeline
-      const onFiltersChange = debounce(() => {
-        state.local = getElementValue(document.querySelector(state.selLocal));
+      const onFiltersChange = debounce(async () => {
+        const newLocal = getElementValue(document.querySelector(state.selLocal));
+        const localEl = document.querySelector(state.selLocal);
+
+        // Si el cambio es en #localFilterEncargado, necesitamos actualizar la sesión en el servidor primero
+        if (localEl?.id === 'localFilterEncargado' && newLocal !== state.local) {
+          console.log(`[OrqTabs] Detectado cambio de local a: ${newLocal}, actualizando sesión...`);
+
+          try {
+            const response = await fetch('/api/cambiar-local', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ local: newLocal })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              console.log(`[OrqTabs] ✅ Sesión actualizada en servidor`);
+
+              // Actualizar selectores de turno y caja con los valores del nuevo local
+              const turnoSelect = document.querySelector(state.selTurno);
+              if (turnoSelect && data.turnos) {
+                turnoSelect.innerHTML = data.turnos.map(t => `<option value="${t}">${t}</option>`).join('');
+              }
+
+              const cajaSelect = document.querySelector(state.selCaja);
+              if (cajaSelect && data.cantidad_cajas) {
+                cajaSelect.innerHTML = '';
+                for (let i = 1; i <= data.cantidad_cajas; i++) {
+                  const option = document.createElement('option');
+                  option.value = `Caja ${i}`;
+                  option.textContent = `Caja ${i}`;
+                  cajaSelect.appendChild(option);
+                }
+              }
+
+              // Actualizar el span de display si existe
+              const localDisplay = document.getElementById('userLocal');
+              if (localDisplay) localDisplay.textContent = newLocal;
+
+            } else {
+              console.error('[OrqTabs] Error al cambiar local:', data.msg);
+              alert(`Error al cambiar de local: ${data.msg}`);
+              return; // No continuar con el refetch si falló
+            }
+          } catch (error) {
+            console.error('[OrqTabs] Error de red al cambiar local:', error);
+            alert('Error al cambiar de local. Intentá de nuevo.');
+            return; // No continuar con el refetch si falló
+          }
+        }
+
+        // Actualizar estado interno
+        state.local = newLocal;
         state.caja  = document.querySelector(state.selCaja )?.value || '';
         state.fecha = document.querySelector(state.selFecha)?.value || '';
         state.turno = document.querySelector(state.selTurno)?.value || 'UNI';
@@ -400,7 +453,7 @@
         refreshActive(true); // refetch de la pestaña activa
       }, state.debounceMs);
 
-      installFirewallFor(document.querySelector(state.selLocal), onFiltersChange); // <- AGREGADO para auditor
+      installFirewallFor(document.querySelector(state.selLocal), onFiltersChange);
       installFirewallFor(document.querySelector(state.selCaja),  onFiltersChange);
       installFirewallFor(document.querySelector(state.selFecha), onFiltersChange);
       installFirewallFor(document.querySelector(state.selTurno), onFiltersChange);
