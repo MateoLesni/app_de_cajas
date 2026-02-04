@@ -163,7 +163,7 @@
           <label for="localFilterEncargado">Seleccioná un local:</label>
           <select id="localFilterEncargado" class="form-control" required>
             {% for local in session.get('available_locales', []) %}
-              <option value="{{ local|trim|e }}" {% if local == session.get('local') %}selected{% endif %}>
+              <option value="{{ local|trim }}" {% if local == session.get('local') %}selected{% endif %}>
                 {{ local|trim|e }}
               </option>
             {% endfor %}
@@ -1342,9 +1342,9 @@
 
             console.log(`✅ Filtros actualizados: ${data.cantidad_cajas} cajas, ${data.turnos?.length} turnos`);
 
-            // 5. Limpiar cualquier dato cargado (opcional)
-            // Podrías disparar un evento para que otros scripts limpien sus datos
-            document.dispatchEvent(new CustomEvent('localCambiado', { detail: { local: nuevoLocal } }));
+            // 5. Recargar la página para que todos los scripts se reinicialicen con el nuevo contexto
+            console.log('🔄 Recargando página para aplicar cambios...');
+            window.location.reload();
 
           } else {
             console.error('❌ Error al cambiar local:', data.msg);
