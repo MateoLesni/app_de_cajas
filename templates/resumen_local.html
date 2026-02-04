@@ -141,6 +141,7 @@
               {% endfor %}
             </select>
           </div>
+          <!-- DEBUG: role_level={{ session.get('role_level') }}, available_locales={{ session.get('available_locales') }}, length={{ session.get('available_locales')|length }} -->
           {% else %}
           {# Cajero o Encargado con un solo local: campo readonly #}
           <div class="form-group grow">
@@ -520,6 +521,12 @@
   async function loadLocalesIfNeeded(){
     const sel = document.getElementById('rl-local-select');
     if (!sel) return;
+
+    // Si el selector ya tiene opciones (Encargado nivel 2 con locales pre-renderizados), no hacer nada
+    if (sel.options.length > 1) {
+      console.log('🔍 Selector ya tiene opciones pre-renderizadas, saltando loadLocalesIfNeeded()');
+      return;
+    }
 
     // Intentar recuperar local guardado en localStorage
     const localGuardado = localStorage.getItem('rl_local_selected');
