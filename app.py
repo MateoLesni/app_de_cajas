@@ -11438,11 +11438,12 @@ def listar_remesas_no_retiradas():
 
         # Filtros según nivel
         if user_level < 3:
-            # Encargado: solo su local
-            user_local = session.get('local')
-            if user_local:
-                query += " AND local = %s"
-                params.append(user_local)
+            # Encargado: todos sus locales asignados
+            available_locales = session.get('available_locales', [])
+            if available_locales:
+                placeholders = ','.join(['%s'] * len(available_locales))
+                query += f" AND local IN ({placeholders})"
+                params.extend(available_locales)
         else:
             # Auditor: puede filtrar por local o ver todos
             local_filtro = request.args.get('local', '').strip()
@@ -11741,16 +11742,23 @@ def contador_remesas_no_retiradas():
 
         # Query según nivel
         if user_level < 3:
-            # Encargado: solo su local
-            user_local = session.get('local')
-            cur.execute("""
-                SELECT COUNT(*) as total
-                FROM remesas_trns
-                WHERE retirada NOT IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
-                  AND (retirada = 0 OR retirada = 'No' OR retirada IS NULL OR retirada = '')
-                  AND (estado_contable IS NULL OR estado_contable != 'Archivada')
-                  AND local = %s
-            """, (user_local,))
+            # Encargado: todos sus locales asignados
+            available_locales = session.get('available_locales', [])
+            if available_locales:
+                placeholders = ','.join(['%s'] * len(available_locales))
+                cur.execute(f"""
+                    SELECT COUNT(*) as total
+                    FROM remesas_trns
+                    WHERE retirada NOT IN (1, 'Si', 'Sí', 'sí', 'si', 'SI', 'SÍ')
+                      AND (retirada = 0 OR retirada = 'No' OR retirada IS NULL OR retirada = '')
+                      AND (estado_contable IS NULL OR estado_contable != 'Archivada')
+                      AND local IN ({placeholders})
+                """, tuple(available_locales))
+            else:
+                # Fallback si no hay locales disponibles
+                cur.execute("""
+                    SELECT 0 as total
+                """)
         else:
             # Auditor: todos los locales
             cur.execute("""
@@ -12264,10 +12272,12 @@ def listar_remesas_retiradas():
 
         # Filtrar por local según nivel de usuario
         if user_level < 3:
-            # Encargado: solo su local
-            user_local = session.get('local')
-            query_parts.append("AND local = %s")
-            params.append(user_local)
+            # Encargado: todos sus locales asignados
+            available_locales = session.get('available_locales', [])
+            if available_locales:
+                placeholders = ','.join(['%s'] * len(available_locales))
+                query_parts.append(f"AND local IN ({placeholders})")
+                params.extend(available_locales)
         else:
             # Auditor: filtrar por local si se especifica
             if filtro_local:
