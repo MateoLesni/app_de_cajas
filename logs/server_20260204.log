@@ -1285,3 +1285,27 @@
 2026-02-04 11:59:18,634 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-02-04 11:59:18,968 - werkzeug - WARNING -  * Debugger is active!
 2026-02-04 11:59:18,971 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-04 11:59:28,497 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:28] "GET /resumen-local HTTP/1.1" 200 -
+2026-02-04 11:59:28,520 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:28] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-04 11:59:28,528 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:28] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2026-02-04 11:59:28,529 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:28] "[36mGET /static/js/resumen_local.js HTTP/1.1[0m" 304 -
+2026-02-04 11:59:29,367 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-04 11:59:29,368 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-04 11:59:29,370 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-04 11:59:40,676 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:40] "GET /api/resumen_local?local=Coffee%20%26amp;%20Polo&fecha=2026-01-24&_t=1770217168782 HTTP/1.1" 200 -
+2026-02-04 11:59:40,688 - app - INFO - [estado_local] Consultando: local=Coffee &amp; Polo, fecha=2026-01-24
+2026-02-04 11:59:43,336 - app - INFO - [estado_local] Resultado: count=0, estado=1 (ABIERTO)
+2026-02-04 11:59:43,337 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:43] "GET /estado_local?fecha=2026-01-24&local=Coffee%20%26amp;%20Polo&_t=1770217180685 HTTP/1.1" 200 -
+2026-02-04 11:59:43,346 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 11:59:43] "[31m[1mGET /files/summary_media?fecha=2026-01-24&local=Coffee+%26amp;+Polo&_t=1770217183341 HTTP/1.1[0m" 403 -
+2026-02-04 12:00:53,866 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:00:53] "GET /resumen-local HTTP/1.1" 200 -
+2026-02-04 12:00:53,894 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:00:53] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-04 12:00:53,895 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:00:53] "GET /static/css/resumen_local.css HTTP/1.1" 200 -
+2026-02-04 12:00:53,896 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:00:53] "GET /static/js/resumen_local.js HTTP/1.1" 200 -
+2026-02-04 12:00:54,105 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:00:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-04 12:01:05,692 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:01:05] "GET /api/resumen_local?local=Coffee%20%26amp;%20Polo&fecha=2026-01-24&_t=1770217253968 HTTP/1.1" 200 -
+2026-02-04 12:01:05,701 - app - INFO - [estado_local] Consultando: local=Coffee &amp; Polo, fecha=2026-01-24
+2026-02-04 12:01:07,230 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:01:07] "[36mGET /static/css/styles.css HTTP/1.1[0m" 304 -
+2026-02-04 12:01:07,231 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:01:07] "[36mGET /static/css/resumen_local.css HTTP/1.1[0m" 304 -
+2026-02-04 12:01:07,256 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:01:07] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-04 12:01:08,349 - app - INFO - [estado_local] Resultado: count=0, estado=1 (ABIERTO)
+2026-02-04 12:01:08,351 - werkzeug - INFO - 127.0.0.1 - - [04/Feb/2026 12:01:08] "GET /estado_local?fecha=2026-01-24&local=Coffee%20%26amp;%20Polo&_t=1770217265698 HTTP/1.1" 200 -

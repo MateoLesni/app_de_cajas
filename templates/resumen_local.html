@@ -482,7 +482,7 @@
 
   <script>
     window.ROLE_LEVEL = {{ session.get('role_level', 1) | int }};
-    window.SESSION_LOCAL = "{{ session.get('local') }}";
+    window.SESSION_LOCAL = {{ session.get('local') | tojson }};
   </script>
 
   <!-- JS propio de esta vista (para imágenes y filtros de auditor) -->
