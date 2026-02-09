@@ -120,19 +120,45 @@
     const title = container.dataset.title || 'Adjuntar imágenes';
     const tabForThis = tabSlugFromContainer(container);
 
+    // Detect mobile devices
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Build HTML conditionally based on device type
+    const actionButtonsHTML = isMobile ? `
+      <div class="iu-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="iu-btn iu-camera" style="border:1px solid #10b981;background:#10b981;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer">📷 Cámara</button>
+        <button type="button" class="iu-btn iu-gallery" style="border:1px solid #6366f1;background:#6366f1;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer">🖼️ Galería</button>
+        <button type="button" class="iu-btn iu-upload" style="border:1px solid #0ea5e9;background:#0ea5e9;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;display:none">Subir imágenes</button>
+        <button type="button" class="iu-btn iu-clear"  style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;display:none">Limpiar</button>
+      </div>
+    ` : `
+      <div class="iu-actions" style="display:flex;gap:8px">
+        <button type="button" class="iu-btn iu-select" style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer">Seleccionar</button>
+        <button type="button" class="iu-btn iu-upload" style="border:1px solid #0ea5e9;background:#0ea5e9;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;display:none">Subir imágenes</button>
+        <button type="button" class="iu-btn iu-clear"  style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;display:none">Limpiar</button>
+      </div>
+    `;
+
+    const dropzoneHTML = isMobile ? '' : `
+      <div class="iu-dropzone" tabindex="0" style="border:2px dashed #94a3b8;border-radius:12px;padding:16px;text-align:center;color:#475569;background:#fff">Soltá imágenes aquí o usá "Seleccionar"</div>
+    `;
+
+    const fileInputsHTML = isMobile ? `
+      <input class="iu-file-camera" type="file" accept="image/*" capture="environment" multiple style="display:none">
+      <input class="iu-file-gallery" type="file" accept="image/*" multiple style="display:none">
+    ` : `
+      <input class="iu-file" type="file" accept="image/*" multiple style="display:none">
+    `;
+
     container.innerHTML = `
       <div class="iu-wrap" style="border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#fafafa">
         <div class="iu-header" style="display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap">
           <span class="iu-title" style="font-weight:600">${esc(title)}</span>
           <span class="iu-chip" style="font-size:12px;background:#eef2ff;color:#3730a3;border-radius:999px;padding:4px 10px"></span>
-          <div class="iu-actions" style="display:flex;gap:8px">
-            <button type="button" class="iu-btn iu-select" style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer">Seleccionar</button>
-            <button type="button" class="iu-btn iu-upload" style="border:1px solid #0ea5e9;background:#0ea5e9;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;display:none">Subir imágenes</button>
-            <button type="button" class="iu-btn iu-clear"  style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;display:none">Limpiar</button>
-          </div>
+          ${actionButtonsHTML}
         </div>
-        <div class="iu-dropzone" tabindex="0" style="border:2px dashed #94a3b8;border-radius:12px;padding:16px;text-align:center;color:#475569;background:#fff">Soltá imágenes aquí o usá “Seleccionar”</div>
-        <input class="iu-file" type="file" accept="image/*" multiple style="display:none">
+        ${dropzoneHTML}
+        ${fileInputsHTML}
         <div class="iu-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px"></div>
       </div>
       <div class="iu-remote" style="margin-top:12px">
@@ -149,11 +175,21 @@
 
     const chip   = container.querySelector('.iu-chip');
     const dz     = container.querySelector('.iu-dropzone');
-    const fileI  = container.querySelector('.iu-file');
-    const btnSel = container.querySelector('.iu-select');
     const btnUp  = container.querySelector('.iu-upload');
     const btnClr = container.querySelector('.iu-clear');
     const grid   = container.querySelector('.iu-grid');
+
+    // Get file inputs and buttons based on device type
+    let fileI, fileCam, fileGal, btnSel, btnCam, btnGal;
+    if (isMobile) {
+      fileCam = container.querySelector('.iu-file-camera');
+      fileGal = container.querySelector('.iu-file-gallery');
+      btnCam  = container.querySelector('.iu-camera');
+      btnGal  = container.querySelector('.iu-gallery');
+    } else {
+      fileI   = container.querySelector('.iu-file');
+      btnSel  = container.querySelector('.iu-select');
+    }
 
     function updateChip() {
       const c = {
@@ -209,14 +245,27 @@
       toggleActions();
     }
 
-    // Drag & drop
-    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.background='#eff6ff'; dz.style.borderColor='#60a5fa'; }));
-    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.background='#fff'; dz.style.borderColor='#94a3b8'; }));
-    dz.addEventListener('drop', e => addFiles(e.dataTransfer?.files));
+    // Drag & drop (desktop only)
+    if (!isMobile && dz) {
+      ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.background='#eff6ff'; dz.style.borderColor='#60a5fa'; }));
+      ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.style.background='#fff'; dz.style.borderColor='#94a3b8'; }));
+      dz.addEventListener('drop', e => addFiles(e.dataTransfer?.files));
+    }
 
-    // Botones
-    btnSel.addEventListener('click', () => fileI.click());
-    fileI.addEventListener('change', e => { addFiles(e.target.files); fileI.value=''; });
+    // Wire up buttons based on device type
+    if (isMobile) {
+      // Mobile: separate camera and gallery buttons
+      btnCam?.addEventListener('click', () => fileCam.click());
+      btnGal?.addEventListener('click', () => fileGal.click());
+      fileCam?.addEventListener('change', e => { addFiles(e.target.files); fileCam.value=''; });
+      fileGal?.addEventListener('change', e => { addFiles(e.target.files); fileGal.value=''; });
+    } else {
+      // Desktop: single select button
+      btnSel?.addEventListener('click', () => fileI.click());
+      fileI?.addEventListener('change', e => { addFiles(e.target.files); fileI.value=''; });
+    }
+
+    // Clear button works the same on all devices
     btnClr.addEventListener('click', () => { container._queue = []; redrawQueue(); toggleActions(); });
 
     btnUp.addEventListener('click', async () => {
