@@ -754,7 +754,13 @@
           return;
         }
 
-        adjuntoPath = uploadData.items[0].path;
+        console.log('[DEBUG UPLOAD] uploadData:', uploadData);
+        console.log('[DEBUG UPLOAD] uploadData.items[0]:', uploadData.items[0]);
+
+        // IMPORTANTE: El endpoint devuelve gcs_path, no path
+        adjuntoPath = uploadData.items[0].gcs_path || uploadData.items[0].path;
+
+        console.log('[DEBUG UPLOAD] adjuntoPath asignado:', adjuntoPath);
 
         // Guardar el tempEntityId para vinculación posterior (se usará después al crear el objeto data)
         window._tempEntityIdForAnticipo = tempEntityId;
