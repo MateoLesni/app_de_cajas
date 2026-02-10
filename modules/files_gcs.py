@@ -165,9 +165,20 @@ def upload():
 
     entity_type = (request.form.get("entity_type") or "").strip() or None
     entity_id   = request.form.get("entity_id")
-    try:
-        entity_id = int(entity_id) if entity_id not in (None, "", "null") else None
-    except Exception:
+    # IMPORTANTE: No convertir a int si es un ID temporal (string)
+    # Los entity_id pueden ser:
+    # - int (cuando ya existe el registro): "123"
+    # - string UUID (temporal antes de crear registro): "temp_1234_abc"
+    # - vacío/null (sin vincular): "", "null", None
+    if entity_id not in (None, "", "null"):
+        entity_id = entity_id.strip()
+        # Solo intentar convertir a int si es numérico
+        try:
+            entity_id = int(entity_id)
+        except (ValueError, TypeError):
+            # Si no es numérico, mantener como string (para IDs temporales)
+            pass
+    else:
         entity_id = None
 
     try:

@@ -552,7 +552,9 @@ def login_required(view):
             'api_medios_anticipos_listar',  # Solo admin_anticipos (nivel 6)
             'api_medios_anticipos_crear',   # Solo admin_anticipos (nivel 6)
             'api_medios_anticipos_eliminar', # Solo admin_anticipos (nivel 6)
-            'api_medios_anticipos_activos'  # Todos los usuarios de anticipos
+            'api_medios_anticipos_activos',  # Todos los usuarios de anticipos
+            # Endpoint para ver adjuntos
+            'obtener_adjunto_anticipo'  # Ver comprobantes de anticipos
         ]
 
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
