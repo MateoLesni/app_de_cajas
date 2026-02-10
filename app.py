@@ -3435,10 +3435,11 @@ def editar_anticipo_recibido(anticipo_id):
                 WHERE entity_type = 'anticipo_recibido'
                   AND entity_id = %s
                   AND estado = 'active'
-            """, (anticipo_id,))
+            """, (str(anticipo_id),))
 
         if adjunto_gcs_path and temp_entity_id:
             # Vincular el nuevo adjunto con el anticipo
+            # IMPORTANTE: entity_id es VARCHAR, convertir anticipoId a string
             cur.execute("""
                 UPDATE imagenes_adjuntos
                 SET entity_type = 'anticipo_recibido',
@@ -3447,7 +3448,7 @@ def editar_anticipo_recibido(anticipo_id):
                   AND entity_id = %s
                   AND estado = 'active'
                 LIMIT 1
-            """, (anticipo_id, temp_entity_id))
+            """, (str(anticipo_id), temp_entity_id))
 
         conn.commit()
 
