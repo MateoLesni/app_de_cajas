@@ -644,15 +644,8 @@
     // Mostrar/ocultar campo caja según el medio de pago
     toggleCajaField();
 
-    // Solo permitir editar fecha_evento y observaciones si es edición
-    $('#fechaPago').disabled = true;
-    $('#cliente').disabled = true;
-    $('#local').disabled = true;
-    $('#caja').disabled = true;
-    $('#importe').disabled = true;
-    $('#divisa').disabled = true;
-    $('#medioPagoId').disabled = true;
-    $('#numeroTransaccion').disabled = true;
+    // ✅ AHORA SE PERMITE EDITAR TODOS LOS CAMPOS (excepto adjunto)
+    // Ya no deshabilitamos campos, todos son editables
 
     // Ocultar el input de adjunto en modo edición (no se puede cambiar)
     const adjuntoGroup = $('#adjunto')?.closest('.form-group');
@@ -662,16 +655,6 @@
   window.cerrarModal = function() {
     const modal = $('#modalAnticipo');
     modal?.classList.remove('active');
-
-    // Rehabilitar todos los campos
-    $('#fechaPago').disabled = false;
-    $('#cliente').disabled = false;
-    $('#local').disabled = false;
-    $('#caja').disabled = false;
-    $('#importe').disabled = false;
-    $('#divisa').disabled = false;
-    $('#medioPagoId').disabled = false;
-    $('#numeroTransaccion').disabled = false;
 
     // Mostrar el input de adjunto
     const adjuntoGroup = $('#adjunto')?.closest('.form-group');
@@ -854,16 +837,26 @@
 
   // ===== ELIMINAR ANTICIPO =====
   window.eliminarAnticipo = async function(anticipoId, cliente) {
-    const confirmacion1 = confirm(`⚠️ ¿Estás seguro que querés eliminar el anticipo de "${cliente}"?`);
-    if (!confirmacion1) return;
+    const motivo = prompt(`⚠️ ¿Por qué querés eliminar el anticipo de "${cliente}"?\n\nEscribí el motivo de la eliminación (obligatorio):`);
 
-    const confirmacion2 = confirm(`⚠️ ATENCIÓN: Esta acción NO SE PUEDE DESHACER.\n\n¿Confirmas que querés eliminar definitivamente este anticipo?`);
-    if (!confirmacion2) return;
+    if (!motivo) {
+      alert('❌ Cancelado. El motivo es obligatorio para eliminar un anticipo.');
+      return;
+    }
+
+    if (motivo.trim().length < 5) {
+      alert('❌ El motivo debe tener al menos 5 caracteres.');
+      return;
+    }
+
+    const confirmacion = confirm(`⚠️ ATENCIÓN: Esta acción NO SE PUEDE DESHACER.\n\nMotivo: ${motivo}\n\n¿Confirmas que querés eliminar definitivamente este anticipo?`);
+    if (!confirmacion) return;
 
     try {
       const response = await fetch(`/api/anticipos_recibidos/eliminar/${anticipoId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: motivo.trim() })
       });
 
       const data = await response.json();

@@ -3030,16 +3030,151 @@ def listar_anticipos_recibidos():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/anticipos_borrados/listar', methods=['GET'])
+@login_required
+def listar_anticipos_borrados():
+    """
+    Listar anticipos borrados (historial de eliminaciones).
+    Accesible para:
+    - Auditores (nivel 3+): ven todos
+    - Rol anticipos (nivel 5+): ven los de sus locales asignados
+
+    Params opcionales:
+    - local: filtrar por local
+    - fecha_desde, fecha_hasta: filtrar por fecha_evento
+    - deleted_by: filtrar por usuario que borró
+    - estado_original: 'pendiente' o 'consumido'
+    """
+    user_level = get_user_level()
+    if user_level < 3:
+        return jsonify(success=False, msg="No tenés permisos para ver anticipos borrados"), 403
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Construir query con filtros
+        where_clauses = []
+        params = []
+
+        # Filtro por local
+        local_param = request.args.get('local')
+        if local_param:
+            where_clauses.append("ab.local = %s")
+            params.append(local_param)
+
+        # Filtro por fechas
+        fecha_desde = request.args.get('fecha_desde')
+        fecha_hasta = request.args.get('fecha_hasta')
+        if fecha_desde:
+            fecha_desde_norm = _normalize_fecha(fecha_desde)
+            where_clauses.append("ab.fecha_evento >= %s")
+            params.append(fecha_desde_norm)
+        if fecha_hasta:
+            fecha_hasta_norm = _normalize_fecha(fecha_hasta)
+            where_clauses.append("ab.fecha_evento <= %s")
+            params.append(fecha_hasta_norm)
+
+        # Filtro por usuario que borró
+        deleted_by_param = request.args.get('deleted_by')
+        if deleted_by_param:
+            where_clauses.append("ab.deleted_by = %s")
+            params.append(deleted_by_param)
+
+        # Filtro por estado original
+        estado_original_param = request.args.get('estado_original')
+        if estado_original_param:
+            where_clauses.append("ab.estado_original = %s")
+            params.append(estado_original_param)
+
+        # Si es rol anticipos (nivel 5), solo ver anticipos de sus locales asignados
+        if user_level == 5:
+            user_id = session.get('user_id')
+            cur.execute("""
+                SELECT local
+                FROM user_locales
+                WHERE user_id = %s
+            """, (user_id,))
+            locales_usuario = [r['local'] for r in cur.fetchall()]
+
+            if locales_usuario:
+                placeholders = ','.join(['%s'] * len(locales_usuario))
+                where_clauses.append(f"ab.local IN ({placeholders})")
+                params.extend(locales_usuario)
+            else:
+                # Si no tiene locales asignados, no puede ver nada
+                return jsonify(success=True, anticipos_borrados=[])
+
+        where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+        query = f"""
+            SELECT
+                ab.*,
+                ma.nombre AS medio_pago_nombre
+            FROM anticipos_borrados ab
+            LEFT JOIN medios_anticipos ma ON ab.medio_pago_id = ma.id
+            {where_sql}
+            ORDER BY ab.deleted_at DESC
+        """
+
+        cur.execute(query, params)
+        anticipos_borrados = cur.fetchall()
+
+        # Convertir fechas y decimales a formatos serializables
+        for ab in anticipos_borrados:
+            # Convertir fechas a string
+            for campo in ['fecha_pago', 'fecha_evento', 'tipo_cambio_fecha']:
+                if ab.get(campo):
+                    if hasattr(ab[campo], 'strftime'):
+                        ab[campo] = ab[campo].strftime('%Y-%m-%d')
+                    else:
+                        ab[campo] = str(ab[campo])
+
+            # Convertir timestamps
+            for campo in ['deleted_at', 'created_at', 'registro_creado_at']:
+                if ab.get(campo):
+                    if hasattr(ab[campo], 'isoformat'):
+                        ab[campo] = ab[campo].isoformat()
+                    else:
+                        ab[campo] = str(ab[campo])
+
+            # Convertir Decimal a float
+            if ab.get('importe'):
+                ab['importe'] = float(ab['importe'])
+            if ab.get('cotizacion_divisa'):
+                ab['cotizacion_divisa'] = float(ab['cotizacion_divisa'])
+
+        cur.close()
+        conn.close()
+
+        return jsonify(success=True, anticipos_borrados=anticipos_borrados)
+
+    except Exception as e:
+        print("❌ ERROR listar_anticipos_borrados:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+
+
 @app.route('/api/anticipos_recibidos/eliminar/<int:anticipo_id>', methods=['DELETE'])
 @login_required
 def eliminar_anticipo_recibido(anticipo_id):
     """
     Eliminar (marcar como eliminado_global) un anticipo recibido.
-    SOLO accesible para admin_anticipos (nivel 6) - rol 'anticipos' NO puede eliminar.
+    - admin_anticipos (nivel 6): puede eliminar cualquier anticipo (pendiente o consumido)
+    - rol anticipos (nivel 5): solo puede eliminar anticipos pendientes
+    REQUIERE motivo obligatorio en el body JSON
     """
     user_level = get_user_level()
-    if user_level < 6:
+    if user_level < 5:
         return jsonify(success=False, msg="No tenés permisos para eliminar anticipos recibidos"), 403
+
+    # Obtener motivo del body
+    data = request.get_json() or {}
+    motivo = (data.get('motivo') or '').strip()
+
+    if not motivo:
+        return jsonify(success=False, msg="El motivo de eliminación es obligatorio"), 400
 
     try:
         conn = get_db_connection()
@@ -3054,32 +3189,55 @@ def eliminar_anticipo_recibido(anticipo_id):
             conn.close()
             return jsonify(success=False, msg="Anticipo no encontrado"), 404
 
-        if anticipo['estado'] == 'consumido':
+        # Validar permisos según estado
+        if anticipo['estado'] == 'consumido' and user_level < 6:
             cur.close()
             conn.close()
-            return jsonify(success=False, msg="No se puede eliminar un anticipo ya consumido"), 409
+            return jsonify(success=False, msg="Solo Admin Anticipos puede eliminar anticipos consumidos"), 403
+
+        if anticipo['estado'] not in ['pendiente', 'consumido']:
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg=f"No se puede eliminar un anticipo en estado '{anticipo['estado']}'"), 409
 
         usuario = session.get('username', 'sistema')
 
-        # Marcar como eliminado
         from datetime import datetime
         import pytz
         tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(tz_arg)
 
+        # 1. Guardar en tabla anticipos_borrados ANTES de marcar como eliminado
+        cur.execute("""
+            INSERT INTO anticipos_borrados
+            (anticipo_id, fecha_pago, fecha_evento, importe, divisa, tipo_cambio_fecha,
+             cotizacion_divisa, cliente, numero_transaccion, medio_pago, medio_pago_id,
+             observaciones, local, caja, turno, estado_original,
+             motivo_eliminacion, deleted_by, deleted_at, created_by, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (anticipo_id, anticipo['fecha_pago'], anticipo['fecha_evento'],
+              anticipo['importe'], anticipo['divisa'], anticipo.get('tipo_cambio_fecha'),
+              anticipo.get('cotizacion_divisa'), anticipo['cliente'],
+              anticipo.get('numero_transaccion'), anticipo.get('medio_pago'),
+              anticipo.get('medio_pago_id'), anticipo.get('observaciones'),
+              anticipo['local'], anticipo['caja'], anticipo['turno'], anticipo['estado'],
+              motivo, usuario, ahora, anticipo.get('created_by'), anticipo.get('created_at')))
+
+        # 2. Marcar como eliminado en anticipos_recibidos
         cur.execute("""
             UPDATE anticipos_recibidos
             SET estado = 'eliminado_global',
+                motivo_eliminacion = %s,
                 deleted_by = %s,
                 deleted_at = %s,
                 updated_by = %s,
                 updated_at = %s
             WHERE id = %s
-        """, (usuario, ahora, usuario, ahora, anticipo_id))
+        """, (motivo, usuario, ahora, usuario, ahora, anticipo_id))
 
         conn.commit()
 
-        # Registrar en auditoría
+        # 3. Registrar en auditoría
         from modules.tabla_auditoria import registrar_auditoria
         registrar_auditoria(
             conn=conn,
@@ -3087,8 +3245,8 @@ def eliminar_anticipo_recibido(anticipo_id):
             tabla='anticipos_recibidos',
             registro_id=anticipo_id,
             datos_anteriores={'estado': anticipo['estado']},
-            datos_nuevos={'estado': 'eliminado_global'},
-            descripcion=f"Anticipo eliminado: {anticipo['cliente']} - ${anticipo['importe']}"
+            datos_nuevos={'estado': 'eliminado_global', 'motivo': motivo},
+            descripcion=f"Anticipo eliminado: {anticipo['cliente']} - ${anticipo['importe']} - Motivo: {motivo}"
         )
 
         cur.close()
@@ -3108,11 +3266,13 @@ def eliminar_anticipo_recibido(anticipo_id):
 def editar_anticipo_recibido(anticipo_id):
     """
     Editar un anticipo recibido.
-    Solo permite editar fecha_evento y observaciones si el anticipo está pendiente.
-    SOLO accesible para admin_anticipos (nivel 6) - rol 'anticipos' NO puede editar.
+    - admin_anticipos (nivel 6): puede editar cualquier anticipo pendiente
+    - rol anticipos (nivel 5): solo puede editar anticipos pendientes
+    - NO se puede editar anticipos consumidos o eliminados
+    - Permite editar TODOS los campos del anticipo
     """
     user_level = get_user_level()
-    if user_level < 6:
+    if user_level < 5:
         return jsonify(success=False, msg="No tenés permisos para editar anticipos recibidos"), 403
 
     data = request.get_json() or {}
@@ -3135,16 +3295,30 @@ def editar_anticipo_recibido(anticipo_id):
             conn.close()
             return jsonify(success=False, msg="Solo se pueden editar anticipos pendientes"), 409
 
-        # Solo permitir editar fecha_evento y observaciones
-        nueva_fecha_evento = data.get('fecha_evento')
-        nuevas_observaciones = data.get('observaciones')
+        # Obtener datos del body (permitir editar todos los campos)
+        fecha_pago = data.get('fecha_pago')
+        fecha_evento = data.get('fecha_evento')
+        importe = data.get('importe')
+        divisa = data.get('divisa', 'ARS')
+        tipo_cambio_fecha = data.get('tipo_cambio_fecha')
+        cotizacion_divisa = data.get('cotizacion_divisa')
+        cliente = data.get('cliente')
+        numero_transaccion = data.get('numero_transaccion')
+        medio_pago = data.get('medio_pago')
+        medio_pago_id = data.get('medio_pago_id')
+        observaciones = data.get('observaciones')
 
-        if not nueva_fecha_evento:
+        # Validaciones
+        if not all([fecha_pago, fecha_evento, importe, cliente]):
             cur.close()
             conn.close()
-            return jsonify(success=False, msg="Fecha de evento requerida"), 400
+            return jsonify(success=False, msg="Faltan campos obligatorios (fecha_pago, fecha_evento, importe, cliente)"), 400
 
-        fecha_evento_norm = _normalize_fecha(nueva_fecha_evento)
+        # Normalizar fechas
+        fecha_pago_norm = _normalize_fecha(fecha_pago)
+        fecha_evento_norm = _normalize_fecha(fecha_evento)
+        tipo_cambio_fecha_norm = _normalize_fecha(tipo_cambio_fecha) if tipo_cambio_fecha else None
+
         usuario = session.get('username', 'sistema')
 
         from datetime import datetime
@@ -3152,14 +3326,26 @@ def editar_anticipo_recibido(anticipo_id):
         tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
         ahora = datetime.now(tz_arg)
 
+        # Actualizar TODOS los campos
         cur.execute("""
             UPDATE anticipos_recibidos
-            SET fecha_evento = %s,
+            SET fecha_pago = %s,
+                fecha_evento = %s,
+                importe = %s,
+                divisa = %s,
+                tipo_cambio_fecha = %s,
+                cotizacion_divisa = %s,
+                cliente = %s,
+                numero_transaccion = %s,
+                medio_pago = %s,
+                medio_pago_id = %s,
                 observaciones = %s,
                 updated_by = %s,
                 updated_at = %s
             WHERE id = %s
-        """, (fecha_evento_norm, nuevas_observaciones, usuario, ahora, anticipo_id))
+        """, (fecha_pago_norm, fecha_evento_norm, importe, divisa, tipo_cambio_fecha_norm,
+              cotizacion_divisa, cliente, numero_transaccion, medio_pago, medio_pago_id,
+              observaciones, usuario, ahora, anticipo_id))
 
         conn.commit()
 
@@ -3171,14 +3357,20 @@ def editar_anticipo_recibido(anticipo_id):
             tabla='anticipos_recibidos',
             registro_id=anticipo_id,
             datos_anteriores={
+                'fecha_pago': str(anticipo['fecha_pago']),
                 'fecha_evento': str(anticipo['fecha_evento']),
-                'observaciones': anticipo['observaciones']
+                'importe': float(anticipo['importe']),
+                'divisa': anticipo['divisa'],
+                'cliente': anticipo['cliente']
             },
             datos_nuevos={
+                'fecha_pago': str(fecha_pago_norm),
                 'fecha_evento': str(fecha_evento_norm),
-                'observaciones': nuevas_observaciones
+                'importe': float(importe),
+                'divisa': divisa,
+                'cliente': cliente
             },
-            descripcion=f"Fecha de evento actualizada para anticipo de {anticipo['cliente']}"
+            descripcion=f"Anticipo editado: {cliente} - {divisa} {importe}"
         )
 
         cur.close()
