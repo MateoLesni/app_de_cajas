@@ -660,9 +660,11 @@
     const modal = $('#modalAnticipo');
     modal?.classList.remove('active');
 
-    // Mostrar el input de adjunto
-    const adjuntoGroup = $('#adjunto')?.closest('.form-group');
+    // Mostrar el input de adjunto y restaurar required
+    const adjuntoInput = $('#adjunto');
+    const adjuntoGroup = adjuntoInput?.closest('.form-group');
     if (adjuntoGroup) adjuntoGroup.style.display = '';
+    if (adjuntoInput) adjuntoInput.required = true; // Restaurar required para próximo uso
   };
 
   // ===== GUARDAR ANTICIPO =====
@@ -798,16 +800,8 @@
       if (isEdit) {
         url = `/api/anticipos_recibidos/editar/${anticipoId}`;
         method = 'PUT';
-        // Solo enviar campos editables
-        delete data.fecha_pago;
-        delete data.cliente;
-        delete data.local;
-        delete data.caja;
-        delete data.importe;
-        delete data.divisa;
-        delete data.medio_pago_id;
-        delete data.numero_transaccion;
-        delete data.adjunto_gcs_path;
+        // ✅ AHORA SE PERMITE EDITAR TODOS LOS CAMPOS (excepto adjunto)
+        delete data.adjunto_gcs_path;  // Solo excluir el adjunto
       } else {
         url = '/api/anticipos_recibidos/crear';
         method = 'POST';

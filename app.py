@@ -555,7 +555,8 @@ def login_required(view):
             'api_medios_anticipos_activos',  # Todos los usuarios de anticipos
             # Endpoints de gestión de anticipos
             'obtener_adjunto_anticipo',  # Ver comprobantes de anticipos
-            'eliminar_anticipo_recibido'  # Eliminar anticipos (nivel 4+)
+            'eliminar_anticipo_recibido',  # Eliminar anticipos (nivel 4+)
+            'editar_anticipo_recibido'  # Editar anticipos (nivel 4+)
         ]
 
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
@@ -3279,7 +3280,7 @@ def eliminar_anticipo_recibido(anticipo_id):
               anticipo.get('cotizacion_divisa'), anticipo['cliente'],
               anticipo.get('numero_transaccion'), anticipo.get('medio_pago'),
               anticipo.get('medio_pago_id'), anticipo.get('observaciones'),
-              anticipo['local'], anticipo['caja'], anticipo['turno'], anticipo['estado'],
+              anticipo['local'], anticipo.get('caja') or '-', anticipo.get('turno') or '-', anticipo['estado'],
               motivo, usuario, ahora, anticipo.get('created_by'), anticipo.get('created_at')))
 
         # 2. Marcar como eliminado en anticipos_recibidos
@@ -3326,12 +3327,12 @@ def editar_anticipo_recibido(anticipo_id):
     """
     Editar un anticipo recibido.
     - admin_anticipos (nivel 6): puede editar cualquier anticipo pendiente
-    - rol anticipos (nivel 5): solo puede editar anticipos pendientes
+    - rol anticipos (nivel 4): solo puede editar anticipos pendientes
     - NO se puede editar anticipos consumidos o eliminados
     - Permite editar TODOS los campos del anticipo
     """
     user_level = get_user_level()
-    if user_level < 5:
+    if user_level < 4:
         return jsonify(success=False, msg="No tenés permisos para editar anticipos recibidos"), 403
 
     data = request.get_json() or {}

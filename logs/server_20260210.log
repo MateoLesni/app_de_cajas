@@ -57,3 +57,30 @@
 2026-02-10 09:29:32,649 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-02-10 09:29:32,962 - werkzeug - WARNING -  * Debugger is active!
 2026-02-10 09:29:32,966 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 09:30:21,028 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:21] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 09:30:21,088 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:21] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 09:30:21,091 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:21] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 09:30:21,092 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:21] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 09:30:21,101 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:21] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-10 09:30:22,582 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-10 09:30:22,582 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-10 09:30:22,584 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-10 09:30:24,872 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:24] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-02-10 09:30:27,678 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:27] "GET /api/locales HTTP/1.1" 200 -
+2026-02-10 09:30:30,494 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:30] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-02-10 09:30:35,899 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:30:35] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 09:31:50,521 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:31:50] "[35m[1mDELETE /api/anticipos_recibidos/eliminar/265 HTTP/1.1[0m" 500 -
+2026-02-10 09:32:18,900 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:32:18] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 09:32:37,452 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:32:37] "[31m[1mPUT /api/anticipos_recibidos/editar/265 HTTP/1.1[0m" 403 -
+2026-02-10 09:33:45,777 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 09:33:54,876 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 09:33:55,250 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 09:33:55,253 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 09:34:07,651 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 09:34:09,991 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 09:34:10,279 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 09:34:10,281 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 09:34:15,066 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 09:34:17,312 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 09:34:17,598 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 09:34:17,601 - werkzeug - INFO -  * Debugger PIN: 114-208-757
