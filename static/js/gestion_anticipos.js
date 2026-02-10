@@ -648,8 +648,12 @@
     // Ya no deshabilitamos campos, todos son editables
 
     // Ocultar el input de adjunto en modo edición (no se puede cambiar)
-    const adjuntoGroup = $('#adjunto')?.closest('.form-group');
+    const adjuntoInput = $('#adjunto');
+    const adjuntoGroup = adjuntoInput?.closest('.form-group');
     if (adjuntoGroup) adjuntoGroup.style.display = 'none';
+    if (adjuntoInput) {
+      adjuntoInput.required = false; // IMPORTANTE: Quitar required en modo edición
+    }
   }
 
   window.cerrarModal = function() {

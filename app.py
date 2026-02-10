@@ -553,8 +553,9 @@ def login_required(view):
             'api_medios_anticipos_crear',   # Solo admin_anticipos (nivel 6)
             'api_medios_anticipos_eliminar', # Solo admin_anticipos (nivel 6)
             'api_medios_anticipos_activos',  # Todos los usuarios de anticipos
-            # Endpoint para ver adjuntos
-            'obtener_adjunto_anticipo'  # Ver comprobantes de anticipos
+            # Endpoints de gestión de anticipos
+            'obtener_adjunto_anticipo',  # Ver comprobantes de anticipos
+            'eliminar_anticipo_recibido'  # Eliminar anticipos (nivel 4+)
         ]
 
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
@@ -3220,11 +3221,11 @@ def eliminar_anticipo_recibido(anticipo_id):
     """
     Eliminar (marcar como eliminado_global) un anticipo recibido.
     - admin_anticipos (nivel 6): puede eliminar cualquier anticipo (pendiente o consumido)
-    - rol anticipos (nivel 5): solo puede eliminar anticipos pendientes
+    - rol anticipos (nivel 4): solo puede eliminar anticipos pendientes
     REQUIERE motivo obligatorio en el body JSON
     """
     user_level = get_user_level()
-    if user_level < 5:
+    if user_level < 4:
         return jsonify(success=False, msg="No tenés permisos para eliminar anticipos recibidos"), 403
 
     # Obtener motivo del body
