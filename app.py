@@ -10593,8 +10593,8 @@ def api_mi_perfil_anticipos():
         success=True,
         level=user_level,
         allowed_locales=allowed_locales,
-        can_edit=(user_level >= 5),  # Nivel 5 (anticipos) y 6 (admin_anticipos) pueden editar
-        can_delete=(user_level >= 5),  # Nivel 5 (anticipos) y 6 (admin_anticipos) pueden eliminar
+        can_edit=(user_level >= 4),  # Nivel 4 (anticipos) y superiores pueden editar
+        can_delete=(user_level >= 4),  # Nivel 4 (anticipos) y superiores pueden eliminar
         can_consume=(user_level >= 3),  # Auditores pueden consumir/desconsumir si local no está auditado
         has_full_access=(user_level >= 6)  # Admin tiene acceso total
     )
