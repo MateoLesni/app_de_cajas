@@ -973,43 +973,63 @@ ${anticipo.deleted_by ? `\nEliminado: ${formatDateTime(anticipo.deleted_at)} por
         const isPDF = adjunto.mime === 'application/pdf' || adjunto.original_name?.toLowerCase().endsWith('.pdf');
 
         const preview = $('#adjuntoPreview');
-        const previewImg = $('#adjuntoImg');
+        if (!preview) return;
 
-        if (preview && previewImg) {
-          if (!isPDF) {
-            // Mostrar miniatura de imagen
-            previewImg.src = adjunto.view_url;
-            preview.style.display = 'block';
-          } else {
-            // Para PDF, mostrar icono
+        // Limpiar preview anterior para evitar duplicados
+        preview.innerHTML = '';
+        preview.style.display = 'block';
+
+        // Crear contenedor para la imagen/PDF
+        const previewContent = document.createElement('div');
+        previewContent.style.cssText = 'margin-bottom: 8px;';
+
+        if (!isPDF) {
+          // Mostrar miniatura de imagen
+          const img = document.createElement('img');
+          img.src = adjunto.view_url;
+          img.style.cssText = 'max-width: 200px; max-height: 200px; border-radius: 8px; display: block;';
+          img.alt = 'Comprobante actual';
+          previewContent.appendChild(img);
+        } else {
+          // Para PDF, mostrar icono
+          previewContent.innerHTML = `
+            <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; text-align: center;">
+              <div style="font-size: 48px;">📄</div>
+              <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">${adjunto.original_name}</div>
+              <button type="button" class="btn-secondary" onclick="verAdjunto(${anticipoId})" style="margin-top: 8px; font-size: 12px; padding: 6px 12px;">
+                Ver PDF
+              </button>
+            </div>
+          `;
+        }
+
+        preview.appendChild(previewContent);
+
+        // Mensaje informativo
+        const infoMsg = document.createElement('div');
+        infoMsg.style.cssText = 'font-size: 12px; color: #059669; margin-bottom: 8px;';
+        infoMsg.textContent = '📎 Comprobante actual. Podés eliminarlo y subir uno nuevo.';
+        preview.appendChild(infoMsg);
+
+        // Agregar botón para eliminar el adjunto actual
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn-delete-adjunto';
+        deleteBtn.style.cssText = 'display: block; width: 100%; padding: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;';
+        deleteBtn.textContent = '🗑️ Eliminar comprobante actual';
+        deleteBtn.onclick = function() {
+          if (confirm('¿Estás seguro de eliminar el comprobante actual? Deberás subir uno nuevo.')) {
+            // Marcar para eliminar el adjunto
+            window._deleteCurrentAdjunto = true;
+            // Limpiar el preview y mostrar mensaje
             preview.innerHTML = `
-              <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; text-align: center;">
-                <div style="font-size: 48px;">📄</div>
-                <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">${adjunto.original_name}</div>
-                <button type="button" class="btn-secondary" onclick="verAdjunto(${anticipoId})" style="margin-top: 8px; font-size: 12px; padding: 6px 12px;">
-                  Ver PDF
-                </button>
+              <div style="padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; color: #92400e; font-size: 13px;">
+                ⚠️ El comprobante actual será eliminado al guardar. Subí un nuevo comprobante antes de guardar.
               </div>
             `;
-            preview.style.display = 'block';
           }
-
-          // Agregar botón para eliminar el adjunto actual
-          const deleteBtn = document.createElement('button');
-          deleteBtn.type = 'button';
-          deleteBtn.className = 'btn-delete';
-          deleteBtn.style.cssText = 'margin-top: 8px; display: block; width: 100%; padding: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer;';
-          deleteBtn.textContent = '🗑️ Eliminar comprobante actual';
-          deleteBtn.onclick = function() {
-            if (confirm('¿Estás seguro de eliminar el comprobante actual? Deberás subir uno nuevo.')) {
-              // Marcar para eliminar el adjunto
-              window._deleteCurrentAdjunto = true;
-              preview.style.display = 'none';
-              alert('✅ El comprobante será eliminado al guardar. Podés subir uno nuevo.');
-            }
-          };
-          preview.appendChild(deleteBtn);
-        }
+        };
+        preview.appendChild(deleteBtn);
       }
     } catch (error) {
       console.error('Error al cargar preview del adjunto:', error);
