@@ -3360,7 +3360,6 @@ def editar_anticipo_recibido(anticipo_id):
         fecha_evento = data.get('fecha_evento')
         importe = data.get('importe')
         divisa = data.get('divisa', 'ARS')
-        tipo_cambio_fecha = data.get('tipo_cambio_fecha')
         cotizacion_divisa = data.get('cotizacion_divisa')
         cliente = data.get('cliente')
         numero_transaccion = data.get('numero_transaccion')
@@ -3383,7 +3382,18 @@ def editar_anticipo_recibido(anticipo_id):
         # Normalizar fechas
         fecha_pago_norm = _normalize_fecha(fecha_pago)
         fecha_evento_norm = _normalize_fecha(fecha_evento)
-        tipo_cambio_fecha_norm = _normalize_fecha(tipo_cambio_fecha) if tipo_cambio_fecha else None
+
+        # Manejar tipo_cambio_fecha y cotizacion_divisa según la divisa
+        tipo_cambio_fecha = data.get('tipo_cambio_fecha')
+        if divisa == 'ARS':
+            # Si es ARS, forzar NULL en ambos campos
+            tipo_cambio_fecha_norm = None
+            cotizacion_divisa = None
+        else:
+            # Si es otra divisa, usar fecha_pago como default para tipo_cambio_fecha
+            if not tipo_cambio_fecha:
+                tipo_cambio_fecha = fecha_pago
+            tipo_cambio_fecha_norm = _normalize_fecha(tipo_cambio_fecha)
 
         usuario = session.get('username', 'sistema')
 
