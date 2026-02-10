@@ -644,15 +644,32 @@
     // Mostrar/ocultar campo caja según el medio de pago
     toggleCajaField();
 
-    // ✅ AHORA SE PERMITE EDITAR TODOS LOS CAMPOS (excepto adjunto)
-    // Ya no deshabilitamos campos, todos son editables
-
-    // Ocultar el input de adjunto en modo edición (no se puede cambiar)
+    // Manejar el adjuntador en modo edición
     const adjuntoInput = $('#adjunto');
     const adjuntoGroup = adjuntoInput?.closest('.form-group');
-    if (adjuntoGroup) adjuntoGroup.style.display = 'none';
-    if (adjuntoInput) {
-      adjuntoInput.required = false; // IMPORTANTE: Quitar required en modo edición
+
+    if (adjuntoGroup && adjuntoInput) {
+      // Siempre quitar required en modo edición
+      adjuntoInput.required = false;
+
+      // Si el anticipo está pendiente, mostrar el adjuntador con la imagen actual
+      if (anticipo.estado === 'pendiente') {
+        adjuntoGroup.style.display = '';
+
+        // Crear preview del adjunto actual
+        const labelAdjunto = adjuntoGroup.querySelector('label');
+        if (labelAdjunto) {
+          labelAdjunto.innerHTML = 'Comprobante (imagen/PDF) - <small style="color:#059669;">Actual: puedes cambiarlo</small>';
+        }
+
+        // Mostrar la imagen actual si existe
+        if (anticipo.tiene_adjunto) {
+          mostrarPreviewAdjuntoActual(anticipo.id);
+        }
+      } else {
+        // Si no está pendiente, ocultar el adjuntador (no se puede cambiar)
+        adjuntoGroup.style.display = 'none';
+      }
     }
   }
 
@@ -674,14 +691,20 @@
     const anticipoId = $('#anticipoId').value;
     const isEdit = !!anticipoId;
 
-    // Si es creación, validar y subir adjunto primero
+    // Manejar adjunto: en creación es obligatorio, en edición es opcional (solo si hay un nuevo archivo)
     let adjuntoPath = null;
-    if (!isEdit) {
-      const adjuntoFile = $('#adjunto').files[0];
-      if (!adjuntoFile) {
-        alert('⚠️  Debés subir un comprobante del anticipo');
-        return;
-      }
+    const adjuntoFile = $('#adjunto')?.files?.[0];
+
+    // Verificar si se debe subir un nuevo adjunto
+    const shouldUploadNew = !isEdit ? true : (adjuntoFile ? true : false);
+
+    if (!isEdit && !adjuntoFile) {
+      // Creación requiere adjunto
+      alert('⚠️  Debés subir un comprobante del anticipo');
+      return;
+    }
+
+    if (shouldUploadNew && adjuntoFile) {
 
       // Subir adjunto
       try {
@@ -722,16 +745,25 @@
     }
 
     const data = {
-      fecha_pago: $('#fechaPago').value,
-      fecha_evento: $('#fechaEvento').value,
-      cliente: $('#cliente').value,
-      local: $('#local').value,
-      importe: $('#importe').value,  // Enviar como string para evitar pérdida de precisión
-      divisa: $('#divisa').value,
-      medio_pago_id: parseInt($('#medioPagoId').value) || null,
-      numero_transaccion: $('#numeroTransaccion').value.trim() || null,
-      observaciones: $('#observaciones').value.trim() || null
+      fecha_pago: $('#fechaPago')?.value || '',
+      fecha_evento: $('#fechaEvento')?.value || '',
+      cliente: $('#cliente')?.value || '',
+      local: $('#local')?.value || '',
+      importe: $('#importe')?.value || '',  // Enviar como string para evitar pérdida de precisión
+      divisa: $('#divisa')?.value || 'ARS',
+      medio_pago_id: parseInt($('#medioPagoId')?.value) || null,
+      numero_transaccion: $('#numeroTransaccion')?.value?.trim() || null,
+      observaciones: $('#observaciones')?.value?.trim() || null
     };
+
+    // DEBUG: Log en modo edición para diagnosticar
+    if (isEdit) {
+      console.log('=== DEBUG EDICIÓN ===');
+      console.log('Anticipo ID:', anticipoId);
+      console.log('Valores capturados:', data);
+      console.log('Fecha Pago input:', $('#fechaPago'));
+      console.log('Fecha Pago value:', $('#fechaPago')?.value);
+    }
 
     // Agregar caja solo si hay un valor seleccionado
     const cajaValue = $('#caja').value;
@@ -767,9 +799,22 @@
       data.adjunto_gcs_path = adjuntoPath;
     }
 
+    // En modo edición, verificar si se marcó para eliminar el adjunto actual
+    if (isEdit && window._deleteCurrentAdjunto) {
+      data.delete_adjunto = true;
+      delete window._deleteCurrentAdjunto;
+    }
+
     // Validaciones básicas
     if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.importe) {
-      alert('Por favor completá todos los campos requeridos');
+      console.error('Validación fallida:', {
+        fecha_pago: data.fecha_pago,
+        fecha_evento: data.fecha_evento,
+        cliente: data.cliente,
+        local: data.local,
+        importe: data.importe
+      });
+      alert('Por favor completá todos los campos requeridos. Verificá la consola para más detalles.');
       return;
     }
 
@@ -914,6 +959,60 @@ ${anticipo.deleted_by ? `\nEliminado: ${formatDateTime(anticipo.deleted_at)} por
       return date.toLocaleString('es-AR');
     } catch {
       return dateString;
+    }
+  }
+
+  // ===== MOSTRAR PREVIEW DEL ADJUNTO ACTUAL EN MODO EDICIÓN =====
+  async function mostrarPreviewAdjuntoActual(anticipoId) {
+    try {
+      const response = await fetch(`/api/anticipos_recibidos/${anticipoId}/adjunto`);
+      const data = await response.json();
+
+      if (data.success && data.adjunto) {
+        const adjunto = data.adjunto;
+        const isPDF = adjunto.mime === 'application/pdf' || adjunto.original_name?.toLowerCase().endsWith('.pdf');
+
+        const preview = $('#adjuntoPreview');
+        const previewImg = $('#adjuntoImg');
+
+        if (preview && previewImg) {
+          if (!isPDF) {
+            // Mostrar miniatura de imagen
+            previewImg.src = adjunto.view_url;
+            preview.style.display = 'block';
+          } else {
+            // Para PDF, mostrar icono
+            preview.innerHTML = `
+              <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; text-align: center;">
+                <div style="font-size: 48px;">📄</div>
+                <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">${adjunto.original_name}</div>
+                <button type="button" class="btn-secondary" onclick="verAdjunto(${anticipoId})" style="margin-top: 8px; font-size: 12px; padding: 6px 12px;">
+                  Ver PDF
+                </button>
+              </div>
+            `;
+            preview.style.display = 'block';
+          }
+
+          // Agregar botón para eliminar el adjunto actual
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'btn-delete';
+          deleteBtn.style.cssText = 'margin-top: 8px; display: block; width: 100%; padding: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer;';
+          deleteBtn.textContent = '🗑️ Eliminar comprobante actual';
+          deleteBtn.onclick = function() {
+            if (confirm('¿Estás seguro de eliminar el comprobante actual? Deberás subir uno nuevo.')) {
+              // Marcar para eliminar el adjunto
+              window._deleteCurrentAdjunto = true;
+              preview.style.display = 'none';
+              alert('✅ El comprobante será eliminado al guardar. Podés subir uno nuevo.');
+            }
+          };
+          preview.appendChild(deleteBtn);
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar preview del adjunto:', error);
     }
   }
 

@@ -3367,6 +3367,12 @@ def editar_anticipo_recibido(anticipo_id):
         medio_pago = data.get('medio_pago')
         medio_pago_id = data.get('medio_pago_id')
         observaciones = data.get('observaciones')
+        local = data.get('local')
+        caja = data.get('caja')
+        turno = data.get('turno')
+        adjunto_gcs_path = data.get('adjunto_gcs_path')
+        temp_entity_id = data.get('temp_entity_id')
+        delete_adjunto = data.get('delete_adjunto', False)
 
         # Validaciones
         if not all([fecha_pago, fecha_evento, importe, cliente]):
@@ -3400,12 +3406,38 @@ def editar_anticipo_recibido(anticipo_id):
                 medio_pago = %s,
                 medio_pago_id = %s,
                 observaciones = %s,
+                local = %s,
+                caja = %s,
+                turno = %s,
                 updated_by = %s,
                 updated_at = %s
             WHERE id = %s
         """, (fecha_pago_norm, fecha_evento_norm, importe, divisa, tipo_cambio_fecha_norm,
               cotizacion_divisa, cliente, numero_transaccion, medio_pago, medio_pago_id,
-              observaciones, usuario, ahora, anticipo_id))
+              observaciones, local, caja, turno, usuario, ahora, anticipo_id))
+
+        # Manejar adjuntos
+        if delete_adjunto:
+            # Marcar el adjunto actual como eliminado
+            cur.execute("""
+                UPDATE imagenes_adjuntos
+                SET estado = 'deleted'
+                WHERE entity_type = 'anticipo_recibido'
+                  AND entity_id = %s
+                  AND estado = 'active'
+            """, (anticipo_id,))
+
+        if adjunto_gcs_path and temp_entity_id:
+            # Vincular el nuevo adjunto con el anticipo
+            cur.execute("""
+                UPDATE imagenes_adjuntos
+                SET entity_type = 'anticipo_recibido',
+                    entity_id = %s
+                WHERE entity_type = 'anticipo_recibido_temp'
+                  AND entity_id = %s
+                  AND estado = 'active'
+                LIMIT 1
+            """, (anticipo_id, temp_entity_id))
 
         conn.commit()
 
