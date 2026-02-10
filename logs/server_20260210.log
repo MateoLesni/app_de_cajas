@@ -169,3 +169,9 @@
 2026-02-10 10:01:01,523 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:01:01] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
 2026-02-10 10:01:04,199 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:01:04] "GET /api/anticipos_recibidos/266/adjunto HTTP/1.1" 200 -
 2026-02-10 10:01:04,205 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:01:05,559 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:01:05] "[32mGET /files/view?id=local-test/anticipos/2026/02/10/admin/dia/05678482ebc54698aa198c989669f4db__WhatsApp_Image_2026-02-05_at_10.26.51.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:07:59,413 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:07:59] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 10:07:59,480 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:07:59] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 10:07:59,489 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:07:59] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 10:07:59,489 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:07:59] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 10:07:59,490 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:07:59] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -

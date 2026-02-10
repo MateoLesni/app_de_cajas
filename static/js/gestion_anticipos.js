@@ -235,19 +235,40 @@
     $('#adjunto')?.addEventListener('change', function(e) {
       const file = e.target.files[0];
       const preview = $('#adjuntoPreview');
-      const img = $('#adjuntoImg');
+      if (!preview) return;
+
+      // Limpiar el preview y recrear estructura
+      preview.innerHTML = '';
+      preview.style.display = 'block';
 
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-          img.src = e.target.result;
-          preview.style.display = 'block';
+        reader.onload = function(event) {
+          // Crear nueva imagen
+          const img = document.createElement('img');
+          img.src = event.target.result;
+          img.style.cssText = 'max-width: 200px; max-height: 200px; border-radius: 8px; display: block;';
+          img.alt = 'Preview del comprobante';
+
+          preview.innerHTML = '';
+          preview.appendChild(img);
+
+          // Mensaje informativo
+          const infoMsg = document.createElement('div');
+          infoMsg.style.cssText = 'font-size: 12px; color: #2563eb; margin-top: 8px;';
+          infoMsg.textContent = '📎 Nuevo comprobante seleccionado';
+          preview.appendChild(infoMsg);
         };
         reader.readAsDataURL(file);
       } else if (file && file.type === 'application/pdf') {
-        // Si es PDF, mostrar un ícono o texto
-        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VmNDQ0NCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNDgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UERGJC90ZXh0Pjwvc3ZnPg==';
-        preview.style.display = 'block';
+        // Si es PDF, mostrar ícono
+        preview.innerHTML = `
+          <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; text-align: center;">
+            <div style="font-size: 48px;">📄</div>
+            <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">${file.name}</div>
+            <div style="margin-top: 4px; font-size: 12px; color: #2563eb;">Nuevo PDF seleccionado</div>
+          </div>
+        `;
       } else {
         preview.style.display = 'none';
       }
