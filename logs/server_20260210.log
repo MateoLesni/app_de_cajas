@@ -228,3 +228,124 @@
 2026-02-10 10:18:08,825 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-02-10 10:18:09,241 - werkzeug - WARNING -  * Debugger is active!
 2026-02-10 10:18:09,244 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 10:20:22,614 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:22] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 10:20:22,667 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:22] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-10 10:20:22,674 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:22] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 10:20:22,675 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:22] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 10:20:22,677 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:22] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 10:20:24,150 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-10 10:20:24,150 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-10 10:20:24,152 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-10 10:20:26,297 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:26] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-02-10 10:20:29,038 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:29] "GET /api/locales HTTP/1.1" 200 -
+2026-02-10 10:20:31,797 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:31] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-02-10 10:20:37,203 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:37] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:20:45,405 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:20:45] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:20:57,952 - app - INFO - [Upload] Contexto recibido: tab='anticipos' (len=9), local='Local_Test', caja='admin', turno='dia', fecha='2026-02-10'
+2026-02-10 10:20:57,953 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:21:03,832 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:21:03] "POST /files/upload HTTP/1.1" 200 -
+2026-02-10 10:21:07,887 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:21:07] "PUT /api/anticipos_recibidos/editar/264 HTTP/1.1" 200 -
+2026-02-10 10:21:15,602 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:21:15] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:23:24,552 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:24] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:23:27,266 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:27] "GET /api/anticipos_recibidos/39/adjunto HTTP/1.1" 200 -
+2026-02-10 10:23:27,272 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:23:28,477 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:28] "[32mGET /files/view?id=local-test/anticipos/2026/01/07/admin/dia/e33917dbaa0640ab87c3d3f02dd1c906__FC_12839992_OC_88103_La_Mala.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:23:36,712 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:36] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 10:23:36,768 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:36] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-10 10:23:36,772 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:36] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 10:23:36,777 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:36] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 10:23:36,779 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:36] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 10:23:40,346 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:40] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-02-10 10:23:43,172 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:43] "GET /api/locales HTTP/1.1" 200 -
+2026-02-10 10:23:46,082 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:46] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-02-10 10:23:51,813 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:23:51] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:24:01,356 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:01] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:24:04,150 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:04] "GET /api/anticipos_recibidos/39/adjunto HTTP/1.1" 200 -
+2026-02-10 10:24:04,157 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:24:05,318 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:05] "[32mGET /files/view?id=local-test/anticipos/2026/01/07/admin/dia/e33917dbaa0640ab87c3d3f02dd1c906__FC_12839992_OC_88103_La_Mala.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:24:07,168 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:07] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:24:09,868 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:09] "GET /api/anticipos_recibidos/39/adjunto HTTP/1.1" 200 -
+2026-02-10 10:24:09,874 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:24:11,123 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:11] "[32mGET /files/view?id=local-test/anticipos/2026/01/07/admin/dia/e33917dbaa0640ab87c3d3f02dd1c906__FC_12839992_OC_88103_La_Mala.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:24:29,048 - app - INFO - [Upload] Contexto recibido: tab='anticipos' (len=9), local='Local_Test', caja='admin', turno='dia', fecha='2026-01-07'
+2026-02-10 10:24:29,049 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:24:34,157 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:34] "POST /files/upload HTTP/1.1" 200 -
+2026-02-10 10:24:38,346 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:38] "PUT /api/anticipos_recibidos/editar/39 HTTP/1.1" 200 -
+2026-02-10 10:24:45,796 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:24:45] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:26:39,873 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 10:26:42,449 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 10:26:42,762 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 10:26:42,764 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 10:30:22,154 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:22] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 10:30:22,207 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:22] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-10 10:30:22,212 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:22] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 10:30:22,219 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:22] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 10:30:22,219 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:22] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 10:30:23,755 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-10 10:30:23,756 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-10 10:30:23,758 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-10 10:30:25,957 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:25] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-02-10 10:30:28,677 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:28] "GET /api/locales HTTP/1.1" 200 -
+2026-02-10 10:30:31,461 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:31] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-02-10 10:30:37,445 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:30:37] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:31:02,240 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:02] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:31:12,828 - app - INFO - [Upload] Contexto recibido: tab='anticipos' (len=9), local='Local_Test', caja='admin', turno='dia', fecha='2026-02-10'
+2026-02-10 10:31:12,829 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:31:18,359 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:18] "POST /files/upload HTTP/1.1" 200 -
+2026-02-10 10:31:25,170 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:25] "POST /api/anticipos_recibidos/crear HTTP/1.1" 200 -
+2026-02-10 10:31:36,463 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:36] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:31:42,832 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:42] "GET /api/anticipos_recibidos/267/adjunto HTTP/1.1" 200 -
+2026-02-10 10:31:42,839 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:31:44,169 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:44] "[32mGET /files/view?id=local-test/anticipos/2026/02/10/admin/dia/16b4bf84f59f4887a4950d21f49bc21c__WhatsApp_Image_2026-02-09_at_10.22.45.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:31:53,657 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:53] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:31:56,385 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:56] "GET /api/anticipos_recibidos/267/adjunto HTTP/1.1" 200 -
+2026-02-10 10:31:56,390 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:31:57,610 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:31:57] "[32mGET /files/view?id=local-test/anticipos/2026/02/10/admin/dia/16b4bf84f59f4887a4950d21f49bc21c__WhatsApp_Image_2026-02-09_at_10.22.45.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:32:15,300 - app - INFO - [Upload] Contexto recibido: tab='anticipos' (len=9), local='Local_Test', caja='admin', turno='dia', fecha='2026-02-10'
+2026-02-10 10:32:15,301 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:32:20,753 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:32:20] "POST /files/upload HTTP/1.1" 200 -
+2026-02-10 10:32:24,794 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:32:24] "PUT /api/anticipos_recibidos/editar/267 HTTP/1.1" 200 -
+2026-02-10 10:32:32,135 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:32:32] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:36:29,603 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:29] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 10:36:29,655 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:29] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-10 10:36:29,675 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:29] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 10:36:29,677 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:29] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 10:36:29,683 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:29] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 10:36:33,137 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:33] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-02-10 10:36:35,935 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:35] "GET /api/locales HTTP/1.1" 200 -
+2026-02-10 10:36:38,653 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:38] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-02-10 10:36:44,042 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:36:44] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:37:08,813 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:37:08] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:37:17,219 - app - INFO - [Upload] Contexto recibido: tab='anticipos' (len=9), local='Local_Test', caja='admin', turno='dia', fecha='2026-02-10'
+2026-02-10 10:37:17,219 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:37:23,037 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:37:23] "POST /files/upload HTTP/1.1" 200 -
+2026-02-10 10:37:29,636 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:37:29] "POST /api/anticipos_recibidos/crear HTTP/1.1" 200 -
+2026-02-10 10:37:55,787 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:37:55] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:38:04,592 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:04] "GET /api/anticipos_recibidos/268/adjunto HTTP/1.1" 200 -
+2026-02-10 10:38:04,598 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:38:06,258 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:06] "[32mGET /files/view?id=local-test/anticipos/2026/02/10/admin/dia/ab485943aa0448cea8b04e5614422fea__WhatsApp_Image_2026-02-09_at_10.22.45.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:38:13,864 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:13] "GET /api/locales/Local_Test/cajas HTTP/1.1" 200 -
+2026-02-10 10:38:16,590 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:16] "GET /api/anticipos_recibidos/268/adjunto HTTP/1.1" 200 -
+2026-02-10 10:38:16,596 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:38:17,789 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:17] "[32mGET /files/view?id=local-test/anticipos/2026/02/10/admin/dia/ab485943aa0448cea8b04e5614422fea__WhatsApp_Image_2026-02-09_at_10.22.45.jpeg HTTP/1.1[0m" 302 -
+2026-02-10 10:38:31,693 - app - INFO - [Upload] Contexto recibido: tab='anticipos' (len=9), local='Local_Test', caja='admin', turno='dia', fecha='2026-02-10'
+2026-02-10 10:38:31,694 - app - INFO - [GCS] Modo LOCAL: usando SA JSON C:/Users/mateo/GESTION COMPARTIDA Dropbox/Departamento Gestion/0001 - Control de Gestion (1)/Desarrollo/app cajas github/app_de_cajas/sa-cajas.json
+2026-02-10 10:38:37,385 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:37] "POST /files/upload HTTP/1.1" 200 -
+2026-02-10 10:38:41,574 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:41] "PUT /api/anticipos_recibidos/editar/268 HTTP/1.1" 200 -
+2026-02-10 10:38:50,134 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 10:38:50] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
+2026-02-10 10:42:48,102 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 10:42:54,331 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 10:42:54,768 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 10:42:54,771 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 10:43:01,826 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 10:43:04,264 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 10:43:04,653 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 10:43:04,656 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 10:43:09,429 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 10:43:11,747 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 10:43:12,164 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 10:43:12,169 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 10:43:34,927 - werkzeug - INFO -  * Detected change in 'C:\\Users\\mateo\\GESTION COMPARTIDA Dropbox\\Departamento Gestion\\0001 - Control de Gestion (1)\\Desarrollo\\app cajas github\\app_de_cajas\\app.py', reloading
+2026-02-10 10:43:37,139 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
+2026-02-10 10:43:37,433 - werkzeug - WARNING -  * Debugger is active!
+2026-02-10 10:43:37,435 - werkzeug - INFO -  * Debugger PIN: 114-208-757

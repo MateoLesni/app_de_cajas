@@ -467,8 +467,7 @@
           'eliminado_global': 'Eliminado'
         }[a.estado] || a.estado;
 
-        // Determinar si puede editar/eliminar según permisos del usuario y estado del anticipo
-        const puedeEditar = a.estado === 'pendiente' && userProfile.can_edit;
+        // Determinar si puede eliminar según permisos del usuario y estado del anticipo
         const puedeEliminar = a.estado === 'pendiente' && userProfile.can_delete;
 
         return `
@@ -492,7 +491,6 @@
             <td><span class="badge ${badgeClass}">${estadoText}</span></td>
             <td>
               ${a.tiene_adjunto ? `<button class="btn-edit" onclick="verAdjunto(${a.id})" title="Ver comprobante">📎</button>` : ''}
-              ${puedeEditar ? `<button class="btn-edit" onclick="editarAnticipo(${a.id})" title="Editar fecha">✏️</button>` : ''}
               ${puedeEliminar ? `<button class="btn-delete" onclick="eliminarAnticipo(${a.id}, '${a.cliente}')" title="Eliminar">🗑️</button>` : ''}
               <button class="btn-edit" onclick="verDetalles(${a.id})" title="Ver detalles">👁️</button>
             </td>

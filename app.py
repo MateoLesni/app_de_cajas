@@ -529,7 +529,6 @@ def login_required(view):
             'api_mi_perfil_anticipos',
             'listar_anticipos_recibidos',
             'crear_anticipo_recibido',
-            'editar_anticipo_recibido',
             'eliminar_anticipo_recibido',
             'api_locales',
             'api_locales_options',
@@ -555,8 +554,7 @@ def login_required(view):
             'api_medios_anticipos_activos',  # Todos los usuarios de anticipos
             # Endpoints de gestión de anticipos
             'obtener_adjunto_anticipo',  # Ver comprobantes de anticipos
-            'eliminar_anticipo_recibido',  # Eliminar anticipos (nivel 4+)
-            'editar_anticipo_recibido'  # Editar anticipos (nivel 4+)
+            'eliminar_anticipo_recibido'  # Eliminar anticipos (nivel 4+)
         ]
 
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
@@ -3316,197 +3314,6 @@ def eliminar_anticipo_recibido(anticipo_id):
 
     except Exception as e:
         print("❌ ERROR eliminar_anticipo_recibido:", e)
-        import traceback
-        traceback.print_exc()
-        return jsonify(success=False, msg=str(e)), 500
-
-
-@app.route('/api/anticipos_recibidos/editar/<int:anticipo_id>', methods=['PUT'])
-@login_required
-def editar_anticipo_recibido(anticipo_id):
-    """
-    Editar un anticipo recibido.
-    - admin_anticipos (nivel 6): puede editar cualquier anticipo pendiente
-    - rol anticipos (nivel 4): solo puede editar anticipos pendientes
-    - NO se puede editar anticipos consumidos o eliminados
-    - Permite editar TODOS los campos del anticipo
-    """
-    user_level = get_user_level()
-    if user_level < 4:
-        return jsonify(success=False, msg="No tenés permisos para editar anticipos recibidos"), 403
-
-    data = request.get_json() or {}
-
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(dictionary=True)
-
-        # Verificar que existe
-        cur.execute("SELECT * FROM anticipos_recibidos WHERE id = %s", (anticipo_id,))
-        anticipo = cur.fetchone()
-
-        if not anticipo:
-            cur.close()
-            conn.close()
-            return jsonify(success=False, msg="Anticipo no encontrado"), 404
-
-        if anticipo['estado'] != 'pendiente':
-            cur.close()
-            conn.close()
-            return jsonify(success=False, msg="Solo se pueden editar anticipos pendientes"), 409
-
-        # Obtener datos del body (permitir editar todos los campos)
-        fecha_pago = data.get('fecha_pago')
-        fecha_evento = data.get('fecha_evento')
-        importe = data.get('importe')
-        divisa = data.get('divisa', 'ARS')
-        cotizacion_divisa = data.get('cotizacion_divisa')
-        cliente = data.get('cliente')
-        numero_transaccion = data.get('numero_transaccion')
-        medio_pago = data.get('medio_pago')
-        medio_pago_id = data.get('medio_pago_id')
-        observaciones = data.get('observaciones')
-        local = data.get('local')
-        caja = data.get('caja')
-        turno = data.get('turno')
-        adjunto_gcs_path = data.get('adjunto_gcs_path')
-        temp_entity_id = data.get('temp_entity_id')
-        delete_adjunto = data.get('delete_adjunto', False)
-
-        # Validaciones
-        if not all([fecha_pago, fecha_evento, importe, cliente]):
-            cur.close()
-            conn.close()
-            return jsonify(success=False, msg="Faltan campos obligatorios (fecha_pago, fecha_evento, importe, cliente)"), 400
-
-        # Normalizar fechas
-        fecha_pago_norm = _normalize_fecha(fecha_pago)
-        fecha_evento_norm = _normalize_fecha(fecha_evento)
-
-        # Manejar tipo_cambio_fecha y cotizacion_divisa según la divisa
-        tipo_cambio_fecha = data.get('tipo_cambio_fecha')
-        if divisa == 'ARS':
-            # Si es ARS, forzar NULL en ambos campos
-            tipo_cambio_fecha_norm = None
-            cotizacion_divisa = None
-        else:
-            # Si es otra divisa, usar fecha_pago como default para tipo_cambio_fecha
-            if not tipo_cambio_fecha:
-                tipo_cambio_fecha = fecha_pago
-            tipo_cambio_fecha_norm = _normalize_fecha(tipo_cambio_fecha)
-
-        usuario = session.get('username', 'sistema')
-
-        from datetime import datetime
-        import pytz
-        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
-        ahora = datetime.now(tz_arg)
-
-        # Actualizar TODOS los campos
-        cur.execute("""
-            UPDATE anticipos_recibidos
-            SET fecha_pago = %s,
-                fecha_evento = %s,
-                importe = %s,
-                divisa = %s,
-                tipo_cambio_fecha = %s,
-                cotizacion_divisa = %s,
-                cliente = %s,
-                numero_transaccion = %s,
-                medio_pago = %s,
-                medio_pago_id = %s,
-                observaciones = %s,
-                local = %s,
-                caja = %s,
-                turno = %s,
-                updated_by = %s,
-                updated_at = %s
-            WHERE id = %s
-        """, (fecha_pago_norm, fecha_evento_norm, importe, divisa, tipo_cambio_fecha_norm,
-              cotizacion_divisa, cliente, numero_transaccion, medio_pago, medio_pago_id,
-              observaciones, local, caja, turno, usuario, ahora, anticipo_id))
-
-        # Manejar adjuntos
-        # DEBUG: Logging detallado
-        print(f"[DEBUG ADJUNTOS] anticipo_id={anticipo_id}, delete_adjunto={delete_adjunto}, adjunto_gcs_path={adjunto_gcs_path}, temp_entity_id={temp_entity_id}")
-
-        if delete_adjunto:
-            # Marcar el adjunto actual como eliminado
-            print(f"[DEBUG] Eliminando adjunto actual del anticipo {anticipo_id}")
-            cur.execute("""
-                UPDATE imagenes_adjuntos
-                SET estado = 'deleted'
-                WHERE entity_type = 'anticipo_recibido'
-                  AND entity_id = %s
-                  AND estado = 'active'
-            """, (str(anticipo_id),))
-            rows_deleted = cur.rowcount
-            print(f"[DEBUG] Filas marcadas como deleted: {rows_deleted}")
-
-        if adjunto_gcs_path and temp_entity_id:
-            # Vincular el nuevo adjunto con el anticipo
-            # IMPORTANTE: entity_id es VARCHAR, convertir anticipoId a string
-            print(f"[DEBUG] Vinculando nuevo adjunto: anticipo_id={anticipo_id} (str={str(anticipo_id)}), temp_entity_id={temp_entity_id}")
-            cur.execute("""
-                UPDATE imagenes_adjuntos
-                SET entity_type = 'anticipo_recibido',
-                    entity_id = %s
-                WHERE entity_type = 'anticipo_recibido_temp'
-                  AND entity_id = %s
-                  AND estado = 'active'
-                LIMIT 1
-            """, (str(anticipo_id), temp_entity_id))
-            rows_updated = cur.rowcount
-            print(f"[DEBUG] Filas actualizadas (vinculadas): {rows_updated}")
-
-            # Verificar si se vinculó correctamente
-            if rows_updated == 0:
-                print(f"[WARNING] No se encontró registro temporal con entity_id={temp_entity_id}")
-                # Buscar qué registros temporales existen
-                cur.execute("""
-                    SELECT id, entity_id, gcs_path, fecha_subida
-                    FROM imagenes_adjuntos
-                    WHERE entity_type = 'anticipo_recibido_temp'
-                      AND estado = 'active'
-                    ORDER BY fecha_subida DESC
-                    LIMIT 5
-                """)
-                temp_records = cur.fetchall()
-                print(f"[DEBUG] Registros temporales recientes: {temp_records}")
-
-        conn.commit()
-
-        # Registrar en auditoría
-        from modules.tabla_auditoria import registrar_auditoria
-        registrar_auditoria(
-            conn=conn,
-            accion='UPDATE',
-            tabla='anticipos_recibidos',
-            registro_id=anticipo_id,
-            datos_anteriores={
-                'fecha_pago': str(anticipo['fecha_pago']),
-                'fecha_evento': str(anticipo['fecha_evento']),
-                'importe': float(anticipo['importe']),
-                'divisa': anticipo['divisa'],
-                'cliente': anticipo['cliente']
-            },
-            datos_nuevos={
-                'fecha_pago': str(fecha_pago_norm),
-                'fecha_evento': str(fecha_evento_norm),
-                'importe': float(importe),
-                'divisa': divisa,
-                'cliente': cliente
-            },
-            descripcion=f"Anticipo editado: {cliente} - {divisa} {importe}"
-        )
-
-        cur.close()
-        conn.close()
-
-        return jsonify(success=True, msg="Anticipo actualizado correctamente")
-
-    except Exception as e:
-        print("❌ ERROR editar_anticipo_recibido:", e)
         import traceback
         traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
@@ -10704,7 +10511,6 @@ def api_mi_perfil_anticipos():
     Incluye:
     - level: nivel del usuario
     - allowed_locales: locales a los que tiene acceso ([] significa todos)
-    - can_edit: si puede editar anticipos
     - can_delete: si puede eliminar anticipos
     - can_consume: si puede consumir/desconsumir anticipos
     """
@@ -10720,7 +10526,6 @@ def api_mi_perfil_anticipos():
         success=True,
         level=user_level,
         allowed_locales=allowed_locales,
-        can_edit=(user_level >= 4),  # Nivel 4 (anticipos) y superiores pueden editar
         can_delete=(user_level >= 4),  # Nivel 4 (anticipos) y superiores pueden eliminar
         can_consume=(user_level >= 3),  # Auditores pueden consumir/desconsumir si local no está auditado
         has_full_access=(user_level >= 6)  # Admin tiene acceso total
