@@ -715,7 +715,7 @@
       ["rappi", "Rappi"],
       ["pedidosya", "PedidosYa"],
       ["gastos", "Gastos"],
-      ["cuenta_cte", "Cuenta Cte."],
+      ["ctas_ctes", "Cuenta Cte."],  // Corregido: era 'cuenta_cte', ahora 'ctas_ctes' para coincidir con el tab real
     ];
 
     order.forEach(([key, fallbackLabel]) => {

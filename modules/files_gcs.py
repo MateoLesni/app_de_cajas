@@ -508,7 +508,7 @@ def files_summary_media():
         ("rappi",       "Rappi"),
         ("pedidosya",   "PedidosYa"),
         ("gastos",      "Gastos"),
-        ("cuenta_cte",  "Cuenta Cte."),
+        ("ctas_ctes",   "Cuenta Cte."),  # Corregido: era 'cuenta_cte', ahora 'ctas_ctes' para coincidir con el frontend
     ]
 
     conn = _get_db_connection()
