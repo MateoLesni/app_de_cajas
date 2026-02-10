@@ -138,3 +138,15 @@
 2026-02-10 09:53:16,127 - modules.tesoreria_security - INFO - ✅ Tesorería Security Module initialized
 2026-02-10 09:53:16,618 - werkzeug - WARNING -  * Debugger is active!
 2026-02-10 09:53:16,622 - werkzeug - INFO -  * Debugger PIN: 114-208-757
+2026-02-10 09:54:09,147 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:09] "GET /gestion-anticipos HTTP/1.1" 200 -
+2026-02-10 09:54:09,197 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:09] "GET /static/css/styles.css HTTP/1.1" 200 -
+2026-02-10 09:54:09,205 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:09] "GET /static/js/sidebar.js HTTP/1.1" 200 -
+2026-02-10 09:54:09,206 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:09] "GET /static/js/gestion_anticipos.js HTTP/1.1" 200 -
+2026-02-10 09:54:09,212 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:09] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-10 09:54:10,613 - mysql.connector - INFO - package: mysql.connector.plugins
+2026-02-10 09:54:10,614 - mysql.connector - INFO - plugin_name: mysql_native_password
+2026-02-10 09:54:10,617 - mysql.connector - INFO - AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-02-10 09:54:12,789 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:12] "GET /api/mi_perfil_anticipos HTTP/1.1" 200 -
+2026-02-10 09:54:15,504 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:15] "GET /api/locales HTTP/1.1" 200 -
+2026-02-10 09:54:18,219 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:18] "GET /api/medios_anticipos/activos HTTP/1.1" 200 -
+2026-02-10 09:54:23,681 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 09:54:23] "GET /api/anticipos_recibidos/listar HTTP/1.1" 200 -
