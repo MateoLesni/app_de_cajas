@@ -3030,6 +3030,62 @@ def listar_anticipos_recibidos():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@app.route('/api/anticipos_recibidos/<int:anticipo_id>/adjunto', methods=['GET'])
+@login_required
+def obtener_adjunto_anticipo(anticipo_id):
+    """
+    Obtener el adjunto (comprobante) de un anticipo específico.
+    Devuelve el gcs_path y view_url del adjunto vinculado al anticipo.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+
+        # Buscar el adjunto vinculado a este anticipo
+        cur.execute("""
+            SELECT
+                ia.gcs_path,
+                ia.original_name,
+                ia.mime,
+                ia.size_bytes
+            FROM imagenes_adjuntos ia
+            WHERE ia.entity_type = 'anticipo_recibido'
+              AND ia.entity_id = %s
+              AND ia.estado = 'active'
+            LIMIT 1
+        """, (anticipo_id,))
+
+        adjunto = cur.fetchone()
+
+        if not adjunto:
+            return jsonify(success=False, msg='No se encontró comprobante adjunto'), 404
+
+        # Construir view_url (usar el endpoint /files/view)
+        from urllib.parse import quote
+        gcs_path = adjunto['gcs_path']
+        view_url = f"/files/view?id={quote(gcs_path)}"
+
+        return jsonify(
+            success=True,
+            adjunto={
+                'gcs_path': gcs_path,
+                'original_name': adjunto['original_name'],
+                'mime': adjunto['mime'],
+                'size_bytes': adjunto['size_bytes'],
+                'view_url': view_url
+            }
+        )
+
+    except Exception as e:
+        print(f"Error al obtener adjunto del anticipo {anticipo_id}: {e}")
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except: pass
+        try: conn.close()
+        except: pass
+
+
 @app.route('/api/anticipos_borrados/listar', methods=['GET'])
 @login_required
 def listar_anticipos_borrados():

@@ -947,12 +947,12 @@ ${anticipo.deleted_by ? `\nEliminado: ${formatDateTime(anticipo.deleted_at)} por
     visorTitulo.textContent = `Comprobante - ${anticipo.cliente}`;
 
     try {
-      // Obtener detalles del adjunto desde el servidor
-      const response = await fetch(`/files/list?tab=anticipos&local=${encodeURIComponent(anticipo.local)}&fecha=${anticipo.fecha_pago}&scope=month`);
+      // CRÍTICO: Obtener el adjunto ESPECÍFICO de este anticipo usando el nuevo endpoint
+      const response = await fetch(`/api/anticipos_recibidos/${anticipoId}/adjunto`);
       const data = await response.json();
 
-      if (data.success && data.items && data.items.length > 0) {
-        const adjunto = data.items[0];
+      if (data.success && data.adjunto) {
+        const adjunto = data.adjunto;
         const isPDF = adjunto.mime === 'application/pdf' || adjunto.original_name?.toLowerCase().endsWith('.pdf');
 
         visorLoading.style.display = 'none';
