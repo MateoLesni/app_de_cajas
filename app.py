@@ -3427,8 +3427,12 @@ def editar_anticipo_recibido(anticipo_id):
               observaciones, local, caja, turno, usuario, ahora, anticipo_id))
 
         # Manejar adjuntos
+        # DEBUG: Logging detallado
+        print(f"[DEBUG ADJUNTOS] anticipo_id={anticipo_id}, delete_adjunto={delete_adjunto}, adjunto_gcs_path={adjunto_gcs_path}, temp_entity_id={temp_entity_id}")
+
         if delete_adjunto:
             # Marcar el adjunto actual como eliminado
+            print(f"[DEBUG] Eliminando adjunto actual del anticipo {anticipo_id}")
             cur.execute("""
                 UPDATE imagenes_adjuntos
                 SET estado = 'deleted'
@@ -3436,10 +3440,13 @@ def editar_anticipo_recibido(anticipo_id):
                   AND entity_id = %s
                   AND estado = 'active'
             """, (str(anticipo_id),))
+            rows_deleted = cur.rowcount
+            print(f"[DEBUG] Filas marcadas como deleted: {rows_deleted}")
 
         if adjunto_gcs_path and temp_entity_id:
             # Vincular el nuevo adjunto con el anticipo
             # IMPORTANTE: entity_id es VARCHAR, convertir anticipoId a string
+            print(f"[DEBUG] Vinculando nuevo adjunto: anticipo_id={anticipo_id} (str={str(anticipo_id)}), temp_entity_id={temp_entity_id}")
             cur.execute("""
                 UPDATE imagenes_adjuntos
                 SET entity_type = 'anticipo_recibido',
@@ -3449,6 +3456,23 @@ def editar_anticipo_recibido(anticipo_id):
                   AND estado = 'active'
                 LIMIT 1
             """, (str(anticipo_id), temp_entity_id))
+            rows_updated = cur.rowcount
+            print(f"[DEBUG] Filas actualizadas (vinculadas): {rows_updated}")
+
+            # Verificar si se vinculó correctamente
+            if rows_updated == 0:
+                print(f"[WARNING] No se encontró registro temporal con entity_id={temp_entity_id}")
+                # Buscar qué registros temporales existen
+                cur.execute("""
+                    SELECT id, entity_id, gcs_path, fecha_subida
+                    FROM imagenes_adjuntos
+                    WHERE entity_type = 'anticipo_recibido_temp'
+                      AND estado = 'active'
+                    ORDER BY fecha_subida DESC
+                    LIMIT 5
+                """)
+                temp_records = cur.fetchall()
+                print(f"[DEBUG] Registros temporales recientes: {temp_records}")
 
         conn.commit()
 

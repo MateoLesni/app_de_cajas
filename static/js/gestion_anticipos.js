@@ -824,6 +824,17 @@
     if (isEdit && window._deleteCurrentAdjunto) {
       data.delete_adjunto = true;
       delete window._deleteCurrentAdjunto;
+      console.log('[DEBUG] Marcado para eliminar adjunto actual');
+    }
+
+    // DEBUG: Mostrar datos de adjunto en modo edición
+    if (isEdit) {
+      console.log('[DEBUG EDICIÓN - ADJUNTOS]', {
+        delete_adjunto: data.delete_adjunto,
+        temp_entity_id: data.temp_entity_id,
+        adjunto_gcs_path: data.adjunto_gcs_path,
+        hay_archivo_nuevo: !!adjuntoFile
+      });
     }
 
     // Validaciones básicas
