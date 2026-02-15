@@ -415,6 +415,124 @@
     .tab-content.active {
       display: block;
     }
+
+    /* Modal de Imagen */
+    .modal-imagen-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-imagen-overlay.active {
+      display: flex;
+    }
+
+    .modal-imagen-content {
+      position: relative;
+      max-width: 95vw;
+      max-height: 95vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .modal-imagen-content img {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .modal-imagen-toolbar {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px 24px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .modal-imagen-btn {
+      padding: 10px 20px;
+      background: white;
+      color: #1f2937;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-imagen-btn:hover {
+      background: #f3f4f6;
+      transform: translateY(-2px);
+    }
+
+    .modal-imagen-btn.btn-download {
+      background: #2563eb;
+      color: white;
+    }
+
+    .modal-imagen-btn.btn-download:hover {
+      background: #1d4ed8;
+    }
+
+    .modal-imagen-btn.btn-close {
+      background: #ef4444;
+      color: white;
+    }
+
+    .modal-imagen-btn.btn-close:hover {
+      background: #dc2626;
+    }
+
+    .adjunto-item-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .adjunto-item:hover .adjunto-item-actions {
+      opacity: 1;
+    }
+
+    .adjunto-item {
+      position: relative;
+    }
+
+    .adjunto-action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255, 255, 255, 0.95);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .adjunto-action-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
@@ -596,6 +714,21 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="cerrarModalDetalle()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Imagen -->
+  <div class="modal-imagen-overlay" id="modalImagen">
+    <div class="modal-imagen-content">
+      <img id="modalImagenImg" src="" alt="Comprobante">
+      <div class="modal-imagen-toolbar">
+        <button class="modal-imagen-btn btn-download" onclick="descargarImagen()">
+          <span>📥</span> Descargar
+        </button>
+        <button class="modal-imagen-btn btn-close" onclick="cerrarModalImagen()">
+          <span>✕</span> Cerrar
+        </button>
       </div>
     </div>
   </div>
