@@ -270,43 +270,31 @@
   };
 
   // ===== DESCARGAR IMAGEN =====
-  window.descargarImagen = async function() {
+  window.descargarImagen = function() {
     if (!imagenActualUrl) return;
 
-    try {
-      const response = await fetch(imagenActualUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = imagenActualNombre;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error al descargar imagen:', error);
-      alert('Error al descargar la imagen');
-    }
+    // Usar enfoque directo con <a> tag para evitar problemas de CORS
+    const a = document.createElement('a');
+    a.href = imagenActualUrl;
+    a.download = imagenActualNombre || 'comprobante.jpg';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // ===== DESCARGAR IMAGEN DIRECTA (sin abrir modal) =====
-  window.descargarImagenDirecta = async function(url, nombre) {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = nombre || 'comprobante.jpg';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error('Error al descargar imagen:', error);
-      alert('Error al descargar la imagen');
-    }
+  window.descargarImagenDirecta = function(url, nombre) {
+    // Usar enfoque directo con <a> tag para evitar problemas de CORS
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre || 'comprobante.jpg';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // ===== VER ADJUNTO (legacy - mantener por compatibilidad) =====
