@@ -218,16 +218,19 @@
 
       if (data.success && data.adjunto) {
         const adjunto = data.adjunto;
+        // Construir URL de descarga usando gcs_path
+        const downloadUrl = `/files/download?id=${encodeURIComponent(adjunto.gcs_path)}`;
+
         const adjuntosHTML = `
           <div class="adjuntos-section">
             <h3>Comprobante Adjunto</h3>
             <div class="adjuntos-grid">
-              <div class="adjunto-item" onclick="maximizarImagen('${escapeHtml(adjunto.view_url)}', '${escapeHtml(adjunto.original_name || 'Comprobante')}')">
+              <div class="adjunto-item" onclick="maximizarImagen('${escapeHtml(adjunto.view_url)}', '${escapeHtml(adjunto.original_name || 'Comprobante')}', '${escapeHtml(adjunto.gcs_path)}')">
                 <div class="adjunto-item-actions">
-                  <button class="adjunto-action-btn" onclick="event.stopPropagation(); descargarImagenDirecta('${escapeHtml(adjunto.view_url)}', '${escapeHtml(adjunto.original_name || 'comprobante.jpg')}');" title="Descargar">
+                  <button class="adjunto-action-btn" onclick="event.stopPropagation(); descargarImagenDirecta('${escapeHtml(adjunto.gcs_path)}');" title="Descargar">
                     📥
                   </button>
-                  <button class="adjunto-action-btn" onclick="event.stopPropagation(); maximizarImagen('${escapeHtml(adjunto.view_url)}', '${escapeHtml(adjunto.original_name || 'Comprobante')}');" title="Maximizar">
+                  <button class="adjunto-action-btn" onclick="event.stopPropagation(); maximizarImagen('${escapeHtml(adjunto.view_url)}', '${escapeHtml(adjunto.original_name || 'Comprobante')}', '${escapeHtml(adjunto.gcs_path)}');" title="Maximizar">
                     🔍
                   </button>
                 </div>
@@ -248,16 +251,16 @@
 
   // ===== MAXIMIZAR IMAGEN =====
   let imagenActualUrl = '';
-  let imagenActualNombre = '';
+  let imagenActualGcsPath = '';
 
-  window.maximizarImagen = function(url, nombre) {
-    imagenActualUrl = url;
-    imagenActualNombre = nombre || 'comprobante.jpg';
+  window.maximizarImagen = function(viewUrl, nombre, gcsPath) {
+    imagenActualUrl = viewUrl;
+    imagenActualGcsPath = gcsPath;
 
     const modalImagen = $('#modalImagen');
     const imgElement = $('#modalImagenImg');
 
-    imgElement.src = url;
+    imgElement.src = viewUrl;
     modalImagen.classList.add('active');
   };
 
@@ -266,32 +269,30 @@
     const modalImagen = $('#modalImagen');
     modalImagen.classList.remove('active');
     imagenActualUrl = '';
-    imagenActualNombre = '';
+    imagenActualGcsPath = '';
   };
 
   // ===== DESCARGAR IMAGEN =====
   window.descargarImagen = function() {
-    if (!imagenActualUrl) return;
+    if (!imagenActualGcsPath) return;
 
-    // Usar enfoque directo con <a> tag para evitar problemas de CORS
+    // Usar endpoint /files/download que fuerza attachment
+    const downloadUrl = `/files/download?id=${encodeURIComponent(imagenActualGcsPath)}`;
     const a = document.createElement('a');
-    a.href = imagenActualUrl;
-    a.download = imagenActualNombre || 'comprobante.jpg';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    a.href = downloadUrl;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
   // ===== DESCARGAR IMAGEN DIRECTA (sin abrir modal) =====
-  window.descargarImagenDirecta = function(url, nombre) {
-    // Usar enfoque directo con <a> tag para evitar problemas de CORS
+  window.descargarImagenDirecta = function(gcsPath) {
+    // Usar endpoint /files/download que fuerza attachment
+    const downloadUrl = `/files/download?id=${encodeURIComponent(gcsPath)}`;
     const a = document.createElement('a');
-    a.href = url;
-    a.download = nombre || 'comprobante.jpg';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    a.href = downloadUrl;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

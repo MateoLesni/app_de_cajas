@@ -387,6 +387,55 @@ def view_item():
         return jsonify(success=False, msg=str(e)), 500
 
 
+@bp_files.route("/download", methods=["GET"])
+def download_item():
+    """
+    /files/download?id=<blob_name>
+    Fuerza la descarga del archivo (attachment) en lugar de mostrarlo inline.
+    """
+    if not BUCKET_NAME:
+        return jsonify(success=False, msg="GCS_BUCKET no configurado"), 500
+
+    blob_name = (request.args.get("id") or "").strip()
+    if not blob_name:
+        return jsonify(success=False, msg="Falta id"), 400
+
+    try:
+        client = _client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.get_blob(blob_name)
+        if not blob:
+            return jsonify(success=False, msg="No encontrado"), 404
+
+        filename = (blob.metadata or {}).get("original_name") or blob.name.rsplit("__", 1)[-1]
+
+        # Descargar el archivo
+        data = blob.download_as_bytes()
+
+        # Resolver mime de forma segura
+        lower = filename.lower()
+        if   lower.endswith((".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp")): mime = "image/jpeg"
+        elif lower.endswith(".png"):  mime = "image/png"
+        elif lower.endswith(".webp"): mime = "image/webp"
+        elif lower.endswith(".heic"): mime = "image/heic"
+        elif lower.endswith(".pdf"):  mime = "application/pdf"
+        else:
+            mime = blob.content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+        # IMPORTANTE: usar 'attachment' para forzar descarga
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, max-age=60",
+            "X-Content-Type-Options": "nosniff",
+        }
+        return Response(data, mimetype=mime, headers=headers)
+
+    except gapi_exc.GoogleAPICallError as e:
+        return jsonify(success=False, msg=f"GCS error: {e}"), 502
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+
+
 @bp_files.route("/item", methods=["DELETE"])
 def delete_item():
     if not BUCKET_NAME:
