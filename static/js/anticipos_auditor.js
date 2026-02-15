@@ -212,36 +212,29 @@
   // ===== CARGAR ADJUNTOS =====
   async function loadAdjuntos(anticipo, modalBody) {
     try {
-      // Usamos scope=month para buscar archivos del mes
-      const response = await fetch(`/files/list?tab=anticipos&local=${encodeURIComponent(anticipo.local)}&fecha=${anticipo.fecha_pago}&scope=month`);
+      // Usar endpoint específico que filtra por anticipo.id
+      const response = await fetch(`/api/anticipos_recibidos/${anticipo.id}/adjunto`);
       const data = await response.json();
 
-      if (data.success && data.items && data.items.length > 0) {
-        // El endpoint devuelve todos los archivos del mes
-        // Como los nombres contienen info del anticipo, podemos filtrar por fecha y cliente
-        const adjuntos = data.items;
-
-        if (adjuntos.length > 0) {
-          const adjuntosHTML = `
-            <div class="adjuntos-section">
-              <h3>Comprobantes Adjuntos (${adjuntos.length})</h3>
-              <div class="adjuntos-grid">
-                ${adjuntos.map(adj => `
-                  <div class="adjunto-item" onclick="verAdjunto('${escapeHtml(adj.view_url)}')">
-                    <img src="${escapeHtml(adj.view_url)}" alt="Comprobante" onerror="this.src='/static/img/file-icon.png'">
-                    <div class="adjunto-info">
-                      ${escapeHtml(adj.name || 'Comprobante')}
-                    </div>
-                  </div>
-                `).join('')}
+      if (data.success && data.adjunto) {
+        const adjunto = data.adjunto;
+        const adjuntosHTML = `
+          <div class="adjuntos-section">
+            <h3>Comprobante Adjunto</h3>
+            <div class="adjuntos-grid">
+              <div class="adjunto-item" onclick="verAdjunto('${escapeHtml(adjunto.view_url)}')">
+                <img src="${escapeHtml(adjunto.view_url)}" alt="Comprobante" onerror="this.src='/static/img/file-icon.png'">
+                <div class="adjunto-info">
+                  ${escapeHtml(adjunto.original_name || 'Comprobante')}
+                </div>
               </div>
             </div>
-          `;
-          modalBody.innerHTML += adjuntosHTML;
-        }
+          </div>
+        `;
+        modalBody.innerHTML += adjuntosHTML;
       }
     } catch (error) {
-      console.error('Error al cargar adjuntos:', error);
+      console.error('Error al cargar adjunto:', error);
     }
   }
 
