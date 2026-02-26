@@ -381,6 +381,15 @@
       }
     }
 
+    // Anticipos recibidos efectivo
+    const antEf = info?.anticipos_efectivo || {};
+    const antEfVal = Number(antEf.total ?? 0);
+    const elAntEf = document.getElementById("rl-anticipos-efectivo");
+    if (elAntEf) {
+      elAntEf.textContent = antEfVal > 0 ? '-' + money(antEfVal) : money(0);
+      elAntEf.dataset.copy = elAntEf.textContent;
+    }
+
     // Tips
     const tips = info?.tips || {};
     setMoneyWithCopy("rl-tips", Number(tips.total ?? 0));
