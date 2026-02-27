@@ -12756,6 +12756,7 @@ def api_soporte_reabrir_caja():
             WHERE id = %s
         """, (row['id'],))
         conn.commit()
+        cur.close()
 
         registrar_auditoria(
             conn=conn,
@@ -12841,6 +12842,7 @@ def api_soporte_reabrir_local():
                 pass
 
         conn.commit()
+        cur.close()
 
         registrar_auditoria(
             conn=conn,
@@ -12903,6 +12905,7 @@ def api_soporte_desauditar_local():
 
         cur.execute("DELETE FROM locales_auditados WHERE id = %s", (audit_id,))
         conn.commit()
+        cur.close()
 
         registrar_auditoria(
             conn=conn,
@@ -12973,6 +12976,7 @@ def api_soporte_crear_caja():
         """, (local, caja, f, turno))
         new_id = cur.lastrowid
         conn.commit()
+        cur.close()
 
         registrar_auditoria(
             conn=conn,
