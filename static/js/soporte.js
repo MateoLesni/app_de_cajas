@@ -382,9 +382,9 @@
         .concat(d3.items || [])
         .concat(d4.items || []);
 
-      // Ordenar por fecha desc
+      // Ordenar por fecha_hora desc
       items.sort(function (a, b) {
-        return (b.fecha || '').localeCompare(a.fecha || '');
+        return (b.fecha_hora || '').localeCompare(a.fecha_hora || '');
       });
 
       // Limitar a 50
@@ -397,14 +397,11 @@
 
       var html = '';
       items.forEach(function (it) {
-        var ctx = {};
-        try { ctx = JSON.parse(it.contexto || '{}'); } catch (e) { /* ignore */ }
-
         html += '<tr>' +
-                '<td>' + esc(it.fecha || '') + '</td>' +
+                '<td>' + esc(it.fecha_hora || '') + '</td>' +
                 '<td><span class="accion-badge accion-' + esc(it.accion || '') + '">' + esc(it.accion || '') + '</span></td>' +
-                '<td>' + esc(ctx.local || it.local || '-') + '</td>' +
-                '<td>' + esc(ctx.fecha_operacion || '-') + '</td>' +
+                '<td>' + esc(it.local || '-') + '</td>' +
+                '<td>' + esc(it.fecha_operacion || '-') + '</td>' +
                 '<td>' + esc(it.descripcion || '-') + '</td>' +
                 '<td>' + esc(it.usuario || '-') + '</td>' +
                 '</tr>';
