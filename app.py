@@ -10404,18 +10404,16 @@ def estado_local():
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # Lógica simple: si existe un registro en cierres_locales => CERRADO (estado=0)
-        # Si NO existe registro => ABIERTO (estado=1)
+        # Cerrado = existe registro con estado=0
+        # Abierto = no existe registro, o existe con estado=1 (reabierto por soporte)
         cur.execute("""
             SELECT COUNT(*)
             FROM cierres_locales
-            WHERE local=%s AND fecha=%s
+            WHERE local=%s AND fecha=%s AND estado=0
         """, (local, fecha_normalizada))
         row = cur.fetchone()
         count = row[0] if row else 0
 
-        # Si existe al menos 1 registro => local CERRADO (estado=0)
-        # Si NO existe registro => local ABIERTO (estado=1)
         estado = 0 if count > 0 else 1
 
         app.logger.info(f"[estado_local] Resultado: count={count}, estado={estado} ({'CERRADO' if estado == 0 else 'ABIERTO'})")
