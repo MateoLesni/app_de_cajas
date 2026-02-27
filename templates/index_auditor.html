@@ -178,6 +178,13 @@
         </div>
       </div>
 
+      {% if nivel_usuario >= 10 %}
+      <a class="nav-item" href="/soporte" style="background:#dc2626;color:#fff;border-radius:8px;margin:8px 12px;text-align:center;font-weight:700;">
+        <span class="nav-dot" aria-hidden="true" style="background:#fff;"></span>
+        Volver a Soporte
+      </a>
+      {% endif %}
+
       <div class="sidebar__footer">
         <a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a>
       </div>

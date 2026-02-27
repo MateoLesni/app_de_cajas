@@ -234,6 +234,12 @@
         <!-- Link de Gestión de Usuarios se agrega dinámicamente si el usuario es admin_anticipos -->
       </nav>
 
+      {% if session.get('role_level', 1)|int >= 10 %}
+      <a class="nav-item" href="/soporte" style="background:#dc2626;color:#fff;border-radius:8px;margin:8px 12px;text-align:center;font-weight:700;">
+        <span class="nav-dot" aria-hidden="true" style="background:#fff;"></span>
+        Volver a Soporte
+      </a>
+      {% endif %}
       <div class="sidebar__footer"><a class="nav-ghost" href="{{ url_for('logout') }}">Cerrar Sesión</a></div>
       <button class="sidebar__toggle" id="toggleSidebar" aria-label="Abrir/cerrar menú">☰</button>
     </aside>

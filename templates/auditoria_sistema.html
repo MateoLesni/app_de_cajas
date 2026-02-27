@@ -1,24 +1,351 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoría - Sistema de Cajas</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f5f7fa; padding: 20px; }
-        .container { max-width: 1600px; margin: 0 auto; }
-        h1 { color: #2c3e50; margin-bottom: 30px; font-size: 28px; }
-        .btn-volver { display: inline-block; padding: 10px 20px; background: #95a5a6; color: white; text-decoration: none; border-radius: 6px; margin-bottom: 20px; }
-        .btn-volver:hover { background: #7f8c8d; }
-        /* Resto del CSS del template anterior... */
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoria del Sistema - Sistema de Cajas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    .audit-container {
+      max-width: 1600px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.06);
+      padding: 24px;
+    }
+    .audit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .audit-header h1 { margin: 0; font-size: 24px; color: #1f2937; }
+    .badge-audit {
+      background: #1e40af;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    /* Filtros */
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      align-items: end;
+    }
+    .filters label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+      color: #374151;
+      font-size: 12px;
+    }
+    .filters select, .filters input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: #4b5563; }
+
+    /* Contador */
+    .result-count {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    /* Tabla */
+    .audit-table-wrap {
+      overflow-x: auto;
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .audit-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #374151;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .audit-table th, .audit-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    .audit-table td { color: #4b5563; }
+    .audit-table tr:hover { background: #f9fafb; }
+
+    /* Badges de accion */
+    .accion-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .accion-INSERT { background: #d1fae5; color: #065f46; }
+    .accion-UPDATE { background: #dbeafe; color: #1e40af; }
+    .accion-DELETE { background: #fee2e2; color: #991b1b; }
+    .accion-CLOSE_BOX { background: #fef3c7; color: #92400e; }
+    .accion-CLOSE_LOCAL { background: #fef3c7; color: #92400e; }
+    .accion-AUDIT { background: #ede9fe; color: #5b21b6; }
+    .accion-INSERT_UPDATE { background: #d1fae5; color: #065f46; }
+    .accion-OPERATION { background: #e0e7ff; color: #3730a3; }
+    .accion-REOPEN_BOX { background: #dbeafe; color: #1e40af; }
+    .accion-REOPEN_LOCAL { background: #fef3c7; color: #92400e; }
+    .accion-UNAUDIT_LOCAL { background: #fee2e2; color: #991b1b; }
+    .accion-CREATE_BOX { background: #d1fae5; color: #065f46; }
+
+    .cell-desc {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cell-desc:hover {
+      white-space: normal;
+      overflow: visible;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 40px;
+      color: #9ca3af;
+      font-style: italic;
+    }
+
+    /* Paginacion */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .pagination button {
+      padding: 6px 14px;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .pagination button:hover:not(:disabled) { background: #f3f4f6; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination span { font-size: 13px; color: #374151; }
+
+    /* Detalle expandible */
+    .detail-row td {
+      padding: 12px 20px;
+      background: #f9fafb;
+      white-space: normal;
+    }
+    .detail-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .detail-block h4 {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .detail-block pre {
+      background: #1f2937;
+      color: #e5e7eb;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      overflow-x: auto;
+      max-height: 200px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/" class="btn-volver">← Volver</a>
-        <h1>📋 Auditoría del Sistema</h1>
-        <!-- Contenido del template... -->
-    </div>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation">
+      <div class="sidebar__brand">
+        <div class="brand-mark">NG</div>
+        <div class="brand-meta">
+          <strong>Auditoria</strong>
+          <span>Sistema de Cajas</span>
+        </div>
+      </div>
+      <nav class="sidebar__nav" id="sidebarNav">
+        {% if session.get('role_level', 1)|int >= 10 %}
+        <a class="nav-item" href="/soporte">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Panel Soporte
+        </a>
+        <a class="nav-item" href="/gestion-anticipos">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Anticipos
+        </a>
+        <a class="nav-item" href="/auditor">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Vista Auditor
+        </a>
+        {% endif %}
+        <a class="nav-item is-active" href="/auditoria_sistema">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Tabla de Auditoria
+        </a>
+      </nav>
+      <div class="sidebar__footer">
+        <a class="nav-item" href="/logout">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Cerrar Sesion
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="audit-container">
+        <div class="audit-header">
+          <h1>Auditoria del Sistema</h1>
+          <span class="badge-audit">AUDITORIA</span>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters">
+          <div>
+            <label>Usuario</label>
+            <input type="text" id="filtroUsuario" placeholder="Nombre de usuario...">
+          </div>
+          <div>
+            <label>Accion</label>
+            <select id="filtroAccion">
+              <option value="">-- Todas --</option>
+              <option value="INSERT">INSERT</option>
+              <option value="UPDATE">UPDATE</option>
+              <option value="DELETE">DELETE</option>
+              <option value="CLOSE_BOX">CLOSE_BOX</option>
+              <option value="CLOSE_LOCAL">CLOSE_LOCAL</option>
+              <option value="AUDIT">AUDIT</option>
+              <option value="INSERT_UPDATE">INSERT_UPDATE</option>
+              <option value="OPERATION">OPERATION</option>
+              <option value="REOPEN_BOX">REOPEN_BOX</option>
+              <option value="REOPEN_LOCAL">REOPEN_LOCAL</option>
+              <option value="UNAUDIT_LOCAL">UNAUDIT_LOCAL</option>
+              <option value="CREATE_BOX">CREATE_BOX</option>
+            </select>
+          </div>
+          <div>
+            <label>Local</label>
+            <input type="text" id="filtroLocal" placeholder="Nombre del local...">
+          </div>
+          <div>
+            <label>Tabla</label>
+            <input type="text" id="filtroTabla" placeholder="Nombre de tabla...">
+          </div>
+          <div>
+            <label>Fecha Desde</label>
+            <input type="date" id="filtroFechaDesde">
+          </div>
+          <div>
+            <label>Fecha Hasta</label>
+            <input type="date" id="filtroFechaHasta">
+          </div>
+          <div>
+            <label>Fecha Operacion</label>
+            <input type="date" id="filtroFechaOp">
+          </div>
+          <div>
+            <label>Caja</label>
+            <input type="text" id="filtroCaja" placeholder="Numero de caja...">
+          </div>
+          <div class="filter-actions">
+            <button id="btnBuscar" class="btn-primary">Buscar</button>
+            <button id="btnLimpiar" class="btn-secondary">Limpiar Filtros</button>
+          </div>
+        </div>
+
+        <div id="resultCount" class="result-count"></div>
+
+        <!-- Tabla -->
+        <div class="audit-table-wrap">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Fecha/Hora</th>
+                <th>Usuario</th>
+                <th>Accion</th>
+                <th>Tabla</th>
+                <th>Local</th>
+                <th>Caja</th>
+                <th>Fecha Op.</th>
+                <th>Descripcion</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody">
+              <tr><td colspan="9" class="empty-msg">Usa los filtros para buscar registros de auditoria</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginacion -->
+        <div class="pagination" id="pagination" style="display:none;">
+          <button id="btnPrev" disabled>Anterior</button>
+          <span id="paginaInfo">Pagina 1</span>
+          <button id="btnNext">Siguiente</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/auditoria_sistema.js') }}"></script>
 </body>
 </html>

@@ -397,11 +397,12 @@
 
       var html = '';
       items.forEach(function (it) {
+        var accionLabel = ACCION_LABELS[it.accion] || it.accion || '-';
         html += '<tr>' +
-                '<td>' + esc(it.fecha_hora || '') + '</td>' +
-                '<td><span class="accion-badge accion-' + esc(it.accion || '') + '">' + esc(it.accion || '') + '</span></td>' +
+                '<td>' + formatFechaHora(it.fecha_hora) + '</td>' +
+                '<td><span class="accion-badge accion-' + esc(it.accion || '') + '">' + esc(accionLabel) + '</span></td>' +
                 '<td>' + esc(it.local || '-') + '</td>' +
-                '<td>' + esc(it.fecha_operacion || '-') + '</td>' +
+                '<td>' + formatFechaOp(it.fecha_operacion) + '</td>' +
                 '<td>' + esc(it.descripcion || '-') + '</td>' +
                 '<td>' + esc(it.usuario || '-') + '</td>' +
                 '</tr>';
@@ -420,6 +421,48 @@
     var d = document.createElement('div');
     d.appendChild(document.createTextNode(s));
     return d.innerHTML;
+  }
+
+  var ACCION_LABELS = {
+    'REOPEN_BOX': 'Reapertura caja',
+    'REOPEN_LOCAL': 'Reapertura local',
+    'UNAUDIT_LOCAL': 'Des-auditoria',
+    'CREATE_BOX': 'Creacion caja'
+  };
+
+  function formatFechaHora(val) {
+    if (!val) return '-';
+    try {
+      var s = String(val);
+      // Intentar parsear como Date
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }) +
+               ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' });
+      }
+      return esc(val);
+    } catch (e) { return esc(val); }
+  }
+
+  function formatFechaOp(val) {
+    if (!val) return '-';
+    try {
+      var s = String(val);
+      // ISO: 2026-02-03
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        var parts = s.substring(0, 10).split('-');
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+      }
+      // HTTP date: "Tue, 03 Feb 2026 00:00:00 GMT"
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        var dd = String(d.getUTCDate()).padStart(2, '0');
+        var mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+        var yy = d.getUTCFullYear();
+        return dd + '/' + mm + '/' + yy;
+      }
+      return esc(val);
+    } catch (e) { return esc(val); }
   }
 
 })();

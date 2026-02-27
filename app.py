@@ -12636,6 +12636,35 @@ def cambiar_local():
 #  SOPORTE - Panel de Desarrollo
 # ============================================================
 
+# --- Auto-migración: asegurar que auditoria.accion sea VARCHAR(50) ---
+# La columna era ENUM y no aceptaba acciones nuevas como REOPEN_BOX, etc.
+def _migrate_auditoria_accion():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'auditoria'
+              AND COLUMN_NAME = 'accion'
+        """)
+        row = cur.fetchone()
+        cur.close()
+        if row and 'enum' in (row.get('COLUMN_TYPE') or '').lower():
+            cur2 = conn.cursor()
+            cur2.execute("ALTER TABLE auditoria MODIFY COLUMN accion VARCHAR(50) NOT NULL")
+            conn.commit()
+            cur2.close()
+            print("[MIGRATE] ✓ auditoria.accion cambiada de ENUM a VARCHAR(50)")
+        else:
+            print("[MIGRATE] auditoria.accion ya es VARCHAR, no requiere cambio")
+        conn.close()
+    except Exception as e:
+        print(f"[MIGRATE] ✗ Error migrando auditoria.accion: {e}")
+
+_migrate_auditoria_accion()
+# --- Fin auto-migración ---
+
 @app.route('/soporte', endpoint='soporte_page')
 @login_required
 @role_min_required(10)
@@ -12765,7 +12794,7 @@ def api_soporte_reabrir_caja():
             registro_id=row['id'],
             datos_anteriores=datos_anteriores,
             datos_nuevos={'estado': 1, 'motivo_reapertura': motivo},
-            descripcion=f"SOPORTE: Caja reabierta {local}/{caja}/{turno}/{f} - Motivo: {motivo}",
+            descripcion=f"Reapertura de caja {caja} turno {turno} en {local} ({f}). Motivo: {motivo}",
             contexto_override={'local': local, 'caja': caja, 'fecha_operacion': str(f), 'turno': turno}
         )
 
@@ -12851,7 +12880,7 @@ def api_soporte_reabrir_local():
             registro_id=row.get('id'),
             datos_anteriores=datos_anteriores,
             datos_nuevos={'estado': 1, 'motivo_reapertura': motivo},
-            descripcion=f"SOPORTE: Local reabierto {local}/{f} - Motivo: {motivo}",
+            descripcion=f"Reapertura de local {local} ({f}). Motivo: {motivo}",
             contexto_override={'local': local, 'fecha_operacion': str(f)}
         )
 
@@ -12914,7 +12943,7 @@ def api_soporte_desauditar_local():
             registro_id=audit_id,
             datos_anteriores=datos_anteriores,
             datos_nuevos=None,
-            descripcion=f"SOPORTE: Local des-auditado {local}/{f} - Auditado por: {row.get('auditado_por')} - Motivo: {motivo}",
+            descripcion=f"Des-auditoria de {local} ({f}). Habia sido auditado por {row.get('auditado_por', '?')}. Motivo: {motivo}",
             contexto_override={'local': local, 'fecha_operacion': str(f)}
         )
 
@@ -12985,7 +13014,7 @@ def api_soporte_crear_caja():
             registro_id=new_id,
             datos_anteriores=None,
             datos_nuevos={'local': local, 'caja': caja, 'fecha_operacion': str(f), 'turno': turno, 'estado': 1, 'motivo': motivo},
-            descripcion=f"SOPORTE: Caja creada {local}/{caja}/{turno}/{f} - Motivo: {motivo}",
+            descripcion=f"Creacion de caja {caja} turno {turno} en {local} ({f}). Motivo: {motivo}",
             contexto_override={'local': local, 'caja': caja, 'fecha_operacion': str(f), 'turno': turno}
         )
 
