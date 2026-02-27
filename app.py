@@ -12931,3 +12931,70 @@ def api_soporte_desauditar_local():
         except Exception: pass
         try: conn.close()
         except Exception: pass
+
+
+@app.route('/api/soporte/crear_caja', methods=['POST'])
+@login_required
+@role_min_required(10)
+def api_soporte_crear_caja():
+    """Crea una caja abierta (estado=1) para un local/fecha/turno. Motivo obligatorio. Queda en auditoría."""
+    data = request.get_json() or {}
+    local  = (data.get('local') or '').strip()
+    caja   = (data.get('caja') or '').strip()
+    fecha  = (data.get('fecha') or '').strip()
+    turno  = (data.get('turno') or '').strip()
+    motivo = (data.get('motivo') or '').strip()
+
+    if not all([local, caja, fecha, turno]):
+        return jsonify(success=False, msg='Faltan parámetros: local, caja, fecha, turno'), 400
+    if not motivo:
+        return jsonify(success=False, msg='El motivo es obligatorio para crear una caja'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        # Verificar que no exista ya
+        cur.execute("""
+            SELECT id, estado FROM cajas_estado
+            WHERE local=%s AND caja=%s AND DATE(fecha_operacion)=%s AND turno=%s
+            LIMIT 1
+        """, (local, caja, f, turno))
+        row = cur.fetchone()
+
+        if row:
+            estado_txt = 'abierta' if row['estado'] == 1 else 'cerrada'
+            return jsonify(success=False, msg=f'Ya existe la caja {caja} / {turno} para esta fecha (está {estado_txt})'), 409
+
+        cur.execute("""
+            INSERT INTO cajas_estado (local, caja, fecha_operacion, turno, estado)
+            VALUES (%s, %s, %s, %s, 1)
+        """, (local, caja, f, turno))
+        new_id = cur.lastrowid
+        conn.commit()
+
+        registrar_auditoria(
+            conn=conn,
+            accion='CREATE_BOX',
+            tabla='cajas_estado',
+            registro_id=new_id,
+            datos_anteriores=None,
+            datos_nuevos={'local': local, 'caja': caja, 'fecha_operacion': str(f), 'turno': turno, 'estado': 1, 'motivo': motivo},
+            descripcion=f"SOPORTE: Caja creada {local}/{caja}/{turno}/{f} - Motivo: {motivo}",
+            contexto_override={'local': local, 'caja': caja, 'fecha_operacion': str(f), 'turno': turno}
+        )
+
+        return jsonify(success=True, msg=f'Caja {caja} ({turno}) creada correctamente para {local} el {f}')
+
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass

@@ -35,14 +35,22 @@
     try {
       const resp = await fetch('/api/locales');
       const data = await resp.json();
-      if (data.locales && data.locales.length) {
-        data.locales.forEach(function (l) {
-          const opt = document.createElement('option');
-          opt.value = l;
-          opt.textContent = l;
-          selLocal.appendChild(opt);
-        });
-      }
+      var localesRaw = data.locales || [];
+
+      // Normalizar: puede venir como string o como objeto {local:"...", nombre:"..."}
+      var locales = localesRaw.map(function (l) {
+        if (typeof l === 'string') return l;
+        if (l && l.nombre) return l.nombre;
+        if (l && l.local) return l.local;
+        return String(l);
+      });
+
+      locales.forEach(function (nombre) {
+        var opt = document.createElement('option');
+        opt.value = nombre;
+        opt.textContent = nombre;
+        selLocal.appendChild(opt);
+      });
     } catch (err) {
       console.error('Error cargando locales:', err);
     }
@@ -178,11 +186,69 @@
       }
     }
 
+    // Crear caja (siempre visible cuando no está auditado)
+    if (!data.auditado) {
+      html += '<div class="acciones-group">';
+      html += '<h4>Crear Caja</h4>';
+      html += '<div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:8px;">';
+      html += '<div><label style="font-size:12px;display:block;margin-bottom:4px;">Caja</label>' +
+              '<select id="selCrearCaja" style="padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">' +
+              '<option value="">Cargando...</option></select></div>';
+      html += '<div><label style="font-size:12px;display:block;margin-bottom:4px;">Turno</label>' +
+              '<select id="selCrearTurno" style="padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">' +
+              '<option value="">Cargando...</option></select></div>';
+      html += '<button class="btn-primary" onclick="window._soporteCrearCaja()">Crear Caja</button>';
+      html += '</div>';
+      html += '<p class="estado-info">Crea una caja abierta para este local/fecha. Útil si el cajero aún no cargó datos.</p>';
+      html += '</div>';
+    }
+
     if (!html) {
       html = '<p class="empty-msg">No hay acciones disponibles. Todo está abierto y sin auditar.</p>';
     }
 
     botonesAccion.innerHTML = html;
+
+    // Cargar opciones de caja/turno si el panel de crear caja está visible
+    if (!data.auditado) {
+      loadCajasYTurnos(estadoActual._local);
+    }
+  }
+
+  // ── Cargar cajas y turnos del local ────────────────────────────────────
+  async function loadCajasYTurnos(local) {
+    try {
+      var resp = await fetch('/api/locales/' + encodeURIComponent(local) + '/cajas');
+      var data = await resp.json();
+
+      var selCaja = document.getElementById('selCrearCaja');
+      var selTurno = document.getElementById('selCrearTurno');
+      if (!selCaja || !selTurno) return;
+
+      // Llenar cajas
+      selCaja.innerHTML = '<option value="">-- Caja --</option>';
+      if (data.success && data.cajas) {
+        data.cajas.forEach(function (c) {
+          var opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          selCaja.appendChild(opt);
+        });
+      }
+
+      // Llenar turnos
+      selTurno.innerHTML = '<option value="">-- Turno --</option>';
+      if (data.success && data.turnos) {
+        data.turnos.forEach(function (t) {
+          var opt = document.createElement('option');
+          opt.value = t;
+          opt.textContent = t;
+          selTurno.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('Error cargando cajas/turnos:', err);
+    }
   }
 
   // ── Acciones ───────────────────────────────────────────────────────────
@@ -262,6 +328,39 @@
     }
   };
 
+  window._soporteCrearCaja = async function () {
+    if (!estadoActual) return;
+    var selCaja = document.getElementById('selCrearCaja');
+    var selTurno = document.getElementById('selCrearTurno');
+    var caja = selCaja ? selCaja.value : '';
+    var turno = selTurno ? selTurno.value : '';
+
+    if (!caja || !turno) { alert('Seleccioná una caja y un turno.'); return; }
+
+    var motivo = txtMotivo.value.trim();
+    if (!motivo) { alert('Ingresá un motivo antes de ejecutar la acción.'); txtMotivo.focus(); return; }
+
+    if (!confirm('¿Crear ' + caja + ' / ' + turno + ' para ' + estadoActual._local + ' el ' + estadoActual._fecha + '?\n\nMotivo: ' + motivo)) return;
+
+    try {
+      var resp = await fetch('/api/soporte/crear_caja', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ local: estadoActual._local, caja: caja, fecha: estadoActual._fecha, turno: turno, motivo: motivo })
+      });
+      var data = await resp.json();
+      alert(data.msg || (data.success ? 'OK' : 'Error'));
+      if (data.success) {
+        txtMotivo.value = '';
+        consultarEstado();
+        loadRecentLog();
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión.');
+    }
+  };
+
   // ── Log reciente ───────────────────────────────────────────────────────
   async function loadRecentLog() {
     try {
@@ -274,10 +373,14 @@
       var resp3 = await fetch('/api/tabla_auditoria?accion=UNAUDIT_LOCAL&limit=50');
       var d3 = await resp3.json();
 
+      var resp4 = await fetch('/api/tabla_auditoria?accion=CREATE_BOX&limit=50');
+      var d4 = await resp4.json();
+
       var items = []
         .concat(d1.items || [])
         .concat(d2.items || [])
-        .concat(d3.items || []);
+        .concat(d3.items || [])
+        .concat(d4.items || []);
 
       // Ordenar por fecha desc
       items.sort(function (a, b) {
