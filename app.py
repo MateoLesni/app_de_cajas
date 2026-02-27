@@ -140,6 +140,7 @@ def get_user_level() -> int:
     4 = anticipos (solo crea anticipos en locales asignados)
     5 = jefe_auditor
     6 = admin_anticipos (gestiona todos los anticipos)
+    10 = soporte (reabrir cajas/locales, des-auditar, todo auditado)
     """
     lvl = session.get('role_level')
     if lvl is not None:
@@ -152,7 +153,8 @@ def get_user_level() -> int:
         'auditor': 3,
         'anticipos': 4,  # Rol limitado: solo crea anticipos en locales asignados
         'jefe_auditor': 5,
-        'admin_anticipos': 6  # Rol especial: gestiona todos los anticipos
+        'admin_anticipos': 6,  # Rol especial: gestiona todos los anticipos
+        'soporte': 10,  # Soporte Desarrollo: reabrir cajas/locales, des-auditar
     }
     return MAP.get(role, 0)
 
@@ -165,8 +167,8 @@ def get_user_allowed_locales() -> list:
     """
     lvl = get_user_level()
 
-    # Admin de anticipos (nivel 6): acceso total a todos los locales
-    if lvl == 6:
+    # Admin de anticipos (nivel 6) o soporte (nivel 10+): acceso total a todos los locales
+    if lvl >= 6:
         return []  # Lista vacía significa "todos los locales"
 
     # Usuario con rol 'anticipos' (nivel 4): consultar permisos específicos
@@ -203,8 +205,8 @@ def can_user_access_local_for_anticipos(local: str) -> bool:
     """
     lvl = get_user_level()
 
-    # Admin de anticipos (nivel 6): acceso total
-    if lvl == 6:
+    # Admin de anticipos (nivel 6) o soporte (nivel 10+): acceso total
+    if lvl >= 6:
         return True
 
     # Usuario con rol 'anticipos' (nivel 4): verificar permiso específico
@@ -259,9 +261,9 @@ def can_edit(conn, local: str, caja: str, turno: str, fecha, user_level: int) ->
     """
     f = _normalize_fecha(fecha)
 
-    # NUEVA REGLA: Si está auditado, NADIE puede editar
+    # Si está auditado, solo soporte (nivel 10+) puede editar
     if is_local_auditado(conn, local, f):
-        return False
+        return user_level >= 10
 
     # Cierre de local es global por fecha (ignora turno)
     if is_local_closed(conn, local, f):
@@ -444,6 +446,9 @@ def read_scope_sql(alias: str = 't') -> str:
       - Nivel 3 (auditor): SOLO locales cerrados → AND CLOSED_LOCAL_SUBQUERY.
     """
     lvl = get_user_level()
+    # Soporte: ve TODO sin restricciones
+    if lvl >= 10:
+        return ""
     if lvl >= 3:
         # Auditor: solo locales cerrados
         return f" AND {CLOSED_LOCAL_SUBQUERY.format(a=alias)}"
@@ -494,10 +499,12 @@ def require_edit_ctx(fn):
             return jsonify(success=False, msg='falta local/caja/fecha/turno'), 400
         conn = get_db_connection()
         try:
+            lvl = get_user_level()
             # Verificar primero si está auditado para mensaje más claro
-            if is_local_auditado(conn, ctx['local'], ctx['fecha']):
+            # Excepción: soporte (nivel 10+) puede editar locales auditados
+            if is_local_auditado(conn, ctx['local'], ctx['fecha']) and lvl < 10:
                 return jsonify(success=False, msg='❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones.'), 403
-            ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], get_user_level())
+            ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], lvl)
         finally:
             conn.close()
         if not ok:
@@ -607,6 +614,9 @@ def route_for_current_role() -> str:
     except Exception:
         lvl = 1
 
+    if lvl >= 10:
+        # Soporte Desarrollo
+        return url_for('soporte_page')
     if lvl == 2:
         # Encargado
         return url_for('encargado')
@@ -648,6 +658,10 @@ def go_home():
 def redirect_after_login():
     nxt = request.args.get('next') or (request.form.get('next') if hasattr(request, 'form') else None)
     lvl = get_user_level()
+
+    # Soporte (nivel 10+) siempre va a /soporte
+    if lvl >= 10:
+        return redirect(url_for('soporte_page'))
 
     # Usuario con rol 'tesoreria' (nivel 7+) siempre va a /tesoreria
     if lvl >= 7:
@@ -12619,3 +12633,301 @@ def cambiar_local():
         print(f"Error en cambiar_local: {e}")
         return jsonify({'success': False, 'msg': f'Error al cambiar local: {str(e)}'}), 500
 
+
+# ============================================================
+#  SOPORTE - Panel de Desarrollo
+# ============================================================
+
+@app.route('/soporte', endpoint='soporte_page')
+@login_required
+@role_min_required(10)
+def soporte_page():
+    return render_template('soporte.html')
+
+
+@app.route('/api/soporte/estado', methods=['GET'])
+@login_required
+@role_min_required(10)
+def api_soporte_estado():
+    """Estado completo de un local para una fecha: cajas, cierre, auditoría."""
+    local = request.args.get('local', '').strip()
+    fecha = request.args.get('fecha', '').strip()
+    if not local or not fecha:
+        return jsonify(success=False, msg='Faltan local y fecha'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        # Cajas
+        cur.execute("""
+            SELECT caja, turno, estado, cerrada_por, cerrada_en, observacion
+            FROM cajas_estado
+            WHERE local=%s AND DATE(fecha_operacion)=%s
+            ORDER BY caja, turno
+        """, (local, f))
+        cajas = cur.fetchall()
+        for c in cajas:
+            if c.get('cerrada_en') and hasattr(c['cerrada_en'], 'isoformat'):
+                c['cerrada_en'] = c['cerrada_en'].isoformat()
+
+        # Cierre local
+        cur.execute("""
+            SELECT estado, closed_by, closed_at
+            FROM cierres_locales
+            WHERE local=%s AND DATE(fecha)=%s
+            LIMIT 1
+        """, (local, f))
+        cierre = cur.fetchone()
+        if cierre and cierre.get('closed_at') and hasattr(cierre['closed_at'], 'isoformat'):
+            cierre['closed_at'] = cierre['closed_at'].isoformat()
+
+        # Auditoría
+        cur.execute("""
+            SELECT id, auditado_por, fecha_auditoria, observaciones
+            FROM locales_auditados
+            WHERE local=%s AND DATE(fecha)=%s
+            LIMIT 1
+        """, (local, f))
+        audit = cur.fetchone()
+        if audit and audit.get('fecha_auditoria') and hasattr(audit['fecha_auditoria'], 'isoformat'):
+            audit['fecha_auditoria'] = audit['fecha_auditoria'].isoformat()
+
+        return jsonify(
+            success=True,
+            cajas=cajas or [],
+            local_cerrado=bool(cierre and cierre['estado'] == 0),
+            cierre_local=cierre,
+            auditado=bool(audit),
+            auditoria_info=audit
+        )
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/soporte/reabrir_caja', methods=['POST'])
+@login_required
+@role_min_required(10)
+def api_soporte_reabrir_caja():
+    """Reabre una caja cerrada. Requiere motivo obligatorio. Queda en auditoría."""
+    data = request.get_json() or {}
+    local  = (data.get('local') or '').strip()
+    caja   = (data.get('caja') or '').strip()
+    fecha  = (data.get('fecha') or '').strip()
+    turno  = (data.get('turno') or '').strip()
+    motivo = (data.get('motivo') or '').strip()
+
+    if not all([local, caja, fecha, turno]):
+        return jsonify(success=False, msg='Faltan parámetros: local, caja, fecha, turno'), 400
+    if not motivo:
+        return jsonify(success=False, msg='El motivo es obligatorio para reabrir una caja'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT id, estado, cerrada_por, cerrada_en, observacion
+            FROM cajas_estado
+            WHERE local=%s AND caja=%s AND DATE(fecha_operacion)=%s AND turno=%s
+            LIMIT 1
+        """, (local, caja, f, turno))
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify(success=False, msg='No se encontró estado de caja para esos parámetros'), 404
+        if row['estado'] == 1:
+            return jsonify(success=False, msg='La caja ya está abierta'), 409
+
+        datos_anteriores = {k: (v.isoformat() if hasattr(v, 'isoformat') else v) for k, v in row.items()}
+
+        cur.execute("""
+            UPDATE cajas_estado
+            SET estado = 1, cerrada_en = NULL, cerrada_por = NULL
+            WHERE id = %s
+        """, (row['id'],))
+        conn.commit()
+
+        registrar_auditoria(
+            conn=conn,
+            accion='REOPEN_BOX',
+            tabla='cajas_estado',
+            registro_id=row['id'],
+            datos_anteriores=datos_anteriores,
+            datos_nuevos={'estado': 1, 'motivo_reapertura': motivo},
+            descripcion=f"SOPORTE: Caja reabierta {local}/{caja}/{turno}/{f} - Motivo: {motivo}",
+            contexto_override={'local': local, 'caja': caja, 'fecha_operacion': str(f), 'turno': turno}
+        )
+
+        return jsonify(success=True, msg=f'Caja {caja} (turno {turno}) reabierta correctamente')
+
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/soporte/reabrir_local', methods=['POST'])
+@login_required
+@role_min_required(10)
+def api_soporte_reabrir_local():
+    """Reabre un local cerrado. Requiere que NO esté auditado. Motivo obligatorio."""
+    data = request.get_json() or {}
+    local  = (data.get('local') or '').strip()
+    fecha  = (data.get('fecha') or '').strip()
+    motivo = (data.get('motivo') or '').strip()
+
+    if not all([local, fecha]):
+        return jsonify(success=False, msg='Faltan parámetros: local y fecha'), 400
+    if not motivo:
+        return jsonify(success=False, msg='El motivo es obligatorio para reabrir un local'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        # No permitir reabrir si aún está auditado
+        if is_local_auditado(conn, local, f):
+            return jsonify(success=False,
+                msg='No se puede reabrir un local que aún está AUDITADO. Primero des-auditá el local.'), 409
+
+        cur.execute("""
+            SELECT * FROM cierres_locales
+            WHERE local=%s AND DATE(fecha)=%s
+            LIMIT 1
+        """, (local, f))
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify(success=False, msg='No hay registro de cierre para este local/fecha'), 404
+        if row.get('estado') != 0:
+            return jsonify(success=False, msg='El local no está cerrado'), 409
+
+        datos_anteriores = {k: (v.isoformat() if hasattr(v, 'isoformat') else v) for k, v in row.items()}
+
+        # Reabrir
+        cur.execute("""
+            UPDATE cierres_locales SET estado = 1
+            WHERE local=%s AND DATE(fecha)=%s
+        """, (local, f))
+
+        # Revertir estado='ok' en tablas operativas
+        tablas_operativas = [
+            'remesas_trns', 'mercadopago_trns', 'tarjetas_trns',
+            'gastos_trns', 'rappi_trns', 'pedidosya_trns',
+            'ventas_base', 'ventas_z', 'tips_tarjetas',
+        ]
+        for tabla in tablas_operativas:
+            try:
+                cur.execute(f"UPDATE {tabla} SET estado=NULL WHERE local=%s AND DATE(fecha)=%s AND estado='ok'", (local, f))
+            except Exception:
+                pass
+
+        conn.commit()
+
+        registrar_auditoria(
+            conn=conn,
+            accion='REOPEN_LOCAL',
+            tabla='cierres_locales',
+            registro_id=row.get('id'),
+            datos_anteriores=datos_anteriores,
+            datos_nuevos={'estado': 1, 'motivo_reapertura': motivo},
+            descripcion=f"SOPORTE: Local reabierto {local}/{f} - Motivo: {motivo}",
+            contexto_override={'local': local, 'fecha_operacion': str(f)}
+        )
+
+        return jsonify(success=True, msg=f'Local {local} reabierto correctamente para {f}')
+
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/soporte/desauditar_local', methods=['POST'])
+@login_required
+@role_min_required(10)
+def api_soporte_desauditar_local():
+    """Des-audita un local. NO revierte la sync con Oppen. Motivo obligatorio."""
+    data = request.get_json() or {}
+    local  = (data.get('local') or '').strip()
+    fecha  = (data.get('fecha') or '').strip()
+    motivo = (data.get('motivo') or '').strip()
+
+    if not all([local, fecha]):
+        return jsonify(success=False, msg='Faltan parámetros: local y fecha'), 400
+    if not motivo:
+        return jsonify(success=False, msg='El motivo es obligatorio para des-auditar un local'), 400
+
+    f = _normalize_fecha(fecha)
+    if not f:
+        return jsonify(success=False, msg='Fecha inválida'), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT * FROM locales_auditados
+            WHERE local=%s AND DATE(fecha)=%s
+            LIMIT 1
+        """, (local, f))
+        row = cur.fetchone()
+
+        if not row:
+            return jsonify(success=False, msg='Este local no está marcado como auditado para esta fecha'), 404
+
+        datos_anteriores = {k: (v.isoformat() if hasattr(v, 'isoformat') else v) for k, v in row.items()}
+        audit_id = row['id']
+
+        cur.execute("DELETE FROM locales_auditados WHERE id = %s", (audit_id,))
+        conn.commit()
+
+        registrar_auditoria(
+            conn=conn,
+            accion='UNAUDIT_LOCAL',
+            tabla='locales_auditados',
+            registro_id=audit_id,
+            datos_anteriores=datos_anteriores,
+            datos_nuevos=None,
+            descripcion=f"SOPORTE: Local des-auditado {local}/{f} - Auditado por: {row.get('auditado_por')} - Motivo: {motivo}",
+            contexto_override={'local': local, 'fecha_operacion': str(f)}
+        )
+
+        return jsonify(
+            success=True,
+            msg=f'Local {local} des-auditado para {f}. NOTA: La sincronización con Oppen NO fue revertida.'
+        )
+
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass

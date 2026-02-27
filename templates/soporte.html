@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Soporte - Sistema de Gestion de Flujo de Cajas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    .soporte-container {
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.06);
+      padding: 24px;
+    }
+    .soporte-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .soporte-header h1 { margin: 0; font-size: 24px; color: #1f2937; }
+    .badge-soporte {
+      background: #7c3aed;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    /* Filtros */
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      align-items: end;
+    }
+    .filters label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      color: #374151;
+      font-size: 13px;
+    }
+    .filters select, .filters input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    /* Panel de estado */
+    .estado-panel {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .estado-panel h3 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      color: #1f2937;
+    }
+    .estado-panel h4 {
+      margin: 16px 0 8px;
+      font-size: 14px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .estado-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .estado-abierta { background: #d1fae5; color: #065f46; }
+    .estado-cerrada { background: #fee2e2; color: #991b1b; }
+    .estado-auditado { background: #fef3c7; color: #92400e; }
+    .estado-no-auditado { background: #f3f4f6; color: #6b7280; }
+    .estado-info { font-size: 13px; color: #6b7280; margin: 4px 0; }
+
+    /* Tabla de cajas */
+    .cajas-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 8px 0;
+    }
+    .cajas-table th { background: #f8fafc; font-weight: 600; color: #374151; }
+    .cajas-table th, .cajas-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* Acciones */
+    .acciones-panel {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .acciones-panel h3 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      color: #1f2937;
+    }
+    .motivo-section { margin-bottom: 16px; }
+    .motivo-section label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      color: #374151;
+      font-size: 13px;
+    }
+    .motivo-section textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 70px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .acciones-group { margin-bottom: 16px; }
+    .acciones-group h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #374151;
+    }
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+    .btn-warning:hover { background: #d97706; }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .btn-danger:hover { background: #dc2626; }
+
+    /* Log */
+    .log-section {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .log-section h3 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      color: #1f2937;
+    }
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .log-table th { background: #f8fafc; font-weight: 600; color: #374151; }
+    .log-table th, .log-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .log-table td { color: #4b5563; }
+    .accion-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .accion-REOPEN_BOX { background: #dbeafe; color: #1e40af; }
+    .accion-REOPEN_LOCAL { background: #fef3c7; color: #92400e; }
+    .accion-UNAUDIT_LOCAL { background: #fee2e2; color: #991b1b; }
+
+    .empty-msg {
+      text-align: center;
+      padding: 20px;
+      color: #9ca3af;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation">
+      <div class="sidebar__brand">
+        <div class="brand-mark">NG</div>
+        <div class="brand-meta">
+          <strong>Soporte</strong>
+          <span>Panel de Desarrollo</span>
+        </div>
+      </div>
+      <nav class="sidebar__nav" id="sidebarNav">
+        <a class="nav-item is-active" href="/soporte">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Panel Soporte
+        </a>
+        <a class="nav-item" href="/gestion-anticipos">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Anticipos
+        </a>
+        <a class="nav-item" href="/auditor">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Vista Auditor
+        </a>
+      </nav>
+      <div class="sidebar__footer">
+        <a class="nav-item" href="/logout">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Cerrar Sesion
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="soporte-container">
+        <div class="soporte-header">
+          <h1>Panel de Soporte</h1>
+          <span class="badge-soporte">SOPORTE</span>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters">
+          <div>
+            <label>Local</label>
+            <select id="selLocal">
+              <option value="">-- Seleccionar --</option>
+            </select>
+          </div>
+          <div>
+            <label>Fecha</label>
+            <input type="date" id="inputFecha" />
+          </div>
+          <div>
+            <button id="btnConsultar" class="btn-primary">Consultar Estado</button>
+          </div>
+        </div>
+
+        <!-- Panel de Estado -->
+        <div id="panelEstado" style="display:none;" class="estado-panel">
+          <h3>Estado Actual</h3>
+          <div id="estadoContenido"></div>
+        </div>
+
+        <!-- Panel de Acciones -->
+        <div id="panelAcciones" style="display:none;" class="acciones-panel">
+          <h3>Acciones</h3>
+          <div class="motivo-section">
+            <label>Motivo (obligatorio para cualquier accion)</label>
+            <textarea id="txtMotivo" placeholder="Describir el motivo de la operacion..."></textarea>
+          </div>
+          <div id="botonesAccion"></div>
+        </div>
+
+        <!-- Log de Acciones Recientes -->
+        <div class="log-section">
+          <h3>Acciones Recientes de Soporte</h3>
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Fecha/Hora</th>
+                <th>Accion</th>
+                <th>Local</th>
+                <th>Fecha Op.</th>
+                <th>Descripcion</th>
+                <th>Usuario</th>
+              </tr>
+            </thead>
+            <tbody id="tablaLogBody">
+              <tr><td colspan="6" class="empty-msg">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+  window.ROLE_LEVEL = {{ session['role_level']|int }};
+  </script>
+  <script src="{{ url_for('static', filename='js/soporte.js') }}"></script>
+</body>
+</html>
