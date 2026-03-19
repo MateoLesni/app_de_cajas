@@ -13,7 +13,7 @@ from functools import wraps
 import traceback
 
 # Importar helpers desde app principal
-from app import get_db_connection, login_required
+from app import get_db_connection, login_required, role_min_required
 
 # Crear Blueprint
 tabla_auditoria_bp = Blueprint("tabla_auditoria", __name__)
@@ -405,8 +405,9 @@ def obtener_historial_registro(conn, tabla, registro_id):
 
 @tabla_auditoria_bp.route("/api/tabla_auditoria", methods=["GET"])
 @login_required
+@role_min_required(10)
 def api_auditoria():
-    """Obtiene registros de auditoría con filtros opcionales"""
+    """Obtiene registros de auditoría con filtros opcionales (solo soporte)"""
     try:
         conn = get_db_connection()
 
@@ -439,8 +440,9 @@ def api_auditoria():
 
 @tabla_auditoria_bp.route("/api/tabla_auditoria/historial/<tabla>/<int:registro_id>", methods=["GET"])
 @login_required
+@role_min_required(10)
 def api_auditoria_historial(tabla, registro_id):
-    """Obtiene el historial completo de un registro específico"""
+    """Obtiene el historial completo de un registro específico (solo soporte)"""
     try:
         conn = get_db_connection()
         historial = obtener_historial_registro(conn, tabla, registro_id)
@@ -457,6 +459,7 @@ def api_auditoria_historial(tabla, registro_id):
 
 @tabla_auditoria_bp.route("/auditoria_sistema")
 @login_required
+@role_min_required(10)
 def pagina_auditoria():
-    """Página web para consultar auditoría"""
+    """Página web para consultar auditoría (solo soporte)"""
     return render_template('auditoria_sistema.html')

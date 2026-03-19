@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel de Control - Sistema de Gestion de Flujo de Cajas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    .panel-container {
+      max-width: 1600px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.06);
+      padding: 24px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .panel-header h1 { margin: 0; font-size: 24px; color: #1f2937; }
+    .badge-panel {
+      background: #2563eb;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    /* KPIs */
+    .kpi-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .kpi-pill {
+      flex: 1;
+      min-width: 160px;
+      max-width: 280px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+    }
+    .kpi-pill .kpi-value { font-size: 28px; font-weight: 700; color: #1f2937; }
+    .kpi-pill .kpi-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .kpi-auditados { border-left: 4px solid #22c55e; }
+    .kpi-aprobados { border-left: 4px solid #eab308; }
+    .kpi-sin-aprobar { border-left: 4px solid #ef4444; }
+
+    /* Controls */
+    .panel-controls {
+      display: flex; gap: 12px; align-items: end;
+      margin-bottom: 16px; flex-wrap: wrap;
+      padding: 16px; background: #f8fafc; border-radius: 8px;
+    }
+    .panel-controls label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 4px; }
+    .panel-controls input[type="date"] {
+      padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;
+      font-size: 14px;
+    }
+    .panel-controls .btn-primary {
+      padding: 8px 20px; background: #2563eb; color: #fff; border: none;
+      border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;
+    }
+    .panel-controls .btn-primary:hover { background: #1d4ed8; }
+    .panel-controls .btn-primary:disabled { background: #93c5fd; cursor: wait; }
+
+    /* Leyenda */
+    .grid-legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #374151; }
+    .legend-dot { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #d1d5db; display: inline-block; flex-shrink: 0; }
+    .legend-desc { color: #9ca3af; font-size: 11px; font-style: italic; }
+    .dot-auditado { background: #bbf7d0; }
+    .dot-aprobado { background: #fef08a; }
+    .dot-sin-aprobar { background: #fca5a5; }
+
+    /* Seccion */
+    .seccion-titulo {
+      font-size: 16px; font-weight: 700; color: #1f2937;
+      margin: 24px 0 12px; padding-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .badge-count {
+      background: #ef4444; color: #fff; border-radius: 12px;
+      padding: 2px 8px; font-size: 11px; font-weight: 600;
+    }
+
+    /* Grilla */
+    .grid-scroll-wrapper { overflow-x: auto; margin-bottom: 28px; max-height: 75vh; overflow-y: auto; }
+    .status-grid { border-collapse: separate; border-spacing: 0; width: max-content; }
+    .status-grid th {
+      background: #f8fafc; padding: 8px 6px; font-size: 11px;
+      white-space: nowrap; border: 1px solid #e5e7eb; text-align: center;
+      position: sticky; top: 0; z-index: 2;
+    }
+    .status-grid th.col-local {
+      text-align: left; padding-left: 10px; width: 160px; min-width: 160px;
+      position: sticky; left: 0; z-index: 3; background: #f8fafc;
+    }
+    .status-grid td.local-name {
+      padding: 6px 10px; font-size: 13px; white-space: nowrap;
+      border: 1px solid #e5e7eb; font-weight: 600; background: #fff;
+      position: sticky; left: 0; z-index: 1;
+      width: 160px; min-width: 160px;
+    }
+    .status-grid td.cell {
+      min-width: 64px; height: 36px;
+      border: 1px solid #e5e7eb; text-align: center; cursor: pointer;
+      transition: opacity .15s; font-size: 11px; font-weight: 600;
+      padding: 2px 4px; white-space: nowrap;
+    }
+    .status-grid td.cell:hover { opacity: .7; }
+    .status-grid tr:hover td.local-name { background: #f0f9ff; }
+
+    /* Colores de celda */
+    .cell-auditado { background: #bbf7d0; color: #166534; }
+    .cell-aprobado { background: #fef08a; color: #854d0e; }
+    .cell-sin_aprobar { background: #fca5a5; color: #991b1b; }
+
+    /* Tabla anomalias */
+    .anomalias-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .anomalias-table th {
+      background: #fef2f2; padding: 10px 12px; font-weight: 600;
+      text-align: left; border-bottom: 2px solid #fecaca; color: #991b1b;
+    }
+    .anomalias-table td {
+      padding: 10px 12px; border-bottom: 1px solid #e5e7eb;
+    }
+    .anomalias-table tr:hover td { background: #fff7ed; }
+    .anomalias-table .btn-ver {
+      padding: 4px 12px; background: #2563eb; color: #fff; border: none;
+      border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+    .anomalias-table .btn-ver:hover { background: #1d4ed8; }
+
+    .empty-msg { text-align: center; padding: 20px; color: #9ca3af; font-style: italic; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .kpi-row { flex-direction: column; }
+      .panel-controls { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="ui-scale layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation">
+      <div class="sidebar__brand">
+        <div class="brand-mark">NG</div>
+        <div class="brand-meta">
+          <strong>Control</strong>
+          <span>Panel de Control</span>
+        </div>
+      </div>
+      <nav class="sidebar__nav" id="sidebarNav">
+        {% if session.get('role_level', 1)|int >= 10 %}
+        <a class="nav-item" href="/soporte">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Panel Soporte
+        </a>
+        <a class="nav-item" href="/gestion-anticipos">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Anticipos
+        </a>
+        <a class="nav-item" href="/auditoria_sistema">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Tabla de Auditoria
+        </a>
+        {% endif %}
+        <a class="nav-item" href="/auditor">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Vista Auditor
+        </a>
+        <a class="nav-item is-active" href="/panel-control">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Panel de Control
+        </a>
+      </nav>
+      <div class="sidebar__footer">
+        <a class="nav-item" href="/logout">
+          <span class="nav-dot" aria-hidden="true"></span>
+          Cerrar Sesion
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="panel-container">
+        <div class="panel-header">
+          <h1>Panel de Control</h1>
+          <span class="badge-panel">CONTROL</span>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-row" id="kpiRow">
+          <div class="kpi-pill kpi-auditados">
+            <div class="kpi-value" id="kpiAuditados">-</div>
+            <div class="kpi-label">Auditados hoy</div>
+          </div>
+          <div class="kpi-pill kpi-aprobados">
+            <div class="kpi-value" id="kpiAprobados">-</div>
+            <div class="kpi-label">Aprobados (sin auditar)</div>
+          </div>
+          <div class="kpi-pill kpi-sin-aprobar">
+            <div class="kpi-value" id="kpiSinAprobar">-</div>
+            <div class="kpi-label">Sin aprobar</div>
+          </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="panel-controls">
+          <div>
+            <label for="inputDesde">Desde</label>
+            <input type="date" id="inputDesde">
+          </div>
+          <div>
+            <label for="inputHasta">Hasta</label>
+            <input type="date" id="inputHasta">
+          </div>
+          <button class="btn-primary" id="btnRefresh">Actualizar</button>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="grid-legend">
+          <span class="legend-item"><span class="legend-dot dot-sin-aprobar"></span><strong>Sin aprobar</strong> <span class="legend-desc">La operacion aun no envio la informacion</span></span>
+          <span class="legend-item"><span class="legend-dot dot-aprobado"></span><strong>Aprobado</strong> <span class="legend-desc">Local cerrado, pendiente de auditoria</span></span>
+          <span class="legend-item"><span class="legend-dot dot-auditado"></span><strong>Auditado</strong> <span class="legend-desc">Revisado y cargado en el sistema</span></span>
+        </div>
+
+        <!-- Grilla de Estado -->
+        <div class="seccion-titulo">Grilla de Estado</div>
+        <div class="grid-scroll-wrapper">
+          <table class="status-grid" id="statusGrid">
+            <thead id="gridHead"></thead>
+            <tbody id="gridBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Anomalias -->
+        <div class="seccion-titulo">
+          Alertas de Anomalias
+          <span class="badge-count" id="anomaliasCount">0</span>
+        </div>
+        <div id="anomaliasContainer">
+          <table class="anomalias-table" id="anomaliasTable">
+            <thead>
+              <tr>
+                <th>Local</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Venta Total</th>
+                <th>Promedio 30d</th>
+                <th>Diferencia</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="anomaliasBody"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/panel_control.js') }}"></script>
+</body>
+</html>

@@ -855,35 +855,45 @@
   }
 
   document.addEventListener('DOMContentLoaded', async ()=>{
-    // Fecha: intentar cargar desde localStorage, sino usar hoy
+    // Query params tienen prioridad (ej: desde Panel de Control)
+    const urlParams = new URLSearchParams(window.location.search);
+    const qpLocal = urlParams.get('local');
+    const qpFecha = urlParams.get('fecha');
+
+    // Fecha: query param > localStorage > hoy
     const inFecha = document.getElementById('rl-fecha');
-    const fechaGuardada = localStorage.getItem('rl_fecha_selected');
-    if (fechaGuardada) {
-      inFecha.value = fechaGuardada;
-      console.log('📅 Fecha restaurada desde localStorage:', fechaGuardada);
+    if (qpFecha && /^\d{4}-\d{2}-\d{2}$/.test(qpFecha)) {
+      inFecha.value = qpFecha;
+      localStorage.setItem('rl_fecha_selected', qpFecha);
+      console.log('📅 Fecha desde URL:', qpFecha);
     } else {
-      // Si NO hay fecha guardada, establecer fecha de hoy Y guardarla en localStorage
-      const d = new Date(); const p=n=>String(n).padStart(2,'0');
-      const fechaHoy = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-      inFecha.value = fechaHoy;
-      localStorage.setItem('rl_fecha_selected', fechaHoy);
-      console.log('📅 Fecha inicial establecida a hoy y guardada:', fechaHoy);
+      const fechaGuardada = localStorage.getItem('rl_fecha_selected');
+      if (fechaGuardada) {
+        inFecha.value = fechaGuardada;
+        console.log('📅 Fecha restaurada desde localStorage:', fechaGuardada);
+      } else {
+        const d = new Date(); const p=n=>String(n).padStart(2,'0');
+        const fechaHoy = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+        inFecha.value = fechaHoy;
+        localStorage.setItem('rl_fecha_selected', fechaHoy);
+        console.log('📅 Fecha inicial establecida a hoy y guardada:', fechaHoy);
+      }
     }
 
     // Cargar locales primero
     await loadLocalesIfNeeded();
 
-    // Restaurar local guardado desde localStorage DESPUÉS de cargar la lista
+    // Local: query param > localStorage
     const sel = document.getElementById('rl-local-select');
-    const localGuardado = localStorage.getItem('rl_local_selected');
-    if (sel && localGuardado) {
-      const opcionExiste = Array.from(sel.options).some(opt => opt.value === localGuardado);
+    const localObjetivo = qpLocal || localStorage.getItem('rl_local_selected');
+    if (sel && localObjetivo) {
+      const opcionExiste = Array.from(sel.options).some(opt => opt.value === localObjetivo);
       if (opcionExiste) {
-        sel.value = localGuardado;
-        // También actualizar el display
+        sel.value = localObjetivo;
+        localStorage.setItem('rl_local_selected', localObjetivo);
         const display = document.getElementById('rl-local-display');
-        if (display) display.textContent = localGuardado;
-        console.log('🏪 Local restaurado desde localStorage:', localGuardado);
+        if (display) display.textContent = localObjetivo;
+        console.log('🏪 Local seleccionado:', localObjetivo, qpLocal ? '(desde URL)' : '(desde localStorage)');
       }
     }
 

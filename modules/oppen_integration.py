@@ -54,13 +54,19 @@ def log_sync_attempt(
     """
     try:
         import json
+        from decimal import Decimal
+
+        class _Encoder(json.JSONEncoder):
+            def default(self, o):
+                if isinstance(o, Decimal):
+                    return float(o)
+                return super().default(o)
 
         cur = conn.cursor()
 
         # Convertir payloads a JSON string para MySQL
-        # MySQL JSON column acepta strings JSON válidos
-        request_json = json.dumps(request_payload, ensure_ascii=False) if request_payload else None
-        response_json = json.dumps(response_payload, ensure_ascii=False) if response_payload else None
+        request_json = json.dumps(request_payload, ensure_ascii=False, cls=_Encoder) if request_payload else None
+        response_json = json.dumps(response_payload, ensure_ascii=False, cls=_Encoder) if response_payload else None
 
         cur.execute("""
             INSERT INTO oppen_sync_log (
@@ -116,8 +122,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (ambiente de pruebas)
-    BASE_URL = "https://ngprueba.oppen.io"
+    # Configuración de la API (ambiente de producción)
+    BASE_URL = "https://ng.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -328,12 +334,13 @@ class OppenClient:
             "FormType": tipo_config["FormType"],
 
             # === ITEMS ===
+            # El monto de la app es IVA incluido. Oppen suma IVA al Price,
+            # así que enviamos monto / 1.21 para que el Total Bruto sea el monto exacto.
             "Items": [
                 {
-                    "ArtCode": "271240051",  # Artículo genérico (según tu ejemplo)
+                    "ArtCode": "271240051",  # Artículo genérico (IVA 21%, código 5)
                     "Qty": 1,
-                    "Price": float(factura['monto'])
-                    # Oppen calcula el IVA automáticamente
+                    "Price": round(float(factura['monto']) / 1.21, 2)
                 }
             ]
         }
@@ -679,7 +686,7 @@ class OppenClient:
                 "Office": self.DEFAULT_OFFICE,
                 "Labels": recibo_data.get("Labels", ""),
                 "createUser": "API",
-                "Status": 0,
+                "Status": 1,
                 "Invoices": invoices_cleaned,
                 "PayModes": paymodes_cleaned,
             }
@@ -965,12 +972,18 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                 official_sernr = f"{int(punto_venta):04d}-{int(nro_comanda):08d}"
 
                 # Preparar datos para la factura
+                # El monto de la app es IVA incluido. Si tiene IVA (code 5 = 21%),
+                # enviar monto / 1.21 para que el Total Bruto sea el monto exacto.
+                precio_neto = float(cc['monto'])
+                if vat_code == "5":
+                    precio_neto = round(precio_neto / 1.21, 2)
+
                 cc_invoice_data = {
                     "TransDate": str(trans_date),
                     "CustCode": cust_code,
                     "Labels": label_oppen,
                     "Name": description,
-                    "Price": float(cc['monto']),
+                    "Price": precio_neto,
                     "Office": office,
                     "VATCode": vat_code,
                     "OfficialSerNr": official_sernr

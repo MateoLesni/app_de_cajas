@@ -6295,12 +6295,10 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
         # Anticipos Consumidos - SIEMPRE consultar de tablas normales
-        # (no hay snap_anticipos todavía, se agregará en futuras versiones)
-        # Nuevo sistema: usar anticipos_recibidos + anticipos_estados_caja
+        # Usar importe_consumido (ya calculado con USD * cotización), igual que el cálculo global
         cur.execute("""
-            SELECT COALESCE(SUM(ar.importe),0)
-            FROM anticipos_recibidos ar
-            JOIN anticipos_estados_caja aec ON aec.anticipo_id = ar.id
+            SELECT COALESCE(SUM(aec.importe_consumido),0)
+            FROM anticipos_estados_caja aec
             WHERE aec.local=%s AND aec.caja=%s AND DATE(aec.fecha)=%s AND aec.turno=%s
               AND aec.estado = 'consumido'
         """, (local, caja, f, turno))
@@ -13024,6 +13022,299 @@ def api_soporte_crear_caja():
         try: conn.rollback()
         except Exception: pass
         return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+# ========================================================================
+#  PANEL DE CONTROL – Dashboard de estados y anomalías
+# ========================================================================
+
+@app.route('/panel-control')
+@login_required
+@role_min_required(3)
+def panel_control_page():
+    return render_template('panel_control.html')
+
+
+@app.route('/api/panel-control/grid', methods=['GET'])
+@login_required
+@role_min_required(3)
+def api_panel_control_grid():
+    """Devuelve grilla de estados por local/fecha + anomalías."""
+    from datetime import date, timedelta
+    from collections import defaultdict
+
+    hoy = date.today()
+    raw_hasta = request.args.get('fecha_hasta', hoy.isoformat())
+    raw_desde = request.args.get('fecha_desde', (hoy - timedelta(days=6)).isoformat())
+
+    try:
+        fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        fecha_hasta = hoy
+    try:
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        fecha_desde = hoy - timedelta(days=6)
+
+    # Cap 90 días
+    if (fecha_hasta - fecha_desde).days > 90:
+        fecha_desde = fecha_hasta - timedelta(days=90)
+    if fecha_desde > fecha_hasta:
+        return jsonify(error="fecha_desde debe ser <= fecha_hasta"), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        # 1. Locales activos (excluir Local_Test)
+        cur.execute("SELECT DISTINCT local FROM locales WHERE local != 'Local_Test' ORDER BY local")
+        locales_activos = [r['local'] for r in cur.fetchall()]
+
+        # 2. Generar rango de fechas en Python
+        delta_days = (fecha_hasta - fecha_desde).days
+        dates = [(fecha_desde + timedelta(days=i)).isoformat() for i in range(delta_days + 1)]
+
+        # 3. Cierres en el rango
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, estado
+            FROM cierres_locales
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """, (fecha_desde, fecha_hasta))
+        cierres_map = {}
+        for r in cur.fetchall():
+            cierres_map[(r['local'], str(r['fecha']))] = int(r['estado'])
+
+        # 4. Auditorías en el rango
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha
+            FROM locales_auditados
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """, (fecha_desde, fecha_hasta))
+        auditados_set = set()
+        for r in cur.fetchall():
+            auditados_set.add((r['local'], str(r['fecha'])))
+
+        # 5. Ventas por local/fecha en el rango
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(venta_total_sistema) AS venta_total
+            FROM ventas_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        ventas_map = {}
+        for r in cur.fetchall():
+            ventas_map[(r['local'], str(r['fecha']))] = float(r['venta_total'] or 0)
+
+        # 6. Promedios 30d para detección de anomalías (excluir ventana actual)
+        cur.execute("""
+            SELECT local,
+                   AVG(daily_total) AS promedio_30d,
+                   STDDEV(daily_total) AS stddev_30d
+            FROM (
+                SELECT local, DATE(fecha) AS dia, SUM(venta_total_sistema) AS daily_total
+                FROM ventas_trns
+                WHERE DATE(fecha) BETWEEN DATE_SUB(%s, INTERVAL 37 DAY)
+                                      AND DATE_SUB(%s, INTERVAL 8 DAY)
+                GROUP BY local, DATE(fecha)
+            ) sub
+            GROUP BY local
+        """, (fecha_hasta, fecha_hasta))
+        avg_map = {}
+        for r in cur.fetchall():
+            avg_map[r['local']] = {
+                'promedio_30d': float(r['promedio_30d'] or 0),
+                'stddev_30d': float(r['stddev_30d'] or 0)
+            }
+
+        # 7. Medios de cobro agrupados por local/fecha para calcular diferencia
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha,
+                   SUM(CASE WHEN divisa='USD' AND total_conversion IS NOT NULL THEN total_conversion ELSE monto END) AS total
+            FROM remesas_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        remesas_map = defaultdict(float)
+        for r in cur.fetchall():
+            remesas_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
+            FROM tarjetas_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        tarjetas_map = defaultdict(float)
+        for r in cur.fetchall():
+            tarjetas_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(importe) AS total
+            FROM mercadopago_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s AND UPPER(tipo)='NORMAL'
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        mp_map = defaultdict(float)
+        for r in cur.fetchall():
+            mp_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
+            FROM rappi_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        rappi_map = defaultdict(float)
+        for r in cur.fetchall():
+            rappi_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
+            FROM pedidosya_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        pedidosya_map = defaultdict(float)
+        for r in cur.fetchall():
+            pedidosya_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
+            FROM facturas_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s AND tipo='CC'
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        cc_map = defaultdict(float)
+        for r in cur.fetchall():
+            cc_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
+            FROM gastos_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        gastos_map = defaultdict(float)
+        for r in cur.fetchall():
+            gastos_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT aec.local, DATE(aec.fecha) AS fecha, SUM(aec.importe_consumido) AS total
+            FROM anticipos_estados_caja aec
+            WHERE DATE(aec.fecha) BETWEEN %s AND %s
+              AND aec.estado = 'consumido'
+            GROUP BY aec.local, DATE(aec.fecha)
+        """, (fecha_desde, fecha_hasta))
+        anticipos_map = defaultdict(float)
+        for r in cur.fetchall():
+            anticipos_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        # Detección de anomalías - solo outliers verdaderos
+        # Criterios muy estrictos: solo aparecen casos realmente graves
+        ANOMALIA_DIFF_ABS = 5000000       # Diferencia cobrado-venta > $5M
+        ANOMALIA_VENTA_ZSCORE = 4.0       # Venta a 4+ desviaciones estándar (outlier extremo)
+        ANOMALIA_VENTA_PCT = 1.00         # Y además > 100% de diferencia vs promedio (el doble o más)
+        ANOMALIA_VENTA_MIN_ABS = 5000000  # Y además > $5M de diferencia absoluta vs promedio
+
+        def _check_anomalias(venta, diferencia, local_name):
+            """Retorna lista de alertas (vacía si no hay anomalía). Solo outliers extremos."""
+            alertas = []
+            # 1. Diferencia cobrado vs venta descomunal (ej: cargaron 400M por error)
+            if venta > 0 and abs(diferencia) >= ANOMALIA_DIFF_ABS:
+                alertas.append(f"Diferencia ${diferencia:,.0f}")
+            # 2. Venta totalmente fuera de rango vs promedio 30d
+            avg_info = avg_map.get(local_name, {})
+            prom = avg_info.get('promedio_30d', 0)
+            std = avg_info.get('stddev_30d', 0)
+            if prom > 0 and venta > 0 and std > 0:
+                diff_abs = abs(venta - prom)
+                pct_diff = diff_abs / prom
+                zscore = diff_abs / std
+                if zscore >= ANOMALIA_VENTA_ZSCORE and pct_diff >= ANOMALIA_VENTA_PCT and diff_abs >= ANOMALIA_VENTA_MIN_ABS:
+                    signo = '+' if venta > prom else '-'
+                    alertas.append(f"Venta inusual ({signo}{pct_diff*100:.0f}% vs promedio)")
+            return alertas
+
+        # 8. Armar grilla (3 estados: auditado, aprobado, sin_aprobar)
+        grid_out = []
+        anomalias = []
+        hoy_str = hoy.isoformat()
+        resumen_hoy = {'auditados': 0, 'aprobados': 0, 'sin_aprobar': 0}
+
+        for local in locales_activos:
+            celdas = {}
+            for fecha_s in dates:
+                key = (local, fecha_s)
+                cierre_estado = cierres_map.get(key)  # None, 0, or 1
+                auditado = key in auditados_set
+                venta = ventas_map.get(key, 0)
+
+                # Calcular diferencia
+                cobrado = (remesas_map.get(key, 0) + tarjetas_map.get(key, 0) +
+                           mp_map.get(key, 0) + rappi_map.get(key, 0) +
+                           pedidosya_map.get(key, 0) + cc_map.get(key, 0) +
+                           gastos_map.get(key, 0) + anticipos_map.get(key, 0))
+                diferencia = cobrado - venta if venta > 0 else 0
+
+                # Determinar estado (3 estados)
+                # auditado = auditado/cargado en Oppen
+                # aprobado = local cerrado, pendiente de auditoría
+                # sin_aprobar = no cerró (con o sin venta, no importa)
+                if auditado:
+                    status = 'auditado'
+                elif cierre_estado == 0:
+                    status = 'aprobado'
+                else:
+                    status = 'sin_aprobar'
+
+                celdas[fecha_s] = {
+                    'status': status,
+                    'venta_total': venta,
+                    'diferencia': diferencia
+                }
+
+                # Alertas de anomalía (solo para la tabla, no afectan la grilla)
+                if venta > 0:
+                    alertas = _check_anomalias(venta, diferencia, local)
+                    if alertas:
+                        avg_info = avg_map.get(local, {})
+                        anomalias.append({
+                            'local': local,
+                            'fecha': fecha_s,
+                            'venta_total': venta,
+                            'diferencia': diferencia,
+                            'promedio_30d': avg_info.get('promedio_30d', 0),
+                            'tipos': alertas
+                        })
+
+                # Resumen de hoy
+                if fecha_s == hoy_str:
+                    if status == 'auditado':
+                        resumen_hoy['auditados'] += 1
+                    elif status == 'aprobado':
+                        resumen_hoy['aprobados'] += 1
+                    else:
+                        resumen_hoy['sin_aprobar'] += 1
+
+            grid_out.append({'local': local, 'celdas': celdas})
+
+        resumen_hoy['total_locales'] = len(locales_activos)
+
+        return jsonify(
+            dates=dates,
+            grid=grid_out,
+            anomalias=anomalias,
+            resumen=resumen_hoy
+        )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(error=str(e)), 500
     finally:
         try: cur.close()
         except Exception: pass
