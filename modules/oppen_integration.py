@@ -64,6 +64,22 @@ def log_sync_attempt(
 
         cur = conn.cursor()
 
+        # Auto-migrar sernr_oppen a BIGINT si es INT (los SerNr de Oppen superan INT max)
+        try:
+            cur.execute("""
+                SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'oppen_sync_log'
+                  AND COLUMN_NAME = 'sernr_oppen'
+            """)
+            col_row = cur.fetchone()
+            if col_row and 'bigint' not in str(col_row[0] if isinstance(col_row, tuple) else col_row.get('COLUMN_TYPE', '')).lower():
+                cur.execute("ALTER TABLE oppen_sync_log MODIFY COLUMN sernr_oppen BIGINT NULL")
+                conn.commit()
+                logger.info("[MIGRATE] oppen_sync_log.sernr_oppen cambiado a BIGINT")
+        except Exception:
+            pass
+
         # Convertir payloads a JSON string para MySQL
         request_json = json.dumps(request_payload, ensure_ascii=False, cls=_Encoder) if request_payload else None
         response_json = json.dumps(response_payload, ensure_ascii=False, cls=_Encoder) if response_payload else None
@@ -315,7 +331,7 @@ class OppenClient:
             # === IDENTIFICACIÓN ===
             # "SerNr": sernr,  # COMENTADO: Dejamos que Oppen lo genere
             "OfficialSerNr": official_sernr,
-            "OfficialEndSerNr": official_sernr,  # Repetir en Hasta Nro. Official
+            "ToOfficialSerNr": official_sernr,
 
             # === CLIENTE Y FECHAS ===
             "CustCode": self.DEFAULT_CUSTOMER,
@@ -687,7 +703,7 @@ class OppenClient:
                 "CustCode": recibo_data.get("CustCode", self.DEFAULT_CUSTOMER),
                 "Office": self.DEFAULT_OFFICE,
                 "Labels": recibo_data.get("Labels", ""),
-                "Reference": recibo_data.get("Reference", ""),
+                "Comment": recibo_data.get("Reference", ""),
                 "createUser": "API",
                 "Status": 1,
                 "Invoices": invoices_cleaned,
