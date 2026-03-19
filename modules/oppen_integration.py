@@ -315,15 +315,17 @@ class OppenClient:
             # === IDENTIFICACIÓN ===
             # "SerNr": sernr,  # COMENTADO: Dejamos que Oppen lo genere
             "OfficialSerNr": official_sernr,
+            "OfficialEndSerNr": official_sernr,  # Repetir en Hasta Nro. Official
 
             # === CLIENTE Y FECHAS ===
             "CustCode": self.DEFAULT_CUSTOMER,
             "TransDate": str(trans_date),
+            "InvoiceDate": str(trans_date),  # Fecha Factura = fecha de la caja
             "DueDate": str(due_date),
 
             # === CONFIGURACIÓN ===
             "Office": self.DEFAULT_OFFICE,
-            "Labels": factura.get('label_oppen', factura['local']),  # Label de Oppen o nombre del local
+            "Labels": factura.get('label_oppen', factura['local']),
             "createUser": "API",
             "Status": 1,  # Aprobado (necesario para vincular a recibos)
 
@@ -685,6 +687,7 @@ class OppenClient:
                 "CustCode": recibo_data.get("CustCode", self.DEFAULT_CUSTOMER),
                 "Office": self.DEFAULT_OFFICE,
                 "Labels": recibo_data.get("Labels", ""),
+                "Reference": recibo_data.get("Reference", ""),
                 "createUser": "API",
                 "Status": 1,
                 "Invoices": invoices_cleaned,
@@ -746,6 +749,11 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         if not label_oppen:
             logger.warning(f"⚠️ No se encontró label de Oppen para {local}, usando nombre del local")
             label_oppen = local
+
+        # Asegurar que Labels sea solo el código de etiqueta (sin razón social)
+        # Si tiene coma (ej: "ALMF01,PERSEO"), tomar solo el primer valor
+        if ',' in label_oppen:
+            label_oppen = label_oppen.split(',')[0].strip()
 
         logger.info(f"📋 Label Oppen para {local}: {label_oppen}")
 
@@ -851,6 +859,8 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
 
         label_row = cur.fetchone()
         label_oppen = label_row['cod_oppen'] if label_row else local
+        if ',' in label_oppen:
+            label_oppen = label_oppen.split(',')[0].strip()
 
         logger.info(f"📋 Procesando cuentas corrientes para {local} ({label_oppen}) - {fecha}")
 
@@ -1132,6 +1142,8 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
         label_row = cur.fetchone()
         label_oppen = label_row['cod_oppen'] if label_row else local
+        if ',' in label_oppen:
+            label_oppen = label_oppen.split(',')[0].strip()
 
         logger.info(f"📋 Creando recibo para {local} ({label_oppen}) - {fecha}")
 
@@ -1481,6 +1493,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             "TransDate": fecha,
             "CustCode": "C00001",
             "Labels": label_oppen,
+            "Reference": f"Caja {local} {fecha}",
             "Invoices": invoices,
             "PayModes": pay_modes,
         }
