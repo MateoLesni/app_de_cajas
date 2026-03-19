@@ -138,8 +138,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (ambiente de producción)
-    BASE_URL = "https://ng.oppen.io"
+    # Configuración de la API (ambiente de pruebas)
+    BASE_URL = "https://ngprueba.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -232,8 +232,8 @@ class OppenClient:
         Returns:
             str: OfficialSerNr formateado (ej: "0005-00001691")
         """
-        # Asegurar formato de 4 dígitos para PV y 8 para número
-        pv = str(punto_venta).zfill(4)
+        # Asegurar formato de 5 dígitos para PV y 8 para número
+        pv = str(punto_venta).zfill(5)
         nro = str(nro_factura).zfill(8)
         return f"{pv}-{nro}"
 
@@ -703,7 +703,7 @@ class OppenClient:
                 "CustCode": recibo_data.get("CustCode", self.DEFAULT_CUSTOMER),
                 "Office": self.DEFAULT_OFFICE,
                 "Labels": recibo_data.get("Labels", ""),
-                "Comment": recibo_data.get("Reference", ""),
+                "RefStr": recibo_data.get("Reference", ""),
                 "createUser": "API",
                 "Status": 1,
                 "Invoices": invoices_cleaned,

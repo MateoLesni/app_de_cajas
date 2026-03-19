@@ -10048,6 +10048,14 @@ def api_marcar_auditado():
         conn.commit()
 
         # ========== SINCRONIZACIÓN AUTOMÁTICA CON OPPEN ==========
+        # Locales excluidos de la sincronización con Oppen
+        LOCALES_SIN_OPPEN = ['Costa7070']
+
+        if local in LOCALES_SIN_OPPEN:
+            cur.close()
+            conn.close()
+            return jsonify(success=True, msg=f"Local {local} marcado como auditado para {f}\nℹ️ Sincronización con Oppen omitida para este local")
+
         # Enviar facturas a Oppen después de marcar como auditado
         try:
             from modules.oppen_integration import sync_facturas_to_oppen, sync_cuentas_corrientes_to_oppen, sync_recibo_to_oppen
