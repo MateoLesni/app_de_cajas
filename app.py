@@ -6453,7 +6453,8 @@ def api_resumen_local():
         )
 
         # Discovery = Venta Total - (Z + A + B + CC)
-        discovery = max((venta_total or 0.0) - (total_facturas or 0.0), 0.0)
+        # Puede ser negativo si la facturación supera la venta total
+        discovery = (venta_total or 0.0) - (total_facturas or 0.0)
 
         # ===== EFECTIVO (Remesas) - usar total_conversion para USD =====
         efectivo_neto = _qsum(
