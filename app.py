@@ -6737,39 +6737,57 @@ def api_resumen_local():
         # Items de cuentas corrientes nuevo sistema
         cta_cte_nuevas_items = []
         try:
+            # Detectar columnas disponibles en cuentas_corrientes_trns
             cur.execute("""
-                SELECT id, cliente, nro_comanda, monto, punto_venta, sernr_oppen
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cuentas_corrientes_trns'
+            """)
+            cc_cols = {r['COLUMN_NAME'] if isinstance(r, dict) else r[0] for r in (cur.fetchall() or [])}
+
+            has_sernr = 'sernr_oppen' in cc_cols
+            has_pv = 'punto_venta' in cc_cols
+            has_cliente = 'cliente' in cc_cols
+            has_nro = 'nro_comanda' in cc_cols
+
+            select_cols = "id, monto"
+            if has_cliente: select_cols += ", cliente"
+            if has_nro: select_cols += ", nro_comanda"
+            if has_pv: select_cols += ", punto_venta"
+            if has_sernr: select_cols += ", sernr_oppen"
+
+            cur.execute(f"""
+                SELECT {select_cols}
                 FROM cuentas_corrientes_trns
                 WHERE DATE(fecha)=%s AND local=%s AND estado='ok'
                 ORDER BY id
             """, (f, local))
             for r in (cur.fetchall() or []):
                 if isinstance(r, dict):
-                    pv = r.get('punto_venta') or 1
+                    pv = r.get('punto_venta', 1) or 1
                     nro = r.get('nro_comanda') or r.get('id')
-                    cta_cte_nuevas_items.append({
-                        "pv": str(pv),
-                        "punto_venta": str(pv),
-                        "nro_factura": str(nro),
-                        "monto": float(r.get('monto') or 0),
-                        "z_display": _format_z(pv, nro),
-                        "cliente": r.get('cliente') or '',
-                        "sernr_oppen": int(r['sernr_oppen']) if r.get('sernr_oppen') else None
-                    })
+                    sernr = r.get('sernr_oppen')
+                    cliente = r.get('cliente') or ''
+                    monto = float(r.get('monto') or 0)
+                    rid = r.get('id')
                 else:
-                    pv = r[4] or 1
-                    nro = r[2] or r[0]
-                    cta_cte_nuevas_items.append({
-                        "pv": str(pv),
-                        "punto_venta": str(pv),
-                        "nro_factura": str(nro),
-                        "monto": float(r[3] or 0),
-                        "z_display": _format_z(pv, nro),
-                        "cliente": r[1] or '',
-                        "sernr_oppen": int(r[5]) if r[5] else None
-                    })
-        except Exception:
-            pass
+                    rid = r[0]
+                    monto = float(r[1] or 0)
+                    idx = 2
+                    cliente = r[idx] if has_cliente else ''; idx += (1 if has_cliente else 0)
+                    nro = r[idx] if has_nro else rid; idx += (1 if has_nro else 0)
+                    pv = r[idx] if has_pv else 1; idx += (1 if has_pv else 0)
+                    sernr = r[idx] if has_sernr else None
+                cta_cte_nuevas_items.append({
+                    "pv": str(pv),
+                    "punto_venta": str(pv),
+                    "nro_factura": str(nro or rid),
+                    "monto": monto,
+                    "z_display": _format_z(pv, nro or rid),
+                    "cliente": cliente,
+                    "sernr_oppen": int(sernr) if sernr else None
+                })
+        except Exception as e:
+            print(f"⚠️ Error obteniendo items CC nuevas: {e}")
 
         # ===== CTA CTE (legacy - si existe en cuenta_corriente_trns) =====
         cta_cte_legacy = _sum_cuenta_corriente(conn, cur, f, local)
