@@ -6681,7 +6681,7 @@ def api_resumen_local():
             try:
                 cur.execute(
                     f"""
-                    SELECT punto_venta, nro_factura, monto
+                    SELECT punto_venta, nro_factura, monto, sernr_oppen
                     FROM {T_FACTURAS}
                     WHERE DATE(fecha)=%s AND local=%s AND tipo=%s
                     ORDER BY punto_venta, nro_factura
@@ -6691,21 +6691,23 @@ def api_resumen_local():
                 rows = cur.fetchall() or []
                 items = []
                 for r in rows:
-                    # Manejar tanto diccionarios como tuplas
                     if isinstance(r, dict):
                         pv = r.get('punto_venta')
                         nro = r.get('nro_factura')
                         monto = float(r.get('monto') or 0)
+                        sernr = r.get('sernr_oppen')
                     else:
                         pv = r[0]
                         nro = r[1]
                         monto = float(r[2] or 0)
+                        sernr = r[3] if len(r) > 3 else None
                     item = {
                         "pv": str(pv) if pv is not None else "0",
                         "punto_venta": str(pv) if pv is not None else "0",
                         "nro_factura": str(nro),
                         "monto": monto,
-                        "z_display": _format_z(pv, nro)
+                        "z_display": _format_z(pv, nro),
+                        "sernr_oppen": int(sernr) if sernr else None
                     }
                     items.append(item)
                 return items, sum(i['monto'] for i in items)
@@ -6717,12 +6719,13 @@ def api_resumen_local():
         facturas_b_items, facturas_b = _fetch_facturas_items('B')
         facturas_total = float(facturas_a or 0.0) + float(facturas_b or 0.0)
 
-        # Facturas CC (Cuenta Corriente - sistema viejo)
+        # Facturas CC (Cuenta Corriente - sistema viejo) - total + items
         facturas_cc = _qsum(
             cur,
             f"SELECT COALESCE(SUM(monto),0) FROM {T_FACTURAS} WHERE DATE(fecha)=%s AND local=%s AND tipo='CC'",
             (f, local),
         )
+        facturas_cc_items, _ = _fetch_facturas_items('CC')
 
         # ===== CTA CTE nuevo sistema (cuentas_corrientes_trns) =====
         cta_cte_nuevas = _qsum(
@@ -6730,6 +6733,43 @@ def api_resumen_local():
             "SELECT COALESCE(SUM(monto),0) FROM cuentas_corrientes_trns WHERE DATE(fecha)=%s AND local=%s AND estado='ok'",
             (f, local),
         )
+
+        # Items de cuentas corrientes nuevo sistema
+        cta_cte_nuevas_items = []
+        try:
+            cur.execute("""
+                SELECT id, cliente, nro_comanda, monto, punto_venta, sernr_oppen
+                FROM cuentas_corrientes_trns
+                WHERE DATE(fecha)=%s AND local=%s AND estado='ok'
+                ORDER BY id
+            """, (f, local))
+            for r in (cur.fetchall() or []):
+                if isinstance(r, dict):
+                    pv = r.get('punto_venta') or 1
+                    nro = r.get('nro_comanda') or r.get('id')
+                    cta_cte_nuevas_items.append({
+                        "pv": str(pv),
+                        "punto_venta": str(pv),
+                        "nro_factura": str(nro),
+                        "monto": float(r.get('monto') or 0),
+                        "z_display": _format_z(pv, nro),
+                        "cliente": r.get('cliente') or '',
+                        "sernr_oppen": int(r['sernr_oppen']) if r.get('sernr_oppen') else None
+                    })
+                else:
+                    pv = r[4] or 1
+                    nro = r[2] or r[0]
+                    cta_cte_nuevas_items.append({
+                        "pv": str(pv),
+                        "punto_venta": str(pv),
+                        "nro_factura": str(nro),
+                        "monto": float(r[3] or 0),
+                        "z_display": _format_z(pv, nro),
+                        "cliente": r[1] or '',
+                        "sernr_oppen": int(r[5]) if r[5] else None
+                    })
+        except Exception:
+            pass
 
         # ===== CTA CTE (legacy - si existe en cuenta_corriente_trns) =====
         cta_cte_legacy = _sum_cuenta_corriente(conn, cur, f, local)
@@ -6810,6 +6850,20 @@ def api_resumen_local():
         # ===== Diferencias detalladas por caja/turno =====
         diferencias_detalle = _get_diferencias_detalle(cur, fecha_s, local, usar_snap)
 
+        # ===== SerNr Recibo Oppen (si auditado) =====
+        sernr_recibo_oppen = None
+        try:
+            cur.execute("""
+                SELECT sernr_recibo_oppen FROM locales_auditados
+                WHERE local=%s AND DATE(fecha)=%s AND sernr_recibo_oppen IS NOT NULL
+                LIMIT 1
+            """, (local, f))
+            row_recibo = cur.fetchone()
+            if row_recibo:
+                sernr_recibo_oppen = int(row_recibo['sernr_recibo_oppen'] if isinstance(row_recibo, dict) else row_recibo[0])
+        except Exception:
+            pass
+
         # Agregar timestamp del servidor para validación de datos
         from datetime import datetime
         import pytz
@@ -6820,8 +6874,9 @@ def api_resumen_local():
             "fecha": fecha_s,
             "local": local,
             "local_cerrado": bool(local_cerrado),
-            "server_timestamp": server_timestamp,  # ← Timestamp para validación de integridad
-            "data_source": "snap" if usar_snap else "normal",  # ← Indicar fuente de datos
+            "sernr_recibo_oppen": sernr_recibo_oppen,
+            "server_timestamp": server_timestamp,
+            "data_source": "snap" if usar_snap else "normal",
 
             "resumen": {
                 "venta_total": float(venta_total or 0.0),
@@ -6880,6 +6935,8 @@ def api_resumen_local():
                 "cuenta_cte": {
                     "total": float(cta_cte_total or 0.0),
                     "cc": float(facturas_cc or 0.0),
+                    "cc_items": facturas_cc_items,
+                    "cc_nuevas_items": cta_cte_nuevas_items,
                     "legacy": float(cta_cte_legacy or 0.0)
                 },
                 "tips": {
@@ -6958,6 +7015,18 @@ def _fetch_ventas_z_dyn(cur, fecha, local, table_name="ventas_z_trns", tipo='Z')
                         }
                         item["z_display"] = _format_z(item["pv"], item["numero_z"])
                         items.append(item)
+                    # Intentar obtener sernr_oppen para cada item
+                    try:
+                        for item in items:
+                            cur.execute(
+                                f"SELECT sernr_oppen FROM {table_name} WHERE DATE(fecha)=%s AND local=%s AND tipo=%s AND {pvcol}=%s AND {ncol}=%s AND sernr_oppen IS NOT NULL LIMIT 1",
+                                (fecha, local, tipo, item['pv'], item['numero_z'])
+                            )
+                            sr = cur.fetchone()
+                            item['sernr_oppen'] = int(sr['sernr_oppen'] if isinstance(sr, dict) else sr[0]) if sr else None
+                    except Exception:
+                        for item in items:
+                            item['sernr_oppen'] = None
                     return items, sum(i['monto'] for i in items)
                 except Exception as e:
                     last_error = e
@@ -10117,6 +10186,27 @@ def api_marcar_auditado():
                         msg_recibo = f"\n✅ Recibo creado en Oppen: {resultado_recibo['message']}"
                         if resultado_recibo.get('sernr'):
                             msg_recibo += f" (SerNr: {resultado_recibo['sernr']})"
+                            # Guardar SerNr del recibo en locales_auditados
+                            try:
+                                cur2 = conn.cursor()
+                                # Auto-agregar columna si no existe
+                                cur2.execute("""
+                                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                                    WHERE TABLE_SCHEMA = DATABASE()
+                                      AND TABLE_NAME = 'locales_auditados'
+                                      AND COLUMN_NAME = 'sernr_recibo_oppen'
+                                """)
+                                if cur2.fetchone()[0] == 0:
+                                    cur2.execute("ALTER TABLE locales_auditados ADD COLUMN sernr_recibo_oppen BIGINT NULL")
+                                cur2.execute("""
+                                    UPDATE locales_auditados
+                                    SET sernr_recibo_oppen = %s
+                                    WHERE local = %s AND DATE(fecha) = %s
+                                """, (resultado_recibo['sernr'], local, f))
+                                conn.commit()
+                                cur2.close()
+                            except Exception as e_recibo:
+                                print(f"⚠️ Error guardando SerNr recibo: {e_recibo}")
                     else:
                         msg_recibo = f"\nℹ️ {resultado_recibo['message']}"
 

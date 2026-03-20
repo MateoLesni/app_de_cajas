@@ -184,6 +184,7 @@
                   <div><strong>Fecha:</strong> <span id="rl-fecha-display">—</span></div>
                   <div><strong>Hora:</strong> <span id="rl-hora-display">—</span></div>
                   <div><strong>Local:</strong> <span id="rl-local-display">{{ session['local'] }}</span></div>
+                  <div id="rl-recibo-oppen-wrapper" style="display:none;"><strong>N° Recibo Oppen:</strong> <span id="rl-recibo-oppen" style="color:#2563eb;font-weight:600;">—</span></div>
                 </div>
               </header>
 
@@ -350,7 +351,9 @@
                       <div class="sl-row"><span class="label">Cuenta Cte.</span><span class="amount r" id="rl-cta-cte">0,00</span></div>
                       <div class="acc-body">
                         <table class="sl-table">
-                          <tr><td>Facturas CC</td><td class="r" id="rl-cta-cte-cc">0,00</td></tr>
+                          <thead><tr><th>Cuenta Cte. (PV-Número)</th><th class="r">Monto</th></tr></thead>
+                          <tbody id="rl-cc-items"><tr class="muted"><td colspan="2">Sin cuentas corrientes cargadas</td></tr></tbody>
+                          <tfoot><tr class="sl-total"><td>Total</td><td class="r" id="rl-cta-cte-foot">0,00</td></tr></tfoot>
                         </table>
                       </div>
                     </div>

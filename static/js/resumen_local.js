@@ -126,6 +126,17 @@
     setText("rl-fecha-display", inFecha?.value || "—");
     setText("rl-hora-display", nowTime());
 
+    // N° Recibo Oppen (solo si existe)
+    const reciboWrapper = $("#rl-recibo-oppen-wrapper");
+    if (reciboWrapper) {
+      if (data.sernr_recibo_oppen) {
+        setText("rl-recibo-oppen", data.sernr_recibo_oppen);
+        reciboWrapper.style.display = "";
+      } else {
+        reciboWrapper.style.display = "none";
+      }
+    }
+
     // Mostrar timestamp del servidor y fuente de datos para transparencia
     const serverTime = data.server_timestamp ? new Date(data.server_timestamp).toLocaleString("es-AR") : "—";
     const dataSource = data.data_source === "snap" ? "Snapshot (Operación)" : "Datos en vivo (Administración)";
@@ -214,7 +225,8 @@
       } else {
         items.forEach((it) => {
           const tr = document.createElement("tr");
-          const display = formatZDisplay(it);
+          let display = formatZDisplay(it);
+          if (it.sernr_oppen) display += ` (N\u00b0 Oppen: ${it.sernr_oppen})`;
           const tdName = document.createElement("td");
           tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
           const tdAmt = document.createElement("td");
@@ -242,7 +254,8 @@
       } else {
         itemsA.forEach((it) => {
           const tr = document.createElement("tr");
-          const display = formatZDisplay(it);
+          let display = formatZDisplay(it);
+          if (it.sernr_oppen) display += ` (N\u00b0 Oppen: ${it.sernr_oppen})`;
           const tdName = document.createElement("td");
           tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
           const tdAmt = document.createElement("td");
@@ -270,7 +283,8 @@
       } else {
         itemsB.forEach((it) => {
           const tr = document.createElement("tr");
-          const display = formatZDisplay(it);
+          let display = formatZDisplay(it);
+          if (it.sernr_oppen) display += ` (N\u00b0 Oppen: ${it.sernr_oppen})`;
           const tdName = document.createElement("td");
           tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
           const tdAmt = document.createElement("td");
@@ -354,9 +368,37 @@
 
     const cc = info?.cuenta_cte || {};
     setMoneyWithCopy("rl-cta-cte", Number(cc.total ?? 0));
-    setMoneyWithCopy("rl-cta-cte-cc", Number(cc.cc ?? 0));
-    setMoneyWithCopy("rl-cta-cte-legacy", Number(cc.legacy ?? 0));
-    setMoneyWithCopy("rl-cta-cte-det", Number(cc.total ?? 0));
+    setMoneyWithCopy("rl-cta-cte-foot", Number(cc.total ?? 0));
+
+    // Renderizar items de Cuenta Corriente (CC viejas + nuevas)
+    const tbCc = $("#rl-cc-items");
+    if (tbCc) {
+      tbCc.innerHTML = "";
+      const ccItems = [
+        ...(Array.isArray(cc.cc_items) ? cc.cc_items : []),
+        ...(Array.isArray(cc.cc_nuevas_items) ? cc.cc_nuevas_items : [])
+      ];
+      if (!ccItems.length) {
+        const tr = document.createElement("tr"); tr.className = "muted";
+        const td = document.createElement("td"); td.colSpan = 2; td.textContent = "Sin cuentas corrientes cargadas";
+        tr.appendChild(td); tbCc.appendChild(tr);
+      } else {
+        ccItems.forEach((it) => {
+          const tr = document.createElement("tr");
+          let display = formatZDisplay(it);
+          if (it.sernr_oppen) display += ` (N° Oppen: ${it.sernr_oppen})`;
+          if (it.cliente) display += ` - ${it.cliente}`;
+          const tdName = document.createElement("td");
+          tdName.textContent = display; tdName.dataset.copy = display; addCopyButton(tdName, () => display);
+          const tdAmt = document.createElement("td");
+          const amtTxt = money(it?.monto ?? 0);
+          tdAmt.className = "r"; tdAmt.textContent = amtTxt; tdAmt.dataset.copy = amtTxt; addCopyButton(tdAmt, () => amtTxt);
+          tr.appendChild(tdName); tr.appendChild(tdAmt); tbCc.appendChild(tr);
+        });
+      }
+      const ccTbl = tbCc.closest("table"); if (ccTbl) addCopyToLabelCellsWithin(ccTbl);
+      const ccFoot = $("#rl-cta-cte-foot"); if (ccFoot) addCopyButton(ccFoot, () => ccFoot.textContent || "");
+    }
 
     // Anticipos
     const ant = info?.anticipos || {};
