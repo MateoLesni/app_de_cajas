@@ -1478,7 +1478,13 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             pagado = row.get('pagado', 0)
 
             # Mapear forma de pago al código que Oppen acepta
+            # Normalizar acentos (ej: "DÉBITO" → "DEBITO") para que coincida con FP_CODE_MAP
+            import unicodedata
             forma_pago_key = forma_pago_original.strip().upper()
+            forma_pago_key = ''.join(
+                c for c in unicodedata.normalize('NFD', forma_pago_key)
+                if unicodedata.category(c) != 'Mn'
+            )
             forma_pago_codigo = FP_CODE_MAP.get(forma_pago_key, forma_pago_key)
 
             # Aplicar mapeo especial si existe
