@@ -6738,7 +6738,7 @@ def api_resumen_local():
         cta_cte_nuevas_items = []
         try:
             cur.execute("""
-                SELECT cc.id, cc.monto, cli.nombre AS cliente, cc.nro_comanda,
+                SELECT cc.id, cc.monto, cli.nombre_cliente AS cliente, cc.nro_comanda,
                        cc.punto_venta, cc.sernr_oppen
                 FROM cuentas_corrientes_trns cc
                 LEFT JOIN clientes_cta_cte cli ON cli.id = cc.cliente_id
