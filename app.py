@@ -3274,11 +3274,6 @@ def eliminar_anticipo_recibido(anticipo_id):
 
         usuario = session.get('username', 'sistema')
 
-        from datetime import datetime
-        import pytz
-        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
-        ahora = datetime.now(tz_arg)
-
         # 1. Guardar en tabla anticipos_borrados ANTES de marcar como eliminado
         cur.execute("""
             INSERT INTO anticipos_borrados
@@ -3286,14 +3281,14 @@ def eliminar_anticipo_recibido(anticipo_id):
              cotizacion_divisa, cliente, numero_transaccion, medio_pago, medio_pago_id,
              observaciones, local, caja, turno, estado_original,
              motivo_eliminacion, deleted_by, deleted_at, created_by, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s)
         """, (anticipo_id, anticipo['fecha_pago'], anticipo['fecha_evento'],
               anticipo['importe'], anticipo['divisa'], anticipo.get('tipo_cambio_fecha'),
               anticipo.get('cotizacion_divisa'), anticipo['cliente'],
               anticipo.get('numero_transaccion'), anticipo.get('medio_pago'),
               anticipo.get('medio_pago_id'), anticipo.get('observaciones'),
               anticipo['local'], anticipo.get('caja') or '-', anticipo.get('turno') or '-', anticipo['estado'],
-              motivo, usuario, ahora, anticipo.get('created_by'), anticipo.get('created_at')))
+              motivo, usuario, anticipo.get('created_by'), anticipo.get('created_at')))
 
         # 2. Marcar como eliminado en anticipos_recibidos
         cur.execute("""
@@ -3486,11 +3481,6 @@ def consumir_anticipo():
             conn.close()
             return jsonify(success=False, msg="Este anticipo ya fue procesado en esta caja"), 409
 
-        from datetime import datetime
-        import pytz
-        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
-        ahora = datetime.now(tz_arg)
-
         # Calcular importe a consumir: si es divisa extranjera con cotización, usar equivalente en pesos
         importe_consumido = float(anticipo['importe'])
         if anticipo.get('divisa') != 'ARS' and anticipo.get('cotizacion_divisa'):
@@ -3501,8 +3491,8 @@ def consumir_anticipo():
             INSERT INTO anticipos_estados_caja
             (anticipo_id, local, caja, fecha, turno, estado, usuario,
              timestamp_accion, importe_consumido, observaciones_consumo)
-            VALUES (%s, %s, %s, %s, %s, 'consumido', %s, %s, %s, %s)
-        """, (anticipo_id, local, caja, fecha, turno, usuario, ahora,
+            VALUES (%s, %s, %s, %s, %s, 'consumido', %s, NOW(), %s, %s)
+        """, (anticipo_id, local, caja, fecha, turno, usuario,
               importe_consumido, observaciones_consumo))
 
         # Actualizar estado global del anticipo a 'consumido'
@@ -3510,9 +3500,9 @@ def consumir_anticipo():
             UPDATE anticipos_recibidos
             SET estado = 'consumido',
                 updated_by = %s,
-                updated_at = %s
+                updated_at = NOW()
             WHERE id = %s
-        """, (usuario, ahora, anticipo_id))
+        """, (usuario, anticipo_id))
 
         conn.commit()
 
@@ -3620,11 +3610,6 @@ def desconsumir_anticipo():
             conn.close()
             return jsonify(success=False, msg="Este anticipo no fue consumido en esta caja"), 404
 
-        from datetime import datetime
-        import pytz
-        tz_arg = pytz.timezone('America/Argentina/Buenos_Aires')
-        ahora = datetime.now(tz_arg)
-
         # Eliminar el registro de consumo en estados_caja
         cur.execute("""
             DELETE FROM anticipos_estados_caja
@@ -3640,9 +3625,9 @@ def desconsumir_anticipo():
             UPDATE anticipos_recibidos
             SET estado = 'pendiente',
                 updated_by = %s,
-                updated_at = %s
+                updated_at = NOW()
             WHERE id = %s
-        """, (usuario, ahora, anticipo_id))
+        """, (usuario, anticipo_id))
 
         conn.commit()
 

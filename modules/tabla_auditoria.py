@@ -138,9 +138,6 @@ def registrar_auditoria(conn, accion, tabla, registro_id=None, datos_anteriores=
         endpoint = request.path if request else None
         metodo_http = request.method if request else None
 
-        # Timestamp en zona horaria de Argentina
-        fecha_hora_arg = datetime.now(TIMEZONE_ARG)
-
         # Auto-generar descripción si no se proporciona
         if not descripcion:
             if accion == 'INSERT':
@@ -154,6 +151,8 @@ def registrar_auditoria(conn, accion, tabla, registro_id=None, datos_anteriores=
                 descripcion = f"Operación {accion} en {tabla}"
 
         # Insertar en auditoría
+        # IMPORTANTE: Usar NOW() de MySQL para que el timestamp sea consistente
+        # con el resto de las tablas (todas usan NOW() con SET time_zone = Argentina)
         sql = """
             INSERT INTO auditoria (
                 fecha_hora,
@@ -164,7 +163,7 @@ def registrar_auditoria(conn, accion, tabla, registro_id=None, datos_anteriores=
                 descripcion, endpoint, metodo_http, user_agent,
                 duracion_ms, exito, error_mensaje
             ) VALUES (
-                %s,
+                NOW(),
                 %s, %s, %s, %s,
                 %s, %s, %s, %s,
                 %s, %s, %s,
@@ -176,7 +175,6 @@ def registrar_auditoria(conn, accion, tabla, registro_id=None, datos_anteriores=
 
         cursor = conn.cursor()
         cursor.execute(sql, (
-            fecha_hora_arg,
             user_info['usuario'], user_info['usuario_email'], user_info['usuario_nivel'], user_info['usuario_ip'],
             context_info['local'], context_info['caja'], context_info['fecha_operacion'], context_info['turno'],
             accion, tabla, registro_id,
