@@ -1546,6 +1546,14 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
         success, message, response_data = client.create_receipt(recibo_data)
 
+        # Fallback: si falla por "Invoice Balance Can Not Be Negative", reintentar con Status: 0 (desaprobado)
+        if not success and 'Balance Can Not Be Negative' in (message or ''):
+            logger.warning(f"⚠️ Recibo rechazado por balance negativo. Reintentando con Status: 0 (desaprobado)...")
+            recibo_data["Status"] = 0
+            success, message, response_data = client.create_receipt(recibo_data)
+            if success:
+                logger.info(f"✅ Recibo creado como DESAPROBADO (Status: 0) por balance negativo en factura")
+
         # Preparar datos resumidos para logging (no guardamos todos los PayModes para ahorrar espacio)
         request_payload_log = {
             'num_invoices': len(invoices),
