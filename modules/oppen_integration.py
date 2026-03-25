@@ -1452,14 +1452,14 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 rows.append({
                     "forma_pago": "DISCOVERY",
                     "descripcion": "DISCOVERY",
-                    "pagado": -1 * discovery_val,  # Invertir signo
+                    "pagado": round(-1 * discovery_val, 2),  # Invertir signo, con decimales
                 })
 
                 # Agregar DIFERENCIA (siempre, invertido en signo)
                 rows.append({
                     "forma_pago": "DIFRECAU",
                     "descripcion": "DIFERENCIA DE CAJA",
-                    "pagado": -1 * diferencia_val,  # Invertir signo
+                    "pagado": round(-1 * diferencia_val, 2),  # Invertir signo, con decimales
                 })
 
             except Exception as e:
@@ -1523,7 +1523,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 pay_modes.append({
                     "PayMode": forma_pago_codigo,
                     "Comment": descripcion,
-                    "Amount": amount,
+                    "Amount": round(amount, 2),
                 })
 
         logger.info(f"💳 {len(pay_modes)} medios de pago encontrados")
@@ -1540,6 +1540,18 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             "Invoices": invoices,
             "PayModes": pay_modes,
         }
+
+        # Log detallado del payload completo
+        import json
+        logger.info(f"📦 Payload recibo completo:")
+        logger.info(json.dumps(recibo_data, indent=2, ensure_ascii=False, default=str))
+
+        # Calcular suma neta de PayModes para diagnóstico
+        sum_positivos = sum(pm['Amount'] for pm in pay_modes if pm['Amount'] > 0)
+        sum_negativos = sum(pm['Amount'] for pm in pay_modes if pm['Amount'] < 0)
+        sum_neto = sum(pm['Amount'] for pm in pay_modes)
+        logger.info(f"📊 PayModes: positivos=${sum_positivos:,.2f}, negativos=${sum_negativos:,.2f}, neto=${sum_neto:,.2f}")
+        logger.info(f"📊 Facturas: total=${total_facturas:,.2f}, diferencia con neto=${total_facturas - sum_neto:,.2f}")
 
         client = OppenClient()
         client.authenticate()
