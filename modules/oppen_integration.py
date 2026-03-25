@@ -138,8 +138,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (ambiente de pruebas)
-    BASE_URL = "https://ngprueba.oppen.io"
+    # Configuración de la API (producción)
+    BASE_URL = "https://ng.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
