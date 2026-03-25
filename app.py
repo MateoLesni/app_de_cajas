@@ -1229,10 +1229,13 @@ def remesas_update(remesa_id):
         datos_anteriores = obtener_registro_anterior(conn, 'remesas_trns', remesa_id)
 
         # contexto real → para can_edit
-        cur.execute("SELECT id, local, caja, fecha, turno FROM remesas_trns WHERE id=%s", (remesa_id,))
+        cur.execute("SELECT id, local, caja, fecha, turno, origen_anticipo_id FROM remesas_trns WHERE id=%s", (remesa_id,))
         row = cur.fetchone()
         if not row:
             return jsonify(success=False, msg="No existe la remesa"), 404
+
+        if row.get('origen_anticipo_id'):
+            return jsonify(success=False, msg="Esta remesa fue creada por un anticipo y no puede modificarse. Para cambiarla, edite o elimine el anticipo correspondiente."), 403
 
         if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], get_user_level()):
             return jsonify(success=False, msg="No permitido (caja/local cerrados para tu rol)"), 409
@@ -1361,12 +1364,17 @@ def remesas_delete(remesa_id):
         # 1. Obtener registro anterior para auditoría
         datos_anteriores = obtener_registro_anterior(conn, 'remesas_trns', remesa_id)
 
-        cur.execute("SELECT id, local, caja, fecha, turno FROM remesas_trns WHERE id=%s", (remesa_id,))
+        cur.execute("SELECT id, local, caja, fecha, turno, origen_anticipo_id FROM remesas_trns WHERE id=%s", (remesa_id,))
         row = cur.fetchone()
         if not row:
             cur.close()
             conn.close()
             return jsonify(success=False, msg="No existe la remesa"), 404
+
+        if row.get('origen_anticipo_id'):
+            cur.close()
+            conn.close()
+            return jsonify(success=False, msg="Esta remesa fue creada por un anticipo y no puede eliminarse. Para quitarla, elimine el anticipo correspondiente."), 403
 
         # Verificar permisos según nivel
         if not can_edit(conn, row['local'], row['caja'], row['turno'], row['fecha'], lvl):
@@ -2759,11 +2767,11 @@ def crear_anticipo_recibido():
         else:
             tipo_cambio_fecha = _normalize_fecha(tipo_cambio_fecha)
 
-        numero_transaccion = data.get('numero_transaccion', '').strip() or None
-        medio_pago = data.get('medio_pago', '').strip() or None
-        observaciones = data.get('observaciones', '').strip() or None
-        adjunto_gcs_path = data.get('adjunto_gcs_path', '').strip() or None
-        temp_entity_id = data.get('temp_entity_id', '').strip() or None  # ID temporal único para vincular imagen
+        numero_transaccion = (data.get('numero_transaccion') or '').strip() or None
+        medio_pago = (data.get('medio_pago') or '').strip() or None
+        observaciones = (data.get('observaciones') or '').strip() or None
+        adjunto_gcs_path = (data.get('adjunto_gcs_path') or '').strip() or None
+        temp_entity_id = (data.get('temp_entity_id') or '').strip() or None
 
         if importe <= 0:
             return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400
@@ -2878,6 +2886,82 @@ def crear_anticipo_recibido():
 
         conn.commit()
 
+        # Si es efectivo, crear remesa vinculada automáticamente
+        remesa_id = None
+        if es_efectivo:
+            nro_remesa = data.get('nro_remesa', '').strip()
+            precinto = data.get('precinto', '').strip()
+
+            if nro_remesa:
+                # Auto-agregar columna origen_anticipo_id si no existe
+                try:
+                    cur.execute("""
+                        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'remesas_trns'
+                          AND COLUMN_NAME = 'origen_anticipo_id'
+                    """)
+                    if cur.fetchone()[0] == 0:
+                        cur.execute("ALTER TABLE remesas_trns ADD COLUMN origen_anticipo_id INT NULL")
+                        conn.commit()
+                        print("[MIGRATE] remesas_trns.origen_anticipo_id agregado")
+                except Exception:
+                    pass
+
+                # Crear remesa con los mismos datos del anticipo
+                monto_usd = None
+                if divisa == 'USD':
+                    monto_usd = float(importe)
+
+                cur.execute("""
+                    INSERT INTO remesas_trns
+                    (usuario, local, caja, turno, fecha, nro_remesa, precinto, monto, retirada,
+                     divisa, monto_usd, cotizacion_divisa, estado_contable, ult_mod, estado, origen_anticipo_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0,
+                            %s, %s, %s, 'Local', NOW(), 'revision', %s)
+                """, (
+                    usuario, local, caja, turno or 'UNI', fecha_pago,
+                    nro_remesa, precinto, float(importe),
+                    divisa, monto_usd, float(cotizacion_divisa) if cotizacion_divisa else None,
+                    anticipo_id
+                ))
+                remesa_id = cur.lastrowid
+                conn.commit()
+                print(f"✅ Remesa {remesa_id} creada automáticamente para anticipo {anticipo_id} (nro: {nro_remesa})")
+
+                # Vincular la imagen del anticipo también como imagen de remesa en la caja
+                try:
+                    cur.execute("""
+                        SELECT id, gcs_path, original_name, mime, size_bytes, subido_por
+                        FROM imagenes_adjuntos
+                        WHERE entity_type = 'anticipo_recibido'
+                          AND entity_id = %s
+                          AND estado = 'active'
+                        LIMIT 1
+                    """, (anticipo_id,))
+                    img_row = cur.fetchone()
+                    if img_row:
+                        cur.execute("""
+                            INSERT INTO imagenes_adjuntos
+                            (tab, local, caja, turno, fecha,
+                             entity_type, entity_id,
+                             gcs_path, original_name, mime, size_bytes,
+                             subido_por, estado)
+                            VALUES ('remesas', %s, %s, %s, %s,
+                                    'remesa_anticipo', %s,
+                                    %s, %s, %s, %s, %s, 'active')
+                        """, (local, caja, turno or 'UNI', fecha_pago, remesa_id,
+                              img_row['gcs_path'], img_row['original_name'],
+                              img_row['mime'], img_row['size_bytes'], img_row['subido_por']))
+                        conn.commit()
+                        print(f"✅ Imagen del anticipo vinculada a remesa en caja {caja}/{turno}/{fecha_pago}")
+                    else:
+                        print(f"⚠️ No se encontró imagen del anticipo {anticipo_id} para vincular a remesa")
+                except Exception as e:
+                    print(f"⚠️ Error vinculando imagen a remesa: {e}")
+                    import traceback
+                    traceback.print_exc()
+
         # Registrar en auditoría con nuevos campos
         from modules.tabla_auditoria import registrar_auditoria
         registrar_auditoria(
@@ -2895,15 +2979,19 @@ def crear_anticipo_recibido():
                 'local': local,
                 'numero_transaccion': numero_transaccion,
                 'medio_pago': medio_pago,
-                'tiene_adjunto': bool(adjunto_gcs_path)
+                'tiene_adjunto': bool(adjunto_gcs_path),
+                'remesa_creada': remesa_id
             },
-            descripcion=f"Anticipo recibido creado: {cliente} - {divisa} {importe}"
+            descripcion=f"Anticipo recibido creado: {cliente} - {divisa} {importe}" + (f" (Remesa {nro_remesa} creada)" if remesa_id else "")
         )
 
         cur.close()
         conn.close()
 
-        return jsonify(success=True, msg="Anticipo recibido creado correctamente", anticipo_id=anticipo_id)
+        msg = "Anticipo recibido creado correctamente"
+        if remesa_id:
+            msg += f". Remesa N° {nro_remesa} creada automaticamente."
+        return jsonify(success=True, msg=msg, anticipo_id=anticipo_id, remesa_id=remesa_id)
 
     except Exception as e:
         print("❌ ERROR crear_anticipo_recibido:", e)
@@ -2945,7 +3033,9 @@ def listar_anticipos_recibidos():
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
                 ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
-                ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
+                ar.numero_transaccion,
+                COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
+                ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
                 ar.deleted_by, ar.deleted_at,
@@ -2960,6 +3050,7 @@ def listar_anticipos_recibidos():
                       AND ia.estado = 'active'
                 ) THEN 1 ELSE 0 END as tiene_adjunto
             FROM anticipos_recibidos ar
+            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
             WHERE 1=1
         """
         params = []
@@ -3296,16 +3387,31 @@ def eliminar_anticipo_recibido(anticipo_id):
             SET estado = 'eliminado_global',
                 motivo_eliminacion = %s,
                 deleted_by = %s,
-                deleted_at = %s,
+                deleted_at = NOW(),
                 updated_by = %s,
-                updated_at = %s
+                updated_at = NOW()
             WHERE id = %s
-        """, (motivo, usuario, ahora, usuario, ahora, anticipo_id))
+        """, (motivo, usuario, usuario, anticipo_id))
+
+        # 2b. Eliminar imagen vinculada a remesa del anticipo
+        cur.execute("""
+            UPDATE imagenes_adjuntos SET estado = 'deleted'
+            WHERE entity_type = 'remesa_anticipo' AND entity_id IN (
+                SELECT id FROM remesas_trns WHERE origen_anticipo_id = %s
+            )
+        """, (anticipo_id,))
+
+        # 2c. Eliminar remesa vinculada si existe
+        cur.execute("""
+            DELETE FROM remesas_trns WHERE origen_anticipo_id = %s
+        """, (anticipo_id,))
+        remesa_eliminada = cur.rowcount > 0
 
         conn.commit()
 
         # 3. Registrar en auditoría
         from modules.tabla_auditoria import registrar_auditoria
+        desc_extra = " (remesa vinculada eliminada)" if remesa_eliminada else ""
         registrar_auditoria(
             conn=conn,
             accion='UPDATE',
@@ -3313,7 +3419,7 @@ def eliminar_anticipo_recibido(anticipo_id):
             registro_id=anticipo_id,
             datos_anteriores={'estado': anticipo['estado']},
             datos_nuevos={'estado': 'eliminado_global', 'motivo': motivo},
-            descripcion=f"Anticipo eliminado: {anticipo['cliente']} - ${anticipo['importe']} - Motivo: {motivo}"
+            descripcion=f"Anticipo eliminado: {anticipo['cliente']} - ${anticipo['importe']} - Motivo: {motivo}{desc_extra}"
         )
 
         cur.close()
@@ -3368,11 +3474,13 @@ def obtener_anticipos_disponibles():
         sql = """
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
-                ar.cliente, ar.numero_transaccion, ar.medio_pago,
+                ar.cliente, ar.numero_transaccion,
+                COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
                 ar.observaciones, ar.local, ar.created_by, ar.created_at,
                 ia.gcs_path as adjunto_gcs_path,
                 ia.original_name as adjunto_nombre
             FROM anticipos_recibidos ar
+            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
             LEFT JOIN imagenes_adjuntos ia ON (
                 ia.entity_type = 'anticipo_recibido'
                 AND ia.entity_id = ar.id
@@ -3691,11 +3799,13 @@ def obtener_anticipos_consumidos_en_caja():
             SELECT
                 aec.id, aec.anticipo_id, aec.timestamp_accion,
                 aec.importe_consumido, aec.observaciones_consumo,
-                ar.cliente, ar.numero_transaccion, ar.medio_pago,
+                ar.cliente, ar.numero_transaccion,
+                COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
                 ar.fecha_pago, ar.observaciones as observaciones_anticipo,
                 ar.divisa, ar.importe, ar.cotizacion_divisa, ar.created_by
             FROM anticipos_estados_caja aec
             JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
+            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
             WHERE aec.local = %s
               AND aec.caja = %s
               AND aec.fecha = %s
@@ -4829,6 +4939,7 @@ def cierre_resumen():
 
         # ===== Ingresos / medios de cobro =====
         # efectivo (remesas) - usar total_conversion para remesas USD
+        # Excluir remesas creadas por anticipos (origen_anticipo_id NOT NULL)
         cur.execute(f"""
             SELECT COALESCE(SUM(
                 CASE
@@ -4838,6 +4949,7 @@ def cierre_resumen():
             ),0)
               FROM {T_REMESAS}
              WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+               AND (origen_anticipo_id IS NULL)
         """, (fecha, local, caja, turno))
         row = cur.fetchone()
         resumen['efectivo'] = float(row[0]) if row and row[0] is not None else 0.0
@@ -4973,7 +5085,7 @@ def cierre_resumen():
         # Las facturas CC sí suman porque son cuenta corriente (medio de cobro)
         # Los gastos SÍ suman al total cobrado (justifican la venta)
         # Los anticipos consumidos SÍ suman al total cobrado (justifican faltantes)
-        # Los anticipos recibidos en efectivo RESTAN del total cobrado (se convertirán en remesas)
+        # Los anticipos recibidos en efectivo ya NO restan (la remesa espejo se excluye del efectivo)
         resumen['total_cobrado'] = sum([
             resumen.get('efectivo',0.0),
             resumen.get('tarjeta',0.0),
@@ -4983,7 +5095,6 @@ def cierre_resumen():
             resumen.get('cuenta_cte',0.0),  # Cuenta corriente (facturas CC)
             resumen.get('gastos',0.0),      # Gastos justifican la venta
             resumen.get('anticipos',0.0),   # Anticipos consumidos justifican faltantes
-            -resumen.get('anticipos_efectivo',0.0),  # RESTA: anticipos recibidos en efectivo
         ])
 
         # ===== Estado de caja (por turno)
@@ -6200,6 +6311,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         total_cobrado = 0.0
 
         # Efectivo (remesas) - usar total_conversion para USD
+        # Excluir remesas creadas por anticipos (origen_anticipo_id NOT NULL)
         if usar_snap:
             cur.execute("""
                 SELECT COALESCE(SUM(
@@ -6217,6 +6329,7 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
                         ELSE monto
                     END
                 ),0) FROM remesas_trns WHERE DATE(fecha)=%s AND local=%s AND caja=%s AND turno=%s
+                  AND (origen_anticipo_id IS NULL)
             """, (f, local, caja, turno))
         row = cur.fetchone()
         total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
@@ -6290,30 +6403,8 @@ def _get_diferencias_detalle(cur, fecha, local, usar_snap=False):
         row = cur.fetchone()
         total_cobrado += float(_extract_first_value(row) or 0.0) if row else 0.0
 
-        # Anticipos Recibidos en Efectivo - RESTAR del total cobrado
-        # (porque se convertirán en remesas y ya están incluidos en efectivo)
-        cur.execute("""
-            SELECT COALESCE(SUM(
-                CASE
-                    WHEN ar.divisa = 'USD' AND ar.cotizacion_divisa IS NOT NULL
-                    THEN ar.importe * ar.cotizacion_divisa
-                    WHEN ar.divisa = 'ARS' OR ar.divisa IS NULL
-                    THEN ar.importe
-                    ELSE ar.importe
-                END
-            ), 0)
-            FROM anticipos_recibidos ar
-            INNER JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
-            WHERE DATE(ar.fecha_pago) = %s
-              AND ar.local = %s
-              AND ar.caja = %s
-              AND (ar.turno = %s OR ar.turno IS NULL)
-              AND ma.es_efectivo = 1
-              AND ar.estado != 'eliminado_global'
-        """, (f, local, caja, turno))
-        row = cur.fetchone()
-        anticipos_efectivo = float(_extract_first_value(row) or 0.0) if row else 0.0
-        total_cobrado -= anticipos_efectivo  # RESTA del total cobrado
+        # Anticipos recibidos en efectivo ya NO restan del total cobrado
+        # La remesa espejo se excluye del efectivo (filtro origen_anticipo_id IS NULL arriba)
 
         # Calcular diferencia
         diferencia = total_cobrado - venta_total
@@ -6442,6 +6533,7 @@ def api_resumen_local():
         discovery = (venta_total or 0.0) - (total_facturas or 0.0)
 
         # ===== EFECTIVO (Remesas) - usar total_conversion para USD =====
+        # Excluir remesas creadas por anticipos (origen_anticipo_id NOT NULL)
         efectivo_neto = _qsum(
             cur,
             f"""SELECT COALESCE(SUM(
@@ -6449,25 +6541,28 @@ def api_resumen_local():
                     WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
                     ELSE monto
                 END
-            ),0) FROM {T_REMESAS} WHERE DATE(fecha)=%s AND local=%s""",
+            ),0) FROM {T_REMESAS} WHERE DATE(fecha)=%s AND local=%s
+              AND (origen_anticipo_id IS NULL)""",
             (f, local),
         )
 
-        # Detalle de remesas retiradas
+        # Detalle de remesas retiradas (excluir remesas de anticipo)
         cur.execute(
             f"""SELECT id, nro_remesa, precinto, monto, divisa, monto_usd, cotizacion_divisa, total_conversion, fecha, retirada
                 FROM {T_REMESAS}
                 WHERE local=%s AND DATE(fecha)=%s AND retirada = 1
+                  AND (origen_anticipo_id IS NULL)
                 ORDER BY fecha DESC, id DESC""",
             (local, f)
         )
         remesas_retiradas = cur.fetchall()
 
-        # Detalle de remesas no retiradas
+        # Detalle de remesas no retiradas (excluir remesas de anticipo)
         cur.execute(
             f"""SELECT id, nro_remesa, precinto, monto, divisa, monto_usd, cotizacion_divisa, total_conversion, fecha, retirada
                 FROM {T_REMESAS}
                 WHERE local=%s AND DATE(fecha)=%s AND retirada = 0
+                  AND (origen_anticipo_id IS NULL)
                 ORDER BY fecha DESC, id DESC""",
             (local, f)
         )
@@ -6809,8 +6904,8 @@ def api_resumen_local():
         # ===== Totales del panel =====
         # Las facturas A, B, Z NO suman al total cobrado (solo sirven para calcular discovery)
         # Los TIPS tampoco suman al total cobrado
-        # Suman: efectivo, tarjetas, MP, rappi, pedidosya, cuenta corriente (CC), gastos, anticipos consumidos
-        # Restan: anticipos recibidos en efectivo
+        # Suman: efectivo (sin remesas de anticipo), tarjetas, MP, rappi, pedidosya, CC, gastos, anticipos consumidos
+        # Los anticipos en efectivo ya NO restan (la remesa espejo se excluye del efectivo)
         total_cobrado = float(sum([
             efectivo_neto or 0.0,
             tarjeta_total or 0.0,
@@ -6820,7 +6915,6 @@ def api_resumen_local():
             cta_cte_total or 0.0,  # Cuenta corriente (facturas CC)
             gastos_total or 0.0,   # Gastos justifican la venta
             anticipos_total or 0.0,  # Anticipos consumidos
-            -anticipos_efectivo_total,  # RESTA: anticipos recibidos en efectivo
         ]))
 
         info_total = float(sum([
@@ -11356,7 +11450,9 @@ def listar_anticipos_auditor():
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
                 ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
-                ar.numero_transaccion, ar.medio_pago, ar.observaciones, ar.local,
+                ar.numero_transaccion,
+                COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
+                ar.observaciones, ar.local,
                 ar.estado as estado_global,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
                 ar.deleted_by, ar.deleted_at,
@@ -11371,6 +11467,7 @@ def listar_anticipos_auditor():
                       AND ia.estado = 'active'
                 ) THEN 1 ELSE 0 END as tiene_adjunto
             FROM anticipos_recibidos ar
+            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
             WHERE 1=1
         """
         params = []

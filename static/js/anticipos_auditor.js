@@ -172,6 +172,16 @@
           <span class="detail-label">Importe</span>
           <span class="detail-value">${formatMoney(anticipo.importe)} ${divisaBadge}</span>
         </div>
+        ${anticipo.divisa && anticipo.divisa !== 'ARS' && anticipo.cotizacion_divisa ? `
+        <div class="detail-item">
+          <span class="detail-label">Cotización</span>
+          <span class="detail-value">${formatMoney(anticipo.cotizacion_divisa)} por ${anticipo.divisa}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Equivalencia en ARS</span>
+          <span class="detail-value" style="color:#059669;font-weight:600;">${formatMoney(anticipo.importe * anticipo.cotizacion_divisa)}</span>
+        </div>
+        ` : ''}
         <div class="detail-item">
           <span class="detail-label">Estado</span>
           <span class="detail-value">${estadoBadge}</span>

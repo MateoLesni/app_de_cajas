@@ -302,6 +302,11 @@
     // Buscar el medio de pago seleccionado
     const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == medioPagoId);
 
+    const nroRemesaGroup = $('#nroRemesaGroup');
+    const precintoGroup = $('#precintoGroup');
+    const nroRemesaInput = $('#nroRemesa');
+    const precintoInput = $('#precinto');
+
     if (medioSeleccionado && medioSeleccionado.es_efectivo === 1) {
       // Mostrar campo caja y hacerlo obligatorio
       cajaGroup.style.display = 'block';
@@ -312,11 +317,17 @@
         turnoGroup.style.display = 'block';
         turnoSelect.required = true;
       }
+
+      // Mostrar campos de remesa
+      if (nroRemesaGroup) { nroRemesaGroup.style.display = 'block'; }
+      if (nroRemesaInput) { nroRemesaInput.required = true; }
+      if (precintoGroup) { precintoGroup.style.display = 'block'; }
+      if (precintoInput) { precintoInput.required = true; }
     } else {
       // Ocultar campo caja y quitar obligatoriedad
       cajaGroup.style.display = 'none';
       cajaSelect.required = false;
-      cajaSelect.value = ''; // Limpiar selección
+      cajaSelect.value = '';
 
       // Ocultar campo turno
       if (turnoGroup && turnoSelect) {
@@ -324,6 +335,12 @@
         turnoSelect.required = false;
         turnoSelect.value = '';
       }
+
+      // Ocultar campos de remesa
+      if (nroRemesaGroup) { nroRemesaGroup.style.display = 'none'; }
+      if (nroRemesaInput) { nroRemesaInput.required = false; nroRemesaInput.value = ''; }
+      if (precintoGroup) { precintoGroup.style.display = 'none'; }
+      if (precintoInput) { precintoInput.required = false; precintoInput.value = ''; }
     }
   }
 
@@ -778,7 +795,9 @@
       divisa: $('#divisa')?.value || 'ARS',
       medio_pago_id: parseInt($('#medioPagoId')?.value) || null,
       numero_transaccion: $('#numeroTransaccion')?.value?.trim() || null,
-      observaciones: $('#observaciones')?.value?.trim() || null
+      observaciones: $('#observaciones')?.value?.trim() || null,
+      nro_remesa: $('#nroRemesa')?.value?.trim() || null,
+      precinto: $('#precinto')?.value?.trim() || null
     };
 
     // DEBUG: Log en modo edición para diagnosticar
@@ -854,11 +873,21 @@
       return;
     }
 
-    // Validar caja solo si el medio de pago es efectivo
+    // Validar caja y datos de remesa solo si el medio de pago es efectivo
     const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == data.medio_pago_id);
-    if (medioSeleccionado && medioSeleccionado.es_efectivo === 1 && !data.caja) {
-      alert('⚠️  Debés seleccionar la caja que recibió el efectivo');
-      return;
+    if (medioSeleccionado && medioSeleccionado.es_efectivo === 1) {
+      if (!data.caja) {
+        alert('⚠️  Debes seleccionar la caja que recibio el efectivo');
+        return;
+      }
+      if (!data.nro_remesa) {
+        alert('⚠️  Debes ingresar el N° de Remesa');
+        return;
+      }
+      if (!data.precinto) {
+        alert('⚠️  Debes ingresar el N° de Precinto');
+        return;
+      }
     }
 
     // Validar turno solo si el campo turno está visible y es requerido

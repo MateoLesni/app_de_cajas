@@ -423,12 +423,13 @@
       }
     }
 
-    // Anticipos recibidos efectivo
+    // Anticipos recibidos efectivo (informativo, en verde, no resta)
     const antEf = info?.anticipos_efectivo || {};
     const antEfVal = Number(antEf.total ?? 0);
     const elAntEf = document.getElementById("rl-anticipos-efectivo");
     if (elAntEf) {
-      elAntEf.textContent = antEfVal > 0 ? '-' + money(antEfVal) : money(0);
+      elAntEf.textContent = money(antEfVal);
+      elAntEf.style.color = '#059669';
       elAntEf.dataset.copy = elAntEf.textContent;
     }
 

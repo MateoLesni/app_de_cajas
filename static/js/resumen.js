@@ -88,16 +88,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function aplicarResumenAUI(resumen, estadoOverride = null) {
     // 1) Campos simples
     for (const [k, id] of Object.entries(campos)) {
-      // Formateo especial para anticipos_efectivo (mostrar con signo negativo)
+      // Anticipos efectivo: informativo en verde, no resta
       if (k === 'anticipos_efectivo') {
         const val = safeNum(resumen[k]);
-        setTextIf(id, val > 0 ? '-' + formatMoneda(val) : formatMoneda(0));
+        setTextIf(id, formatMoneda(val));
+        const el = document.getElementById(id);
+        if (el) el.style.color = '#059669';
       } else {
         setTextIf(id, formatMoneda(safeNum(resumen[k])));
       }
     }
 
-    // 2) Total cobrado (incluye gastos, resta anticipos en efectivo)
+    // 2) Total cobrado (anticipos efectivo ya NO restan)
     let totalCobrado = safeNum(resumen.total_cobrado);
     if (!totalCobrado) {
       totalCobrado =
@@ -109,8 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         safeNum(resumen.cuenta_cte) +
         safeNum(resumen.facturas_cc) +
         safeNum(resumen.gastos) +
-        safeNum(resumen.anticipos) -
-        safeNum(resumen.anticipos_efectivo);
+        safeNum(resumen.anticipos);
     }
     setTextIf('totalCobrado', formatMoneda(totalCobrado));
     setTextIf('resTotalCobradoVentas', formatMoneda(totalCobrado));

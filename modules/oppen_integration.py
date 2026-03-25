@@ -138,8 +138,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (ambiente de producción)
-    BASE_URL = "https://ng.oppen.io"
+    # Configuración de la API (ambiente de pruebas)
+    BASE_URL = "https://ngprueba.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -1263,8 +1263,22 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 rows.append(row_py)
 
             # Obtener Remesas (una fila por remesa)
+            # Excluir remesas creadas por anticipos en efectivo (origen_anticipo_id NOT NULL)
             # Para remesas USD, usar total_conversion (monto convertido a ARS)
-            cur_pm.execute("""
+            # Verificar si existe la columna origen_anticipo_id
+            try:
+                cur_pm.execute("""
+                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'remesas_trns'
+                      AND COLUMN_NAME = 'origen_anticipo_id'
+                """)
+                has_origen = cur_pm.fetchone()
+                has_origen = (list(has_origen.values())[0] if isinstance(has_origen, dict) else has_origen[0]) > 0
+            except Exception:
+                has_origen = False
+
+            filtro_origen = "AND (origen_anticipo_id IS NULL)" if has_origen else ""
+            cur_pm.execute(f"""
                 SELECT
                     'REMESAS' AS forma_pago,
                     CONCAT('Remesa ', nro_remesa) AS descripcion,
@@ -1275,6 +1289,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 FROM remesas_trns
                 WHERE local = %s
                   AND DATE(fecha) = %s
+                  {filtro_origen}
             """, (local, fecha))
             rows_remesas = cur_pm.fetchall()
             if rows_remesas:
@@ -1354,7 +1369,8 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
                 # 2. Calcular total_cobrado
                 # Remesas (usar total_conversion para USD, monto para ARS)
-                cur_pm.execute("""
+                # Excluir remesas de anticipos para que el cálculo sea consistente con los PayModes
+                cur_pm.execute(f"""
                     SELECT COALESCE(SUM(
                         CASE
                             WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
@@ -1363,6 +1379,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                     ), 0) AS total
                     FROM remesas_trns
                     WHERE local = %s AND DATE(fecha) = %s
+                    {filtro_origen}
                 """, (local, fecha))
                 efectivo_total = float(cur_pm.fetchone()['total'] or 0.0)
 
@@ -1511,9 +1528,12 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         logger.info(f"💳 {len(pay_modes)} medios de pago encontrados")
 
         # 6. Crear recibo
+        # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
+        LOCALES_CUIT0 = ['Tostado', 'Milvidas']
+        cust_code = "CUIT0" if local in LOCALES_CUIT0 else "C00001"
         recibo_data = {
             "TransDate": fecha,
-            "CustCode": "C00001",
+            "CustCode": cust_code,
             "Labels": label_oppen,
             "Reference": f"Caja {local} {fecha}",
             "Invoices": invoices,
