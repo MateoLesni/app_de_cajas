@@ -65,20 +65,21 @@ def log_sync_attempt(
         cur = conn.cursor()
 
         # Auto-migrar sernr_oppen a BIGINT si es INT (los SerNr de Oppen superan INT max)
-        try:
-            cur.execute("""
-                SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'oppen_sync_log'
-                  AND COLUMN_NAME = 'sernr_oppen'
-            """)
-            col_row = cur.fetchone()
-            if col_row and 'bigint' not in str(col_row[0] if isinstance(col_row, tuple) else col_row.get('COLUMN_TYPE', '')).lower():
-                cur.execute("ALTER TABLE oppen_sync_log MODIFY COLUMN sernr_oppen BIGINT NULL")
-                conn.commit()
-                logger.info("[MIGRATE] oppen_sync_log.sernr_oppen cambiado a BIGINT")
-        except Exception:
-            pass
+        for tbl in ['oppen_sync_log', 'facturas_trns', 'cuentas_corrientes_trns']:
+            try:
+                cur.execute("""
+                    SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = %s
+                      AND COLUMN_NAME = 'sernr_oppen'
+                """, (tbl,))
+                col_row = cur.fetchone()
+                if col_row and 'bigint' not in str(col_row[0] if isinstance(col_row, tuple) else col_row.get('COLUMN_TYPE', '')).lower():
+                    cur.execute(f"ALTER TABLE {tbl} MODIFY COLUMN sernr_oppen BIGINT NULL")
+                    conn.commit()
+                    logger.info(f"[MIGRATE] {tbl}.sernr_oppen cambiado a BIGINT")
+            except Exception:
+                pass
 
         # Convertir payloads a JSON string para MySQL
         request_json = json.dumps(request_payload, ensure_ascii=False, cls=_Encoder) if request_payload else None
