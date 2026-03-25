@@ -1446,20 +1446,20 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
             # Log diagnóstico
             suma_final = round(sum(pm['Amount'] for pm in pay_modes), 2)
-            logger.info(f"📊 Venta total sistema: ${venta_total_sistema:,.2f}")
-            logger.info(f"📊 Total facturas vinculadas: ${total_facturas:,.2f}")
-            logger.info(f"📊 DIFERENCIA: ${diferencia_val:,.2f}")
-            logger.info(f"📊 DISCOVERY: ${discovery_pm:,.2f}")
-            logger.info(f"📊 Suma neta PayModes: ${suma_final:,.2f} (debe ser = ${total_facturas:,.2f})")
+            print(f"[RECIBO] Venta total sistema: {venta_total_sistema}")
+            print(f"[RECIBO] Total facturas vinculadas: {total_facturas}")
+            print(f"[RECIBO] DIFERENCIA: {diferencia_val}")
+            print(f"[RECIBO] DISCOVERY: {discovery_pm}")
+            print(f"[RECIBO] Suma neta PayModes: {suma_final} (debe ser = {total_facturas})")
             if abs(suma_final - total_facturas) > 0.01:
-                logger.error(f"❌ DESCUADRE: suma neta ${suma_final:,.2f} != total facturas ${total_facturas:,.2f}")
+                print(f"[RECIBO] ❌ DESCUADRE: suma neta {suma_final} != total facturas {total_facturas}")
 
         except Exception as e:
-            logger.warning(f"⚠️ Error al calcular DISCOVERY/DIFERENCIA: {e}")
+            print(f"[RECIBO] Error al calcular DISCOVERY/DIFERENCIA: {e}")
             import traceback
             traceback.print_exc()
 
-        logger.info(f"💳 {len(pay_modes)} medios de pago encontrados")
+        print(f"[RECIBO] {len(pay_modes)} medios de pago encontrados")
 
         # 6. Crear recibo
         # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
@@ -1474,17 +1474,18 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             "PayModes": pay_modes,
         }
 
-        # Log detallado del payload completo
+        # Log detallado del payload completo con print para que aparezca en Cloud Logging
         import json
-        logger.info(f"📦 Payload recibo completo:")
-        logger.info(json.dumps(recibo_data, indent=2, ensure_ascii=False, default=str))
+        print(f"[RECIBO] === PAYLOAD COMPLETO ===")
+        print(json.dumps(recibo_data, indent=2, ensure_ascii=False, default=str))
+        print(f"[RECIBO] === FIN PAYLOAD ===")
 
-        # Calcular suma neta de PayModes para diagnóstico
-        sum_positivos = sum(pm['Amount'] for pm in pay_modes if pm['Amount'] > 0)
-        sum_negativos = sum(pm['Amount'] for pm in pay_modes if pm['Amount'] < 0)
-        sum_neto = sum(pm['Amount'] for pm in pay_modes)
-        logger.info(f"📊 PayModes: positivos=${sum_positivos:,.2f}, negativos=${sum_negativos:,.2f}, neto=${sum_neto:,.2f}")
-        logger.info(f"📊 Facturas: total=${total_facturas:,.2f}, diferencia con neto=${total_facturas - sum_neto:,.2f}")
+        # Resumen numérico
+        sum_positivos = round(sum(pm['Amount'] for pm in pay_modes if pm['Amount'] > 0), 2)
+        sum_negativos = round(sum(pm['Amount'] for pm in pay_modes if pm['Amount'] < 0), 2)
+        sum_neto = round(sum(pm['Amount'] for pm in pay_modes), 2)
+        print(f"[RECIBO] PayModes positivos: {sum_positivos}, negativos: {sum_negativos}, neto: {sum_neto}")
+        print(f"[RECIBO] Total facturas: {total_facturas}, diferencia neto vs facturas: {round(total_facturas - sum_neto, 2)}")
 
         client = OppenClient()
         client.authenticate()
