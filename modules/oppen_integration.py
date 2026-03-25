@@ -1346,128 +1346,9 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                     "pagado": -1 * float(total_tips_mp),  # NEGATIVO
                 })
 
-            # -------- DISCOVERY y DIFERENCIA (calculados directamente) --------
-            try:
-                # 1. Obtener venta_total_sistema desde ventas_trns (NO facturas_trns)
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
-                    FROM ventas_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                """, (local, fecha))
-                venta_total_sistema = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # 2. Obtener suma de facturas Z, A, B para DISCOVERY
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
-                    FROM facturas_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                      AND tipo IN ('Z', 'A', 'B', 'CC')
-                """, (local, fecha))
-                total_facturas_zab = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # 3. Calcular DISCOVERY
-                discovery_val = venta_total_sistema - total_facturas_zab
-
-                # 2. Calcular total_cobrado
-                # Remesas (usar total_conversion para USD, monto para ARS)
-                # Excluir remesas de anticipos para que el cálculo sea consistente con los PayModes
-                cur_pm.execute(f"""
-                    SELECT COALESCE(SUM(
-                        CASE
-                            WHEN divisa = 'USD' AND total_conversion IS NOT NULL THEN total_conversion
-                            ELSE monto
-                        END
-                    ), 0) AS total
-                    FROM remesas_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                    {filtro_origen}
-                """, (local, fecha))
-                efectivo_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # Tarjetas (sin tips)
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
-                    FROM tarjetas_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                """, (local, fecha))
-                tarjeta_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # MercadoPago (tipo='NORMAL')
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(importe), 0) AS total
-                    FROM mercadopago_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                      AND UPPER(tipo) = 'NORMAL'
-                """, (local, fecha))
-                mp_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # Rappi
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
-                    FROM rappi_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                """, (local, fecha))
-                rappi_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # Gastos
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
-                    FROM gastos_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                """, (local, fecha))
-                gastos_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # PedidosYa
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
-                    FROM pedidosya_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                """, (local, fecha))
-                pedidosya_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # Cuenta Corriente
-                cur_pm.execute("""
-                    SELECT COALESCE(SUM(monto), 0) AS total
-                    FROM facturas_trns
-                    WHERE local = %s AND DATE(fecha) = %s
-                      AND tipo = 'CC'
-                """, (local, fecha))
-                cta_cte_total = float(cur_pm.fetchone()['total'] or 0.0)
-
-                # Total cobrado
-                total_cobrado = sum([
-                    efectivo_total,
-                    tarjeta_total,
-                    mp_total,
-                    rappi_total,
-                    gastos_total,
-                    pedidosya_total,
-                    cta_cte_total,
-                ])
-
-                # DIFERENCIA = total_cobrado - venta_total_sistema (invertido)
-                diferencia_val = total_cobrado - venta_total_sistema
-
-                # Agregar DISCOVERY (siempre, invertido en signo)
-                rows.append({
-                    "forma_pago": "DISCOVERY",
-                    "descripcion": "DISCOVERY",
-                    "pagado": round(-1 * discovery_val, 2),  # Invertir signo, con decimales
-                })
-
-                # Agregar DIFERENCIA (siempre, invertido en signo)
-                rows.append({
-                    "forma_pago": "DIFRECAU",
-                    "descripcion": "DIFERENCIA DE CAJA",
-                    "pagado": round(-1 * diferencia_val, 2),  # Invertir signo, con decimales
-                })
-
-            except Exception as e:
-                logger.warning(f"⚠️ Error al calcular DISCOVERY/DIFERENCIA: {e}")
-                import traceback
-                traceback.print_exc()
-                pass
-
+            # -------- DISCOVERY y DIFERENCIA --------
+            # Se calculan DESPUÉS de armar los PayModes reales para que cierre exacto
+            # (evitar diferencias por redondeo entre queries separadas vs agrupadas)
             cur_pm.close()
 
         except Exception as e:
@@ -1512,19 +1393,71 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
             # Convertir monto a float
             try:
-                amount = float(pagado) if pagado else 0.0
+                amount = round(float(pagado), 2) if pagado else 0.0
             except:
                 amount = 0.0
-
-            # Ya no necesitamos invertir signo aquí, porque PROPINAS y DIFRECAU
-            # ya vienen con el signo correcto desde las queries SQL
 
             if amount != 0:  # Solo agregar si hay monto
                 pay_modes.append({
                     "PayMode": forma_pago_codigo,
                     "Comment": descripcion,
-                    "Amount": round(amount, 2),
+                    "Amount": amount,
                 })
+
+        # Calcular DISCOVERY y DIFERENCIA a partir de la suma REAL de PayModes
+        # para garantizar que la suma neta sea exactamente igual al total de facturas
+        try:
+            # DIFERENCIA = lo que sobra/falta entre lo cobrado y la venta
+            # Usamos la suma real de PayModes positivos como "total cobrado"
+            # y venta_total_sistema de la BD
+            conn_tmp = conn.cursor(dictionary=True)
+            conn_tmp.execute("""
+                SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
+                FROM ventas_trns
+                WHERE local = %s AND DATE(fecha) = %s
+            """, (local, fecha))
+            venta_total_sistema = float(conn_tmp.fetchone()['total'] or 0.0)
+            conn_tmp.close()
+
+            # Total cobrado = suma de positivos (sin propinas ni discovery ni diferencia)
+            suma_positivos = round(sum(pm['Amount'] for pm in pay_modes if pm['Amount'] > 0), 2)
+            diferencia_val = round(suma_positivos - venta_total_sistema, 2)
+
+            # Agregar DIFERENCIA (invertido: si cobró de más es negativo en Oppen)
+            if diferencia_val != 0:
+                pay_modes.append({
+                    "PayMode": "DIFRECAU",
+                    "Comment": "DIFERENCIA DE CAJA",
+                    "Amount": round(-1 * diferencia_val, 2),
+                })
+
+            # Recalcular suma con diferencia incluida
+            suma_con_diferencia = round(sum(pm['Amount'] for pm in pay_modes), 2)
+
+            # DISCOVERY = ajuste final para que cierre exacto con total_facturas
+            discovery_pm = round(total_facturas - suma_con_diferencia, 2)
+
+            if discovery_pm != 0:
+                pay_modes.append({
+                    "PayMode": "DISCOVERY",
+                    "Comment": "DISCOVERY",
+                    "Amount": discovery_pm,
+                })
+
+            # Log diagnóstico
+            suma_final = round(sum(pm['Amount'] for pm in pay_modes), 2)
+            logger.info(f"📊 Venta total sistema: ${venta_total_sistema:,.2f}")
+            logger.info(f"📊 Total facturas vinculadas: ${total_facturas:,.2f}")
+            logger.info(f"📊 DIFERENCIA: ${diferencia_val:,.2f}")
+            logger.info(f"📊 DISCOVERY: ${discovery_pm:,.2f}")
+            logger.info(f"📊 Suma neta PayModes: ${suma_final:,.2f} (debe ser = ${total_facturas:,.2f})")
+            if abs(suma_final - total_facturas) > 0.01:
+                logger.error(f"❌ DESCUADRE: suma neta ${suma_final:,.2f} != total facturas ${total_facturas:,.2f}")
+
+        except Exception as e:
+            logger.warning(f"⚠️ Error al calcular DISCOVERY/DIFERENCIA: {e}")
+            import traceback
+            traceback.print_exc()
 
         logger.info(f"💳 {len(pay_modes)} medios de pago encontrados")
 
