@@ -1186,7 +1186,9 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 'recibo_creado': False
             }
 
-        # 3. Construir lista de facturas para el recibo con montos reales
+        # 3. Construir lista de facturas para el recibo
+        # NO enviar Amount — dejar que Oppen use el Total real de cada factura
+        # (evita discrepancias de centavos por redondeo IVA: monto/1.21*1.21 != monto)
         invoices = []
         total_facturas = 0
         for f in facturas:
@@ -1194,10 +1196,12 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             total_facturas += monto
             invoices.append({
                 "InvoiceNr": int(f['sernr_oppen']),
-                "Amount": monto,
             })
 
-        logger.info(f"📦 Vinculando {len(invoices)} facturas A/B/Z al recibo (Total: ${total_facturas:,.2f})")
+        print(f"[RECIBO] === FACTURAS VINCULADAS ({len(invoices)}) ===")
+        for f in facturas:
+            print(f"[RECIBO]   ID={f.get('id')} tipo={f.get('tipo')} sernr={f.get('sernr_oppen')} monto_bd={f.get('monto')}")
+        print(f"[RECIBO] Total facturas (BD): {total_facturas}")
 
         # 4. Obtener PayModes directamente desde la BD
         # Consulta simplificada: obtener solo los totales por forma de pago
@@ -1466,14 +1470,24 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                     "Amount": amount,
                 })
 
-        # Log diagnóstico
-        sum_neto = round(sum(pm['Amount'] for pm in pay_modes), 2)
-        print(f"[RECIBO] {len(pay_modes)} medios de pago")
-        print(f"[RECIBO] Total facturas vinculadas: {total_facturas}")
-        print(f"[RECIBO] Suma neta PayModes: {sum_neto}")
-        print(f"[RECIBO] Diferencia neto vs facturas: {round(total_facturas - sum_neto, 2)}")
-
-        print(f"[RECIBO] {len(pay_modes)} medios de pago encontrados")
+        # Log diagnóstico detallado
+        print(f"[RECIBO] === PAYMODES ({len(pay_modes)}) ===")
+        sum_positivos = 0
+        sum_negativos = 0
+        for pm in pay_modes:
+            signo = "+" if pm['Amount'] > 0 else ""
+            print(f"[RECIBO]   {pm['PayMode']:<12} {signo}{pm['Amount']:>15.2f}  {pm.get('Comment','')}")
+            if pm['Amount'] > 0:
+                sum_positivos += pm['Amount']
+            else:
+                sum_negativos += pm['Amount']
+        sum_neto = round(sum_positivos + sum_negativos, 2)
+        print(f"[RECIBO] --- RESUMEN ---")
+        print(f"[RECIBO]   Positivos: {round(sum_positivos, 2)}")
+        print(f"[RECIBO]   Negativos: {round(sum_negativos, 2)}")
+        print(f"[RECIBO]   Neto: {sum_neto}")
+        print(f"[RECIBO]   Total facturas (BD): {total_facturas}")
+        print(f"[RECIBO]   Diferencia neto vs facturas BD: {round(total_facturas - sum_neto, 2)}")
 
         # 6. Crear recibo
         # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
