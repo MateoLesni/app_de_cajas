@@ -139,8 +139,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (pruebas)
-    BASE_URL = "https://ngprueba.oppen.io"
+    # Configuración de la API (producción)
+    BASE_URL = "https://ng.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -679,13 +679,13 @@ class OppenClient:
         url = f"{self.BASE_URL}/genericapi/ApiNg/Receipt"
 
         try:
-            # Preparar Invoices - mantener InvoiceNr y Amount
+            # Preparar Invoices - mantener InvoiceNr, incluir Amount solo si viene
             invoices_cleaned = []
             for inv in recibo_data.get("Invoices", []):
-                invoices_cleaned.append({
-                    "InvoiceNr": inv["InvoiceNr"],
-                    "Amount": inv.get("Amount", 0)
-                })
+                inv_entry = {"InvoiceNr": inv["InvoiceNr"]}
+                if "Amount" in inv and inv["Amount"]:
+                    inv_entry["Amount"] = inv["Amount"]
+                invoices_cleaned.append(inv_entry)
 
             # Preparar PayModes - quitar Comment si está vacío
             paymodes_cleaned = []

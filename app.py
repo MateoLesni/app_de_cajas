@@ -10260,7 +10260,22 @@ def api_marcar_auditado():
             msg_recibo = ""
             resultado_recibo = None
 
-            if resultado_oppen['success'] and resultado_oppen['exitosas'] > 0:
+            # Crear recibo si hay facturas en Oppen (ya sean nuevas o de corridas anteriores)
+            hay_facturas_oppen = False
+            try:
+                cur_check = conn.cursor()
+                cur_check.execute("""
+                    SELECT COUNT(*) FROM facturas_trns
+                    WHERE local = %s AND DATE(fecha) = %s
+                      AND estado = 'ok' AND tipo IN ('A','B','Z')
+                      AND sernr_oppen IS NOT NULL
+                """, (local, f))
+                hay_facturas_oppen = cur_check.fetchone()[0] > 0
+                cur_check.close()
+            except Exception:
+                pass
+
+            if hay_facturas_oppen:
                 try:
                     print(f"🔄 Creando recibo en Oppen para {local} - {f}...")
                     resultado_recibo = sync_recibo_to_oppen(conn, local, f)
