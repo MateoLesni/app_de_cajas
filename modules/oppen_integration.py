@@ -139,8 +139,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (producción)
-    BASE_URL = "https://ng.oppen.io"
+    # Configuración de la API (pruebas)
+    BASE_URL = "https://ngprueba.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -792,6 +792,7 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
               AND DATE(fecha) = %s
               AND estado = 'ok'
               AND tipo IN ('A', 'B', 'Z')
+              AND sernr_oppen IS NULL
             ORDER BY tipo, punto_venta, nro_factura
         """, (local, fecha))
 
@@ -899,6 +900,7 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
             WHERE cc.local = %s
               AND DATE(cc.fecha) = %s
               AND cc.estado = 'ok'
+              AND cc.sernr_oppen IS NULL
             ORDER BY cc.id
         """, (local, fecha))
 
