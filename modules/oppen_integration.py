@@ -139,8 +139,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (producción)
-    BASE_URL = "https://ng.oppen.io"
+    # Configuración de la API (pruebas)
+    BASE_URL = "https://ngprueba.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -500,18 +500,36 @@ class OppenClient:
                 logger.info(f"   - SerNr recibido: {sernr_oppen}")
                 logger.info(f"   - OfficialSerNr recibido: {official_sernr}")
 
+                # Obtener Total real de Oppen (puede diferir de nuestro monto por redondeo IVA)
+                total_oppen = response_data.get('Total')
+
                 if sernr_oppen and conn and factura.get('id'):
-                    # Guardar SerNr en la BD
+                    # Guardar SerNr y Total de Oppen en la BD
                     try:
                         cur = conn.cursor()
+                        # Auto-agregar columna total_oppen si no existe
+                        try:
+                            cur.execute("""
+                                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                                WHERE TABLE_SCHEMA = DATABASE()
+                                  AND TABLE_NAME = 'facturas_trns'
+                                  AND COLUMN_NAME = 'total_oppen'
+                            """)
+                            if cur.fetchone()[0] == 0:
+                                cur.execute("ALTER TABLE facturas_trns ADD COLUMN total_oppen DECIMAL(15,2) NULL")
+                                conn.commit()
+                                print("[MIGRATE] facturas_trns.total_oppen agregado")
+                        except Exception:
+                            pass
+
                         cur.execute("""
                             UPDATE facturas_trns
-                            SET sernr_oppen = %s
+                            SET sernr_oppen = %s, total_oppen = %s
                             WHERE id = %s
-                        """, (sernr_oppen, factura['id']))
+                        """, (sernr_oppen, total_oppen, factura['id']))
                         conn.commit()
                         cur.close()
-                        logger.info(f"✅ SerNr {sernr_oppen} guardado en BD para factura ID {factura['id']}")
+                        logger.info(f"✅ SerNr {sernr_oppen} + Total {total_oppen} guardado en BD para factura ID {factura['id']}")
 
                         # Agregar a lista de facturas creadas
                         resultados['facturas_creadas'].append({
@@ -1167,8 +1185,9 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         logger.info(f"📋 Creando recibo para {local} ({label_oppen}) - {fecha}")
 
         # 2. Obtener facturas A, B y Z con sus SerNr de Oppen y montos (excluye CC)
+        # Incluir total_oppen (el Total real de Oppen) para usar como Amount en el recibo
         cur.execute("""
-            SELECT id, tipo, sernr_oppen, monto
+            SELECT id, tipo, sernr_oppen, monto, total_oppen
             FROM facturas_trns
             WHERE local = %s
               AND DATE(fecha) = %s
@@ -1189,21 +1208,25 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             }
 
         # 3. Construir lista de facturas para el recibo
-        # NO enviar Amount — dejar que Oppen use el Total real de cada factura
-        # (evita discrepancias de centavos por redondeo IVA: monto/1.21*1.21 != monto)
+        # Usar total_oppen (Total real de Oppen) como Amount para evitar discrepancias de centavos
+        # Si total_oppen no existe (facturas creadas antes de este cambio), usar monto de BD
         invoices = []
         total_facturas = 0
         for f in facturas:
-            monto = float(f.get('monto', 0))
-            total_facturas += monto
+            total_real = float(f.get('total_oppen') or f.get('monto', 0))
+            total_facturas += total_real
             invoices.append({
                 "InvoiceNr": int(f['sernr_oppen']),
+                "Amount": total_real,
             })
 
         print(f"[RECIBO] === FACTURAS VINCULADAS ({len(invoices)}) ===")
         for f in facturas:
-            print(f"[RECIBO]   ID={f.get('id')} tipo={f.get('tipo')} sernr={f.get('sernr_oppen')} monto_bd={f.get('monto')}")
-        print(f"[RECIBO] Total facturas (BD): {total_facturas}")
+            t_oppen = f.get('total_oppen')
+            monto_bd = f.get('monto')
+            diff = round(float(monto_bd or 0) - float(t_oppen or monto_bd or 0), 4)
+            print(f"[RECIBO]   ID={f.get('id')} tipo={f.get('tipo')} sernr={f.get('sernr_oppen')} monto_bd={monto_bd} total_oppen={t_oppen} diff={diff}")
+        print(f"[RECIBO] Total facturas (usando total_oppen): {total_facturas}")
 
         # 4. Obtener PayModes directamente desde la BD
         # Consulta simplificada: obtener solo los totales por forma de pago
