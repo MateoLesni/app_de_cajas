@@ -139,8 +139,8 @@ class OppenAPIError(Exception):
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
-    # Configuración de la API (pruebas)
-    BASE_URL = "https://ngprueba.oppen.io"
+    # Configuración de la API (producción)
+    BASE_URL = "https://ng.oppen.io"
     USERNAME = "API"
     PASSWORD = "apingprueba123"
 
@@ -335,7 +335,7 @@ class OppenClient:
             "ToOfficialSerNr": official_sernr,
 
             # === CLIENTE Y FECHAS ===
-            "CustCode": self.DEFAULT_CUSTOMER,
+            "CustCode": factura.get('cust_code', self.DEFAULT_CUSTOMER),
             "TransDate": str(trans_date),
             "InvoiceDate": str(trans_date),  # Fecha Factura = fecha de la caja
             "DueDate": str(due_date),
@@ -828,9 +828,13 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 'label_oppen': label_oppen
             }
 
-        # 3. Agregar label de Oppen a cada factura
+        # 3. Agregar label de Oppen y CustCode a cada factura
+        # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
+        LOCALES_CUIT0 = ['Tostado', 'Milvidas']
+        cust_code = "CUIT0" if local in LOCALES_CUIT0 else "C00001"
         for factura in facturas:
             factura['label_oppen'] = label_oppen
+            factura['cust_code'] = cust_code
 
         logger.info(f"📦 Encontradas {len(facturas)} facturas A/B/Z para sincronizar")
 
