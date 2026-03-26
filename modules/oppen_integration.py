@@ -632,6 +632,7 @@ class OppenClient:
                 "OfficialSerNr": cc_data["OfficialSerNr"],
                 "CustCode": cc_data.get("CustCode", self.DEFAULT_CUSTOMER),
                 "TransDate": str(trans_date),
+                "InvoiceDate": str(trans_date),  # Fecha Factura = fecha de la caja
                 "DueDate": str(due_date),
                 "Office": cc_data["Office"],
                 "Labels": cc_data.get("Labels", ""),
@@ -829,9 +830,9 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             }
 
         # 3. Agregar label de Oppen y CustCode a cada factura
-        # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
-        LOCALES_CUIT0 = ['Tostado', 'Milvidas']
-        cust_code = "CUIT0" if local in LOCALES_CUIT0 else "C00001"
+        # Clientes especiales por local
+        LOCALES_CUSTCODE = {'Tostado': 'CUIT0', 'Milvidas': 'ZT11111'}
+        cust_code = LOCALES_CUSTCODE.get(local, 'C00001')
         for factura in facturas:
             factura['label_oppen'] = label_oppen
             factura['cust_code'] = cust_code
@@ -1008,26 +1009,17 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                     else:
                         description = nombre_cliente
 
-                # Determinar Office y VATCode según facturada
-                facturada = cc.get('facturada', 0)
-                if facturada == 1:
-                    office = "100"
-                    vat_code = "5"  # 21% IVA
-                else:
-                    office = "200"
-                    vat_code = "3"  # Sin IVA
+                # CC siempre van por Office 200 (no fiscal) con VATCode 3 (sin IVA)
+                office = "200"
+                vat_code = "3"
 
                 # Generar OfficialSerNr
                 punto_venta = cc.get('punto_venta') or 1
                 nro_comanda = cc.get('nro_comanda') or cc['id']
                 official_sernr = f"{int(punto_venta):04d}-{int(nro_comanda):08d}"
 
-                # Preparar datos para la factura
-                # El monto de la app es IVA incluido. Si tiene IVA (code 5 = 21%),
-                # enviar monto / 1.21 para que el Total Bruto sea el monto exacto.
+                # CC sin IVA: el precio es el monto directo
                 precio_neto = float(cc['monto'])
-                if vat_code == "5":
-                    precio_neto = round(precio_neto / 1.21, 2)
 
                 cc_invoice_data = {
                     "TransDate": str(trans_date),
@@ -1541,9 +1533,9 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         print(f"[RECIBO]   Diferencia neto vs facturas: {round(total_facturas - sum_neto, 2)}")
 
         # 6. Crear recibo
-        # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
-        LOCALES_CUIT0 = ['Tostado', 'Milvidas']
-        cust_code = "CUIT0" if local in LOCALES_CUIT0 else "C00001"
+        # Clientes especiales por local
+        LOCALES_CUSTCODE = {'Tostado': 'CUIT0', 'Milvidas': 'ZT11111'}
+        cust_code = LOCALES_CUSTCODE.get(local, 'C00001')
         recibo_data = {
             "TransDate": fecha,
             "CustCode": cust_code,
