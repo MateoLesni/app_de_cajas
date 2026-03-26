@@ -1495,6 +1495,28 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                     "Amount": amount,
                 })
 
+        # Ajustar DISCOVERY para que la suma neta de PayModes sea EXACTAMENTE igual al total_facturas (total_oppen)
+        # Esto absorbe cualquier centavo de diferencia por redondeo IVA
+        sum_neto_pre = round(sum(pm['Amount'] for pm in pay_modes), 2)
+        ajuste = round(total_facturas - sum_neto_pre, 2)
+        if ajuste != 0:
+            # Buscar el DISCOVERY existente y ajustarlo
+            discovery_found = False
+            for pm in pay_modes:
+                if pm['PayMode'] == 'DISCOVERY':
+                    print(f"[RECIBO] Ajustando DISCOVERY: {pm['Amount']} + {ajuste} = {round(pm['Amount'] + ajuste, 2)}")
+                    pm['Amount'] = round(pm['Amount'] + ajuste, 2)
+                    discovery_found = True
+                    break
+            if not discovery_found:
+                # Si no hay DISCOVERY, crear uno con el ajuste
+                print(f"[RECIBO] Creando DISCOVERY de ajuste: {ajuste}")
+                pay_modes.append({
+                    "PayMode": "DISCOVERY",
+                    "Comment": "DISCOVERY",
+                    "Amount": ajuste,
+                })
+
         # Log diagnóstico detallado
         print(f"[RECIBO] === PAYMODES ({len(pay_modes)}) ===")
         sum_positivos = 0
@@ -1511,8 +1533,8 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         print(f"[RECIBO]   Positivos: {round(sum_positivos, 2)}")
         print(f"[RECIBO]   Negativos: {round(sum_negativos, 2)}")
         print(f"[RECIBO]   Neto: {sum_neto}")
-        print(f"[RECIBO]   Total facturas (BD): {total_facturas}")
-        print(f"[RECIBO]   Diferencia neto vs facturas BD: {round(total_facturas - sum_neto, 2)}")
+        print(f"[RECIBO]   Total facturas (total_oppen): {total_facturas}")
+        print(f"[RECIBO]   Diferencia neto vs facturas: {round(total_facturas - sum_neto, 2)}")
 
         # 6. Crear recibo
         # Tostado y Milvidas usan cliente CUIT0, el resto Consumidor Final
