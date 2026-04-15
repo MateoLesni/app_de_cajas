@@ -2913,6 +2913,16 @@ def crear_anticipo_recibido():
                 if divisa == 'USD':
                     monto_usd = float(importe)
 
+                # Si no se especificó turno, usar el turno real del local (no 'UNI')
+                turno_remesa = turno
+                if not turno_remesa and turnos_del_local:
+                    # Si el local tiene un solo turno, usarlo directamente
+                    if ',' not in turnos_del_local:
+                        turno_remesa = turnos_del_local.strip()
+                    else:
+                        turno_remesa = 'UNI'  # fallback si tiene múltiples y no eligió
+                turno_remesa = turno_remesa or 'UNI'
+
                 cur.execute("""
                     INSERT INTO remesas_trns
                     (usuario, local, caja, turno, fecha, nro_remesa, precinto, monto, retirada,
@@ -2920,7 +2930,7 @@ def crear_anticipo_recibido():
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0,
                             %s, %s, %s, 'Local', NOW(), 'revision', %s)
                 """, (
-                    usuario, local, caja, turno or 'UNI', fecha_pago,
+                    usuario, local, caja, turno_remesa, fecha_pago,
                     nro_remesa, precinto, float(importe),
                     divisa, monto_usd, float(cotizacion_divisa) if cotizacion_divisa else None,
                     anticipo_id
