@@ -2941,7 +2941,8 @@ def crear_anticipo_recibido():
 
                 # Vincular la imagen del anticipo también como imagen de remesa en la caja
                 try:
-                    cur.execute("""
+                    cur_img = conn.cursor(dictionary=True)
+                    cur_img.execute("""
                         SELECT id, gcs_path, original_name, mime, size_bytes, subido_por
                         FROM imagenes_adjuntos
                         WHERE entity_type = 'anticipo_recibido'
@@ -2949,7 +2950,8 @@ def crear_anticipo_recibido():
                           AND estado = 'active'
                         LIMIT 1
                     """, (anticipo_id,))
-                    img_row = cur.fetchone()
+                    img_row = cur_img.fetchone()
+                    cur_img.close()
                     if img_row:
                         cur.execute("""
                             INSERT INTO imagenes_adjuntos
@@ -2960,7 +2962,7 @@ def crear_anticipo_recibido():
                             VALUES ('remesas', %s, %s, %s, %s,
                                     'remesa_anticipo', %s,
                                     %s, %s, %s, %s, %s, 'active')
-                        """, (local, caja, turno or 'UNI', fecha_pago, remesa_id,
+                        """, (local, caja, turno_remesa, fecha_pago, remesa_id,
                               img_row['gcs_path'], img_row['original_name'],
                               img_row['mime'], img_row['size_bytes'], img_row['subido_por']))
                         conn.commit()
