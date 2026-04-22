@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reporteria - Ventas Extras</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; margin: 0; }
+    .ve-wrap { max-width: 1300px; margin: 24px auto; padding: 0 20px; }
+    .ve-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding:18px 20px; background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .ve-header h1 { margin:0; font-size:22px; color:#1e88e5; }
+    .ve-header .ve-user { font-size:13px; color:#666; }
+    .ve-header .ve-user a { color:#e53935; text-decoration:none; margin-left:14px; font-weight:600; }
+    .ve-actions { display:flex; gap:10px; align-items:center; }
+    .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; transition:.15s; }
+    .btn-primary { background:#1e88e5; color:#fff; }
+    .btn-primary:hover { background:#1565c0; }
+    .btn-secondary { background:#e0e0e0; color:#333; }
+    .btn-secondary:hover { background:#bdbdbd; }
+    .btn-danger { background:#e53935; color:#fff; }
+    .btn-danger:hover { background:#c62828; }
+    .btn-warning { background:#ffa000; color:#fff; }
+    .btn-warning:hover { background:#ef6c00; }
+    .btn-sm { padding:6px 10px; font-size:12px; }
+
+    .ve-card { background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:18px 20px; margin-bottom:16px; }
+    .ve-filters { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+    .ve-filters .field { display:flex; flex-direction:column; }
+    .ve-filters label { font-size:12px; color:#666; margin-bottom:4px; }
+    .ve-filters input, .ve-filters select { padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; min-width:160px; }
+
+    .ve-totals { display:flex; gap:16px; flex-wrap:wrap; margin-top:6px; }
+    .ve-total-pill { background:#e9f2ff; color:#1565c0; padding:8px 14px; border-radius:8px; font-weight:700; }
+    .ve-total-pill.danger { background:#ffebee; color:#c62828; }
+    .ve-total-pill.muted { background:#f5f5f5; color:#666; }
+
+    table.ve-table { width:100%; border-collapse:collapse; }
+    .ve-table th, .ve-table td { padding:10px 8px; border-bottom:1px solid #eee; text-align:left; font-size:13px; }
+    .ve-table th { background:#fafafa; color:#555; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.3px; }
+    .ve-table tr:hover { background:#fafafa; }
+    .ve-table .col-monto { text-align:right; font-variant-numeric: tabular-nums; font-weight:600; }
+    .monto-pos { color:#2e7d32; }
+    .monto-neg { color:#c62828; }
+    .badge-eliminado { background:#ffebee; color:#c62828; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+
+    /* Modal */
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; justify-content:center; align-items:center; z-index:9999 !important; }
+    .modal-bg.show { display:flex !important; }
+    .modal-bg .modal { background:#fff !important; border-radius:10px !important; padding:24px !important; width:480px !important; max-width:95vw !important; display:block !important; visibility:visible !important; opacity:1 !important; box-shadow: 0 10px 40px rgba(0,0,0,.3); position:relative; z-index:10000; }
+    .modal-bg .modal h2 { margin:0 0 14px !important; font-size:18px !important; color:#333 !important; }
+    .modal-bg .modal .field { margin-bottom:12px !important; }
+    .modal-bg .modal label { display:block !important; font-size:12px !important; color:#666 !important; margin-bottom:4px !important; font-weight:600 !important; }
+    .modal-bg .modal input, .modal-bg .modal select, .modal-bg .modal textarea { width:100% !important; padding:9px 10px !important; border:1px solid #ddd !important; border-radius:6px !important; font-size:14px !important; box-sizing:border-box !important; background:#fff !important; color:#333 !important; }
+    .modal-bg .modal textarea { resize:vertical; min-height:60px !important; }
+    .modal-bg .modal-actions { display:flex !important; gap:10px !important; justify-content:flex-end !important; margin-top:18px !important; }
+
+    .toast { position:fixed; top:20px; right:20px; padding:12px 18px; background:#333; color:#fff; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.2); display:none; z-index:100; }
+    .toast.show { display:block; }
+    .toast.ok { background:#2e7d32; }
+    .toast.err { background:#c62828; }
+
+    .empty { text-align:center; padding:40px 20px; color:#999; }
+  </style>
+</head>
+<body>
+  <div class="ve-wrap">
+    <div class="ve-header">
+      <div>
+        <h1>Reportería · Ventas Extras</h1>
+        <div style="font-size:12px; color:#888; margin-top:4px;">Ajustes de venta para reporte gerencial (no afecta cajas)</div>
+      </div>
+      <div class="ve-user">
+        Hola, <strong>{{ session.get('username','') }}</strong>
+        <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <div class="ve-filters">
+        <div class="field">
+          <label>Local</label>
+          <select id="f-local"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+          <label>Fecha desde</label>
+          <input type="date" id="f-desde" />
+        </div>
+        <div class="field">
+          <label>Fecha hasta</label>
+          <input type="date" id="f-hasta" />
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <select id="f-estado">
+            <option value="activo" selected>Activos</option>
+            <option value="eliminado">Eliminados</option>
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div class="ve-actions">
+          <button class="btn btn-secondary" id="btn-refresh">Filtrar</button>
+          <button class="btn btn-primary" id="btn-nuevo">+ Nuevo ajuste</button>
+        </div>
+      </div>
+      <div class="ve-totals" id="totals"></div>
+    </div>
+
+    <div class="ve-card">
+      <table class="ve-table">
+        <thead>
+          <tr>
+            <th>Local</th>
+            <th>Fecha</th>
+            <th class="col-monto">Monto</th>
+            <th>Motivo</th>
+            <th>Cargado por</th>
+            <th>Creado</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="8" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Crear / Editar -->
+  <div class="modal-bg" id="modal-form">
+    <div class="modal">
+      <h2 id="modal-title">Nuevo ajuste</h2>
+      <input type="hidden" id="form-id" />
+      <div class="field">
+        <label>Local *</label>
+        <select id="form-local"></select>
+      </div>
+      <div class="field">
+        <label>Fecha *</label>
+        <input type="date" id="form-fecha" />
+      </div>
+      <div class="field">
+        <label>Monto * (positivo o negativo)</label>
+        <input type="number" id="form-monto" step="0.01" placeholder="Ej: 150000 o -50000" />
+      </div>
+      <div class="field">
+        <label>Motivo *</label>
+        <textarea id="form-motivo" placeholder="Descripción del ajuste"></textarea>
+      </div>
+      <div class="field" id="field-motivo-edicion" style="display:none;">
+        <label>Motivo de edición *</label>
+        <textarea id="form-motivo-edicion" placeholder="¿Por qué editás este registro?"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-cancel-form">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-form">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Eliminar -->
+  <div class="modal-bg" id="modal-delete">
+    <div class="modal">
+      <h2>Eliminar ajuste</h2>
+      <p style="color:#666; font-size:14px;">Vas a eliminar el ajuste <strong id="del-info"></strong>. Esta acción es reversible solo desde la BD.</p>
+      <div class="field">
+        <label>Motivo de eliminación *</label>
+        <textarea id="form-motivo-eliminacion" placeholder="¿Por qué eliminás este registro?"></textarea>
+      </div>
+      <input type="hidden" id="del-id" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-cancel-del">Cancelar</button>
+        <button class="btn btn-danger" id="btn-confirm-del">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/ventas_extras.js') }}"></script>
+</body>
+</html>

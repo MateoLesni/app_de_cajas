@@ -564,6 +564,30 @@ def login_required(view):
             'eliminar_anticipo_recibido'  # Eliminar anticipos (nivel 4+)
         ]
 
+        # Rutas permitidas para usuario de Reportería (rol 'reporteria', nivel 9)
+        allowed_endpoints_reporteria = [
+            'ventas_extras_page',
+            'api_ventas_extras_listar',
+            'api_ventas_extras_crear',
+            'api_ventas_extras_editar',
+            'api_ventas_extras_eliminar',
+            'api_ventas_extras_locales',
+            'logout',
+            'static',
+        ]
+
+        # Si el rol es 'reporteria' y NO está en una ruta permitida, redirigir / 403
+        user_role = (session.get('role') or '').lower()
+        if user_role == 'reporteria' and current_endpoint not in allowed_endpoints_reporteria:
+            is_api_request = (
+                request.path.startswith('/api/') or
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                'application/json' in request.headers.get('Accept', '')
+            )
+            if not is_api_request and request.method == 'GET':
+                return redirect(url_for('ventas_extras_page'))
+            return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
+
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
         if user_level in [4, 6] and current_endpoint not in allowed_endpoints_anticipos:
             # DEBUG: Imprimir endpoint actual
@@ -662,6 +686,10 @@ def redirect_after_login():
     # Soporte (nivel 10+) siempre va a /soporte
     if lvl >= 10:
         return redirect(url_for('soporte_page'))
+
+    # Usuario con rol 'reporteria' (nivel 9) siempre va a /ventas-extras
+    if (session.get('role') or '').lower() == 'reporteria':
+        return redirect(url_for('ventas_extras_page'))
 
     # Usuario con rol 'tesoreria' (nivel 7+) siempre va a /tesoreria
     if lvl >= 7:
@@ -13527,6 +13555,237 @@ def api_panel_control_grid():
         import traceback
         traceback.print_exc()
         return jsonify(error=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+# =============================================================================
+# REPORTERIA - Ventas Extras (ajustes de venta para reporte gerencial)
+# =============================================================================
+
+@app.route('/ventas-extras', endpoint='ventas_extras_page')
+@login_required
+@role_min_required(9)
+def ventas_extras_page():
+    return render_template('ventas_extras.html')
+
+
+@app.route('/api/ventas-extras', methods=['GET'])
+@login_required
+@role_min_required(9)
+def api_ventas_extras_listar():
+    local = (request.args.get('local') or '').strip()
+    fecha_desde = (request.args.get('fecha_desde') or '').strip()
+    fecha_hasta = (request.args.get('fecha_hasta') or '').strip()
+    estado = (request.args.get('estado') or 'activo').strip()
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT id, local, fecha, monto, motivo, usuario,
+                   created_at, updated_at, updated_by, motivo_edicion,
+                   estado, deleted_at, deleted_by, motivo_eliminacion
+            FROM ventas_extras
+            WHERE 1=1
+        """
+        params = []
+        if estado and estado != 'todos':
+            sql += " AND estado = %s"
+            params.append(estado)
+        if local:
+            sql += " AND local = %s"
+            params.append(local)
+        if fecha_desde:
+            sql += " AND fecha >= %s"
+            params.append(fecha_desde)
+        if fecha_hasta:
+            sql += " AND fecha <= %s"
+            params.append(fecha_hasta)
+        sql += " ORDER BY fecha DESC, id DESC"
+
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall() or []
+
+        items = []
+        total = 0.0
+        for r in rows:
+            r['fecha'] = r['fecha'].isoformat() if r.get('fecha') else None
+            r['monto'] = float(r.get('monto') or 0)
+            for k in ('created_at', 'updated_at', 'deleted_at'):
+                if r.get(k):
+                    r[k] = r[k].isoformat()
+            items.append(r)
+            if r['estado'] == 'activo':
+                total += r['monto']
+
+        return jsonify(success=True, items=items, total=total, count=len(items))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/ventas-extras', methods=['POST'])
+@login_required
+@role_min_required(9)
+def api_ventas_extras_crear():
+    data = request.get_json(silent=True) or {}
+    local = (data.get('local') or '').strip()
+    fecha = (data.get('fecha') or '').strip()
+    monto_raw = data.get('monto')
+    motivo = (data.get('motivo') or '').strip()
+
+    if not local:
+        return jsonify(success=False, msg='Local es obligatorio'), 400
+    if not fecha:
+        return jsonify(success=False, msg='Fecha es obligatoria'), 400
+    if not motivo:
+        return jsonify(success=False, msg='Motivo es obligatorio'), 400
+    try:
+        monto = float(monto_raw)
+    except (TypeError, ValueError):
+        return jsonify(success=False, msg='Monto inválido'), 400
+    if monto == 0:
+        return jsonify(success=False, msg='Monto no puede ser cero'), 400
+
+    usuario = session.get('username', 'sistema')
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            INSERT INTO ventas_extras (local, fecha, monto, motivo, usuario, estado)
+            VALUES (%s, %s, %s, %s, %s, 'activo')
+        """, (local, fecha, monto, motivo, usuario))
+        new_id = cur.lastrowid
+        conn.commit()
+        return jsonify(success=True, id=new_id, msg='Venta extra creada')
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/ventas-extras/<int:venta_id>', methods=['PUT'])
+@login_required
+@role_min_required(9)
+def api_ventas_extras_editar(venta_id):
+    data = request.get_json(silent=True) or {}
+    local = (data.get('local') or '').strip()
+    fecha = (data.get('fecha') or '').strip()
+    monto_raw = data.get('monto')
+    motivo = (data.get('motivo') or '').strip()
+    motivo_edicion = (data.get('motivo_edicion') or '').strip()
+
+    if not motivo_edicion:
+        return jsonify(success=False, msg='Motivo de edición es obligatorio'), 400
+    if not local or not fecha or not motivo:
+        return jsonify(success=False, msg='Local, fecha y motivo son obligatorios'), 400
+    try:
+        monto = float(monto_raw)
+    except (TypeError, ValueError):
+        return jsonify(success=False, msg='Monto inválido'), 400
+    if monto == 0:
+        return jsonify(success=False, msg='Monto no puede ser cero'), 400
+
+    usuario = session.get('username', 'sistema')
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("SELECT id, estado FROM ventas_extras WHERE id=%s", (venta_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify(success=False, msg='Registro no encontrado'), 404
+        if row['estado'] == 'eliminado':
+            return jsonify(success=False, msg='No se puede editar un registro eliminado'), 400
+
+        cur.execute("""
+            UPDATE ventas_extras
+            SET local=%s, fecha=%s, monto=%s, motivo=%s,
+                updated_at=NOW(), updated_by=%s, motivo_edicion=%s
+            WHERE id=%s
+        """, (local, fecha, monto, motivo, usuario, motivo_edicion, venta_id))
+        conn.commit()
+        return jsonify(success=True, msg='Venta extra actualizada')
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/ventas-extras/<int:venta_id>', methods=['DELETE'])
+@login_required
+@role_min_required(9)
+def api_ventas_extras_eliminar(venta_id):
+    data = request.get_json(silent=True) or {}
+    motivo_eliminacion = (data.get('motivo_eliminacion') or '').strip()
+    if not motivo_eliminacion:
+        return jsonify(success=False, msg='Motivo de eliminación es obligatorio'), 400
+
+    usuario = session.get('username', 'sistema')
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("SELECT id, estado FROM ventas_extras WHERE id=%s", (venta_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify(success=False, msg='Registro no encontrado'), 404
+        if row['estado'] == 'eliminado':
+            return jsonify(success=False, msg='El registro ya está eliminado'), 400
+
+        cur.execute("""
+            UPDATE ventas_extras
+            SET estado='eliminado', deleted_at=NOW(), deleted_by=%s, motivo_eliminacion=%s
+            WHERE id=%s
+        """, (usuario, motivo_eliminacion, venta_id))
+        conn.commit()
+        return jsonify(success=True, msg='Venta extra eliminada')
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/ventas-extras/locales', methods=['GET'])
+@login_required
+@role_min_required(9)
+def api_ventas_extras_locales():
+    """Devuelve la lista de todos los locales para el dropdown."""
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("SELECT DISTINCT local FROM locales WHERE local IS NOT NULL AND local != '' ORDER BY local")
+        rows = cur.fetchall() or []
+        locales = [r['local'] for r in rows if r.get('local')]
+        return jsonify(success=True, locales=locales)
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
     finally:
         try: cur.close()
         except Exception: pass
