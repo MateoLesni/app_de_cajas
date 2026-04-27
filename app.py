@@ -13311,7 +13311,7 @@ def api_panel_control_grid():
     cur = conn.cursor(dictionary=True)
     try:
         # 1. Locales activos (excluir Local_Test, Modulos, Recitales y otros eventos especiales)
-        LOCALES_EXCLUIDOS = (
+        LOCALES_EXCLUIDOS = [
             'Local_Test',
             'Modulo 1', 'Modulo 2', 'Modulo 3', 'Modulo 4',
             'Eventos Polo',
@@ -13321,13 +13321,14 @@ def api_panel_control_grid():
             'Catering NG',
             'Blue Horse',
             'Parrilla Take Away',
-        )
+        ]
+        placeholders = ','.join(['%s'] * len(LOCALES_EXCLUIDOS))
         cur.execute(
-            "SELECT DISTINCT local FROM locales "
-            "WHERE local NOT IN %s "
-            "AND local NOT LIKE '%%Recital%%' "
-            "ORDER BY local",
-            (LOCALES_EXCLUIDOS,)
+            f"SELECT DISTINCT local FROM locales "
+            f"WHERE local NOT IN ({placeholders}) "
+            f"AND local NOT LIKE '%%Recital%%' "
+            f"ORDER BY local",
+            LOCALES_EXCLUIDOS
         )
         locales_activos = [r['local'] for r in cur.fetchall()]
 
