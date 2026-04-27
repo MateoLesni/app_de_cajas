@@ -13321,6 +13321,9 @@ def api_panel_control_grid():
             'Catering NG',
             'Blue Horse',
             'Parrilla Take Away',
+            'Heladeria AT Love',
+            'Nomade',
+            'Polo House',
         ]
         placeholders = ','.join(['%s'] * len(LOCALES_EXCLUIDOS))
         cur.execute(
