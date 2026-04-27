@@ -13310,8 +13310,25 @@ def api_panel_control_grid():
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
     try:
-        # 1. Locales activos (excluir Local_Test)
-        cur.execute("SELECT DISTINCT local FROM locales WHERE local != 'Local_Test' ORDER BY local")
+        # 1. Locales activos (excluir Local_Test, Modulos, Recitales y otros eventos especiales)
+        LOCALES_EXCLUIDOS = (
+            'Local_Test',
+            'Modulo 1', 'Modulo 2', 'Modulo 3', 'Modulo 4',
+            'Eventos Polo',
+            'Fabric Dique',
+            'Imagina Bocha Cumpleaños',
+            'Imagina Bocha Web',
+            'Catering NG',
+            'Blue Horse',
+            'Parrilla Take Away',
+        )
+        cur.execute(
+            "SELECT DISTINCT local FROM locales "
+            "WHERE local NOT IN %s "
+            "AND local NOT LIKE '%%Recital%%' "
+            "ORDER BY local",
+            (LOCALES_EXCLUIDOS,)
+        )
         locales_activos = [r['local'] for r in cur.fetchall()]
 
         # 2. Generar rango de fechas en Python
