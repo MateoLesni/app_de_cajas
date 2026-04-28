@@ -4135,8 +4135,8 @@ def ventas_base():
 
             cur2 = conn.cursor()
             cur2.execute("""
-                INSERT INTO ventas_trns (usuario, local, caja, turno, fecha, venta_total_sistema, estado)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO ventas_trns (usuario, local, caja, turno, fecha, venta_total_sistema, estado, fecha_carga)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
             """, (user, local, caja, turno, nfecha, vts, "revision"))
             nuevo_id = cur2.lastrowid
             cur2.close()
