@@ -11478,7 +11478,7 @@ def anticipos_auditor_page():
     return render_template('anticipos_auditor.html')
 
 
-@app.route('/api/anticipos_auditor/listar', ethods=['GET'])
+@app.route('/api/anticipos_auditor/listar', methods=['GET'])
 @login_required
 @role_min_required(3)  # Solo auditores (nivel 3+)
 def listar_anticipos_auditor():
