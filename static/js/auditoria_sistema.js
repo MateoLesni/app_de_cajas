@@ -14,12 +14,28 @@
   }
 
   function formatFecha(v) {
+    // El backend guarda fecha_hora en horario Argentina (NOW() con SET time_zone = -03:00).
+    // No queremos convertir timezones aca: hay que mostrar lo que tenemos sin restar/sumar horas.
     if (!v) return '-';
     try {
-      var d = new Date(String(v));
-      if (isNaN(d.getTime())) return esc(v);
-      return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }) +
-             ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' });
+      var s = String(v);
+      // ISO: "2026-06-04 01:17:47" o "2026-06-04T01:17:47"
+      var iso = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+      if (iso) {
+        return iso[3] + '/' + iso[2] + '/' + iso[1] + ' ' + iso[4] + ':' + iso[5] + ':' + iso[6];
+      }
+      // HTTP date: "Wed, 04 Jun 2026 01:17:47 GMT" - parsear sin conversion de TZ
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        var dd = String(d.getUTCDate()).padStart(2, '0');
+        var mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+        var yyyy = d.getUTCFullYear();
+        var hh = String(d.getUTCHours()).padStart(2, '0');
+        var mi = String(d.getUTCMinutes()).padStart(2, '0');
+        var ss = String(d.getUTCSeconds()).padStart(2, '0');
+        return dd + '/' + mm + '/' + yyyy + ' ' + hh + ':' + mi + ':' + ss;
+      }
+      return esc(v);
     } catch (e) { return esc(v); }
   }
 

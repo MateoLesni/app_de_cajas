@@ -143,11 +143,12 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 16%">Local</th>
-            <th style="width: 20%">Terminal</th>
-            <th style="width: 18%">Creada por</th>
-            <th style="width: 18%">Fecha creación</th>
-            <th style="width: 28%">Acciones</th>
+            <th style="width: 14%">Local</th>
+            <th style="width: 18%">Terminal</th>
+            <th style="width: 7%; text-align:center;" title="Marcar terminal como BK">BK</th>
+            <th style="width: 16%">Creada por</th>
+            <th style="width: 16%">Fecha creación</th>
+            <th style="width: 29%">Acciones</th>
           </tr>
         </thead>
         <tbody id="tbodyTerm">
@@ -200,7 +201,7 @@
         if (!rows || rows.length === 0) {
           const tr = document.createElement("tr");
           const td = document.createElement("td");
-          td.colSpan = 5;
+          td.colSpan = 6;
           td.className = "empty";
           td.textContent = "No hay terminales para los filtros aplicados.";
           tr.appendChild(td);
@@ -228,6 +229,15 @@
             </div>
           `;
 
+          // BK (checkbox)
+          const tdBk = document.createElement("td");
+          tdBk.style.textAlign = "center";
+          const checked = (r.bk === 1 || r.bk === true || r.bk === "1") ? "checked" : "";
+          tdBk.innerHTML = `
+            <input type="checkbox" class="ed-bk" ${checked}
+                   title="Si está tildado, las tarjetas usan PayModes BK al sincronizar con Oppen" />
+          `;
+
           // creada_por
           const tdUser = document.createElement("td");
           tdUser.innerHTML = `<span class="pill">${escapeHtml(r.creada_por || "-")}</span>`;
@@ -246,6 +256,7 @@
 
           tr.appendChild(tdLocal);
           tr.appendChild(tdTerm);
+          tr.appendChild(tdBk);
           tr.appendChild(tdUser);
           tr.appendChild(tdDate);
           tr.appendChild(tdActions);
@@ -334,13 +345,13 @@
         }
       }
 
-      async function saveRow(id, newLocal, newTerminal, btnEl) {
+      async function saveRow(id, newLocal, newTerminal, newBk, btnEl) {
         btnEl.disabled = true;
         try {
           const r = await fetch(`/api/terminales/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ local: newLocal, terminal: newTerminal })
+            body: JSON.stringify({ local: newLocal, terminal: newTerminal, bk: newBk ? 1 : 0 })
           });
           if (r.status === 403) { notify("No autorizado (solo nivel 3)", true); return; }
           const data = await r.json();
@@ -398,8 +409,9 @@
         if (btn.classList.contains("btn-save")) {
           const newL = tr.querySelector(".ed-local")?.value?.trim() || "";
           const newT = tr.querySelector(".ed-terminal")?.value?.trim() || "";
+          const newBk = tr.querySelector(".ed-bk")?.checked || false;
           if (!newL || !newT) { notify("Local y Terminal no pueden estar vacíos", true); return; }
-          saveRow(id, newL, newT, btn);
+          saveRow(id, newL, newT, newBk, btn);
           return;
         }
         if (btn.classList.contains("btn-del")) {

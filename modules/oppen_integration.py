@@ -1230,16 +1230,21 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             cur_pm = conn.cursor(dictionary=True)
             rows = []
 
-            # Obtener totales de tarjetas (con propinas incluidas)
+            # Obtener totales de tarjetas (con propinas incluidas).
+            # LEFT JOIN a `terminales` para saber si la terminal tiene flag BK.
+            # Si bk=1, usaremos los códigos PayMode alternativos del FP_CODE_MAP_BK.
             cur_pm.execute("""
                 SELECT
-                    tarjeta AS forma_pago,
-                    CONCAT(terminal, ' / ', lote) AS descripcion,
-                    SUM(monto + COALESCE(monto_tip, 0)) AS pagado
-                FROM tarjetas_trns
-                WHERE local = %s
-                  AND DATE(fecha) = %s
-                GROUP BY tarjeta, terminal, lote
+                    t.tarjeta AS forma_pago,
+                    CONCAT(t.terminal, ' / ', t.lote) AS descripcion,
+                    SUM(t.monto + COALESCE(t.monto_tip, 0)) AS pagado,
+                    COALESCE(MAX(tm.bk), 0) AS es_bk
+                FROM tarjetas_trns t
+                LEFT JOIN terminales tm
+                    ON tm.local = t.local AND tm.terminal = t.terminal
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = %s
+                GROUP BY t.tarjeta, t.terminal, t.lote
             """, (local, fecha))
             rows_tarjetas = cur_pm.fetchall()
             if rows_tarjetas:
@@ -1456,7 +1461,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             }
 
         # 5. Convertir rows a formato PayModes de Oppen
-        from modules.auditoria import FP_CODE_MAP
+        from modules.auditoria import FP_CODE_MAP, FP_CODE_MAP_BK
 
         CODIGO_ESPECIAL_MAP = {
             'DECIDIR': 'MASDL',
@@ -1467,6 +1472,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             forma_pago_original = row.get('forma_pago', '')
             descripcion = row.get('descripcion', '')
             pagado = row.get('pagado', 0)
+            es_bk = bool(row.get('es_bk', 0))  # solo viene en filas de tarjetas
 
             import unicodedata
             forma_pago_key = forma_pago_original.strip().upper()
@@ -1474,7 +1480,13 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 c for c in unicodedata.normalize('NFD', forma_pago_key)
                 if unicodedata.category(c) != 'Mn'
             )
-            forma_pago_codigo = FP_CODE_MAP.get(forma_pago_key, forma_pago_key)
+
+            # Si la terminal está flaggeada como BK y la tarjeta tiene equivalente BK,
+            # usar el código alternativo. Si no, comportamiento normal.
+            if es_bk and forma_pago_key in FP_CODE_MAP_BK:
+                forma_pago_codigo = FP_CODE_MAP_BK[forma_pago_key]
+            else:
+                forma_pago_codigo = FP_CODE_MAP.get(forma_pago_key, forma_pago_key)
 
             if forma_pago_codigo in CODIGO_ESPECIAL_MAP:
                 forma_pago_codigo = CODIGO_ESPECIAL_MAP[forma_pago_codigo]

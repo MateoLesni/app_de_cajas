@@ -7954,7 +7954,7 @@ def api_tesoreria_guardar_remesa():
         user_id = session.get('user_id')
 
         # Verificar si la fecha está aprobada
-        cur.execute("""
+        cur.exeute("""
             SELECT estado FROM tesoreria_aprobaciones
             WHERE fecha_retiro = %s
         """, (fecha_retiro,))
@@ -11478,7 +11478,7 @@ def anticipos_auditor_page():
     return render_template('anticipos_auditor.html')
 
 
-@app.route('/api/anticipos_auditor/listar', methods=['GET'])
+@app.route('/api/anticipos_auditor/listar', ethods=['GET'])
 @login_required
 @role_min_required(3)  # Solo auditores (nivel 3+)
 def listar_anticipos_auditor():
@@ -13428,7 +13428,7 @@ def api_panel_control_grid():
             FROM rappi_trns
             WHERE DATE(fecha) BETWEEN %s AND %s
             GROUP BY local, DATE(fecha)
-        """, (fecha_desde, fecha_hasta))
+        """, (fecha_dede, fecha_hasta))
         rappi_map = defaultdict(float)
         for r in cur.fetchall():
             rappi_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)

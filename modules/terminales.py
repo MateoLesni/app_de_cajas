@@ -37,7 +37,7 @@ def api_list_terminales():
     local = _norm(request.args.get("local"))
     q     = _norm(request.args.get("q"))
 
-    sql = ["SELECT id, local, terminal, creada_por, fecha_creacion FROM terminales"]
+    sql = ["SELECT id, local, terminal, creada_por, fecha_creacion, COALESCE(bk,0) AS bk FROM terminales"]
     where = []
     args = []
 
@@ -72,7 +72,7 @@ def api_get_terminal(tid: int):
     conn = get_db_connection()
     try:
         with conn.cursor(dictionary=True) as cur:
-            cur.execute("SELECT id, local, terminal, creada_por, fecha_creacion FROM terminales WHERE id=%s", (tid,))
+            cur.execute("SELECT id, local, terminal, creada_por, fecha_creacion, COALESCE(bk,0) AS bk FROM terminales WHERE id=%s", (tid,))
             row = cur.fetchone()
             if not row:
                 return jsonify(success=False, msg="No encontrado"), 404
@@ -91,6 +91,7 @@ def api_create_terminal():
     data = request.get_json() or {}
     local    = _norm(data.get("local"))
     terminal = _norm(data.get("terminal"))
+    bk_flag  = 1 if data.get("bk") in (1, True, "1", "true", "on") else 0
     if not local or not terminal:
         return jsonify(success=False, msg="Faltan campos: local y terminal"), 400
 
@@ -101,9 +102,9 @@ def api_create_terminal():
         with conn.cursor() as cur:
             try:
                 cur.execute("""
-                    INSERT INTO terminales (local, terminal, creada_por)
-                    VALUES (%s, %s, %s)
-                """, (local, terminal, user))
+                    INSERT INTO terminales (local, terminal, creada_por, bk)
+                    VALUES (%s, %s, %s, %s)
+                """, (local, terminal, user, bk_flag))
                 conn.commit()
             except mysql.connector.IntegrityError as e:
                 # Duplica por UNIQUE(local,terminal)
@@ -112,14 +113,14 @@ def api_create_terminal():
         # devolver fila creada
         with conn.cursor(dictionary=True) as cur2:
             cur2.execute("""
-                SELECT id, local, terminal, creada_por, fecha_creacion
+                SELECT id, local, terminal, creada_por, fecha_creacion, COALESCE(bk,0) AS bk
                   FROM terminales
                  WHERE local=%s AND terminal=%s
                  ORDER BY id DESC
                  LIMIT 1
             """, (local, terminal))
             row = cur2.fetchone()
-        return jsonify(success=True, item=row or {"local": local, "terminal": terminal})
+        return jsonify(success=True, item=row or {"local": local, "terminal": terminal, "bk": bk_flag})
     finally:
         try: conn.close()
         except: pass
@@ -134,8 +135,10 @@ def api_update_terminal(tid: int):
     data = request.get_json() or {}
     new_local    = data.get("local")
     new_terminal = data.get("terminal")
+    new_bk_raw   = data.get("bk")  # puede venir 0/1/True/False/None
+    bk_provided  = "bk" in data
 
-    if new_local is None and new_terminal is None:
+    if new_local is None and new_terminal is None and not bk_provided:
         return jsonify(success=False, msg="Nada para actualizar"), 400
 
     # Traer actual para verificar existencia y cambios
@@ -156,6 +159,9 @@ def api_update_terminal(tid: int):
         if new_terminal is not None:
             sets.append("terminal=%s")
             args.append(_norm(new_terminal))
+        if bk_provided:
+            sets.append("bk=%s")
+            args.append(1 if new_bk_raw in (1, True, "1", "true", "on") else 0)
         args.append(tid)
 
         if not sets:
@@ -169,7 +175,7 @@ def api_update_terminal(tid: int):
                 return jsonify(success=False, msg="Ya existe esa terminal para ese local"), 409
 
         with conn.cursor(dictionary=True) as cur3:
-            cur3.execute("SELECT id, local, terminal, creada_por, fecha_creacion FROM terminales WHERE id=%s", (tid,))
+            cur3.execute("SELECT id, local, terminal, creada_por, fecha_creacion, COALESCE(bk,0) AS bk FROM terminales WHERE id=%s", (tid,))
             out = cur3.fetchone()
         return jsonify(success=True, item=out)
     finally:

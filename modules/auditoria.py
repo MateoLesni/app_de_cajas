@@ -53,6 +53,39 @@ FP_CODE_MAP = {
     "ARREGLOS FLORALES": "AFLOR",
 }
 
+# Mapeo alternativo BK: solo para TARJETAS (crédito y débito) cuando la terminal
+# está marcada con bk=1 en la tabla `terminales`. Códigos reales confirmados por
+# contabilidad — corresponden a los PayModes creados en Oppen para terminales BK.
+FP_CODE_MAP_BK = {
+    "VISA":              "VISAC-QT",
+    "VISA PREPAGO":      "VISAC-QT",   # suma con VISA, igual que en el mapeo normal
+    "VISA DEBITO":       "VISAD-QT",
+    "MASTERCARD":        "MSTC-QT",
+    "MASTERCARD PREPAGO":"MSTC-QT",    # suma con MASTERCARD
+    "MASTERCARD DEBITO": "MSTD-QT",
+    "AMEX":              "AMEX-QT",
+    "NARANJA":           "NARA-QT",
+    "CABAL":             "CBLC-QT",
+    "CABAL DEBITO":      "CBLD-QT",
+    "MAESTRO":           "MAESTRO-QT",
+    "DISCOVERY":         "DISC-QT",
+    # MAS DELIVERY: no procesa en terminales BK (queda con su código normal)
+}
+
+
+def _fp_to_code_bk(nombre_fp: str, es_bk: bool = False) -> str:
+    """
+    Versión BK-aware del mapeo. Si la terminal es BK y el nombre de tarjeta
+    existe en FP_CODE_MAP_BK, devuelve el codigo BK. Si no, cae al mapeo normal.
+    Solo aplica a tarjetas — el resto (MP, remesas, gastos, etc.) NO cambia.
+    """
+    if not nombre_fp:
+        return ""
+    key = nombre_fp.strip().upper()
+    if es_bk and key in FP_CODE_MAP_BK:
+        return FP_CODE_MAP_BK[key]
+    return FP_CODE_MAP.get(key, key)
+
 def _fp_to_code(nombre_fp: str) -> str:
     """Mapea el nombre (tal como llega de la DB) al código del software."""
     if not nombre_fp:
@@ -136,9 +169,15 @@ def auditor_resumen_api():
             # -------- TARJETAS (con propinas sumadas por lote/terminal) --------
             # Primero, obtener ventas de tarjetas agrupadas por marca, terminal y lote
             # IMPORTANTE: Se incluyen TODAS las transacciones (ok, revision, etc.) para que el recibo sea completo
+            # LEFT JOIN a `terminales` para conocer si la terminal tiene bk=1.
+            # Si es BK, los códigos de tarjeta se mapean con FP_CODE_MAP_BK.
             sql_tar = f"""
-                SELECT t.tarjeta AS marca, t.terminal, t.lote, SUM(t.monto) AS total_venta
+                SELECT t.tarjeta AS marca, t.terminal, t.lote,
+                       SUM(t.monto) AS total_venta,
+                       COALESCE(MAX(tm.bk), 0) AS es_bk
                 FROM tarjetas_trns t
+                LEFT JOIN terminales tm
+                    ON tm.local = t.local AND tm.terminal = t.terminal
                 WHERE t.local = %s
                   AND DATE(t.fecha) = DATE(%s)
                   {g.read_scope}
@@ -166,12 +205,14 @@ def auditor_resumen_api():
 
             for r in ventas_tarjetas:
                 marca_orig = (r.get("marca") or "").strip().upper()
+                es_bk = bool(r.get("es_bk", 0))
 
                 # Reemplazar MAS DELIVERY por MAS DELIVERY antes de mapear
                 if marca_orig == "DECIDIR":
                     marca_orig = "MAS DELIVERY"
 
-                code = _fp_to_code(marca_orig)
+                # Si la terminal es BK, usar mapeo BK; si no, el normal
+                code = _fp_to_code_bk(marca_orig, es_bk=es_bk)
                 terminal = (r.get("terminal") or "").strip()
                 lote = (r.get("lote") or "").strip()
                 venta = r.get("total_venta") or 0
