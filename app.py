@@ -13428,7 +13428,7 @@ def api_panel_control_grid():
             FROM rappi_trns
             WHERE DATE(fecha) BETWEEN %s AND %s
             GROUP BY local, DATE(fecha)
-        """, (fecha_dede, fecha_hasta))
+        """, (fecha_desde, fecha_hasta))
         rappi_map = defaultdict(float)
         for r in cur.fetchall():
             rappi_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
