@@ -69,6 +69,7 @@ FP_CODE_MAP_BK = {
     "CABAL DEBITO":      "CBLD-QT",
     "MAESTRO":           "MAESTRO-QT",
     "DISCOVERY":         "DISC-QT",
+    "PAGOS INMEDIATOS":  "PGI-QT",
     # MAS DELIVERY: no procesa en terminales BK (queda con su código normal)
 }
 
