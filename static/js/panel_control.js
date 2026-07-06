@@ -118,6 +118,12 @@
       return;
     }
 
+    // Acumulador de subtotales por fecha
+    var subtotalesPorFecha = {};
+    for (var i2 = 0; i2 < dates.length; i2++) {
+      subtotalesPorFecha[dates[i2]] = 0;
+    }
+
     var bodyHtml = '';
     for (var g = 0; g < grid.length; g++) {
       var row = grid[g];
@@ -130,6 +136,9 @@
         var status = celda.status;
         var venta = celda.venta_total || 0;
         var dif = celda.diferencia || 0;
+
+        // Sumar al subtotal del día
+        subtotalesPorFecha[fecha_s] += venta;
 
         var label = STATUS_LABELS[status] || status;
         var title = row.local + ' - ' + fmtDateFull(fecha_s) +
@@ -162,6 +171,30 @@
       }
       bodyHtml += '</tr>';
     }
+
+    // Fila de subtotales
+    bodyHtml += '<tr class="subtotal-row">';
+    bodyHtml += '<td class="local-name subtotal-label">Subtotal</td>';
+    for (var st = 0; st < dates.length; st++) {
+      var fechaSt = dates[st];
+      var totalDia = subtotalesPorFecha[fechaSt] || 0;
+      var titleSt = 'Subtotal ' + fmtDateFull(fechaSt) + '\n$' + fmtMoney(totalDia);
+
+      var contSt = '-';
+      if (totalDia > 0) {
+        if (totalDia >= 1000000) {
+          contSt = '$' + (totalDia / 1000000).toFixed(1) + 'M';
+        } else if (totalDia >= 1000) {
+          contSt = '$' + (totalDia / 1000).toFixed(0) + 'K';
+        } else {
+          contSt = '$' + fmtMoney(totalDia);
+        }
+      }
+
+      bodyHtml += '<td class="cell cell-subtotal" title="' + escAttr(titleSt) + '">' + contSt + '</td>';
+    }
+    bodyHtml += '</tr>';
+
     gridBody.innerHTML = bodyHtml;
   }
 
