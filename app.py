@@ -13392,11 +13392,14 @@ def api_panel_control_grid():
             }
 
         # 7. Medios de cobro agrupados por local/fecha para calcular diferencia
+        # Remesas: excluir las creadas por anticipos en efectivo (origen_anticipo_id NOT NULL).
+        # Esas son remesas "espejo" del anticipo y NO son cobro real (misma lógica que Resumen Local)
         cur.execute("""
             SELECT local, DATE(fecha) AS fecha,
                    SUM(CASE WHEN divisa='USD' AND total_conversion IS NOT NULL THEN total_conversion ELSE monto END) AS total
             FROM remesas_trns
             WHERE DATE(fecha) BETWEEN %s AND %s
+              AND (origen_anticipo_id IS NULL)
             GROUP BY local, DATE(fecha)
         """, (fecha_desde, fecha_hasta))
         remesas_map = defaultdict(float)
@@ -13443,6 +13446,7 @@ def api_panel_control_grid():
         for r in cur.fetchall():
             pedidosya_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
 
+        # CC = facturas_trns con tipo='CC' (viejo sistema) + cuentas_corrientes_trns 'ok' (nuevo)
         cur.execute("""
             SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
             FROM facturas_trns
@@ -13452,6 +13456,15 @@ def api_panel_control_grid():
         cc_map = defaultdict(float)
         for r in cur.fetchall():
             cc_map[(r['local'], str(r['fecha']))] = float(r['total'] or 0)
+
+        cur.execute("""
+            SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
+            FROM cuentas_corrientes_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s AND estado='ok'
+            GROUP BY local, DATE(fecha)
+        """, (fecha_desde, fecha_hasta))
+        for r in cur.fetchall():
+            cc_map[(r['local'], str(r['fecha']))] += float(r['total'] or 0)
 
         cur.execute("""
             SELECT local, DATE(fecha) AS fecha, SUM(monto) AS total
@@ -13514,12 +13527,18 @@ def api_panel_control_grid():
                 auditado = key in auditados_set
                 venta = ventas_map.get(key, 0)
 
-                # Calcular diferencia
+                # Calcular diferencia (misma lógica que Resumen Local):
+                # total_cobrado = efectivo + tarjetas + MP + rappi + pedidosya + CC + gastos + anticipos consumidos
+                # (las remesas de anticipos ya se excluyen en la query de remesas_map)
                 cobrado = (remesas_map.get(key, 0) + tarjetas_map.get(key, 0) +
                            mp_map.get(key, 0) + rappi_map.get(key, 0) +
                            pedidosya_map.get(key, 0) + cc_map.get(key, 0) +
                            gastos_map.get(key, 0) + anticipos_map.get(key, 0))
-                diferencia = cobrado - venta if venta > 0 else 0
+                # Calcular diferencia si hay venta O si hay cobros/anticipos (para reflejar movimiento real)
+                if venta > 0 or cobrado > 0:
+                    diferencia = cobrado - venta
+                else:
+                    diferencia = 0
 
                 # Determinar estado (3 estados)
                 # auditado = auditado/cargado en Oppen
