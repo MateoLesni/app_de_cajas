@@ -2,7 +2,9 @@
   'use strict';
 
   const $ = (id) => document.getElementById(id);
+  const LS_KEY_LOCAL = 'dueno_ribs_local_seleccionado';
   let chartInstance = null;
+  let currentLocal = null;
 
   // ── Helpers ──
   function fmtMoney(n) {
@@ -79,13 +81,18 @@
     const hasta = $('f-hasta').value;
     const agrupacion = $('f-agrupacion').value;
 
-    if (!desde || !hasta) return;
+    if (!desde || !hasta || !currentLocal) return;
 
     $('tabla-body').innerHTML = '<tr><td colspan="3" class="loading">Cargando...</td></tr>';
 
     try {
-      const url = `/api/dashboard-ribs/data?fecha_desde=${desde}&fecha_hasta=${hasta}&agrupacion=${agrupacion}`;
-      const res = await fetch(url);
+      const params = new URLSearchParams({
+        local: currentLocal,
+        fecha_desde: desde,
+        fecha_hasta: hasta,
+        agrupacion: agrupacion,
+      });
+      const res = await fetch('/api/dashboard-ribs/data?' + params.toString());
       const data = await res.json();
 
       if (!data.success) {
@@ -101,6 +108,30 @@
       console.error(e);
       toast('Error de red', 'err');
     }
+  }
+
+  // ── Selector de sucursal ──
+  function setLocal(local, persistir) {
+    if (!local) return;
+    currentLocal = local;
+    if (persistir) {
+      try { localStorage.setItem(LS_KEY_LOCAL, local); } catch (e) {}
+    }
+
+    // Actualizar tabs activos
+    document.querySelectorAll('.sucursal-tab').forEach(btn => {
+      if (btn.dataset.local === local) {
+        btn.classList.add('is-active');
+      } else {
+        btn.classList.remove('is-active');
+      }
+    });
+
+    // Actualizar título del header
+    const tit = $('header-titulo');
+    if (tit) tit.textContent = local;
+
+    cargarDatos();
   }
 
   // ── Render Hero ──
@@ -237,22 +268,61 @@
     const desde = $('f-desde').value;
     const hasta = $('f-hasta').value;
     if (!desde || !hasta) return toast('Seleccioná el rango primero', 'err');
-    window.location = `/api/dashboard-ribs/export?fecha_desde=${desde}&fecha_hasta=${hasta}`;
+    if (!currentLocal) return toast('Seleccioná una sucursal', 'err');
+    const params = new URLSearchParams({
+      local: currentLocal,
+      fecha_desde: desde,
+      fecha_hasta: hasta,
+    });
+    window.location = '/api/dashboard-ribs/export?' + params.toString();
+  }
+
+  // ── ISO del primer día del mes actual ──
+  function firstOfMonthISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-01';
   }
 
   // ── Init ──
   document.addEventListener('DOMContentLoaded', function () {
-    // Default: últimos 30 días
-    $('f-desde').value = daysAgoISO(29);
+    // Default de fechas: del 1 del mes actual hasta hoy
+    $('f-desde').value = firstOfMonthISO();
     $('f-hasta').value = todayISO();
     $('f-agrupacion').value = 'dia';
 
+    // Determinar sucursal inicial: LocalStorage o el marcado como default en el template
+    let localInicial = null;
+    try {
+      localInicial = localStorage.getItem(LS_KEY_LOCAL);
+    } catch (e) {}
+    if (!localInicial) {
+      const defTab = document.querySelector('.sucursal-tab[data-default="1"]');
+      if (defTab) localInicial = defTab.dataset.local;
+    }
+    // Verificar que la sucursal guardada exista en el DOM (por si cambió la whitelist)
+    if (localInicial) {
+      const existe = document.querySelector(`.sucursal-tab[data-local="${localInicial}"]`);
+      if (!existe) {
+        const first = document.querySelector('.sucursal-tab');
+        localInicial = first ? first.dataset.local : null;
+      }
+    }
+
+    // Wire selector de sucursal
+    document.querySelectorAll('.sucursal-tab').forEach(btn => {
+      btn.addEventListener('click', () => setLocal(btn.dataset.local, true));
+    });
+
+    // Wire filtros
     $('btn-actualizar').addEventListener('click', cargarDatos);
     $('btn-export').addEventListener('click', exportarCSV);
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
     });
 
-    cargarDatos();
+    // Aplicar sucursal inicial (dispara la carga)
+    if (localInicial) {
+      setLocal(localInicial, false);
+    }
   });
 })();

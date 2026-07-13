@@ -593,6 +593,7 @@ def login_required(view):
             'dashboard_ribs_page',
             'api_dashboard_ribs_data',
             'api_dashboard_ribs_export',
+            'api_dashboard_ribs_locales',
             'logout',
             'static',
         ]
@@ -13861,17 +13862,37 @@ def api_ventas_extras_locales():
 
 
 # =============================================================================
-# DUENO_RIBS - Dashboard ejecutivo de Ribs Infanta
+# DUENO_RIBS - Dashboard ejecutivo (Ribs Polo + Ribs Infanta)
 # =============================================================================
 
-DUENO_RIBS_LOCAL = 'Ribs Infanta'
+# Whitelist de sucursales que ve el rol dueno_ribs. Cualquier valor fuera de
+# esta lista es rechazado / cae al default (Ribs Polo).
+DUENO_RIBS_LOCALES = ['Ribs Polo', 'Ribs Infanta']
+DUENO_RIBS_LOCAL_DEFAULT = 'Ribs Polo'
+
+
+def _dueno_ribs_local_or_default(raw_local):
+    """Valida que el local pedido esté en la whitelist. Si no, devuelve el default."""
+    if not raw_local:
+        return DUENO_RIBS_LOCAL_DEFAULT
+    for l in DUENO_RIBS_LOCALES:
+        if l.lower() == str(raw_local).strip().lower():
+            return l
+    return DUENO_RIBS_LOCAL_DEFAULT
 
 
 @app.route('/dashboard-ribs', endpoint='dashboard_ribs_page')
 @login_required
 @role_min_required(8)
 def dashboard_ribs_page():
-    return render_template('dashboard_ribs.html', local=DUENO_RIBS_LOCAL)
+    return render_template('dashboard_ribs.html', locales=DUENO_RIBS_LOCALES, local_default=DUENO_RIBS_LOCAL_DEFAULT)
+
+
+@app.route('/api/dashboard-ribs/locales', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_dashboard_ribs_locales():
+    return jsonify(success=True, locales=DUENO_RIBS_LOCALES, default=DUENO_RIBS_LOCAL_DEFAULT)
 
 
 @app.route('/api/dashboard-ribs/data', methods=['GET'])
@@ -13881,8 +13902,9 @@ def api_dashboard_ribs_data():
     """
     Retorna los datos del dashboard.
     Query params:
-      - fecha_desde (YYYY-MM-DD)
-      - fecha_hasta (YYYY-MM-DD)
+      - local: 'Ribs Polo' | 'Ribs Infanta' (fuera de whitelist -> default 'Ribs Polo')
+      - fecha_desde (YYYY-MM-DD) - default: primer día del mes actual
+      - fecha_hasta (YYYY-MM-DD) - default: hoy
       - agrupacion: 'dia' (default) | 'semana' | 'mes'
     """
     from datetime import date, timedelta
@@ -13891,16 +13913,21 @@ def api_dashboard_ribs_data():
     hoy = date.today()
     ayer = hoy - timedelta(days=1)
 
+    local = _dueno_ribs_local_or_default(request.args.get('local'))
+
     raw_desde = request.args.get('fecha_desde')
     raw_hasta = request.args.get('fecha_hasta')
     agrupacion = (request.args.get('agrupacion') or 'dia').lower().strip()
     if agrupacion not in ('dia', 'semana', 'mes'):
         agrupacion = 'dia'
 
+    # Default: del 1 del mes actual hasta hoy
+    default_desde = hoy.replace(day=1)
+
     try:
-        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else (hoy - timedelta(days=29))
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else default_desde
     except (ValueError, TypeError):
-        fecha_desde = hoy - timedelta(days=29)
+        fecha_desde = default_desde
     try:
         fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date() if raw_hasta else hoy
     except (ValueError, TypeError):
@@ -13920,7 +13947,7 @@ def api_dashboard_ribs_data():
             SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
             FROM ventas_trns
             WHERE local = %s AND DATE(fecha) = %s
-        """, (DUENO_RIBS_LOCAL, ayer))
+        """, (local,ayer))
         venta_ayer = float((cur.fetchone() or {}).get('total') or 0)
 
         # 2. Venta del mismo dia de la semana pasada (para comparativo)
@@ -13929,7 +13956,7 @@ def api_dashboard_ribs_data():
             SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
             FROM ventas_trns
             WHERE local = %s AND DATE(fecha) = %s
-        """, (DUENO_RIBS_LOCAL, misma_semana_pasada))
+        """, (local,misma_semana_pasada))
         venta_semana_pasada = float((cur.fetchone() or {}).get('total') or 0)
 
         # 3. Comparativo semana actual (últimos 7 días) vs semana anterior (8-14)
@@ -13937,14 +13964,14 @@ def api_dashboard_ribs_data():
             SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
             FROM ventas_trns
             WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
-        """, (DUENO_RIBS_LOCAL, hoy - timedelta(days=7), hoy - timedelta(days=1)))
+        """, (local,hoy - timedelta(days=7), hoy - timedelta(days=1)))
         venta_ultimos_7 = float((cur.fetchone() or {}).get('total') or 0)
 
         cur.execute("""
             SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
             FROM ventas_trns
             WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
-        """, (DUENO_RIBS_LOCAL, hoy - timedelta(days=14), hoy - timedelta(days=8)))
+        """, (local,hoy - timedelta(days=14), hoy - timedelta(days=8)))
         venta_7_anteriores = float((cur.fetchone() or {}).get('total') or 0)
 
         # 4. Serie de ventas del rango elegido (día a día siempre; el agrupado se hace en Python)
@@ -13954,7 +13981,7 @@ def api_dashboard_ribs_data():
             WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
             GROUP BY DATE(fecha)
             ORDER BY DATE(fecha)
-        """, (DUENO_RIBS_LOCAL, fecha_desde, fecha_hasta))
+        """, (local,fecha_desde, fecha_hasta))
         ventas_por_dia = {}
         for r in cur.fetchall():
             f = r['fecha']
@@ -14003,7 +14030,7 @@ def api_dashboard_ribs_data():
 
         return jsonify(
             success=True,
-            local=DUENO_RIBS_LOCAL,
+            local=local,
             ayer={
                 'fecha': ayer.isoformat(),
                 'total': venta_ayer,
@@ -14054,13 +14081,16 @@ def api_dashboard_ribs_export():
     import csv
 
     hoy = date.today()
+    local = _dueno_ribs_local_or_default(request.args.get('local'))
     raw_desde = request.args.get('fecha_desde')
     raw_hasta = request.args.get('fecha_hasta')
 
+    default_desde = hoy.replace(day=1)
+
     try:
-        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else (hoy - timedelta(days=29))
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else default_desde
     except (ValueError, TypeError):
-        fecha_desde = hoy - timedelta(days=29)
+        fecha_desde = default_desde
     try:
         fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date() if raw_hasta else hoy
     except (ValueError, TypeError):
@@ -14078,19 +14108,20 @@ def api_dashboard_ribs_export():
             WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
             GROUP BY DATE(fecha)
             ORDER BY DATE(fecha)
-        """, (DUENO_RIBS_LOCAL, fecha_desde, fecha_hasta))
+        """, (local, fecha_desde, fecha_hasta))
         rows = cur.fetchall() or []
 
         buf = StringIO()
         writer = csv.writer(buf)
-        writer.writerow(['fecha', 'venta_total'])
+        writer.writerow(['local', 'fecha', 'venta_total'])
         for r in rows:
-            writer.writerow([r['fecha'].isoformat(), f"{float(r['total'] or 0):.2f}"])
+            writer.writerow([local, r['fecha'].isoformat(), f"{float(r['total'] or 0):.2f}"])
 
         csv_data = buf.getvalue()
         buf.close()
 
-        filename = f"ribs_infanta_{fecha_desde.isoformat()}_a_{fecha_hasta.isoformat()}.csv"
+        local_slug = local.lower().replace(' ', '_')
+        filename = f"{local_slug}_{fecha_desde.isoformat()}_a_{fecha_hasta.isoformat()}.csv"
         return Response(
             csv_data,
             mimetype='text/csv',

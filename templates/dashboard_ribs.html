@@ -18,6 +18,19 @@
     .db-user { font-size: 13px; color: #94a3b8; }
     .db-user a { color: #f87171; text-decoration: none; margin-left: 14px; font-weight: 600; }
 
+    /* Selector de sucursal */
+    .sucursal-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .sucursal-tab {
+      padding: 10px 20px; background: #1e293b; border: 1px solid #334155;
+      color: #94a3b8; border-radius: 8px; cursor: pointer; font-size: 14px;
+      font-weight: 600; transition: .15s;
+    }
+    .sucursal-tab:hover { background: #334155; color: #f1f5f9; }
+    .sucursal-tab.is-active {
+      background: #3b82f6; color: #fff; border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59,130,246,.3);
+    }
+
     /* Hero venta ayer */
     .hero-card {
       background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -99,13 +112,20 @@
   <div class="db-wrap">
     <div class="db-header">
       <div>
-        <h1>Ribs Infanta · Dashboard</h1>
+        <h1><span id="header-titulo">Ribs</span> · Dashboard</h1>
         <div class="subtitle">Vista ejecutiva de ventas</div>
       </div>
       <div class="db-user">
         Hola, <strong>{{ session.get('username','') }}</strong>
         <a href="{{ url_for('logout') }}">Cerrar sesión</a>
       </div>
+    </div>
+
+    <!-- Selector de sucursal -->
+    <div class="sucursal-tabs" id="sucursal-tabs">
+      {% for l in locales %}
+      <button type="button" class="sucursal-tab" data-local="{{ l }}"{% if l == local_default %} data-default="1"{% endif %}>{{ l }}</button>
+      {% endfor %}
     </div>
 
     <!-- Hero: Venta ayer -->
