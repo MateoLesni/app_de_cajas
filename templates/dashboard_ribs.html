@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ribs Infanta - Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { background: #0f172a; color: #f1f5f9; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; min-height: 100vh; }
+    .db-wrap { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .db-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 20px; border-bottom: 1px solid #1e293b; margin-bottom: 32px;
+    }
+    .db-header h1 { margin: 0; font-size: 26px; color: #f1f5f9; }
+    .db-header .subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+    .db-user { font-size: 13px; color: #94a3b8; }
+    .db-user a { color: #f87171; text-decoration: none; margin-left: 14px; font-weight: 600; }
+
+    /* Hero venta ayer */
+    .hero-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 16px; padding: 40px; margin-bottom: 24px;
+      border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,.3);
+    }
+    .hero-label { font-size: 14px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+    .hero-fecha { font-size: 15px; color: #cbd5e1; margin-bottom: 20px; }
+    .hero-monto { font-size: 72px; font-weight: 700; color: #f1f5f9; letter-spacing: -2px; line-height: 1; }
+    .hero-comparativo { font-size: 15px; margin-top: 18px; color: #94a3b8; }
+    .hero-comparativo .delta-pos { color: #4ade80; font-weight: 600; }
+    .hero-comparativo .delta-neg { color: #f87171; font-weight: 600; }
+
+    /* KPIs cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+    .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .kpi-value { font-size: 24px; font-weight: 700; color: #f1f5f9; }
+    .kpi-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+    /* Filtros */
+    .filters-card {
+      background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+    .filters-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+    .filters-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .filter-group { display: flex; flex-direction: column; }
+    .filter-group label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+    .filter-group input, .filter-group select {
+      padding: 8px 12px; border: 1px solid #334155; border-radius: 6px;
+      background: #0f172a; color: #f1f5f9; font-size: 14px; min-width: 160px;
+    }
+    .preset-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .preset-btn {
+      padding: 6px 12px; background: #0f172a; border: 1px solid #334155;
+      color: #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 12px;
+      transition: .15s;
+    }
+    .preset-btn:hover { background: #334155; border-color: #64748b; }
+    .btn {
+      padding: 9px 18px; border-radius: 6px; border: none; cursor: pointer;
+      font-size: 14px; font-weight: 600; transition: .15s;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-secondary { background: #334155; color: #f1f5f9; }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Chart */
+    .chart-card {
+      background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+    .chart-card h3 { margin: 0 0 16px; font-size: 16px; color: #f1f5f9; }
+    .chart-container { position: relative; height: 320px; }
+
+    /* Tabla */
+    .table-card {
+      background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+    .table-card h3 { margin: 0 0 16px; font-size: 16px; color: #f1f5f9; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; }
+    .data-table th { background: #0f172a; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; font-size: 11px; font-weight: 600; }
+    .data-table td { color: #f1f5f9; }
+    .data-table .col-monto { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+    /* Loading + toast */
+    .loading { text-align: center; padding: 60px; color: #64748b; }
+    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 18px; background: #333; color: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,.3); display: none; z-index: 100; }
+    .toast.show { display: block; }
+    .toast.err { background: #dc2626; }
+    .toast.ok { background: #16a34a; }
+  </style>
+</head>
+<body>
+  <div class="db-wrap">
+    <div class="db-header">
+      <div>
+        <h1>Ribs Infanta · Dashboard</h1>
+        <div class="subtitle">Vista ejecutiva de ventas</div>
+      </div>
+      <div class="db-user">
+        Hola, <strong>{{ session.get('username','') }}</strong>
+        <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+      </div>
+    </div>
+
+    <!-- Hero: Venta ayer -->
+    <div class="hero-card" id="hero-card">
+      <div class="hero-label">Venta de ayer</div>
+      <div class="hero-fecha" id="hero-fecha">-</div>
+      <div class="hero-monto" id="hero-monto">$ -</div>
+      <div class="hero-comparativo" id="hero-comparativo"></div>
+    </div>
+
+    <!-- KPIs comparativos -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Últimos 7 días</div>
+        <div class="kpi-value" id="kpi-ultimos7">$ -</div>
+        <div class="kpi-sub" id="kpi-ultimos7-sub"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Promedio diario (rango)</div>
+        <div class="kpi-value" id="kpi-promedio">$ -</div>
+        <div class="kpi-sub" id="kpi-promedio-sub"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total del rango</div>
+        <div class="kpi-value" id="kpi-total">$ -</div>
+        <div class="kpi-sub" id="kpi-total-sub"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Día pico / Día valle</div>
+        <div class="kpi-value" id="kpi-piquevalle" style="font-size:15px; line-height:1.4;">-</div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-card">
+      <div class="filters-title">Filtros</div>
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Desde</label>
+          <input type="date" id="f-desde">
+        </div>
+        <div class="filter-group">
+          <label>Hasta</label>
+          <input type="date" id="f-hasta">
+        </div>
+        <div class="filter-group">
+          <label>Agrupar por</label>
+          <select id="f-agrupacion">
+            <option value="dia">Día</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btn-actualizar">Actualizar</button>
+        <button class="btn btn-secondary" id="btn-export">Exportar CSV</button>
+      </div>
+      <div class="preset-btns">
+        <button class="preset-btn" data-preset="ayer">Ayer</button>
+        <button class="preset-btn" data-preset="7">Últimos 7 días</button>
+        <button class="preset-btn" data-preset="30">Últimos 30 días</button>
+        <button class="preset-btn" data-preset="mes_actual">Este mes</button>
+        <button class="preset-btn" data-preset="mes_pasado">Mes pasado</button>
+        <button class="preset-btn" data-preset="90">Últimos 90 días</button>
+        <button class="preset-btn" data-preset="anual">Año actual</button>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card">
+      <h3>Evolución de ventas</h3>
+      <div class="chart-container">
+        <canvas id="ventasChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-card">
+      <h3>Detalle</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th class="col-monto">Venta</th>
+            <th class="col-monto">% del total</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body">
+          <tr><td colspan="3" class="loading">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/dashboard_ribs.js') }}"></script>
+</body>
+</html>

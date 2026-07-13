@@ -588,6 +588,24 @@ def login_required(view):
                 return redirect(url_for('ventas_extras_page'))
             return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
 
+        # Rutas permitidas para usuario dueno_ribs (rol 'dueno_ribs', nivel 8)
+        allowed_endpoints_dueno_ribs = [
+            'dashboard_ribs_page',
+            'api_dashboard_ribs_data',
+            'api_dashboard_ribs_export',
+            'logout',
+            'static',
+        ]
+        if user_role == 'dueno_ribs' and current_endpoint not in allowed_endpoints_dueno_ribs:
+            is_api_request = (
+                request.path.startswith('/api/') or
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                'application/json' in request.headers.get('Accept', '')
+            )
+            if not is_api_request and request.method == 'GET':
+                return redirect(url_for('dashboard_ribs_page'))
+            return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
+
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
         if user_level in [4, 6] and current_endpoint not in allowed_endpoints_anticipos:
             # DEBUG: Imprimir endpoint actual
@@ -641,6 +659,11 @@ def route_for_current_role() -> str:
     if lvl >= 10:
         # Soporte Desarrollo
         return url_for('soporte_page')
+
+    # Rol 'dueno_ribs' (nivel 8) siempre va a /dashboard-ribs
+    if (session.get('role') or '').lower() == 'dueno_ribs':
+        return url_for('dashboard_ribs_page')
+
     if lvl == 2:
         # Encargado
         return url_for('encargado')
@@ -690,6 +713,10 @@ def redirect_after_login():
     # Usuario con rol 'reporteria' (nivel 9) siempre va a /ventas-extras
     if (session.get('role') or '').lower() == 'reporteria':
         return redirect(url_for('ventas_extras_page'))
+
+    # Usuario con rol 'dueno_ribs' (nivel 8) siempre va a /dashboard-ribs
+    if (session.get('role') or '').lower() == 'dueno_ribs':
+        return redirect(url_for('dashboard_ribs_page'))
 
     # Usuario con rol 'tesoreria' (nivel 7+) siempre va a /tesoreria
     if lvl >= 7:
@@ -13825,6 +13852,255 @@ def api_ventas_extras_locales():
         locales = [r['local'] for r in rows if r.get('local')]
         return jsonify(success=True, locales=locales)
     except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+# =============================================================================
+# DUENO_RIBS - Dashboard ejecutivo de Ribs Infanta
+# =============================================================================
+
+DUENO_RIBS_LOCAL = 'Ribs Infanta'
+
+
+@app.route('/dashboard-ribs', endpoint='dashboard_ribs_page')
+@login_required
+@role_min_required(8)
+def dashboard_ribs_page():
+    return render_template('dashboard_ribs.html', local=DUENO_RIBS_LOCAL)
+
+
+@app.route('/api/dashboard-ribs/data', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_dashboard_ribs_data():
+    """
+    Retorna los datos del dashboard.
+    Query params:
+      - fecha_desde (YYYY-MM-DD)
+      - fecha_hasta (YYYY-MM-DD)
+      - agrupacion: 'dia' (default) | 'semana' | 'mes'
+    """
+    from datetime import date, timedelta
+    from collections import defaultdict
+
+    hoy = date.today()
+    ayer = hoy - timedelta(days=1)
+
+    raw_desde = request.args.get('fecha_desde')
+    raw_hasta = request.args.get('fecha_hasta')
+    agrupacion = (request.args.get('agrupacion') or 'dia').lower().strip()
+    if agrupacion not in ('dia', 'semana', 'mes'):
+        agrupacion = 'dia'
+
+    try:
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else (hoy - timedelta(days=29))
+    except (ValueError, TypeError):
+        fecha_desde = hoy - timedelta(days=29)
+    try:
+        fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date() if raw_hasta else hoy
+    except (ValueError, TypeError):
+        fecha_hasta = hoy
+
+    if fecha_desde > fecha_hasta:
+        return jsonify(success=False, msg="fecha_desde debe ser <= fecha_hasta"), 400
+    # Cap 730 dias (2 años) para no matar la DB
+    if (fecha_hasta - fecha_desde).days > 730:
+        fecha_desde = fecha_hasta - timedelta(days=730)
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        # 1. Venta de AYER (numero grande)
+        cur.execute("""
+            SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) = %s
+        """, (DUENO_RIBS_LOCAL, ayer))
+        venta_ayer = float((cur.fetchone() or {}).get('total') or 0)
+
+        # 2. Venta del mismo dia de la semana pasada (para comparativo)
+        misma_semana_pasada = ayer - timedelta(days=7)
+        cur.execute("""
+            SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) = %s
+        """, (DUENO_RIBS_LOCAL, misma_semana_pasada))
+        venta_semana_pasada = float((cur.fetchone() or {}).get('total') or 0)
+
+        # 3. Comparativo semana actual (últimos 7 días) vs semana anterior (8-14)
+        cur.execute("""
+            SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+        """, (DUENO_RIBS_LOCAL, hoy - timedelta(days=7), hoy - timedelta(days=1)))
+        venta_ultimos_7 = float((cur.fetchone() or {}).get('total') or 0)
+
+        cur.execute("""
+            SELECT COALESCE(SUM(venta_total_sistema), 0) AS total
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+        """, (DUENO_RIBS_LOCAL, hoy - timedelta(days=14), hoy - timedelta(days=8)))
+        venta_7_anteriores = float((cur.fetchone() or {}).get('total') or 0)
+
+        # 4. Serie de ventas del rango elegido (día a día siempre; el agrupado se hace en Python)
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, SUM(venta_total_sistema) AS total
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+            GROUP BY DATE(fecha)
+            ORDER BY DATE(fecha)
+        """, (DUENO_RIBS_LOCAL, fecha_desde, fecha_hasta))
+        ventas_por_dia = {}
+        for r in cur.fetchall():
+            f = r['fecha']
+            ventas_por_dia[f] = float(r['total'] or 0)
+
+        # Rellenar días sin ventas
+        dias_totales = (fecha_hasta - fecha_desde).days + 1
+        serie_dia = []
+        for i in range(dias_totales):
+            f = fecha_desde + timedelta(days=i)
+            serie_dia.append({
+                'fecha': f.isoformat(),
+                'total': ventas_por_dia.get(f, 0.0),
+            })
+
+        # Agrupar según opción
+        if agrupacion == 'dia':
+            serie_out = serie_dia
+        elif agrupacion == 'semana':
+            # Semana ISO (lunes-domingo). Etiqueta con inicio de semana.
+            grupos = defaultdict(float)
+            for item in serie_dia:
+                f = datetime.strptime(item['fecha'], '%Y-%m-%d').date()
+                inicio_sem = f - timedelta(days=f.weekday())  # lunes
+                grupos[inicio_sem.isoformat()] += item['total']
+            serie_out = [{'fecha': k, 'total': v} for k, v in sorted(grupos.items())]
+        else:  # mes
+            grupos = defaultdict(float)
+            for item in serie_dia:
+                f = datetime.strptime(item['fecha'], '%Y-%m-%d').date()
+                clave = f'{f.year:04d}-{f.month:02d}-01'
+                grupos[clave] += item['total']
+            serie_out = [{'fecha': k, 'total': v} for k, v in sorted(grupos.items())]
+
+        # 5. KPIs del rango (siempre calculados sobre serie_dia)
+        totales = [d['total'] for d in serie_dia if d['total'] > 0]
+        total_rango = sum(d['total'] for d in serie_dia)
+        dias_con_venta = len(totales)
+        promedio = (sum(totales) / dias_con_venta) if dias_con_venta > 0 else 0.0
+        if totales:
+            dia_pico = max(serie_dia, key=lambda x: x['total'])
+            dia_valle = min([d for d in serie_dia if d['total'] > 0], key=lambda x: x['total'])
+        else:
+            dia_pico = None
+            dia_valle = None
+
+        return jsonify(
+            success=True,
+            local=DUENO_RIBS_LOCAL,
+            ayer={
+                'fecha': ayer.isoformat(),
+                'total': venta_ayer,
+            },
+            comparativos={
+                'venta_semana_pasada_mismo_dia': venta_semana_pasada,
+                'delta_vs_semana_pasada_dia': (venta_ayer - venta_semana_pasada),
+                'pct_vs_semana_pasada_dia': ((venta_ayer - venta_semana_pasada) / venta_semana_pasada * 100) if venta_semana_pasada > 0 else None,
+                'venta_ultimos_7': venta_ultimos_7,
+                'venta_7_anteriores': venta_7_anteriores,
+                'delta_vs_semana_anterior': (venta_ultimos_7 - venta_7_anteriores),
+                'pct_vs_semana_anterior': ((venta_ultimos_7 - venta_7_anteriores) / venta_7_anteriores * 100) if venta_7_anteriores > 0 else None,
+            },
+            rango={
+                'fecha_desde': fecha_desde.isoformat(),
+                'fecha_hasta': fecha_hasta.isoformat(),
+                'agrupacion': agrupacion,
+                'total': total_rango,
+                'promedio_dia': promedio,
+                'dias_con_venta': dias_con_venta,
+                'dias_totales': dias_totales,
+                'dia_pico': dia_pico,
+                'dia_valle': dia_valle,
+            },
+            serie=serie_out,
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/dashboard-ribs/export', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_dashboard_ribs_export():
+    """
+    Exporta a CSV la serie de ventas del rango elegido.
+    Query params iguales a /api/dashboard-ribs/data.
+    """
+    from datetime import date, timedelta
+    from io import StringIO
+    import csv
+
+    hoy = date.today()
+    raw_desde = request.args.get('fecha_desde')
+    raw_hasta = request.args.get('fecha_hasta')
+
+    try:
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else (hoy - timedelta(days=29))
+    except (ValueError, TypeError):
+        fecha_desde = hoy - timedelta(days=29)
+    try:
+        fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date() if raw_hasta else hoy
+    except (ValueError, TypeError):
+        fecha_hasta = hoy
+
+    if fecha_desde > fecha_hasta:
+        return jsonify(success=False, msg="fecha_desde debe ser <= fecha_hasta"), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, SUM(venta_total_sistema) AS total
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+            GROUP BY DATE(fecha)
+            ORDER BY DATE(fecha)
+        """, (DUENO_RIBS_LOCAL, fecha_desde, fecha_hasta))
+        rows = cur.fetchall() or []
+
+        buf = StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(['fecha', 'venta_total'])
+        for r in rows:
+            writer.writerow([r['fecha'].isoformat(), f"{float(r['total'] or 0):.2f}"])
+
+        csv_data = buf.getvalue()
+        buf.close()
+
+        filename = f"ribs_infanta_{fecha_desde.isoformat()}_a_{fecha_hasta.isoformat()}.csv"
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
     finally:
         try: cur.close()
