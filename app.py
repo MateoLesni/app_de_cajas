@@ -6603,9 +6603,19 @@ def api_resumen_local():
             (f, local),
         )
 
-        # Discovery = Venta Total - (Z + A + B + CC)
+        # Las Cuentas Corrientes del sistema nuevo también son fiscales:
+        # restan al Discovery igual que una Z
+        cc_nuevas_fiscal = _qsum(
+            cur,
+            """SELECT COALESCE(SUM(monto),0)
+               FROM cuentas_corrientes_trns
+               WHERE DATE(fecha)=%s AND local=%s AND estado='ok'""",
+            (f, local),
+        ) or 0.0
+
+        # Discovery = Venta Total - (Z + A + B + CC viejas + CC nuevas)
         # Puede ser negativo si la facturación supera la venta total
-        discovery = (venta_total or 0.0) - (total_facturas or 0.0)
+        discovery = (venta_total or 0.0) - (total_facturas or 0.0) - cc_nuevas_fiscal
 
         # ===== EFECTIVO (Remesas) - usar total_conversion para USD =====
         # Excluir remesas creadas por anticipos (origen_anticipo_id NOT NULL)

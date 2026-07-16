@@ -484,6 +484,7 @@ def auditor_resumen_api():
                         SELECT COALESCE(SUM(t.monto), 0) AS total
                         FROM cuentas_corrientes_trns t
                         WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                          AND t.estado = 'ok'
                         {g.read_scope}
                     """
                     cur.execute(sql_cc_nuevas, (local, fecha))
@@ -580,6 +581,7 @@ def auditor_resumen_api():
                         SELECT COALESCE(SUM(t.monto), 0) AS total
                         FROM cuentas_corrientes_trns t
                         WHERE t.local = %s AND DATE(t.fecha) = DATE(%s)
+                          AND t.estado = 'ok'
                         {g.read_scope}
                     """, (local, fecha))
                     cta_cte_nueva = float(cur.fetchone()['total'] or 0.0)
@@ -715,6 +717,7 @@ def auditor_facturas_api():
                     LEFT JOIN clientes_cta_cte cl ON t.cliente_id = cl.id
                     WHERE t.local = %s
                       AND DATE(t.fecha) = DATE(%s)
+                      AND t.estado = 'ok'
                       {g.read_scope}
                     ORDER BY t.id
                 """

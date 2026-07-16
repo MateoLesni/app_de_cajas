@@ -985,13 +985,10 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                     # Ya es un objeto date
                     trans_date = cc['fecha']
 
-                # Determinar código de cliente en Oppen
+                # Determinar código de cliente en Oppen.
+                # Cliente conocido → su codigo_oppen. "Otro Cliente" o sin código → CNGCC.
                 codigo_oppen = cc.get('codigo_oppen')
-                if not codigo_oppen or codigo_oppen == 'CNGCC':
-                    # Es "Otro cliente" o sin código → usar Consumidor Final
-                    cust_code = "C00001"  # Consumidor Final
-                else:
-                    cust_code = codigo_oppen
+                cust_code = codigo_oppen if codigo_oppen else "CNGCC"
 
                 # Construir descripción
                 # Si es CNGCC (Otro cliente), usar el comentario del cajero
@@ -1013,10 +1010,10 @@ def sync_cuentas_corrientes_to_oppen(conn, local: str, fecha: str) -> Dict[str, 
                 office = "200"
                 vat_code = "3"
 
-                # Generar OfficialSerNr
+                # Generar OfficialSerNr — formato obligatorio de Oppen: 5 dígitos - 8 dígitos
                 punto_venta = cc.get('punto_venta') or 1
                 nro_comanda = cc.get('nro_comanda') or cc['id']
-                official_sernr = f"{int(punto_venta):04d}-{int(nro_comanda):08d}"
+                official_sernr = f"{int(punto_venta):05d}-{int(nro_comanda):08d}"
 
                 # CC sin IVA: el precio es el monto directo
                 precio_neto = float(cc['monto'])
@@ -1395,6 +1392,16 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 """, (local, fecha))
                 total_facturas_zab = float(cur_pm.fetchone()['total'] or 0.0)
 
+                # 2b. Las Cuentas Corrientes del sistema nuevo también son fiscales:
+                # restan al Discovery igual que una Z
+                cur_pm.execute("""
+                    SELECT COALESCE(SUM(monto), 0) AS total
+                    FROM cuentas_corrientes_trns
+                    WHERE local = %s AND DATE(fecha) = %s AND estado = 'ok'
+                """, (local, fecha))
+                total_cc_nuevas = float(cur_pm.fetchone()['total'] or 0.0)
+                total_facturas_zab += total_cc_nuevas
+
                 # 3. Calcular DISCOVERY
                 discovery_val = venta_total_sistema - total_facturas_zab
 
@@ -1423,6 +1430,8 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
 
                 cur_pm.execute("SELECT COALESCE(SUM(monto), 0) AS total FROM facturas_trns WHERE local = %s AND DATE(fecha) = %s AND tipo = 'CC'", (local, fecha))
                 cta_cte_total = float(cur_pm.fetchone()['total'] or 0.0)
+                # Incluir CC del sistema nuevo (misma simetría que en el Discovery)
+                cta_cte_total += total_cc_nuevas
 
                 total_cobrado = sum([efectivo_total, tarjeta_total, mp_total, rappi_total, gastos_total, pedidosya_total, cta_cte_total])
 
