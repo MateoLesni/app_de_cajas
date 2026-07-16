@@ -5479,7 +5479,12 @@ def guardar_gastos_lote():
         cur = conn.cursor()
         for g in items:
             tipo = (g.get('tipo') or "").strip()
-            obs  = (g.get('observaciones') or "").strip()
+            obs  = (g.get('observaciones') or "").strip()[:45]  # límite 45 chars (viaja como Comment a Oppen)
+
+            # Detalle obligatorio para "Otros Gastos de Operación"
+            if 'OTROS GASTOS' in tipo.upper() and not obs:
+                cur.close(); conn.close()
+                return jsonify(success=False, msg="Detallá qué se compró: es obligatorio para 'Otros Gastos de Operación'"), 400
 
             # monto puede venir con separadores locales
             mstr = str(g.get('monto', '0')).replace('.', '').replace(',', '.')
@@ -5510,6 +5515,8 @@ def actualizar_gasto(gasto_id):
     tipo  = (data.get('tipo') or "").strip()
     # Observaciones puede NO venir desde el lápiz, en ese caso conservamos la actual
     obs_in = data.get('observaciones')  # puede ser None
+    if isinstance(obs_in, str):
+        obs_in = obs_in.strip()[:45]  # límite 45 chars (viaja como Comment a Oppen)
     monto = data.get('monto')
 
     # normalizo monto

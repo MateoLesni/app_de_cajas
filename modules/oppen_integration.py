@@ -1330,7 +1330,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             cur_pm.execute("""
                 SELECT
                     tipo AS forma_pago,
-                    COALESCE(observaciones, tipo) AS descripcion,
+                    COALESCE(NULLIF(observaciones, ''), tipo) AS descripcion,
                     monto AS pagado
                 FROM gastos_trns
                 WHERE local = %s

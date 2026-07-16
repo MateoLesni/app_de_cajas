@@ -340,12 +340,15 @@ def auditor_resumen_api():
                 })
 
             # -------- GASTOS --------
-            # Se asume: gastos_trns(local, fecha, tipo, monto, ...)
+            # Agrupados por tipo, EXCEPTO "Otros Gastos de Operación": esos van
+            # una fila por gasto con su detalle (observaciones) como descripción,
+            # que es lo que viaja como Comment al recibo de Oppen.
             sql_gastos = f"""
                 SELECT t.tipo, SUM(t.monto) AS total
                 FROM gastos_trns t
                 WHERE t.local = %s
                   AND DATE(t.fecha) = DATE(%s)
+                  AND UPPER(t.tipo) NOT LIKE '%%OTROS GASTOS%%'
                   {g.read_scope}
                 GROUP BY t.tipo
             """
@@ -360,6 +363,37 @@ def auditor_resumen_api():
                     rows.append({
                         "forma_pago": code,
                         "descripcion": desc,
+                        "tarjeta_credito": "",
+                        "plan": "",
+                        "cuotas": "",
+                        "nro_lote": "",
+                        "cheque_cupon": "",
+                        "pagado": _n0(total),
+                    })
+
+            # "Otros Gastos de Operación": una fila por gasto con su detalle
+            sql_gastos_otros = f"""
+                SELECT t.tipo,
+                       COALESCE(NULLIF(t.observaciones, ''), t.tipo) AS detalle,
+                       t.monto AS total
+                FROM gastos_trns t
+                WHERE t.local = %s
+                  AND DATE(t.fecha) = DATE(%s)
+                  AND UPPER(t.tipo) LIKE '%%OTROS GASTOS%%'
+                  {g.read_scope}
+                ORDER BY t.id
+            """
+            cur.execute(sql_gastos_otros, (local, fecha))
+            for gitem in cur.fetchall():
+                tipo_g = (gitem.get("tipo") or "").strip()
+                if not tipo_g:
+                    continue
+                code = _fp_to_code(tipo_g)
+                total = gitem.get("total") or 0
+                if total:
+                    rows.append({
+                        "forma_pago": code,
+                        "descripcion": (gitem.get("detalle") or tipo_g).strip(),
                         "tarjeta_credito": "",
                         "plan": "",
                         "cuotas": "",

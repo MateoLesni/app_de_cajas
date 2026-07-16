@@ -726,6 +726,10 @@
                   <input type="text" id="montoGastos" name="montoGastos" class="form-control moneda currency-input" placeholder="0,00" required>
                 </div>
               </div>
+              <div class="form-group" id="grupoObsGastos" style="display:none;">
+                <label for="obsGastos">Detalle del gasto: <span style="color:#e53935;">*</span></label>
+                <input type="text" id="obsGastos" name="obsGastos" class="form-control" maxlength="45" placeholder="¿Qué se compró? Ej: candado, cable, pilas...">
+              </div>
               <button type="button" id="btnAnadirGastos" class="btn-submit">➕ Añadir Comprobante</button>
               <button type="button" id="btnActualizarGastos" class="btn-submit" style="display:none; background-color:#28a745;">Actualizar Comprobante</button>
             </form>

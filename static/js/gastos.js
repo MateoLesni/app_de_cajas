@@ -133,6 +133,25 @@ document.addEventListener("DOMContentLoaded", function () {
     return tiposGastos[codigo] || codigo;
   }
 
+  // ----------- detalle obligatorio para "OTROS GASTOS DE OPERACION" -----------
+  function esOtrosGastos(codigo) {
+    if (!codigo) return false;
+    const norm = (s) => String(s || "").toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const cod = norm(codigo);
+    const desc = norm(getDescripcionGasto(codigo));
+    return cod.includes("OTROS GASTOS") || desc.includes("OTROS GASTOS");
+  }
+
+  function toggleObsGastos() {
+    const grupo = document.getElementById("grupoObsGastos");
+    if (!grupo) return;
+    const mostrar = esOtrosGastos(tipoInput?.value);
+    grupo.style.display = mostrar ? "" : "none";
+    if (!mostrar && obsInput) obsInput.value = "";
+  }
+
+  tipoInput?.addEventListener("change", toggleObsGastos);
+
   function canActUI() {
     // Si el local está auditado, NADIE puede editar
     if (localAuditado) return false;
@@ -185,6 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function limpiarFormulario() {
     form?.reset();
+    toggleObsGastos();
     idxEdicionActual = -1;
     const btnAnadir     = document.getElementById("btnAnadirGastos");
     const btnActualizar = document.getElementById("btnActualizarGastos");
@@ -277,6 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!ctx.caja || !ctx.fecha || !ctx.turno) { mostrarAlerta("Elegí Caja / Fecha / Turno."); return; }
       if (!tipo)  { mostrarAlerta("Completá el tipo de gasto."); return; }
       if (!monto) { mostrarAlerta("Ingresá el monto."); return; }
+      if (esOtrosGastos(tipo) && !obs) { mostrarAlerta("Detallá qué se compró (obligatorio para Otros Gastos de Operación)."); return; }
 
       gastosLocal.push({ tipo, monto, observaciones: obs, fecha: ctx.fecha, caja: ctx.caja, origen: "local" });
       renderTabla();
@@ -291,6 +312,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const tipo = (tipoInput?.value || "").trim();
       const monto = (montoInput?.value || "").trim();
       const obs   = (obsInput?.value || "").trim();
+
+      if (esOtrosGastos(tipo) && !obs) { mostrarAlerta("Detallá qué se compró (obligatorio para Otros Gastos de Operación)."); return; }
 
       gastosLocal[idxEdicionActual] = { tipo, monto, observaciones: obs, fecha: ctx.fecha, caja: ctx.caja, origen: "local" };
       renderTabla();
@@ -340,6 +363,7 @@ document.addEventListener("DOMContentLoaded", function () {
       tipoInput.value  = g.tipo;
       montoInput.value = g.monto;
       if (obsInput) obsInput.value = g.observaciones || "";
+      toggleObsGastos();
       idxEdicionActual = i;
       const addBtn = document.getElementById("btnAnadirGastos");
       const updBtn = document.getElementById("btnActualizarGastos");
