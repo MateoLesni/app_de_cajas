@@ -10294,6 +10294,56 @@ def api_marcar_auditado():
             conn.close()
             return jsonify(success=True, msg=f"Local {local} marcado como auditado para {f}\nℹ️ Sincronización con Oppen omitida para este local")
 
+        # ---- Control de disparo único: un local+fecha viaja a Oppen UNA sola vez ----
+        # El flag sobrevive al des-auditado. Correcciones posteriores van manuales en Oppen.
+        try:
+            cur_ctl = conn.cursor(dictionary=True)
+            cur_ctl.execute("""
+                CREATE TABLE IF NOT EXISTS oppen_sync_control (
+                  id INT AUTO_INCREMENT PRIMARY KEY,
+                  local VARCHAR(120) NOT NULL,
+                  fecha DATE NOT NULL,
+                  disparado TINYINT(1) NOT NULL DEFAULT 1,
+                  primera_ejecucion DATETIME NOT NULL,
+                  usuario VARCHAR(120) NULL,
+                  UNIQUE KEY uk_local_fecha (local, fecha)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            conn.commit()
+            cur_ctl.execute("""
+                SELECT primera_ejecucion, usuario
+                FROM oppen_sync_control
+                WHERE local = %s AND fecha = %s AND disparado = 1
+                LIMIT 1
+            """, (local, f))
+            ctl_row = cur_ctl.fetchone()
+            cur_ctl.close()
+            if ctl_row:
+                pe = ctl_row.get('primera_ejecucion')
+                pe_str = pe.strftime('%d/%m/%Y %H:%M') if pe else 'fecha desconocida'
+                usr = ctl_row.get('usuario') or 'sistema'
+                cur.close()
+                conn.close()
+                return jsonify(
+                    success=True,
+                    msg=(f"Local {local} marcado como auditado para {f}\n"
+                         f"ℹ️ La carga a Oppen NO se reenvió: ya se ejecutó el {pe_str} ({usr}). "
+                         f"Los cambios posteriores deben hacerse manualmente en Oppen."),
+                    oppen_skipped=True
+                )
+        except Exception as e_ctl:
+            # Si el control falla, mejor NO disparar (evitar duplicados) y avisar
+            print(f"⚠️ Error verificando oppen_sync_control: {e_ctl}")
+            cur.close()
+            conn.close()
+            return jsonify(
+                success=True,
+                msg=(f"Local {local} marcado como auditado para {f}\n"
+                     f"⚠️ No se pudo verificar el control de sincronización con Oppen; "
+                     f"la carga NO se envió por precaución. Reintentá o avisá a soporte."),
+                oppen_skipped=True
+            )
+
         # Enviar facturas a Oppen después de marcar como auditado
         try:
             from modules.oppen_integration import sync_facturas_to_oppen, sync_cuentas_corrientes_to_oppen, sync_recibo_to_oppen
@@ -10396,6 +10446,28 @@ def api_marcar_auditado():
                 except Exception as e:
                     logger.error(f"Error creando recibo: {e}")
                     msg_recibo = f"\n⚠️ Error creando recibo: {str(e)}"
+
+            # ---- Grabar flag de disparo único si ALGO se creó en Oppen ----
+            # Si no se creó nada (ej: instancia caída, auth fallida), no se graba
+            # y el próximo "auditar" puede reintentar.
+            try:
+                algo_creado = (
+                    (resultado_oppen or {}).get('exitosas', 0) > 0 or
+                    (resultado_cc or {}).get('exitosas', 0) > 0 or
+                    bool((resultado_recibo or {}).get('recibo_creado'))
+                )
+                if algo_creado:
+                    cur_flag = conn.cursor()
+                    cur_flag.execute("""
+                        INSERT INTO oppen_sync_control (local, fecha, disparado, primera_ejecucion, usuario)
+                        VALUES (%s, %s, 1, NOW(), %s)
+                        ON DUPLICATE KEY UPDATE disparado = 1
+                    """, (local, f, session.get('username')))
+                    conn.commit()
+                    cur_flag.close()
+                    print(f"🔒 oppen_sync_control: flag grabado para {local} {f}")
+            except Exception as e_flag:
+                print(f"⚠️ Error grabando oppen_sync_control: {e_flag}")
 
             cur.close()
             conn.close()
