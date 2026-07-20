@@ -28,7 +28,7 @@ FP_CODE_MAP = {
     "CABAL DEBITO": "CABALD",
     "NARANJA": "NARAN",
     "DISCOVERY": "DISCOVERY",
-    "DINERS": "DINER",
+    "DINERS": "DISCOVERY",  # Diners pega a la misma cuenta que Discovery (TARDISC / 1110316)
     "MAESTRO": "MAEST",  # Nueva tarjeta
     "MAS DELIVERY": "MASDL",  # MAS DELIVERY
     # Agregadores / links
@@ -69,6 +69,7 @@ FP_CODE_MAP_BK = {
     "CABAL DEBITO":      "CBLD-QT",
     "MAESTRO":           "MAESTRO-QT",
     "DISCOVERY":         "DISC-QT",
+    "DINERS":            "DISC-QT",    # Diners pega a Discovery tambien en BK
     "PAGOS INMEDIATOS":  "PGI-QT",
     # MAS DELIVERY: no procesa en terminales BK (queda con su código normal)
 }
