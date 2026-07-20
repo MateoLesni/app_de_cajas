@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte Acreditación Qantara</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f7fa; margin: 0; }
+    .rb-wrap { max-width: 1500px; margin: 0 auto; padding: 24px; }
+    .rb-header { display:flex; justify-content:space-between; align-items:center; padding:18px 20px; background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:18px; }
+    .rb-header h1 { margin:0; font-size:22px; color:#1e88e5; }
+    .rb-header .rb-user { font-size:13px; color:#666; }
+    .rb-header .rb-user a { color:#e53935; text-decoration:none; margin-left:14px; font-weight:600; }
+
+    .rb-card { background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:18px 20px; margin-bottom:16px; }
+    .rb-filters { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; }
+    .field label { font-size:12px; color:#666; margin-bottom:4px; }
+    .field input[type=date] { padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+    .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; transition:.15s; }
+    .btn-primary { background:#1e88e5; color:#fff; }
+    .btn-primary:hover { background:#1565c0; }
+    .btn-success { background:#2e7d32; color:#fff; }
+    .btn-success:hover { background:#1b5e20; }
+    .btn-secondary { background:#e0e0e0; color:#333; }
+    .btn-secondary:hover { background:#bdbdbd; }
+
+    /* Selector de locales */
+    .locales-box { margin-top:14px; }
+    .locales-head { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+    .locales-head .lbl { font-size:12px; color:#666; font-weight:600; }
+    .locales-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:6px 14px; max-height:170px; overflow-y:auto; border:1px solid #eee; border-radius:8px; padding:10px; }
+    .locales-grid label { display:flex; align-items:center; gap:6px; font-size:13px; color:#333; cursor:pointer; }
+    .link-btn { background:none; border:none; color:#1e88e5; cursor:pointer; font-size:12px; text-decoration:underline; padding:0; }
+
+    /* Reporte Qantara */
+    .qantara-block { background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:18px 20px; margin-bottom:22px; overflow-x:auto; }
+    .qantara-title { font-weight:700; font-size:17px; color:#1e293b; margin:0 0 14px; font-style:italic; }
+    table.qt { border-collapse:collapse; width:100%; font-size:12px; min-width:700px; }
+    .qt th, .qt td { padding:8px 10px; border-bottom:1px solid #e5e7eb; text-align:right; white-space:nowrap; }
+    .qt thead th { background:#e5e7eb; color:#1e293b; font-weight:700; text-align:right; }
+    .qt th.concepto, .qt td.concepto { text-align:left; font-weight:600; }
+    .qt .row-qr td { background:#f3f4f6; font-weight:700; }
+    .qt .row-tarjetas td { background:#f3f4f6; font-weight:700; }
+    .qt .col-bruto, .qt .col-comision, .qt .col-neto { border-left:1px solid #cbd5e1; }
+    .qt tfoot td { border-top:2px solid #94a3b8; font-weight:700; background:#dbeafe; }
+    .neto-final { color:#0f172a; }
+
+    .empty { text-align:center; padding:40px; color:#999; }
+    .loading { text-align:center; padding:40px; color:#64748b; }
+    .toast { position:fixed; top:20px; right:20px; padding:12px 18px; background:#333; color:#fff; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.2); display:none; z-index:100; }
+    .toast.show { display:block; }
+    .toast.err { background:#c62828; }
+    .toast.ok { background:#2e7d32; }
+  </style>
+</head>
+<body>
+  <div class="rb-wrap">
+    <div class="rb-header">
+      <div>
+        <h1>Reporte de Acreditación Qantara</h1>
+        <div style="font-size:12px; color:#888; margin-top:4px;">Terminales BK — tarjetas y QR</div>
+      </div>
+      <div class="rb-user">
+        Hola, <strong>{{ session.get('username','') }}</strong>
+        <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+      </div>
+    </div>
+
+    <div class="rb-card">
+      <div class="rb-filters">
+        <div class="field">
+          <label>Desde</label>
+          <input type="date" id="f-desde">
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input type="date" id="f-hasta">
+        </div>
+        <button class="btn btn-primary" id="btn-generar">Generar reporte</button>
+        <button class="btn btn-success" id="btn-excel">Descargar Excel (crudo)</button>
+      </div>
+
+      <div class="locales-box">
+        <div class="locales-head">
+          <span class="lbl">Locales</span>
+          <button class="link-btn" id="btn-all">Seleccionar todos</button>
+          <button class="link-btn" id="btn-none">Quitar todos</button>
+        </div>
+        <div class="locales-grid" id="locales-grid">
+          <div class="loading">Cargando locales...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="reporte-container">
+      <div class="rb-card"><div class="empty">Elegí el rango y presioná "Generar reporte".</div></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/reporte_bk.js') }}"></script>
+</body>
+</html>

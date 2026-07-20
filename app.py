@@ -607,6 +607,25 @@ def login_required(view):
                 return redirect(url_for('dashboard_ribs_page'))
             return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
 
+        # Rutas permitidas para usuario reporte_bk (rol 'reporte_bk', nivel 8)
+        allowed_endpoints_reporte_bk = [
+            'reporte_bk_page',
+            'api_reporte_bk_locales',
+            'api_reporte_bk_data',
+            'api_reporte_bk_export',
+            'logout',
+            'static',
+        ]
+        if user_role == 'reporte_bk' and current_endpoint not in allowed_endpoints_reporte_bk:
+            is_api_request = (
+                request.path.startswith('/api/') or
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                'application/json' in request.headers.get('Accept', '')
+            )
+            if not is_api_request and request.method == 'GET':
+                return redirect(url_for('reporte_bk_page'))
+            return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
+
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
         if user_level in [4, 6] and current_endpoint not in allowed_endpoints_anticipos:
             # DEBUG: Imprimir endpoint actual
@@ -665,6 +684,10 @@ def route_for_current_role() -> str:
     if (session.get('role') or '').lower() == 'dueno_ribs':
         return url_for('dashboard_ribs_page')
 
+    # Rol 'reporte_bk' (nivel 8) siempre va a /reporte-bk
+    if (session.get('role') or '').lower() == 'reporte_bk':
+        return url_for('reporte_bk_page')
+
     if lvl == 2:
         # Encargado
         return url_for('encargado')
@@ -718,6 +741,10 @@ def redirect_after_login():
     # Usuario con rol 'dueno_ribs' (nivel 8) siempre va a /dashboard-ribs
     if (session.get('role') or '').lower() == 'dueno_ribs':
         return redirect(url_for('dashboard_ribs_page'))
+
+    # Usuario con rol 'reporte_bk' (nivel 8) siempre va a /reporte-bk
+    if (session.get('role') or '').lower() == 'reporte_bk':
+        return redirect(url_for('reporte_bk_page'))
 
     # Usuario con rol 'tesoreria' (nivel 7+) siempre va a /tesoreria
     if lvl >= 7:
@@ -14217,6 +14244,271 @@ def api_dashboard_ribs_export():
             headers={
                 'Content-Disposition': f'attachment; filename="{filename}"'
             }
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+# =============================================================================
+# REPORTE_BK - Reporte de acreditacion Qantara (terminales BK)
+# =============================================================================
+
+def _reporte_bk_rango(req):
+    """Parsea y valida fecha_desde/fecha_hasta. Devuelve (desde, hasta, error)."""
+    from datetime import date, timedelta
+    hoy = date.today()
+    raw_desde = req.args.get('fecha_desde')
+    raw_hasta = req.args.get('fecha_hasta')
+    try:
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else (hoy - timedelta(days=6))
+    except (ValueError, TypeError):
+        fecha_desde = hoy - timedelta(days=6)
+    try:
+        fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date() if raw_hasta else hoy
+    except (ValueError, TypeError):
+        fecha_hasta = hoy
+    if fecha_desde > fecha_hasta:
+        return None, None, "fecha_desde debe ser <= fecha_hasta"
+    if (fecha_hasta - fecha_desde).days > 366:
+        fecha_desde = fecha_hasta - timedelta(days=366)
+    return fecha_desde, fecha_hasta, None
+
+
+def _reporte_bk_locales_param(req):
+    """Lista de locales pedidos (?local=A&local=B). Vacio = todos."""
+    locales = req.args.getlist('local')
+    return [l.strip() for l in locales if l and l.strip()]
+
+
+@app.route('/reporte-bk', endpoint='reporte_bk_page')
+@login_required
+@role_min_required(8)
+def reporte_bk_page():
+    return render_template('reporte_bk.html')
+
+
+@app.route('/api/reporte-bk/locales', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_bk_locales():
+    """Todos los locales con tarjetas_trns (para el selector de filtros)."""
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("SELECT DISTINCT local FROM tarjetas_trns WHERE local IS NOT NULL AND local <> '' ORDER BY local")
+        locales = [r['local'] for r in cur.fetchall() if r.get('local')]
+        return jsonify(success=True, locales=locales)
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/reporte-bk/data', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_bk_data():
+    """
+    Reporte Qantara: un bloque por local con movimiento en terminales BK.
+    Solo terminales bk=1. monto + monto_tip se suman como uno.
+    Comision = Bruto * 0.05 ; Neto = Bruto - Comision.
+    """
+    from datetime import timedelta
+    from collections import defaultdict
+
+    COMISION_PCT = 0.05
+
+    fecha_desde, fecha_hasta, err = _reporte_bk_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    locales_filtro = _reporte_bk_locales_param(request)
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT t.local,
+                   DATE(t.fecha) AS fecha,
+                   UPPER(TRIM(t.tarjeta)) AS tarjeta,
+                   SUM(t.monto + COALESCE(t.monto_tip, 0)) AS bruto
+            FROM tarjetas_trns t
+            JOIN terminales tm
+                ON tm.local = t.local AND tm.terminal = t.terminal
+            WHERE tm.bk = 1
+              AND DATE(t.fecha) BETWEEN %s AND %s
+        """
+        params = [fecha_desde, fecha_hasta]
+        if locales_filtro:
+            placeholders = ','.join(['%s'] * len(locales_filtro))
+            sql += " AND t.local IN (" + placeholders + ")"
+            params.extend(locales_filtro)
+        sql += " GROUP BY t.local, DATE(t.fecha), UPPER(TRIM(t.tarjeta))"
+
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall() or []
+
+        dias = (fecha_hasta - fecha_desde).days + 1
+        dates = [(fecha_desde + timedelta(days=i)).isoformat() for i in range(dias)]
+
+        data = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+        for r in rows:
+            local = r['local']
+            fecha_s = r['fecha'].isoformat()
+            tarjeta = (r['tarjeta'] or '').strip()
+            bruto = float(r['bruto'] or 0)
+            concepto = 'QR' if tarjeta == 'PAGOS INMEDIATOS' else tarjeta
+            data[local][concepto][fecha_s] += bruto
+
+        reporte = []
+        for local in sorted(data.keys()):
+            conceptos = data[local]
+            filas = []
+            for concepto, por_fecha in conceptos.items():
+                bruto_total = sum(por_fecha.values())
+                if bruto_total <= 0:
+                    continue
+                comision = round(bruto_total * COMISION_PCT, 2)
+                neto = round(bruto_total - comision, 2)
+                filas.append({
+                    'concepto': concepto,
+                    'por_fecha': {d: round(por_fecha.get(d, 0.0), 2) for d in dates},
+                    'bruto': round(bruto_total, 2),
+                    'comision': comision,
+                    'neto': neto,
+                })
+
+            if not filas:
+                continue
+
+            filas.sort(key=lambda x: x['bruto'], reverse=True)
+
+            bruto_local = round(sum(f['bruto'] for f in filas), 2)
+            comision_local = round(bruto_local * COMISION_PCT, 2)
+            neto_local = round(bruto_local - comision_local, 2)
+            total_por_fecha = {d: round(sum(f['por_fecha'].get(d, 0.0) for f in filas), 2) for d in dates}
+
+            reporte.append({
+                'local': local,
+                'filas': filas,
+                'total': {
+                    'por_fecha': total_por_fecha,
+                    'bruto': bruto_local,
+                    'comision': comision_local,
+                    'neto': neto_local,
+                },
+            })
+
+        return jsonify(
+            success=True,
+            fecha_desde=fecha_desde.isoformat(),
+            fecha_hasta=fecha_hasta.isoformat(),
+            dates=dates,
+            comision_pct=COMISION_PCT,
+            reporte=reporte,
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/reporte-bk/export', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_bk_export():
+    """
+    Excel crudo de TODAS las tarjetas_trns (todas las terminales, no solo BK)
+    del rango + locales elegidos, agrupado por local, fecha, terminal, tarjeta.
+    monto + monto_tip se suman. Para trabajar/verificar contra la BD.
+    """
+    from io import BytesIO
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    fecha_desde, fecha_hasta, err = _reporte_bk_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    locales_filtro = _reporte_bk_locales_param(request)
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT t.local,
+                   DATE(t.fecha) AS fecha,
+                   t.terminal,
+                   UPPER(TRIM(t.tarjeta)) AS tarjeta,
+                   COALESCE(MAX(tm.bk), 0) AS es_bk,
+                   SUM(t.monto) AS monto,
+                   SUM(COALESCE(t.monto_tip, 0)) AS propina,
+                   SUM(t.monto + COALESCE(t.monto_tip, 0)) AS total
+            FROM tarjetas_trns t
+            LEFT JOIN terminales tm
+                ON tm.local = t.local AND tm.terminal = t.terminal
+            WHERE DATE(t.fecha) BETWEEN %s AND %s
+        """
+        params = [fecha_desde, fecha_hasta]
+        if locales_filtro:
+            placeholders = ','.join(['%s'] * len(locales_filtro))
+            sql += " AND t.local IN (" + placeholders + ")"
+            params.extend(locales_filtro)
+        sql += " GROUP BY t.local, DATE(t.fecha), t.terminal, UPPER(TRIM(t.tarjeta)) ORDER BY t.local, DATE(t.fecha), t.terminal, tarjeta"
+
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall() or []
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Tarjetas"
+        headers = ["Local", "Fecha", "Terminal", "Tarjeta", "Es BK", "Monto", "Propina", "Total (Monto+Prop)"]
+        ws.append(headers)
+        hfont = Font(bold=True, color="FFFFFF")
+        hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        for ci in range(1, len(headers) + 1):
+            c = ws.cell(row=1, column=ci)
+            c.font = hfont
+            c.fill = hfill
+            c.alignment = Alignment(horizontal='center')
+
+        for r in rows:
+            ws.append([
+                r['local'],
+                r['fecha'].isoformat(),
+                r['terminal'] or '',
+                r['tarjeta'] or '',
+                'SI' if int(r['es_bk'] or 0) == 1 else 'NO',
+                float(r['monto'] or 0),
+                float(r['propina'] or 0),
+                float(r['total'] or 0),
+            ])
+
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 45)
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        filename = "tarjetas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
+        return Response(
+            bio.read(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': 'attachment; filename="' + filename + '"'}
         )
     except Exception as e:
         import traceback
