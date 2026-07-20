@@ -82,6 +82,40 @@
     }
   }
 
+  function renderBloque(bloque, dates, data, esGeneral) {
+    let html = '<div class="qantara-block' + (esGeneral ? ' qantara-general' : '') + '">';
+    const titulo = esGeneral
+      ? `Estimación de acreditación Qantara — GENERAL (todos los locales) (${fmtFechaCorta(data.fecha_desde)} al ${fmtFechaCorta(data.fecha_hasta)})`
+      : `Estimación de acreditación Qantara — ${esc(bloque.local)} (${fmtFechaCorta(data.fecha_desde)} al ${fmtFechaCorta(data.fecha_hasta)})`;
+    html += `<div class="qantara-title">${titulo}</div>`;
+    html += '<table class="qt"><thead><tr>';
+    html += '<th class="concepto">Concepto</th>';
+    dates.forEach(d => { html += '<th>' + fmtFechaCorta(d) + '</th>'; });
+    html += '<th class="col-bruto">Bruto</th><th class="col-comision">Comisión</th><th class="col-neto">Neto Estimado</th>';
+    html += '</tr></thead><tbody>';
+
+    bloque.filas.forEach(fila => {
+      const clase = fila.concepto === 'QR' ? 'row-qr' : '';
+      html += `<tr class="${clase}">`;
+      html += '<td class="concepto">' + esc(fila.concepto) + '</td>';
+      dates.forEach(d => { html += '<td>' + fmt(fila.por_fecha[d]) + '</td>'; });
+      html += '<td class="col-bruto">' + fmt(fila.bruto) + '</td>';
+      html += '<td class="col-comision">' + fmt(fila.comision) + '</td>';
+      html += '<td class="col-neto neto-final">' + fmt(fila.neto) + '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody><tfoot><tr>';
+    html += '<td class="concepto">TOTAL</td>';
+    dates.forEach(d => { html += '<td>' + fmt(bloque.total.por_fecha[d]) + '</td>'; });
+    html += '<td class="col-bruto">' + fmt(bloque.total.bruto) + '</td>';
+    html += '<td class="col-comision">' + fmt(bloque.total.comision) + '</td>';
+    html += '<td class="col-neto neto-final">' + fmt(bloque.total.neto) + '</td>';
+    html += '</tr></tfoot></table>';
+    html += '</div>';
+    return html;
+  }
+
   function render(data) {
     const cont = $('reporte-container');
     if (!data.reporte || data.reporte.length === 0) {
@@ -92,34 +126,14 @@
     const dates = data.dates;
     let html = '';
 
+    // Reporte GENERAL primero (solo si hay más de un local con datos)
+    if (data.general && data.reporte.length > 1) {
+      html += renderBloque(data.general, dates, data, true);
+    }
+
+    // Reportes por local
     data.reporte.forEach(bloque => {
-      html += '<div class="qantara-block">';
-      html += `<div class="qantara-title">Estimación de acreditación Qantara — ${esc(bloque.local)} (${fmtFechaCorta(data.fecha_desde)} al ${fmtFechaCorta(data.fecha_hasta)})</div>`;
-      html += '<table class="qt"><thead><tr>';
-      html += '<th class="concepto">Concepto</th>';
-      dates.forEach(d => { html += '<th>' + fmtFechaCorta(d) + '</th>'; });
-      html += '<th class="col-bruto">Bruto</th><th class="col-comision">Comisión</th><th class="col-neto">Neto Estimado</th>';
-      html += '</tr></thead><tbody>';
-
-      bloque.filas.forEach(fila => {
-        const clase = fila.concepto === 'QR' ? 'row-qr' : '';
-        html += `<tr class="${clase}">`;
-        html += '<td class="concepto">' + esc(fila.concepto) + '</td>';
-        dates.forEach(d => { html += '<td>' + fmt(fila.por_fecha[d]) + '</td>'; });
-        html += '<td class="col-bruto">' + fmt(fila.bruto) + '</td>';
-        html += '<td class="col-comision">' + fmt(fila.comision) + '</td>';
-        html += '<td class="col-neto neto-final">' + fmt(fila.neto) + '</td>';
-        html += '</tr>';
-      });
-
-      html += '</tbody><tfoot><tr>';
-      html += '<td class="concepto">TOTAL</td>';
-      dates.forEach(d => { html += '<td>' + fmt(bloque.total.por_fecha[d]) + '</td>'; });
-      html += '<td class="col-bruto">' + fmt(bloque.total.bruto) + '</td>';
-      html += '<td class="col-comision">' + fmt(bloque.total.comision) + '</td>';
-      html += '<td class="col-neto neto-final">' + fmt(bloque.total.neto) + '</td>';
-      html += '</tr></tfoot></table>';
-      html += '</div>';
+      html += renderBloque(bloque, dates, data, false);
     });
 
     cont.innerHTML = html;

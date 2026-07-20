@@ -14287,6 +14287,20 @@ def _reporte_bk_locales_param(req):
     return [l.strip() for l in locales if l and l.strip()]
 
 
+def _reporte_bk_normalizar_tarjeta(nombre):
+    """
+    Normaliza el nombre de la tarjeta para agrupar sin duplicar por acentos/espacios.
+    Ej: 'VISA DÉBITO' y 'VISA DEBITO' -> 'VISA DEBITO'.
+    """
+    import unicodedata
+    if not nombre:
+        return ''
+    s = str(nombre).strip().upper()
+    s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+    s = ' '.join(s.split())  # colapsar espacios múltiples
+    return s
+
+
 @app.route('/reporte-bk', endpoint='reporte_bk_page')
 @login_required
 @role_min_required(8)
@@ -14364,14 +14378,17 @@ def api_reporte_bk_data():
         for r in rows:
             local = r['local']
             fecha_s = r['fecha'].isoformat()
-            tarjeta = (r['tarjeta'] or '').strip()
+            # Normalizar acentos/espacios para no duplicar 'VISA DÉBITO' vs 'VISA DEBITO'
+            tarjeta = _reporte_bk_normalizar_tarjeta(r['tarjeta'])
             bruto = float(r['bruto'] or 0)
             concepto = 'QR' if tarjeta == 'PAGOS INMEDIATOS' else tarjeta
             data[local][concepto][fecha_s] += bruto
 
-        reporte = []
-        for local in sorted(data.keys()):
-            conceptos = data[local]
+        # Acumulador para el reporte GENERAL (todos los locales sumados por concepto/fecha)
+        general = defaultdict(lambda: defaultdict(float))
+
+        def _armar_bloque(local_nombre, conceptos):
+            """Devuelve un bloque {local, filas, total} o None si no hay movimiento."""
             filas = []
             for concepto, por_fecha in conceptos.items():
                 bruto_total = sum(por_fecha.values())
@@ -14386,19 +14403,15 @@ def api_reporte_bk_data():
                     'comision': comision,
                     'neto': neto,
                 })
-
             if not filas:
-                continue
-
+                return None
             filas.sort(key=lambda x: x['bruto'], reverse=True)
-
             bruto_local = round(sum(f['bruto'] for f in filas), 2)
             comision_local = round(bruto_local * COMISION_PCT, 2)
             neto_local = round(bruto_local - comision_local, 2)
             total_por_fecha = {d: round(sum(f['por_fecha'].get(d, 0.0) for f in filas), 2) for d in dates}
-
-            reporte.append({
-                'local': local,
+            return {
+                'local': local_nombre,
                 'filas': filas,
                 'total': {
                     'por_fecha': total_por_fecha,
@@ -14406,7 +14419,21 @@ def api_reporte_bk_data():
                     'comision': comision_local,
                     'neto': neto_local,
                 },
-            })
+            }
+
+        reporte = []
+        for local in sorted(data.keys()):
+            conceptos = data[local]
+            # Acumular en el general
+            for concepto, por_fecha in conceptos.items():
+                for d, v in por_fecha.items():
+                    general[concepto][d] += v
+            bloque = _armar_bloque(local, conceptos)
+            if bloque:
+                reporte.append(bloque)
+
+        # Bloque GENERAL (todos los locales seleccionados sumados)
+        bloque_general = _armar_bloque('GENERAL (todos los locales)', general) if general else None
 
         return jsonify(
             success=True,
@@ -14414,6 +14441,7 @@ def api_reporte_bk_data():
             fecha_hasta=fecha_hasta.isoformat(),
             dates=dates,
             comision_pct=COMISION_PCT,
+            general=bloque_general,
             reporte=reporte,
         )
     except Exception as e:
