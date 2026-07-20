@@ -14460,11 +14460,15 @@ def api_reporte_bk_data():
 @role_min_required(8)
 def api_reporte_bk_export():
     """
-    Excel crudo de TODAS las tarjetas_trns (todas las terminales, no solo BK)
-    del rango + locales elegidos, agrupado por local, fecha, terminal, tarjeta.
-    monto + monto_tip se suman. Para trabajar/verificar contra la BD.
+    Excel crudo de TODOS los medios de cobro (todos los locales/terminales,
+    no solo BK) del rango + locales elegidos. Una fila por medio, con columnas
+    TIPO (TARJETA / QR / EFECTIVO / MP / RAPPI / PEDIDOSYA / CTA CTE / PROPINA)
+    y DESCRIPCION (VISA, Pagos Inmediatos, Nro de remesa, etc.). Las propinas
+    de tarjetas y MP se desglosan como filas TIPO=PROPINA. Para verificar
+    contra la BD.
     """
     from io import BytesIO
+    from unicodedata import normalize as _unormalize, combining as _ucombining
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment
 
@@ -14473,9 +14477,25 @@ def api_reporte_bk_export():
         return jsonify(success=False, msg=err), 400
     locales_filtro = _reporte_bk_locales_param(request)
 
+    def _norm_txt(s):
+        s = (s or '').strip()
+        s = ''.join(c for c in _unormalize('NFD', s) if not _ucombining(c))
+        return ' '.join(s.upper().split())
+
+    def _filtro_local(sql, params, col='local'):
+        if locales_filtro:
+            ph = ','.join(['%s'] * len(locales_filtro))
+            sql += " AND " + col + " IN (" + ph + ")"
+            params.extend(locales_filtro)
+        return sql
+
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
     try:
+        # filas = [local, fecha(date), terminal, tipo, descripcion, es_bk(0/1), monto(float)]
+        filas = []
+
+        # ── TARJETAS + QR (con propina desglosada) ──
         sql = """
             SELECT t.local,
                    DATE(t.fecha) AS fecha,
@@ -14483,27 +14503,117 @@ def api_reporte_bk_export():
                    UPPER(TRIM(t.tarjeta)) AS tarjeta,
                    COALESCE(MAX(tm.bk), 0) AS es_bk,
                    SUM(t.monto) AS monto,
-                   SUM(COALESCE(t.monto_tip, 0)) AS propina,
-                   SUM(t.monto + COALESCE(t.monto_tip, 0)) AS total
+                   SUM(COALESCE(t.monto_tip, 0)) AS propina
             FROM tarjetas_trns t
             LEFT JOIN terminales tm
                 ON tm.local = t.local AND tm.terminal = t.terminal
             WHERE DATE(t.fecha) BETWEEN %s AND %s
         """
         params = [fecha_desde, fecha_hasta]
-        if locales_filtro:
-            placeholders = ','.join(['%s'] * len(locales_filtro))
-            sql += " AND t.local IN (" + placeholders + ")"
-            params.extend(locales_filtro)
-        sql += " GROUP BY t.local, DATE(t.fecha), t.terminal, UPPER(TRIM(t.tarjeta)) ORDER BY t.local, DATE(t.fecha), t.terminal, tarjeta"
-
+        sql = _filtro_local(sql, params, 't.local')
+        sql += " GROUP BY t.local, DATE(t.fecha), t.terminal, UPPER(TRIM(t.tarjeta))"
         cur.execute(sql, tuple(params))
-        rows = cur.fetchall() or []
+        for r in cur.fetchall() or []:
+            tarj = _norm_txt(r['tarjeta'])
+            es_bk = int(r['es_bk'] or 0)
+            es_qr = (tarj == 'PAGOS INMEDIATOS')
+            tipo = 'QR' if es_qr else 'TARJETA'
+            desc = 'Pagos Inmediatos' if es_qr else (tarj or '(sin tipo)')
+            monto = float(r['monto'] or 0)
+            propina = float(r['propina'] or 0)
+            if monto != 0:
+                filas.append([r['local'], r['fecha'], r['terminal'] or '', tipo, desc, es_bk, monto])
+            if propina != 0:
+                filas.append([r['local'], r['fecha'], r['terminal'] or '', 'PROPINA',
+                              ('QR - ' + desc) if es_qr else ('Tarjeta - ' + desc), es_bk, propina])
+
+        # ── EFECTIVO (remesas) ── incluye remesas espejo de anticipos (marcadas)
+        sql = """
+            SELECT local, DATE(fecha) AS fecha, nro_remesa, origen_anticipo_id,
+                   SUM(monto) AS monto
+            FROM remesas_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'local')
+        sql += " GROUP BY local, DATE(fecha), nro_remesa, origen_anticipo_id"
+        cur.execute(sql, tuple(params))
+        for r in cur.fetchall() or []:
+            monto = float(r['monto'] or 0)
+            if monto == 0:
+                continue
+            nro = (r['nro_remesa'] or '').strip() or 's/nro'
+            es_ant = r['origen_anticipo_id'] is not None
+            desc = ('Anticipo - Remesa ' + nro) if es_ant else ('Remesa ' + nro)
+            filas.append([r['local'], r['fecha'], '', 'EFECTIVO', desc, 0, monto])
+
+        # ── MERCADOPAGO ── NORMAL=MP, TIP=PROPINA
+        sql = """
+            SELECT local, DATE(fecha) AS fecha, terminal, UPPER(TRIM(tipo)) AS tipo,
+                   SUM(importe) AS monto
+            FROM mercadopago_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'local')
+        sql += " GROUP BY local, DATE(fecha), terminal, UPPER(TRIM(tipo))"
+        cur.execute(sql, tuple(params))
+        for r in cur.fetchall() or []:
+            monto = float(r['monto'] or 0)
+            if monto == 0:
+                continue
+            es_tip = (r['tipo'] == 'TIP')
+            if es_tip:
+                filas.append([r['local'], r['fecha'], r['terminal'] or '', 'PROPINA', 'MercadoPago', 0, monto])
+            else:
+                filas.append([r['local'], r['fecha'], r['terminal'] or '', 'MP', 'MercadoPago', 0, monto])
+
+        # ── RAPPI ──
+        sql = "SELECT local, DATE(fecha) AS fecha, SUM(monto) AS monto FROM rappi_trns WHERE DATE(fecha) BETWEEN %s AND %s"
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'local')
+        sql += " GROUP BY local, DATE(fecha)"
+        cur.execute(sql, tuple(params))
+        for r in cur.fetchall() or []:
+            monto = float(r['monto'] or 0)
+            if monto != 0:
+                filas.append([r['local'], r['fecha'], '', 'RAPPI', 'Rappi', 0, monto])
+
+        # ── PEDIDOSYA ──
+        sql = "SELECT local, DATE(fecha) AS fecha, SUM(monto) AS monto FROM pedidosya_trns WHERE DATE(fecha) BETWEEN %s AND %s"
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'local')
+        sql += " GROUP BY local, DATE(fecha)"
+        cur.execute(sql, tuple(params))
+        for r in cur.fetchall() or []:
+            monto = float(r['monto'] or 0)
+            if monto != 0:
+                filas.append([r['local'], r['fecha'], '', 'PEDIDOSYA', 'PedidosYa', 0, monto])
+
+        # ── CUENTAS CORRIENTES ──
+        sql = """
+            SELECT local, DATE(fecha) AS fecha,
+                   COALESCE(NULLIF(TRIM(comentario), ''), CONCAT('Cliente ', COALESCE(cliente_id,''))) AS descripcion,
+                   SUM(monto) AS monto
+            FROM cuentas_corrientes_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'local')
+        sql += " GROUP BY local, DATE(fecha), descripcion"
+        cur.execute(sql, tuple(params))
+        for r in cur.fetchall() or []:
+            monto = float(r['monto'] or 0)
+            if monto != 0:
+                filas.append([r['local'], r['fecha'], '', 'CTA CTE', (r['descripcion'] or 'Cuenta corriente'), 0, monto])
+
+        # Orden: local, fecha, tipo, descripcion
+        filas.sort(key=lambda x: (str(x[0]), x[1].isoformat(), str(x[3]), str(x[4])))
 
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Tarjetas"
-        headers = ["Local", "Fecha", "Terminal", "Tarjeta", "Es BK", "Monto", "Propina", "Total (Monto+Prop)"]
+        ws.title = "Medios de cobro"
+        headers = ["Local", "Fecha", "Terminal", "Tipo", "Descripcion", "Es BK", "Monto"]
         ws.append(headers)
         hfont = Font(bold=True, color="FFFFFF")
         hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -14513,16 +14623,15 @@ def api_reporte_bk_export():
             c.fill = hfill
             c.alignment = Alignment(horizontal='center')
 
-        for r in rows:
+        for f in filas:
             ws.append([
-                r['local'],
-                r['fecha'].isoformat(),
-                r['terminal'] or '',
-                r['tarjeta'] or '',
-                'SI' if int(r['es_bk'] or 0) == 1 else 'NO',
-                float(r['monto'] or 0),
-                float(r['propina'] or 0),
-                float(r['total'] or 0),
+                f[0],
+                f[1].isoformat(),
+                f[2] or '',
+                f[3],
+                f[4],
+                'SI' if int(f[5] or 0) == 1 else 'NO',
+                float(f[6] or 0),
             ])
 
         for col in ws.columns:
@@ -14532,7 +14641,7 @@ def api_reporte_bk_export():
         bio = BytesIO()
         wb.save(bio)
         bio.seek(0)
-        filename = "tarjetas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
+        filename = "medios_cobro_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
         return Response(
             bio.read(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
