@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte Fabric Sushi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f7fa; margin: 0; }
+    .rf-wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .rf-header { display:flex; justify-content:space-between; align-items:center; padding:18px 20px; background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:18px; }
+    .rf-header h1 { margin:0; font-size:22px; color:#1e88e5; }
+    .rf-header .sub { font-size:12px; color:#888; margin-top:4px; }
+    .rf-user { font-size:13px; color:#666; }
+    .rf-user a { color:#e53935; text-decoration:none; margin-left:14px; font-weight:600; }
+
+    .rf-card { background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:18px 20px; margin-bottom:16px; }
+    .rf-filters { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; }
+    .field label { font-size:12px; color:#666; margin-bottom:4px; }
+    .field input[type=date] { padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+    .btn { padding:10px 16px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; transition:.15s; }
+    .btn-primary { background:#1e88e5; color:#fff; }
+    .btn-primary:hover { background:#1565c0; }
+    .btn-success { background:#2e7d32; color:#fff; }
+    .btn-success:hover { background:#1b5e20; }
+
+    /* Selector agrupacion */
+    .seg { display:inline-flex; border:1px solid #cfd8e3; border-radius:8px; overflow:hidden; }
+    .seg button { border:none; background:#fff; padding:9px 18px; cursor:pointer; font-size:14px; font-weight:600; color:#546174; }
+    .seg button + button { border-left:1px solid #cfd8e3; }
+    .seg button.active { background:#1e88e5; color:#fff; }
+
+    .kpi { display:flex; gap:26px; flex-wrap:wrap; margin-top:6px; }
+    .kpi .box { background:#f3f7fc; border:1px solid #e0e9f4; border-radius:10px; padding:14px 20px; min-width:180px; }
+    .kpi .box .l { font-size:12px; color:#6b7a8d; text-transform:uppercase; letter-spacing:.04em; }
+    .kpi .box .v { font-size:26px; font-weight:700; color:#12213a; margin-top:4px; font-variant-numeric:tabular-nums; }
+
+    table.rf { border-collapse:collapse; width:100%; font-size:13px; margin-top:6px; }
+    .rf th, .rf td { padding:9px 12px; border-bottom:1px solid #e5e7eb; text-align:right; white-space:nowrap; }
+    .rf thead th { background:#e5e7eb; color:#1e293b; font-weight:700; }
+    .rf th.l, .rf td.l { text-align:left; }
+    .rf tfoot td { border-top:2px solid #94a3b8; font-weight:700; background:#e5e7eb; color:#1e293b; }
+    .rf-tablewrap { overflow-x:auto; }
+
+    .empty { text-align:center; padding:40px; color:#999; }
+    .loading { text-align:center; padding:40px; color:#64748b; }
+    .toast { position:fixed; top:20px; right:20px; padding:12px 18px; background:#333; color:#fff; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.2); display:none; z-index:100; }
+    .toast.show { display:block; }
+    .toast.err { background:#c62828; }
+    .toast.ok { background:#2e7d32; }
+  </style>
+</head>
+<body>
+  <div class="rf-wrap">
+    <div class="rf-header">
+      <div>
+        <h1>Reporte de Ventas — {{ local }}</h1>
+        <div class="sub">Análisis de ventas por día, semana y mes</div>
+      </div>
+      <div class="rf-user">
+        Hola, <strong>{{ session.get('username','') }}</strong>
+        <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+      </div>
+    </div>
+
+    <div class="rf-card">
+      <div class="rf-filters">
+        <div class="field">
+          <label>Desde</label>
+          <input type="date" id="f-desde">
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input type="date" id="f-hasta">
+        </div>
+        <div class="field">
+          <label>Agrupar por</label>
+          <div class="seg" id="seg">
+            <button data-g="dia" class="active">Día</button>
+            <button data-g="semana">Semana</button>
+            <button data-g="mes">Mes</button>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-ver">Ver</button>
+        <button class="btn btn-success" id="btn-excel">Descargar Excel del local</button>
+      </div>
+    </div>
+
+    <div class="rf-card">
+      <div class="kpi" id="kpi" style="display:none">
+        <div class="box"><div class="l">Venta total del período</div><div class="v" id="kpi-total">—</div></div>
+        <div class="box"><div class="l" id="kpi-per-l">Períodos</div><div class="v" id="kpi-per">—</div></div>
+      </div>
+      <div id="tabla-container">
+        <div class="empty">Elegí el rango y presioná "Ver".</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="{{ url_for('static', filename='js/reporte_fabric.js') }}"></script>
+</body>
+</html>

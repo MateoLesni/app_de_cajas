@@ -627,6 +627,24 @@ def login_required(view):
                 return redirect(url_for('reporte_bk_page'))
             return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
 
+        # Rutas permitidas para usuario reporte_fabric (gerente Fabric Sushi, nivel 8)
+        allowed_endpoints_reporte_fabric = [
+            'reporte_fabric_page',
+            'api_reporte_fabric_data',
+            'api_reporte_fabric_export',
+            'logout',
+            'static',
+        ]
+        if user_role == 'reporte_fabric' and current_endpoint not in allowed_endpoints_reporte_fabric:
+            is_api_request = (
+                request.path.startswith('/api/') or
+                request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+                'application/json' in request.headers.get('Accept', '')
+            )
+            if not is_api_request and request.method == 'GET':
+                return redirect(url_for('reporte_fabric_page'))
+            return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
+
         # Si es usuario de anticipos (nivel 4 o 6) y NO está en una ruta permitida
         if user_level in [4, 6] and current_endpoint not in allowed_endpoints_anticipos:
             # DEBUG: Imprimir endpoint actual
@@ -689,6 +707,10 @@ def route_for_current_role() -> str:
     if (session.get('role') or '').lower() == 'reporte_bk':
         return url_for('reporte_bk_page')
 
+    # Rol 'reporte_fabric' (nivel 8) siempre va a /reporte-fabric
+    if (session.get('role') or '').lower() == 'reporte_fabric':
+        return url_for('reporte_fabric_page')
+
     if lvl == 2:
         # Encargado
         return url_for('encargado')
@@ -746,6 +768,10 @@ def redirect_after_login():
     # Usuario con rol 'reporte_bk' (nivel 8) siempre va a /reporte-bk
     if (session.get('role') or '').lower() == 'reporte_bk':
         return redirect(url_for('reporte_bk_page'))
+
+    # Usuario con rol 'reporte_fabric' (nivel 8) siempre va a /reporte-fabric
+    if (session.get('role') or '').lower() == 'reporte_fabric':
+        return redirect(url_for('reporte_fabric_page'))
 
     # Usuario con rol 'tesoreria' (nivel 7+) siempre va a /tesoreria
     if lvl >= 7:
@@ -14747,6 +14773,300 @@ def api_reporte_bk_export_ventas():
         wb.save(bio)
         bio.seek(0)
         filename = "ventas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
+        return Response(
+            bio.read(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': 'attachment; filename="' + filename + '"'}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+# =============================================================================
+# REPORTE_FABRIC - Reporte exclusivo del gerente de Fabric Sushi
+# =============================================================================
+# El local esta HARDCODEADO a 'Fabric Sushi' en el backend. Nunca se toma de un
+# parametro del usuario, para que este rol no pueda ver ningun otro local.
+
+REPORTE_FABRIC_LOCAL = 'Fabric Sushi'
+
+
+def _reporte_fabric_rango(req):
+    """Parsea fecha_desde/fecha_hasta. Default: ultimos 30 dias."""
+    from datetime import date, timedelta
+    hoy = date.today()
+    raw_desde = req.args.get('fecha_desde')
+    raw_hasta = req.args.get('fecha_hasta')
+    try:
+        fecha_desde = datetime.strptime(raw_desde, "%Y-%m-%d").date() if raw_desde else (hoy - timedelta(days=29))
+    except (ValueError, TypeError):
+        fecha_desde = hoy - timedelta(days=29)
+    try:
+        fecha_hasta = datetime.strptime(raw_hasta, "%Y-%m-%d").date() if raw_hasta else hoy
+    except (ValueError, TypeError):
+        fecha_hasta = hoy
+    if fecha_desde > fecha_hasta:
+        return None, None, "fecha_desde debe ser <= fecha_hasta"
+    if (fecha_hasta - fecha_desde).days > 800:
+        fecha_desde = fecha_hasta - timedelta(days=800)
+    return fecha_desde, fecha_hasta, None
+
+
+@app.route('/reporte-fabric', endpoint='reporte_fabric_page')
+@login_required
+@role_min_required(8)
+def reporte_fabric_page():
+    return render_template('reporte_fabric.html', local=REPORTE_FABRIC_LOCAL)
+
+
+@app.route('/api/reporte-fabric/data', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_fabric_data():
+    """
+    Venta de Fabric Sushi (ventas_trns) agrupada por dia / semana / mes.
+    ?agrupar=dia|semana|mes  (default: dia)
+    """
+    fecha_desde, fecha_hasta, err = _reporte_fabric_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+
+    agrupar = (request.args.get('agrupar') or 'dia').strip().lower()
+    if agrupar not in ('dia', 'semana', 'mes'):
+        agrupar = 'dia'
+
+    if agrupar == 'semana':
+        # Lunes de la semana ISO como etiqueta del periodo
+        periodo_sql = "DATE_SUB(DATE(fecha), INTERVAL WEEKDAY(fecha) DAY)"
+    elif agrupar == 'mes':
+        periodo_sql = "DATE_FORMAT(fecha, '%Y-%m-01')"
+    else:
+        periodo_sql = "DATE(fecha)"
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = f"""
+            SELECT {periodo_sql} AS periodo,
+                   SUM(venta_total_sistema) AS venta_total,
+                   COUNT(*) AS cargas
+            FROM ventas_trns
+            WHERE local = %s
+              AND DATE(fecha) BETWEEN %s AND %s
+              AND estado <> 'eliminado'
+            GROUP BY periodo
+            ORDER BY periodo
+        """
+        cur.execute(sql, (REPORTE_FABRIC_LOCAL, fecha_desde, fecha_hasta))
+        rows = cur.fetchall() or []
+
+        filas = []
+        total = 0.0
+        for r in rows:
+            v = float(r['venta_total'] or 0)
+            total += v
+            per = r['periodo']
+            per_s = per.isoformat() if hasattr(per, 'isoformat') else str(per)
+            filas.append({'periodo': per_s, 'venta_total': round(v, 2), 'cargas': int(r['cargas'] or 0)})
+
+        return jsonify(
+            success=True,
+            local=REPORTE_FABRIC_LOCAL,
+            agrupar=agrupar,
+            fecha_desde=fecha_desde.isoformat(),
+            fecha_hasta=fecha_hasta.isoformat(),
+            filas=filas,
+            total=round(total, 2),
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/reporte-fabric/export', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_fabric_export():
+    """
+    Excel de Fabric Sushi con 3 hojas: Ventas (por dia), Medios de cobro
+    (detalle) y Gastos (detalle por gasto). Rango de fechas del filtro.
+    Local siempre 'Fabric Sushi'.
+    """
+    from io import BytesIO
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    fecha_desde, fecha_hasta, err = _reporte_fabric_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+
+    local = REPORTE_FABRIC_LOCAL
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    hfont = Font(bold=True, color="FFFFFF")
+    hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+
+    def _header(ws, headers):
+        ws.append(headers)
+        for ci in range(1, len(headers) + 1):
+            c = ws.cell(row=1, column=ci)
+            c.font = hfont
+            c.fill = hfill
+            c.alignment = Alignment(horizontal='center')
+
+    def _autosize(ws):
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 45)
+
+    try:
+        wb = openpyxl.Workbook()
+
+        # ── Hoja 1: Ventas (por dia) ──
+        ws = wb.active
+        ws.title = "Ventas"
+        _header(ws, ["Fecha", "Venta Total", "Cargas"])
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, SUM(venta_total_sistema) AS venta, COUNT(*) AS cargas
+            FROM ventas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s AND estado <> 'eliminado'
+            GROUP BY DATE(fecha) ORDER BY DATE(fecha)
+        """, (local, fecha_desde, fecha_hasta))
+        tot_v = 0.0
+        for r in cur.fetchall() or []:
+            v = float(r['venta'] or 0); tot_v += v
+            ws.append([r['fecha'].isoformat(), v, int(r['cargas'] or 0)])
+        ws.append(["TOTAL", round(tot_v, 2), ""])
+        ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+        ws.cell(row=ws.max_row, column=2).font = Font(bold=True)
+        _autosize(ws)
+
+        # ── Hoja 2: Medios de cobro (detalle) ──
+        ws2 = wb.create_sheet("Medios de cobro")
+        _header(ws2, ["Fecha", "Tipo", "Descripcion", "Monto"])
+        medios = []
+
+        # Tarjetas (monto + propina en la misma fila descriptiva)
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, UPPER(TRIM(tarjeta)) AS tarjeta, terminal,
+                   SUM(monto) AS monto, SUM(COALESCE(monto_tip,0)) AS propina
+            FROM tarjetas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+            GROUP BY DATE(fecha), UPPER(TRIM(tarjeta)), terminal
+        """, (local, fecha_desde, fecha_hasta))
+        for r in cur.fetchall() or []:
+            tarj = (r['tarjeta'] or '').strip()
+            es_qr = (tarj == 'PAGOS INMEDIATOS')
+            tipo = 'QR' if es_qr else 'TARJETA'
+            desc = 'Pagos Inmediatos' if es_qr else (tarj or '(sin tipo)')
+            m = float(r['monto'] or 0); p = float(r['propina'] or 0)
+            if m != 0:
+                medios.append([r['fecha'], tipo, desc, m])
+            if p != 0:
+                medios.append([r['fecha'], 'PROPINA', ('QR - ' + desc) if es_qr else ('Tarjeta - ' + desc), p])
+
+        # Efectivo (remesas, USD convertido a ARS)
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, nro_remesa, origen_anticipo_id,
+                   UPPER(COALESCE(divisa,'ARS')) AS divisa, monto, monto_usd, cotizacion_divisa,
+                   CASE WHEN UPPER(COALESCE(divisa,'ARS'))='USD'
+                        THEN COALESCE(NULLIF(total_conversion,0), monto_usd*cotizacion_divisa, 0)
+                        ELSE monto END AS monto_ars
+            FROM remesas_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+        """, (local, fecha_desde, fecha_hasta))
+        for r in cur.fetchall() or []:
+            m = float(r['monto_ars'] or 0)
+            if m == 0:
+                continue
+            nro = (r['nro_remesa'] or '').strip() or 's/nro'
+            desc = ('Anticipo - Remesa ' + nro) if r['origen_anticipo_id'] is not None else ('Remesa ' + nro)
+            if r['divisa'] == 'USD':
+                desc += f" (USD {float(r['monto_usd'] or 0):,.2f} @ {float(r['cotizacion_divisa'] or 0):,.2f})"
+            medios.append([r['fecha'], 'EFECTIVO', desc, m])
+
+        # MercadoPago
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, UPPER(TRIM(tipo)) AS tipo, SUM(importe) AS monto
+            FROM mercadopago_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+            GROUP BY DATE(fecha), UPPER(TRIM(tipo))
+        """, (local, fecha_desde, fecha_hasta))
+        for r in cur.fetchall() or []:
+            m = float(r['monto'] or 0)
+            if m == 0:
+                continue
+            tipo = 'PROPINA' if r['tipo'] == 'TIP' else 'MP'
+            medios.append([r['fecha'], tipo, 'MercadoPago', m])
+
+        # Rappi / PedidosYa
+        for tabla, tipo, etiq in (('rappi_trns', 'RAPPI', 'Rappi'), ('pedidosya_trns', 'PEDIDOSYA', 'PedidosYa')):
+            cur.execute(f"""
+                SELECT DATE(fecha) AS fecha, SUM(monto) AS monto
+                FROM {tabla} WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+                GROUP BY DATE(fecha)
+            """, (local, fecha_desde, fecha_hasta))
+            for r in cur.fetchall() or []:
+                m = float(r['monto'] or 0)
+                if m != 0:
+                    medios.append([r['fecha'], tipo, etiq, m])
+
+        # Cuentas corrientes
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha,
+                   COALESCE(NULLIF(TRIM(comentario),''), CONCAT('Cliente ', COALESCE(cliente_id,''))) AS descripcion,
+                   SUM(monto) AS monto
+            FROM cuentas_corrientes_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+            GROUP BY DATE(fecha), descripcion
+        """, (local, fecha_desde, fecha_hasta))
+        for r in cur.fetchall() or []:
+            m = float(r['monto'] or 0)
+            if m != 0:
+                medios.append([r['fecha'], 'CTA CTE', (r['descripcion'] or 'Cuenta corriente'), m])
+
+        medios.sort(key=lambda x: (x[0].isoformat(), str(x[1]), str(x[2])))
+        for f in medios:
+            ws2.append([f[0].isoformat(), f[1], f[2], float(f[3] or 0)])
+        _autosize(ws2)
+
+        # ── Hoja 3: Gastos (detalle por gasto) ──
+        ws3 = wb.create_sheet("Gastos")
+        _header(ws3, ["Fecha", "Tipo de gasto", "Detalle", "Monto"])
+        cur.execute("""
+            SELECT DATE(fecha) AS fecha, tipo,
+                   COALESCE(NULLIF(TRIM(observaciones),''), '') AS detalle, monto
+            FROM gastos_trns
+            WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+            ORDER BY DATE(fecha), tipo
+        """, (local, fecha_desde, fecha_hasta))
+        tot_g = 0.0
+        for r in cur.fetchall() or []:
+            m = float(r['monto'] or 0); tot_g += m
+            ws3.append([r['fecha'].isoformat(), r['tipo'] or '', r['detalle'] or '', m])
+        ws3.append(["TOTAL", "", "", round(tot_g, 2)])
+        ws3.cell(row=ws3.max_row, column=1).font = Font(bold=True)
+        ws3.cell(row=ws3.max_row, column=4).font = Font(bold=True)
+        _autosize(ws3)
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        filename = "fabric_sushi_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
         return Response(
             bio.read(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
