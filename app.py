@@ -14527,24 +14527,35 @@ def api_reporte_bk_export():
                 filas.append([r['local'], r['fecha'], r['terminal'] or '', 'PROPINA',
                               ('QR - ' + desc) if es_qr else ('Tarjeta - ' + desc), es_bk, propina])
 
-        # ── EFECTIVO (remesas) ── incluye remesas espejo de anticipos (marcadas)
+        # ── EFECTIVO (remesas) ── incluye remesas espejo de anticipos (marcadas).
+        # Para remesas USD el importe real esta en total_conversion (USD * cotizacion),
+        # no en monto (que suele venir 0). Convertimos a ARS y aclaramos el detalle USD.
         sql = """
             SELECT local, DATE(fecha) AS fecha, nro_remesa, origen_anticipo_id,
-                   SUM(monto) AS monto
+                   UPPER(COALESCE(divisa, 'ARS')) AS divisa,
+                   monto, monto_usd, cotizacion_divisa,
+                   CASE
+                       WHEN UPPER(COALESCE(divisa, 'ARS')) = 'USD'
+                           THEN COALESCE(NULLIF(total_conversion, 0), monto_usd * cotizacion_divisa, 0)
+                       ELSE monto
+                   END AS monto_ars
             FROM remesas_trns
             WHERE DATE(fecha) BETWEEN %s AND %s
         """
         params = [fecha_desde, fecha_hasta]
         sql = _filtro_local(sql, params, 'local')
-        sql += " GROUP BY local, DATE(fecha), nro_remesa, origen_anticipo_id"
         cur.execute(sql, tuple(params))
         for r in cur.fetchall() or []:
-            monto = float(r['monto'] or 0)
+            monto = float(r['monto_ars'] or 0)
             if monto == 0:
                 continue
             nro = (r['nro_remesa'] or '').strip() or 's/nro'
             es_ant = r['origen_anticipo_id'] is not None
             desc = ('Anticipo - Remesa ' + nro) if es_ant else ('Remesa ' + nro)
+            if r['divisa'] == 'USD':
+                usd = float(r['monto_usd'] or 0)
+                cot = float(r['cotizacion_divisa'] or 0)
+                desc += f" (USD {usd:,.2f} @ {cot:,.2f})"
             filas.append([r['local'], r['fecha'], '', 'EFECTIVO', desc, 0, monto])
 
         # ── MERCADOPAGO ── NORMAL=MP, TIP=PROPINA
