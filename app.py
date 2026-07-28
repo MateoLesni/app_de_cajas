@@ -14675,9 +14675,9 @@ def api_reporte_bk_export():
 @role_min_required(8)
 def api_reporte_bk_export_ventas():
     """
-    Excel de la VENTA TOTAL DEL SISTEMA (Z declarada) leida directo de
-    ventas_trns, agrupada por local + fecha, para el rango + locales elegidos.
-    Todos los locales (no solo BK). Excluye ventas eliminadas.
+    Excel de las ventas declaradas, leidas directo de la tabla ventas_trns
+    (columna venta_total_sistema), agrupadas por local + fecha, para el rango
+    + locales elegidos. Todos los locales (no solo BK). Excluye eliminadas.
     """
     from io import BytesIO
     import openpyxl
@@ -14712,7 +14712,7 @@ def api_reporte_bk_export_ventas():
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Ventas"
-        headers = ["Local", "Fecha", "Venta Total Sistema"]
+        headers = ["Local", "Fecha", "Venta Total"]
         ws.append(headers)
         hfont = Font(bold=True, color="FFFFFF")
         hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
