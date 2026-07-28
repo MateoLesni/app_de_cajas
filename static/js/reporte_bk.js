@@ -147,6 +147,14 @@
     window.location = '/api/reporte-bk/export?' + params.toString();
   }
 
+  // ── Excel de ventas (Z del sistema) ──
+  function descargarExcelVentas() {
+    if (!$('f-desde').value || !$('f-hasta').value) { toast('Elegí el rango de fechas', 'err'); return; }
+    const { params, locs } = buildParams();
+    if (locs.length === 0) { toast('Seleccioná al menos un local', 'err'); return; }
+    window.location = '/api/reporte-bk/export-ventas?' + params.toString();
+  }
+
   // ── Init ──
   document.addEventListener('DOMContentLoaded', function () {
     $('f-desde').value = daysAgoISO(6);
@@ -154,6 +162,7 @@
 
     $('btn-generar').addEventListener('click', generar);
     $('btn-excel').addEventListener('click', descargarExcel);
+    $('btn-excel-ventas').addEventListener('click', descargarExcelVentas);
     $('btn-all').addEventListener('click', () => { document.querySelectorAll('.loc-cb').forEach(cb => cb.checked = true); });
     $('btn-none').addEventListener('click', () => { document.querySelectorAll('.loc-cb').forEach(cb => cb.checked = false); });
 

@@ -613,6 +613,7 @@ def login_required(view):
             'api_reporte_bk_locales',
             'api_reporte_bk_data',
             'api_reporte_bk_export',
+            'api_reporte_bk_export_ventas',
             'logout',
             'static',
         ]
@@ -14653,6 +14654,99 @@ def api_reporte_bk_export():
         wb.save(bio)
         bio.seek(0)
         filename = "medios_cobro_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
+        return Response(
+            bio.read(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': 'attachment; filename="' + filename + '"'}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/reporte-bk/export-ventas', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_bk_export_ventas():
+    """
+    Excel de la VENTA TOTAL DEL SISTEMA (Z declarada) leida directo de
+    ventas_trns, agrupada por local + fecha, para el rango + locales elegidos.
+    Todos los locales (no solo BK). Excluye ventas eliminadas.
+    """
+    from io import BytesIO
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    fecha_desde, fecha_hasta, err = _reporte_bk_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    locales_filtro = _reporte_bk_locales_param(request)
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT local,
+                   DATE(fecha) AS fecha,
+                   SUM(venta_total_sistema) AS venta_total
+            FROM ventas_trns
+            WHERE DATE(fecha) BETWEEN %s AND %s
+              AND estado <> 'eliminado'
+        """
+        params = [fecha_desde, fecha_hasta]
+        if locales_filtro:
+            ph = ','.join(['%s'] * len(locales_filtro))
+            sql += " AND local IN (" + ph + ")"
+            params.extend(locales_filtro)
+        sql += " GROUP BY local, DATE(fecha) ORDER BY local, DATE(fecha)"
+
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall() or []
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Ventas"
+        headers = ["Local", "Fecha", "Venta Total Sistema"]
+        ws.append(headers)
+        hfont = Font(bold=True, color="FFFFFF")
+        hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        for ci in range(1, len(headers) + 1):
+            c = ws.cell(row=1, column=ci)
+            c.font = hfont
+            c.fill = hfill
+            c.alignment = Alignment(horizontal='center')
+
+        total_general = 0.0
+        for r in rows:
+            venta = float(r['venta_total'] or 0)
+            total_general += venta
+            ws.append([
+                r['local'],
+                r['fecha'].isoformat(),
+                venta,
+            ])
+
+        # Fila de total general
+        if rows:
+            ws.append(["TOTAL", "", round(total_general, 2)])
+            last = ws.max_row
+            for ci in range(1, len(headers) + 1):
+                ws.cell(row=last, column=ci).font = Font(bold=True)
+
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 45)
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        filename = "ventas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
         return Response(
             bio.read(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
