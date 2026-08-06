@@ -1606,7 +1606,10 @@ def _ensure_full_brand_set(conn, local, caja, turno, fecha, terminal, lote, usua
 @require_edit_ctx
 def guardar_tarjetas_lote():
     data     = request.get_json() or {}
-    tarjetas = data.get('tarjetas', [])
+    tarjetas = data.get('tarjetas') or []
+    # Descartar elementos que no sean dict (None, strings, etc.) para no romper
+    # con "'NoneType' object has no attribute 'get'" si el front manda basura.
+    tarjetas = [t for t in tarjetas if isinstance(t, dict)]
     if not tarjetas:
         return jsonify(success=False, msg="No se recibieron tarjetas"), 400
 
