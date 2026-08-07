@@ -643,7 +643,7 @@ class OppenClient:
                 "InvoiceType": 0,
                 "Items": [
                     {
-                        "ArtCode": "271240051",  # Artículo genérico
+                        "ArtCode": "OTR-ING",  # Otros ingresos (CC no es venta de mercadería)
                         "Name": cc_data["Name"],  # Descripción del cajero
                         "Qty": 1,
                         "Price": float(cc_data["Price"]),
