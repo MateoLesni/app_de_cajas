@@ -1,12 +1,35 @@
 # Backup semanal de cajasdb → Google Drive
 
-Cloud Function (Gen2) que dumpea la BD **excepto la tabla `users`**, la comprime
-y la sube a una carpeta de Google Drive (Workspace). La dispara Cloud Scheduler
-una vez por semana. Retención: conserva los 12 backups más recientes.
+Cloud Function (Gen2) que dumpea la BD **excepto la tabla `users`** (y las vistas),
+la comprime y la sube a una **Unidad compartida** de Google Drive. La dispara
+Cloud Scheduler una vez por semana. Retención: conserva los 12 backups más recientes.
 
 - Dump en Python puro (no usa `mysqldump`).
+- Solo `BASE TABLE` — excluye las VIEWs (en Cloud SQL tienen definer roto y dan
+  `Access denied` al hacer SELECT sobre ellas).
 - Excluye `users`. Configurable con `EXCLUDE_TABLES` (csv).
 - Conexión a Cloud SQL por unix socket (igual que la app).
+
+## ESTADO: DESPLEGADO Y FUNCIONANDO (ago 2026)
+
+- Function `cajas-backup` (gen2, us-central1), SA `cajas-backup-sa`.
+- Scheduler `cajas-backup-semanal`: lunes 03:00 hora Argentina.
+- Destino: **Unidad compartida** de Drive, folder ID `14cGMfBpVlV3IWzFO4q5QLhktvL3GSoAn`.
+- Prueba OK: `cajasdb_YYYY-MM-DD.sql.gz` ~11 MB.
+
+## Lecciones aprendidas (al desplegar)
+
+1. **Hay que habilitar varias APIs** (te lo pide gcloud, responder `y`):
+   `secretmanager`, `cloudfunctions`, `cloudbuild`, `run`, `artifactregistry`,
+   `drive.googleapis.com`, `cloudscheduler`. Si un comando falla por API deshabilitada,
+   habilitala y **volvé a correr ese comando** (la primera vez suele fallar).
+2. **Cloud SQL en gen2**: `gcloud functions deploy` NO acepta `--set-cloudsql-instances`.
+   Se agrega DESPUÉS con `gcloud run services update ... --add-cloudsql-instances=...`.
+3. **Drive con service account: OBLIGATORIO usar Unidad compartida (Shared Drive).**
+   Compartir una carpeta de "Mi unidad" con el SA NO funciona: da `404 File not found`
+   aunque el permiso figure como Editor (el SA no tiene identidad de Drive propia).
+   Solución: crear una Unidad compartida, agregar el SA como **Administrador de
+   contenido** (necesita crear Y borrar, por la retención), y usar su folder ID.
 
 ---
 
@@ -44,7 +67,7 @@ El email del SA queda:
 
 ## Paso 2 — Carpeta de Google Drive (Workspace)
 
-Carpeta ya creada. **Folder ID:** `1409LfW1oi6VWpGgH-gWOBGbc-oHud_9E`
+Carpeta ya creada. **Folder ID:** `14cGMfBpVlV3IWzFO4q5QLhktvL3GSoAn`
 
 1. Compartir esa carpeta con permiso **Editor** (o agregar como miembro si es
    Unidad compartida) al email del SA:
@@ -86,15 +109,23 @@ gcloud functions deploy cajas-backup \
   --trigger-http \
   --no-allow-unauthenticated \
   --service-account=cajas-backup-sa@awesome-nimbus-480121-j1.iam.gserviceaccount.com \
-  --set-cloudsql-instances=awesome-nimbus-480121-j1:us-central1:bd-cajas-iowa-v3 \
   --timeout=540 \
   --memory=1Gi \
-  --set-env-vars=DB_HOST=/cloudsql/awesome-nimbus-480121-j1:us-central1:bd-cajas-iowa-v3,DB_USER=mate-dev,DB_NAME=cajasdb,DRIVE_FOLDER_ID=1409LfW1oi6VWpGgH-gWOBGbc-oHud_9E,EXCLUDE_TABLES=users,RETENTION=12 \
+  --set-env-vars=DB_HOST=/cloudsql/awesome-nimbus-480121-j1:us-central1:bd-cajas-iowa-v3,DB_USER=mate-dev,DB_NAME=cajasdb,DRIVE_FOLDER_ID=14cGMfBpVlV3IWzFO4q5QLhktvL3GSoAn,EXCLUDE_TABLES=users,RETENTION=12 \
   --set-secrets=DB_PASS=cajas-db-pass:latest
 ```
 
 > `DB_USER=mate-dev` ya está puesto. `DB_PASS` NO va en texto: se lee de Secret
 > Manager vía `--set-secrets`. Nada que reemplazar en este comando.
+>
+> **IMPORTANTE — Cloud SQL en gen2 va en un segundo paso** (el flag
+> `--set-cloudsql-instances` NO existe en `functions deploy`). Después del deploy:
+>
+> ```bash
+> gcloud run services update cajas-backup \
+>   --region=us-central1 \
+>   --add-cloudsql-instances=awesome-nimbus-480121-j1:us-central1:bd-cajas-iowa-v3
+> ```
 
 ---
 
