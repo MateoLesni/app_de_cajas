@@ -13488,6 +13488,7 @@ def api_panel_control_grid():
         LOCALES_EXCLUIDOS = [
             'Local_Test',
             'Modulo 1', 'Modulo 2', 'Modulo 3', 'Modulo 4',
+            'Ev Robleis 1', 'Ev Robleis 2', 'Ev Robleis 3',
             'Eventos Polo',
             'Fabric Dique',
             'Imagina Bocha Cumpleaños',
