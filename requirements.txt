@@ -39,5 +39,9 @@ Flask-Limiter==3.12
 google-cloud-storage==2.18.2
 python-dotenv==1.0.1
 
+# HTTP client (Oppen API + servicio ventas_ng). Llegaba transitivamente por
+# google-cloud-storage; se declara explicito para no depender de eso.
+requests==2.32.3
+
 # Excel/archivos
 openpyxl==3.1.2

@@ -572,6 +572,7 @@ def login_required(view):
             'api_ventas_extras_editar',
             'api_ventas_extras_eliminar',
             'api_ventas_extras_locales',
+            'api_ventas_extras_reportes_diarios',
             'logout',
             'static',
         ]
@@ -14006,6 +14007,53 @@ def api_ventas_extras_locales():
         except Exception: pass
         try: conn.close()
         except Exception: pass
+
+
+@app.route('/api/ventas-extras/reportes-diarios', methods=['POST'])
+@login_required
+@role_min_required(9)
+def api_ventas_extras_reportes_diarios():
+    """
+    Descarga los 8 reportes diarios de ventas desde el servicio ventas_ng
+    y los devuelve empaquetados en un ZIP.
+
+    Body JSON opcional: {"fecha": "YYYY-MM-DD"}  (default: ayer, hora Argentina)
+    """
+    import io
+    import zipfile
+    from datetime import date as _date
+    from modules.reportes_ventas_ng import obtener_reportes, ReportesVentasError
+
+    data = request.get_json(silent=True) or {}
+    fecha_str = (data.get('fecha') or '').strip()
+    fecha_obj = None
+    if fecha_str:
+        try:
+            fecha_obj = _date.fromisoformat(fecha_str)
+        except ValueError:
+            return jsonify(success=False, msg='Fecha inválida, usar YYYY-MM-DD'), 400
+
+    try:
+        fecha_rep, archivos = obtener_reportes(fecha=fecha_obj)
+    except ReportesVentasError as e:
+        return jsonify(success=False, msg=str(e)), 502
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=f'Error inesperado: {e}'), 500
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for a in archivos:
+            zf.writestr(a['nombre'], a['contenido'])
+    buf.seek(0)
+
+    filename = f"reportes_ventas_{fecha_rep}.zip"
+    return Response(
+        buf.read(),
+        mimetype='application/zip',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
 
 
 # =============================================================================

@@ -239,9 +239,52 @@
     }
   }
 
+  // ── Descarga de reportes diarios (servicio ventas_ng) ──
+  async function descargarReportes() {
+    const btn = $('btn-descargar-reportes');
+    const fecha = ($('f-reporte-fecha') || {}).value || null;
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generando...';
+    toast('Generando reportes, puede tardar unos segundos...');
+    try {
+      const resp = await fetch('/api/ventas-extras/reportes-diarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha })
+      });
+      if (!resp.ok) {
+        let msg = 'HTTP ' + resp.status;
+        try { const j = await resp.json(); msg = j.msg || msg; } catch (e) {}
+        throw new Error(msg);
+      }
+      const blob = await resp.blob();
+      // Nombre del archivo: lo manda el backend en Content-Disposition
+      let nombre = 'reportes_ventas.zip';
+      const cd = resp.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="?([^"]+)"?/);
+      if (m) nombre = m[1];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('Reportes descargados', 'ok');
+    } catch (e) {
+      toast('Error: ' + e.message, 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
+  }
+
   // Wire up
   $('btn-refresh').addEventListener('click', load);
   $('btn-nuevo').addEventListener('click', () => openForm(null));
+  $('btn-descargar-reportes').addEventListener('click', descargarReportes);
   $('btn-cancel-form').addEventListener('click', closeForm);
   $('btn-save-form').addEventListener('click', saveForm);
   $('btn-cancel-del').addEventListener('click', closeDelete);

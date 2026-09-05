@@ -107,6 +107,24 @@
     </div>
 
     <div class="ve-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:700; color:#333; font-size:15px;">Reportes diarios de ventas</div>
+          <div style="font-size:12px; color:#888; margin-top:4px;">
+            Descarga los 8 archivos (6 reportes + 2 cruces) que se envían cada mañana. Si no elegís fecha, usa la de ayer.
+          </div>
+        </div>
+        <div class="ve-filters" style="align-items:flex-end;">
+          <div class="field">
+            <label>Fecha del reporte</label>
+            <input type="date" id="f-reporte-fecha" />
+          </div>
+          <button class="btn btn-primary" id="btn-descargar-reportes">Descargar reportes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card">
       <table class="ve-table">
         <thead>
           <tr>
