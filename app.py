@@ -14033,14 +14033,21 @@ def api_ventas_extras_reportes_diarios():
         except ValueError:
             return jsonify(success=False, msg='Fecha inválida, usar YYYY-MM-DD'), 400
 
+    usuario = session.get('username', '?')
+    print(f"[REPORTES-VENTAS] Solicitud de '{usuario}' (fecha={fecha_str or 'ayer'})")
+
     try:
         fecha_rep, archivos = obtener_reportes(fecha=fecha_obj)
     except ReportesVentasError as e:
+        print(f"[REPORTES-VENTAS] ❌ Fallo para '{usuario}': {e}")
         return jsonify(success=False, msg=str(e)), 502
     except Exception as e:
         import traceback
         traceback.print_exc()
+        print(f"[REPORTES-VENTAS] ❌ Error inesperado para '{usuario}': {e}")
         return jsonify(success=False, msg=f'Error inesperado: {e}'), 500
+
+    print(f"[REPORTES-VENTAS] ✅ {len(archivos)} archivo(s) para '{usuario}' (fecha={fecha_rep})")
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:

@@ -20,8 +20,9 @@ import requests
 VENTAS_NG_URL = os.getenv("VENTAS_NG_URL", "http://35.193.252.141:8000")
 VENTAS_NG_API_KEY = os.getenv("VENTAS_NG_API_KEY", "")
 
-# La generacion tarda ~5-10s (MySQL + render PIL de 8 imagenes).
-TIMEOUT_SECONDS = 90
+# La generacion tarda ~2-10s (MySQL + render PIL de 8 imagenes). 30s da margen
+# de sobra sin dejar al usuario esperando de mas si el servicio no responde.
+TIMEOUT_SECONDS = 30
 
 
 class ReportesVentasError(Exception):
@@ -70,6 +71,10 @@ def obtener_reportes(fecha: Optional[date] = None) -> Tuple[str, List[dict]]:
         )
     if resp.status_code == 400:
         raise ReportesVentasError("Fecha invalida.")
+    if resp.status_code == 429:
+        raise ReportesVentasError(
+            "Se hicieron demasiadas descargas seguidas. Esperá un minuto y reintentá."
+        )
     if resp.status_code != 200:
         try:
             detail = resp.json().get("detail", resp.text)
