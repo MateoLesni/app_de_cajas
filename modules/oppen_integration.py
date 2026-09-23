@@ -8,6 +8,7 @@ Este módulo maneja:
 - Manejo de errores y logging detallado
 """
 
+import os
 import requests
 import logging
 from datetime import datetime, timedelta
@@ -698,9 +699,21 @@ class OppenClient:
         url = f"{self.BASE_URL}/genericapi/ApiNg/Receipt"
 
         try:
-            # Preparar Invoices - mantener InvoiceNr, incluir Amount solo si viene
+            # Preparar Invoices.
+            #  - Fila de factura: {InvoiceNr, Amount?}
+            #  - Fila de ANTICIPO (consumo): {OnAccNr, DebtType:1, InvoiceAmount, Amount}
+            #    con monto NEGATIVO (cancela la factura sin plata nueva). Ver ANTICIPOS_OPPEN.md §4.2
             invoices_cleaned = []
             for inv in recibo_data.get("Invoices", []):
+                if inv.get("OnAccNr") is not None:
+                    monto = round(float(inv.get("Amount", inv.get("InvoiceAmount", 0))), 2)
+                    invoices_cleaned.append({
+                        "OnAccNr": int(inv["OnAccNr"]),
+                        "DebtType": 1,
+                        "InvoiceAmount": monto,
+                        "Amount": monto,
+                    })
+                    continue
                 inv_entry = {"InvoiceNr": inv["InvoiceNr"]}
                 if "Amount" in inv and inv["Amount"]:
                     inv_entry["Amount"] = inv["Amount"]
@@ -752,6 +765,284 @@ class OppenClient:
             error_msg = f"Error: {str(e)}"
             logger.error(f"❌ {error_msg}")
             return False, error_msg, None
+
+    def create_anticipo(self, anticipo_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict]]:
+        """
+        Crea un ANTICIPO en Oppen (ver ANTICIPOS_OPPEN.md).
+
+        Un anticipo es un Recibo (Office 100) con una unica fila de Invoices
+        con DebtType=1 y SIN InvoiceNr. Se envia SIEMPRE aprobado (Status=1):
+        en borrador el OnAccNr viene null y Receipt no tiene PUT, asi que no
+        habria forma de aprobarlo despues.
+
+        anticipo_data: TransDate, CustCode, Labels, RefStr, Amount, PayMode, Comment
+
+        Returns (ok, msg, response). En response:
+            SerNr                 -> N del recibo
+            Invoices[0].OnAccNr   -> N DE ANTICIPO (lo que se consume despues)
+        """
+        if not self.token:
+            return False, "No autenticado", None
+
+        url = f"{self.BASE_URL}/genericapi/ApiNg/Receipt"
+        try:
+            amount = round(float(anticipo_data["Amount"]), 2)
+            if amount <= 0:
+                return False, "El monto del anticipo debe ser mayor a cero", None
+
+            pm = {"PayMode": anticipo_data["PayMode"], "Amount": amount}
+            comment = (anticipo_data.get("Comment") or "").strip()
+            if comment:
+                pm["Comment"] = comment
+
+            payload = {
+                "Office": self.DEFAULT_OFFICE,
+                "CustCode": anticipo_data.get("CustCode", self.DEFAULT_CUSTOMER),
+                "TransDate": anticipo_data["TransDate"],
+                "Labels": anticipo_data.get("Labels", ""),
+                "RefStr": anticipo_data.get("RefStr", ""),
+                "createUser": "API",
+                "Status": 1,
+                "Invoices": [{"DebtType": 1, "InvoiceAmount": amount, "Amount": amount}],
+                "PayModes": [pm],
+            }
+
+            import json
+            print(f"[ANTICIPO-OPPEN] POST {url}")
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+
+            response = self.session.post(url, json=payload, timeout=30)
+
+            if response.status_code not in (200, 201):
+                error_msg = f"Error HTTP {response.status_code}: {response.text[:800]}"
+                print(f"[ANTICIPO-OPPEN] ❌ {error_msg}")
+                return False, error_msg, None
+
+            data = response.json()
+            sernr = data.get("SerNr")
+            filas = data.get("Invoices") or []
+            onaccnr = filas[0].get("OnAccNr") if filas else None
+            if not onaccnr:
+                # Sin OnAccNr el anticipo no sirve para consumir; lo tratamos como fallo
+                # (pero el recibo quedo creado en Oppen: se informa el SerNr para revisarlo).
+                error_msg = f"Oppen creo el recibo {sernr} pero no devolvio OnAccNr (anticipo sin numero)"
+                print(f"[ANTICIPO-OPPEN] ❌ {error_msg}")
+                return False, error_msg, data
+
+            print(f"[ANTICIPO-OPPEN] ✅ Recibo {sernr} | OnAccNr (N anticipo) = {onaccnr}")
+            return True, f"Anticipo creado: N {onaccnr} (recibo {sernr})", data
+
+        except Exception as e:
+            error_msg = f"Error: {str(e)}"
+            print(f"[ANTICIPO-OPPEN] ❌ {error_msg}")
+            return False, error_msg, None
+
+
+# =============================================================================
+# ANTICIPOS EN OPPEN (creacion + persistencia del OnAccNr)
+# =============================================================================
+# Feature flag: mientras no este en "1", crear_anticipo_en_oppen no envia nada
+# (permite deployar sin crear anticipos reales hasta validar en ngprueba).
+ANTICIPOS_OPPEN_ENABLED = os.getenv("ANTICIPOS_OPPEN_ENABLED", "0") == "1"
+# Override de URL SOLO para anticipos (ej. https://ngprueba.oppen.io). Si esta
+# vacio se usa OppenClient.BASE_URL (el mismo de facturas/recibos).
+ANTICIPOS_OPPEN_URL = (os.getenv("ANTICIPOS_OPPEN_URL") or "").strip()
+# PayMode generico hasta que el sector confirme la lista (editable por medio en BD).
+ANTICIPOS_PAYMODE_DEFAULT = "INTERC"
+
+
+def _get_label_oppen(cur, local: str) -> str:
+    """cod_oppen del local (sin razon social); si no hay, el nombre del local."""
+    cur.execute("SELECT cod_oppen FROM labels_oppen WHERE local = %s LIMIT 1", (local,))
+    row = cur.fetchone()
+    label = (row['cod_oppen'] if row else None) or local
+    if ',' in label:
+        label = label.split(',')[0].strip()
+    return label
+
+
+def _ensure_anticipos_oppen_columns(conn) -> None:
+    """Auto-migracion inline (patron del proyecto) de las columnas de migrations/15."""
+    cur = conn.cursor()
+    try:
+        def _has(table, col):
+            cur.execute("""
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s
+            """, (table, col))
+            r = cur.fetchone()
+            return (r[0] if isinstance(r, tuple) else list(r.values())[0]) > 0
+
+        alters = [
+            ('anticipos_recibidos', 'oppen_sernr',      "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_sernr BIGINT NULL"),
+            ('anticipos_recibidos', 'oppen_onaccnr',    "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_onaccnr BIGINT NULL"),
+            ('anticipos_recibidos', 'oppen_estado',     "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_estado VARCHAR(20) NULL"),
+            ('anticipos_recibidos', 'oppen_error',      "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_error TEXT NULL"),
+            ('anticipos_recibidos', 'oppen_enviado_at', "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_enviado_at DATETIME NULL"),
+            ('medios_anticipos',    'paymode_oppen',    "ALTER TABLE medios_anticipos ADD COLUMN paymode_oppen VARCHAR(30) NULL"),
+            ('anticipos_estados_caja', 'oppen_consumo_sernr', "ALTER TABLE anticipos_estados_caja ADD COLUMN oppen_consumo_sernr BIGINT NULL"),
+        ]
+        for table, col, ddl in alters:
+            if not _has(table, col):
+                cur.execute(ddl)
+                conn.commit()
+                print(f"[MIGRATE] {table}.{col} agregado")
+                if col == 'paymode_oppen':
+                    cur.execute("UPDATE medios_anticipos SET paymode_oppen = %s WHERE paymode_oppen IS NULL",
+                                (ANTICIPOS_PAYMODE_DEFAULT,))
+                    conn.commit()
+    except Exception as e:
+        print(f"[MIGRATE] ⚠️ _ensure_anticipos_oppen_columns: {e}")
+    finally:
+        try: cur.close()
+        except Exception: pass
+
+
+def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Envia a Oppen un anticipo ya guardado en anticipos_recibidos y persiste
+    SerNr + OnAccNr. Idempotente: si ya tiene OnAccNr no reenvia.
+
+    Reglas (ANTICIPOS_OPPEN.md):
+      - Siempre Status=1. No hay PUT en Receipt: un error se corrige con
+        contra-recibos, NO editando -> validar todo ANTES de mandar.
+      - El monto va en ARS: si el anticipo es en otra divisa se convierte con
+        cotizacion_divisa (obligatoria en ese caso).
+      - PayMode: medios_anticipos.paymode_oppen (editable), default INTERC.
+      - CustCode: Consumidor Final (decision actual).
+      - RefStr: "<fecha evento> <local>" ; Comment: N transaccion + cliente.
+    """
+    if not ANTICIPOS_OPPEN_ENABLED:
+        return {
+            'success': False, 'skipped': True,
+            'message': 'Integración de anticipos con Oppen desactivada (ANTICIPOS_OPPEN_ENABLED != 1)'
+        }
+
+    _ensure_anticipos_oppen_columns(conn)
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT a.id, a.local, a.fecha_pago, a.fecha_evento, a.importe, a.divisa,
+                   a.cotizacion_divisa, a.cliente, a.numero_transaccion, a.medio_pago_id,
+                   a.estado, a.oppen_sernr, a.oppen_onaccnr,
+                   m.paymode_oppen, m.nombre AS medio_nombre
+            FROM anticipos_recibidos a
+            LEFT JOIN medios_anticipos m ON m.id = a.medio_pago_id
+            WHERE a.id = %s
+        """, (anticipo_id,))
+        a = cur.fetchone()
+        if not a:
+            return {'success': False, 'message': f'Anticipo {anticipo_id} no encontrado'}
+        if a['estado'] == 'eliminado_global':
+            return {'success': False, 'message': 'El anticipo está eliminado; no se envía a Oppen'}
+        if a['oppen_onaccnr']:
+            return {
+                'success': True, 'already': True,
+                'onaccnr': int(a['oppen_onaccnr']), 'sernr': a['oppen_sernr'],
+                'message': f"El anticipo ya está en Oppen (N {a['oppen_onaccnr']}, recibo {a['oppen_sernr']})"
+            }
+
+        # Monto en ARS
+        divisa = (a['divisa'] or 'ARS').strip().upper()
+        importe = float(a['importe'] or 0)
+        if divisa == 'ARS':
+            monto = round(importe, 2)
+        else:
+            cot = a['cotizacion_divisa']
+            if not cot or float(cot) <= 0:
+                return {'success': False,
+                        'message': f'Anticipo en {divisa} sin cotización: no se puede convertir a ARS para Oppen'}
+            monto = round(importe * float(cot), 2)
+        if monto <= 0:
+            return {'success': False, 'message': 'El monto del anticipo debe ser mayor a cero'}
+
+        paymode = (a['paymode_oppen'] or ANTICIPOS_PAYMODE_DEFAULT).strip()
+        label = _get_label_oppen(cur, a['local'])
+        fecha_pago = a['fecha_pago'].isoformat() if hasattr(a['fecha_pago'], 'isoformat') else str(a['fecha_pago'])
+        fecha_evento = a['fecha_evento'].isoformat() if hasattr(a['fecha_evento'], 'isoformat') else str(a['fecha_evento'])
+
+        comment = (a['numero_transaccion'] or f"Anticipo #{a['id']}").strip()
+        comment = f"{comment} - {a['cliente']}"[:120]
+
+        anticipo_data = {
+            "TransDate": fecha_pago,
+            "CustCode": OppenClient.DEFAULT_CUSTOMER,
+            "Labels": label,
+            "RefStr": f"{fecha_evento} {a['local']}",
+            "Amount": monto,
+            "PayMode": paymode,
+            "Comment": comment,
+        }
+
+        client = OppenClient()
+        if ANTICIPOS_OPPEN_URL:
+            client.BASE_URL = ANTICIPOS_OPPEN_URL.rstrip('/')
+        print(f"[ANTICIPO-OPPEN] anticipo {a['id']} ({a['local']}, {divisa} {importe} -> ARS {monto}, PayMode {paymode}) via {client.BASE_URL}")
+
+        try:
+            client.authenticate()
+        except OppenAPIError as e:
+            msg = f"No se pudo autenticar en Oppen: {e}"
+            _marcar_anticipo_oppen_error(conn, a['id'], msg)
+            return {'success': False, 'message': msg}
+
+        ok, msg, resp = client.create_anticipo(anticipo_data)
+
+        if ok:
+            sernr = resp.get('SerNr')
+            onaccnr = int(resp['Invoices'][0]['OnAccNr'])
+            cur_u = conn.cursor()
+            cur_u.execute("""
+                UPDATE anticipos_recibidos
+                SET oppen_sernr = %s, oppen_onaccnr = %s, oppen_estado = 'creado',
+                    oppen_error = NULL, oppen_enviado_at = NOW()
+                WHERE id = %s
+            """, (sernr, onaccnr, a['id']))
+            conn.commit()
+            cur_u.close()
+            log_sync_attempt(
+                conn=conn, sync_type='anticipo', registro_id=a['id'],
+                local=a['local'], fecha=fecha_pago, fecha_auditado=fecha_pago,
+                local_auditado=a['local'], status='success', sernr_oppen=sernr,
+                request_payload=anticipo_data,
+                response_payload={'SerNr': sernr, 'OnAccNr': onaccnr},
+            )
+            return {'success': True, 'onaccnr': onaccnr, 'sernr': sernr, 'message': msg}
+
+        _marcar_anticipo_oppen_error(conn, a['id'], msg)
+        log_sync_attempt(
+            conn=conn, sync_type='anticipo', registro_id=a['id'],
+            local=a['local'], fecha=fecha_pago, fecha_auditado=fecha_pago,
+            local_auditado=a['local'], status='failed', error_message=msg,
+            request_payload=anticipo_data, response_payload=resp,
+        )
+        return {'success': False, 'message': msg, 'sernr_huerfano': (resp or {}).get('SerNr')}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        msg = f"Error inesperado enviando anticipo a Oppen: {e}"
+        try:
+            _marcar_anticipo_oppen_error(conn, anticipo_id, msg)
+        except Exception:
+            pass
+        return {'success': False, 'message': msg}
+    finally:
+        try: cur.close()
+        except Exception: pass
+
+
+def _marcar_anticipo_oppen_error(conn, anticipo_id: int, msg: str) -> None:
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            UPDATE anticipos_recibidos
+            SET oppen_estado = 'error', oppen_error = %s
+            WHERE id = %s AND oppen_onaccnr IS NULL
+        """, ((msg or '')[:2000], anticipo_id))
+        conn.commit()
+    finally:
+        cur.close()
 
 
 def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
@@ -1221,6 +1512,51 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             print(f"[RECIBO]   ID={f.get('id')} tipo={f.get('tipo')} sernr={f.get('sernr_oppen')} monto_bd={monto_bd} total_oppen={t_oppen} diff={diff}")
         print(f"[RECIBO] Total facturas (usando total_oppen): {total_facturas}")
 
+        # 3b. ANTICIPOS consumidos en esta caja/fecha que ya existen en Oppen (OnAccNr).
+        # Van como filas NEGATIVAS de Invoices (DebtType=1): el anticipo cancela la
+        # factura sin plata nueva (ANTICIPOS_OPPEN.md §4.2). Se agrupa por OnAccNr.
+        # Los anticipos SIN OnAccNr (locales viejos / envio fallido) NO se tocan: siguen
+        # absorbiendose en DIFERENCIA como hasta ahora.
+        total_anticipos_oppen = 0.0
+        anticipos_oppen_rows = []      # [{onaccnr, monto, anticipo_ids:[..]}]
+        anticipos_sin_oppen = []       # ids consumidos localmente pero sin OnAccNr (aviso)
+        try:
+            _ensure_anticipos_oppen_columns(conn)
+            cur_ant = conn.cursor(dictionary=True)
+            cur_ant.execute("""
+                SELECT aec.id AS aec_id, aec.anticipo_id, aec.importe_consumido,
+                       ar.oppen_onaccnr, ar.cliente
+                FROM anticipos_estados_caja aec
+                JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
+                WHERE aec.local = %s
+                  AND DATE(aec.fecha) = %s
+                  AND aec.estado = 'consumido'
+                  AND aec.oppen_consumo_sernr IS NULL
+            """, (local, fecha))
+            por_onacc = {}
+            for r in cur_ant.fetchall() or []:
+                monto_c = round(float(r['importe_consumido'] or 0), 2)
+                if monto_c <= 0:
+                    continue
+                if not r['oppen_onaccnr']:
+                    anticipos_sin_oppen.append(int(r['anticipo_id']))
+                    continue
+                k = int(r['oppen_onaccnr'])
+                g = por_onacc.setdefault(k, {'onaccnr': k, 'monto': 0.0, 'aec_ids': [], 'cliente': r['cliente']})
+                g['monto'] = round(g['monto'] + monto_c, 2)
+                g['aec_ids'].append(int(r['aec_id']))
+            cur_ant.close()
+            for g in por_onacc.values():
+                invoices.append({"OnAccNr": g['onaccnr'], "Amount": -g['monto']})
+                total_anticipos_oppen = round(total_anticipos_oppen + g['monto'], 2)
+                anticipos_oppen_rows.append(g)
+                print(f"[RECIBO]   ANTICIPO OnAccNr={g['onaccnr']} ({g['cliente']}) consume -{g['monto']}")
+            if anticipos_sin_oppen:
+                print(f"[RECIBO] ⚠️ Anticipos consumidos SIN OnAccNr (no van a Oppen, se absorben en DIFERENCIA): {anticipos_sin_oppen}")
+        except Exception as e_ant:
+            print(f"[RECIBO] ⚠️ No se pudieron cargar anticipos para el recibo: {e_ant}")
+        print(f"[RECIBO] Total anticipos consumidos via Oppen: {total_anticipos_oppen}")
+
         # 4. Obtener PayModes directamente desde la BD
         # Consulta simplificada: obtener solo los totales por forma de pago
         try:
@@ -1434,6 +1770,10 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 cta_cte_total += total_cc_nuevas
 
                 total_cobrado = sum([efectivo_total, tarjeta_total, mp_total, rappi_total, gastos_total, pedidosya_total, cta_cte_total])
+                # Los anticipos que se consumen via Oppen (fila negativa OnAccNr) son
+                # cobro real: van en total_cobrado para que NO aparezcan como DIFERENCIA.
+                # (Igual que el calculo local, que suma anticipos_estados_caja.importe_consumido.)
+                total_cobrado += total_anticipos_oppen
 
                 # DIFERENCIA = total_cobrado - venta_total_sistema (invertido)
                 diferencia_val = total_cobrado - venta_total_sistema
@@ -1512,10 +1852,12 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                     "Amount": amount,
                 })
 
-        # Ajustar DISCOVERY para que la suma neta de PayModes sea EXACTAMENTE igual al total_facturas (total_oppen)
-        # Esto absorbe cualquier centavo de diferencia por redondeo IVA
+        # Ajustar DISCOVERY para que la suma neta de PayModes sea EXACTAMENTE igual al
+        # neto de Invoices: total_facturas (total_oppen) MENOS los anticipos consumidos
+        # via Oppen (filas negativas OnAccNr). Absorbe centavos de redondeo IVA.
+        target_paymodes = round(total_facturas - total_anticipos_oppen, 2)
         sum_neto_pre = round(sum(pm['Amount'] for pm in pay_modes), 2)
-        ajuste = round(total_facturas - sum_neto_pre, 2)
+        ajuste = round(target_paymodes - sum_neto_pre, 2)
         if ajuste != 0:
             # Buscar el DISCOVERY existente y ajustarlo
             discovery_found = False
@@ -1592,15 +1934,43 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             if success:
                 logger.info(f"✅ Recibo creado como DESAPROBADO (Status: 0) por balance negativo en factura")
 
+        # ONLYPOSNRSERR = el ERP dice que un anticipo NO tiene saldo (ya consumido /
+        # revertido). Es la fuente de verdad (ANTICIPOS_OPPEN.md §6.4): NO se reintenta
+        # sin la fila (dejaria el consumo fuera de Oppen en silencio). Se informa claro.
+        if not success and 'ONLYPOSNRSERR' in (message or ''):
+            nros = ', '.join(str(g['onaccnr']) for g in anticipos_oppen_rows) or '?'
+            message = (f"Oppen rechazó el consumo de anticipo (sin saldo en el ERP): OnAccNr {nros}. "
+                       f"Revisar el anticipo en Oppen (¿ya consumido o revertido?) antes de re-auditar. "
+                       f"Detalle: {message}")
+            print(f"[RECIBO] ❌ {message}")
+
         # Preparar datos resumidos para logging (no guardamos todos los PayModes para ahorrar espacio)
         request_payload_log = {
             'num_invoices': len(invoices),
             'num_paymodes': len(pay_modes),
-            'total_facturas': total_facturas
+            'total_facturas': total_facturas,
+            'anticipos_oppen': [{'onaccnr': g['onaccnr'], 'monto': g['monto']} for g in anticipos_oppen_rows],
+            'anticipos_sin_oppen': anticipos_sin_oppen,
         }
 
         if success:
             sernr = response_data.get('SerNr') if response_data else None
+
+            # Marcar en anticipos_estados_caja que recibo de Oppen consumio cada anticipo
+            # (evita re-consumir si se vuelve a generar el recibo).
+            if sernr and anticipos_oppen_rows:
+                try:
+                    cur_mk = conn.cursor()
+                    aec_ids = [i for g in anticipos_oppen_rows for i in g['aec_ids']]
+                    ph = ','.join(['%s'] * len(aec_ids))
+                    cur_mk.execute(
+                        f"UPDATE anticipos_estados_caja SET oppen_consumo_sernr = %s WHERE id IN ({ph})",
+                        (sernr, *aec_ids))
+                    conn.commit()
+                    cur_mk.close()
+                    print(f"[RECIBO] ✅ {len(aec_ids)} consumo(s) de anticipo marcados con recibo {sernr}")
+                except Exception as e_mk:
+                    print(f"[RECIBO] ⚠️ No se pudo marcar oppen_consumo_sernr: {e_mk}")
 
             # Log sync exitoso
             log_sync_attempt(

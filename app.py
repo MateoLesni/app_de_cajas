@@ -209,6 +209,10 @@ def can_user_access_local_for_anticipos(local: str) -> bool:
     if lvl >= 6:
         return True
 
+    # Auditor (nivel 3): ve todos los locales; puede crear anticipos desde su vista
+    if lvl == 3:
+        return True
+
     # Usuario con rol 'anticipos' (nivel 4): verificar permiso específico
     if lvl == 4:
         allowed_locales = get_user_allowed_locales()
@@ -536,6 +540,7 @@ def login_required(view):
             'api_mi_perfil_anticipos',
             'listar_anticipos_recibidos',
             'crear_anticipo_recibido',
+            'api_anticipo_enviar_oppen',  # reintento de envio a Oppen (OnAccNr)
             'eliminar_anticipo_recibido',
             'api_locales',
             'api_locales_options',
@@ -2840,7 +2845,8 @@ def crear_anticipo_recibido():
     }
     """
     user_level = get_user_level()
-    if user_level < 4:
+    # Nivel 3 (auditor) tambien puede crear anticipos desde su vista
+    if user_level < 3:
         return jsonify(success=False, msg="No tenés permisos para crear anticipos recibidos"), 403
 
     data = request.get_json() or {}
@@ -3111,19 +3117,69 @@ def crear_anticipo_recibido():
             descripcion=f"Anticipo recibido creado: {cliente} - {divisa} {importe}" + (f" (Remesa {nro_remesa} creada)" if remesa_id else "")
         )
 
+        # Enviar a Oppen (obtiene OnAccNr). NUNCA bloquea la creacion local: si
+        # falla queda oppen_estado='error' y se reintenta con /api/anticipos/<id>/enviar_oppen.
+        # Con ANTICIPOS_OPPEN_ENABLED != 1 devuelve skipped y no envia nada.
+        oppen = None
+        if data.get('enviar_oppen', True):
+            try:
+                from modules.oppen_integration import crear_anticipo_en_oppen
+                oppen = crear_anticipo_en_oppen(conn, anticipo_id, usuario)
+            except Exception as e_op:
+                print(f"⚠️ Error enviando anticipo {anticipo_id} a Oppen: {e_op}")
+                oppen = {'success': False, 'message': str(e_op)}
+
         cur.close()
         conn.close()
 
         msg = "Anticipo recibido creado correctamente"
         if remesa_id:
             msg += f". Remesa N° {nro_remesa} creada automaticamente."
-        return jsonify(success=True, msg=msg, anticipo_id=anticipo_id, remesa_id=remesa_id)
+        if oppen and not oppen.get('skipped'):
+            if oppen.get('success'):
+                msg += f". Oppen: anticipo N° {oppen.get('onaccnr')} (recibo {oppen.get('sernr')})."
+            else:
+                msg += f". ⚠️ No se pudo enviar a Oppen: {oppen.get('message')}"
+        return jsonify(success=True, msg=msg, anticipo_id=anticipo_id, remesa_id=remesa_id, oppen=oppen)
 
     except Exception as e:
         print("❌ ERROR crear_anticipo_recibido:", e)
         import traceback
         traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos/<int:anticipo_id>/enviar_oppen', methods=['POST'])
+@login_required
+def api_anticipo_enviar_oppen(anticipo_id):
+    """
+    Envia (o reintenta) un anticipo ya creado a Oppen y guarda su OnAccNr.
+    Idempotente: si ya tiene OnAccNr no reenvia. Nivel >= 3 (auditor).
+    """
+    if get_user_level() < 3:
+        return jsonify(success=False, msg="No tenés permisos para enviar anticipos a Oppen"), 403
+
+    conn = get_db_connection()
+    try:
+        from modules.oppen_integration import crear_anticipo_en_oppen
+        r = crear_anticipo_en_oppen(conn, anticipo_id, session.get('username'))
+        ok = bool(r.get('success'))
+        code = 200 if ok else (409 if r.get('skipped') else 502)
+        return jsonify(
+            success=ok,
+            msg=r.get('message'),
+            onaccnr=r.get('onaccnr'),
+            sernr=r.get('sernr'),
+            already=bool(r.get('already')),
+            skipped=bool(r.get('skipped')),
+        ), code
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: conn.close()
+        except Exception: pass
 
 
 @app.route('/api/anticipos_recibidos/listar', methods=['GET'])
