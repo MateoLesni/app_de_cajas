@@ -540,7 +540,12 @@ def login_required(view):
             'api_mi_perfil_anticipos',
             'listar_anticipos_recibidos',
             'crear_anticipo_recibido',
+            'editar_anticipo_recibido',
             'api_anticipo_enviar_oppen',  # reintento de envio a Oppen (OnAccNr)
+            'api_medio_anticipo_paymode',
+            'files.view_item',
+            'files.download_item',
+            'files.upload',
             'eliminar_anticipo_recibido',
             'api_locales',
             'api_locales_options',
@@ -3200,123 +3205,361 @@ def listar_anticipos_recibidos():
     if user_level < 3:
         return jsonify(success=False, msg="No tenés permisos para ver anticipos recibidos"), 403
 
-    estado = request.args.get('estado', '').strip()
-    local = request.args.get('local', '').strip()
-    fecha_desde = request.args.get('fecha_desde', '').strip()
-    fecha_hasta = request.args.get('fecha_hasta', '').strip()
+    a = request.args
+    estado       = a.get('estado', '').strip()
+    local        = a.get('local', '').strip()
+    fecha_desde  = a.get('fecha_desde', '').strip()
+    fecha_hasta  = a.get('fecha_hasta', '').strip()
+    cliente      = a.get('cliente', '').strip()
+    usuario_f    = a.get('usuario', '').strip()
+    divisa       = a.get('divisa', '').strip().upper()
+    nro_trans    = a.get('nro_transaccion', '').strip()
+    nro_oppen    = a.get('nro_anticipo', '').strip()     # OnAccNr (N de anticipo Oppen)
+    oppen        = a.get('oppen', '').strip().lower()     # '', 'creado', 'error', 'pendiente'
+    medio_id     = a.get('medio_pago_id', '').strip()
+    busqueda     = a.get('q', '').strip()                 # texto libre: cliente / transaccion / observaciones / N oppen
+    try:
+        page = max(1, int(a.get('page', 1)))
+    except ValueError:
+        page = 1
+    try:
+        per_page = int(a.get('per_page', 25))
+    except ValueError:
+        per_page = 25
+    per_page = max(5, min(per_page, 200))
+    sort = a.get('sort', 'fecha_evento').strip()
+    direccion = 'ASC' if a.get('dir', 'desc').lower() == 'asc' else 'DESC'
+    SORT_COLS = {
+        'fecha_evento': 'ar.fecha_evento', 'fecha_pago': 'ar.fecha_pago',
+        'importe': 'importe_ars', 'cliente': 'ar.cliente', 'local': 'ar.local',
+        'created_at': 'ar.created_at', 'nro_anticipo': 'ar.oppen_onaccnr', 'id': 'ar.id',
+    }
+    order_col = SORT_COLS.get(sort, 'ar.fecha_evento')
 
     try:
         conn = get_db_connection()
+        from modules.oppen_integration import _ensure_anticipos_oppen_columns
+        _ensure_anticipos_oppen_columns(conn)
         cur = conn.cursor(dictionary=True)
 
-        # Construir query con filtros opcionales
-        # CORREGIDO: Verificar el estado real consultando anticipos_estados_caja
-        sql = """
+        # estado_real: si tiene un consumo registrado en caja es 'consumido' aunque
+        # ar.estado diga otra cosa (misma logica que la version anterior, pero en SQL
+        # para poder filtrar y paginar server-side).
+        base_from = """
+            FROM anticipos_recibidos ar
+            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
+            LEFT JOIN (
+                SELECT anticipo_id, COUNT(*) AS n_consumos, MAX(fecha) AS fecha_consumo,
+                       MAX(caja) AS caja_consumo, MAX(oppen_consumo_sernr) AS oppen_consumo_sernr
+                FROM anticipos_estados_caja
+                WHERE estado = 'consumido'
+                GROUP BY anticipo_id
+            ) ec ON ec.anticipo_id = ar.id
+        """
+        estado_real_expr = ("CASE WHEN ar.estado = 'eliminado_global' THEN 'eliminado_global' "
+                            "WHEN COALESCE(ec.n_consumos,0) > 0 THEN 'consumido' ELSE ar.estado END")
+        importe_ars_expr = """CASE WHEN ar.divisa IS NOT NULL AND ar.divisa <> 'ARS' AND ar.cotizacion_divisa IS NOT NULL
+                                   THEN ar.importe * ar.cotizacion_divisa ELSE ar.importe END"""
+
+        where = " WHERE 1=1"
+        params = []
+
+        if user_level == 4:
+            allowed_locales = get_user_allowed_locales()
+            if not allowed_locales:
+                return jsonify(success=True, anticipos=[], total=0, page=1, per_page=per_page, pages=0, stats={})
+            ph = ','.join(['%s'] * len(allowed_locales))
+            where += f" AND ar.local IN ({ph})"
+            params.extend(allowed_locales)
+
+        if estado:
+            where += f" AND ({estado_real_expr}) = %s"
+            params.append(estado)
+        if local:
+            where += " AND ar.local = %s"; params.append(local)
+        if fecha_desde:
+            where += " AND ar.fecha_evento >= %s"; params.append(_normalize_fecha(fecha_desde))
+        if fecha_hasta:
+            where += " AND ar.fecha_evento <= %s"; params.append(_normalize_fecha(fecha_hasta))
+        if cliente:
+            where += " AND ar.cliente LIKE %s"; params.append(f"%{cliente}%")
+        if usuario_f:
+            where += " AND ar.created_by LIKE %s"; params.append(f"%{usuario_f}%")
+        if divisa:
+            where += " AND COALESCE(ar.divisa,'ARS') = %s"; params.append(divisa)
+        if nro_trans:
+            where += " AND ar.numero_transaccion LIKE %s"; params.append(f"%{nro_trans}%")
+        if nro_oppen:
+            where += " AND CAST(ar.oppen_onaccnr AS CHAR) LIKE %s"; params.append(f"%{nro_oppen}%")
+        if medio_id:
+            where += " AND ar.medio_pago_id = %s"; params.append(medio_id)
+        if oppen == 'creado':
+            where += " AND ar.oppen_onaccnr IS NOT NULL"
+        elif oppen == 'error':
+            where += " AND ar.oppen_onaccnr IS NULL AND ar.oppen_estado = 'error'"
+        elif oppen == 'pendiente':
+            where += " AND ar.oppen_onaccnr IS NULL AND (ar.oppen_estado IS NULL OR ar.oppen_estado <> 'error')"
+        if busqueda:
+            where += """ AND (ar.cliente LIKE %s OR ar.numero_transaccion LIKE %s
+                              OR ar.observaciones LIKE %s OR CAST(ar.oppen_onaccnr AS CHAR) LIKE %s
+                              OR CAST(ar.id AS CHAR) = %s)"""
+            like = f"%{busqueda}%"
+            params.extend([like, like, like, like, busqueda])
+
+        # Total + stats sobre el conjunto filtrado (sin paginar)
+        cur.execute(f"""
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN ({estado_real_expr}) = 'pendiente' THEN 1 ELSE 0 END) AS n_pendientes,
+                   SUM(CASE WHEN ({estado_real_expr}) = 'consumido' THEN 1 ELSE 0 END) AS n_consumidos,
+                   SUM(CASE WHEN ({estado_real_expr}) = 'eliminado_global' THEN 1 ELSE 0 END) AS n_eliminados,
+                   COALESCE(SUM(CASE WHEN ({estado_real_expr}) = 'pendiente' THEN ({importe_ars_expr}) ELSE 0 END),0) AS monto_pendiente,
+                   COALESCE(SUM(CASE WHEN ({estado_real_expr}) = 'consumido' THEN ({importe_ars_expr}) ELSE 0 END),0) AS monto_consumido,
+                   SUM(CASE WHEN ar.oppen_onaccnr IS NOT NULL THEN 1 ELSE 0 END) AS n_oppen_ok,
+                   SUM(CASE WHEN ar.oppen_onaccnr IS NULL AND ar.oppen_estado = 'error' THEN 1 ELSE 0 END) AS n_oppen_error
+            {base_from}{where}
+        """, params)
+        st = cur.fetchone() or {}
+        total = int(st.get('total') or 0)
+        pages = max(1, (total + per_page - 1) // per_page)
+        if page > pages:
+            page = pages
+        offset = (page - 1) * per_page
+
+        cur.execute(f"""
             SELECT
                 ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
                 ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
-                ar.numero_transaccion,
+                ar.numero_transaccion, ar.medio_pago_id,
                 COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
-                ar.observaciones, ar.local,
-                ar.estado as estado_global,
+                ma.es_efectivo,
+                ar.observaciones, ar.local, ar.caja, ar.turno,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
                 ar.deleted_by, ar.deleted_at,
-                -- Verificar si fue consumido realmente
-                (SELECT COUNT(*) FROM anticipos_estados_caja aec
-                 WHERE aec.anticipo_id = ar.id AND aec.estado = 'consumido') as fue_consumido,
-                -- Verificar si tiene adjunto
-                CASE WHEN EXISTS (
-                    SELECT 1 FROM imagenes_adjuntos ia
-                    WHERE ia.entity_type = 'anticipo_recibido'
-                      AND ia.entity_id = ar.id
-                      AND ia.estado = 'active'
-                ) THEN 1 ELSE 0 END as tiene_adjunto
-            FROM anticipos_recibidos ar
-            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
-            WHERE 1=1
-        """
-        params = []
+                ar.oppen_sernr, ar.oppen_onaccnr, ar.oppen_estado, ar.oppen_error, ar.oppen_enviado_at,
+                ({estado_real_expr}) AS estado,
+                ({importe_ars_expr}) AS importe_ars,
+                COALESCE(ec.n_consumos,0) AS n_consumos,
+                ec.fecha_consumo, ec.caja_consumo, ec.oppen_consumo_sernr,
+                (SELECT ab.motivo_eliminacion FROM anticipos_borrados ab
+                  WHERE ab.anticipo_id = ar.id ORDER BY ab.deleted_at DESC LIMIT 1) AS motivo_eliminacion,
+                (SELECT ia.gcs_path FROM imagenes_adjuntos ia
+                  WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
+                  ORDER BY ia.id DESC LIMIT 1) AS adjunto_path,
+                (SELECT ia.mime FROM imagenes_adjuntos ia
+                  WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
+                  ORDER BY ia.id DESC LIMIT 1) AS adjunto_mime
+            {base_from}{where}
+            ORDER BY {order_col} {direccion}, ar.id DESC
+            LIMIT %s OFFSET %s
+        """, params + [per_page, offset])
+        rows = cur.fetchall() or []
 
-        # Filtrar por locales permitidos si es usuario nivel 4
-        if user_level == 4:
-            allowed_locales = get_user_allowed_locales()
-            if allowed_locales:
-                placeholders = ','.join(['%s'] * len(allowed_locales))
-                sql += f" AND ar.local IN ({placeholders})"
-                params.extend(allowed_locales)
-            else:
-                # Sin permisos asignados, retornar vacío
-                return jsonify(success=True, anticipos=[])
-
-        if estado:
-            sql += " AND ar.estado = %s"
-            params.append(estado)
-
-        if local:
-            sql += " AND ar.local = %s"
-            params.append(local)
-
-        if fecha_desde:
-            sql += " AND ar.fecha_evento >= %s"
-            params.append(_normalize_fecha(fecha_desde))
-
-        if fecha_hasta:
-            sql += " AND ar.fecha_evento <= %s"
-            params.append(_normalize_fecha(fecha_hasta))
-
-        sql += " ORDER BY ar.fecha_evento DESC, ar.created_at DESC"
-
-        cur.execute(sql, params)
-        anticipos_raw = cur.fetchall() or []
-
-        # Corregir el estado basado en la verificación real
+        from urllib.parse import quote as _q
         anticipos = []
-        for a in anticipos_raw:
-            anticipo = dict(a)
-
-            # Convertir fechas a formato string YYYY-MM-DD para JSON
-            if anticipo.get('fecha_pago'):
-                if hasattr(anticipo['fecha_pago'], 'strftime'):
-                    anticipo['fecha_pago'] = anticipo['fecha_pago'].strftime('%Y-%m-%d')
-                else:
-                    anticipo['fecha_pago'] = str(anticipo['fecha_pago'])
-
-            if anticipo.get('fecha_evento'):
-                if hasattr(anticipo['fecha_evento'], 'strftime'):
-                    anticipo['fecha_evento'] = anticipo['fecha_evento'].strftime('%Y-%m-%d')
-                else:
-                    anticipo['fecha_evento'] = str(anticipo['fecha_evento'])
-
-            # Convertir timestamps a ISO string
-            for campo in ['created_at', 'updated_at', 'deleted_at']:
-                if anticipo.get(campo):
-                    if hasattr(anticipo[campo], 'isoformat'):
-                        anticipo[campo] = anticipo[campo].isoformat()
-                    else:
-                        anticipo[campo] = str(anticipo[campo])
-
-            # Si fue consumido en alguna caja, el estado debe ser 'consumido'
-            if anticipo['fue_consumido'] > 0:
-                anticipo['estado'] = 'consumido'
-            else:
-                anticipo['estado'] = anticipo['estado_global']
-
-            # Eliminar campos auxiliares
-            del anticipo['estado_global']
-            del anticipo['fue_consumido']
-
-            anticipos.append(anticipo)
+        for r in rows:
+            x = dict(r)
+            for f in ('fecha_pago', 'fecha_evento', 'tipo_cambio_fecha', 'fecha_consumo'):
+                if x.get(f) is not None:
+                    x[f] = x[f].strftime('%Y-%m-%d') if hasattr(x[f], 'strftime') else str(x[f])
+            for f in ('created_at', 'updated_at', 'deleted_at', 'oppen_enviado_at'):
+                if x.get(f) is not None:
+                    x[f] = x[f].isoformat() if hasattr(x[f], 'isoformat') else str(x[f])
+            for f in ('importe', 'cotizacion_divisa', 'importe_ars'):
+                if x.get(f) is not None:
+                    x[f] = float(x[f])
+            x['tiene_adjunto'] = 1 if x.get('adjunto_path') else 0
+            # URL inline SIEMPRE via /files/view (sirve el binario con Content-Disposition inline;
+            # las signed URLs fallan en Cloud Run y el navegador terminaba descargando).
+            x['adjunto_url'] = f"/files/view?id={_q(x['adjunto_path'], safe='')}" if x.get('adjunto_path') else None
+            x['es_efectivo'] = int(x.get('es_efectivo') or 0)
+            anticipos.append(x)
 
         cur.close()
         conn.close()
 
-        return jsonify(success=True, anticipos=anticipos)
+        return jsonify(
+            success=True,
+            anticipos=anticipos,
+            total=total, page=page, per_page=per_page, pages=pages,
+            stats={
+                'pendientes': int(st.get('n_pendientes') or 0),
+                'consumidos': int(st.get('n_consumidos') or 0),
+                'eliminados': int(st.get('n_eliminados') or 0),
+                'monto_pendiente': float(st.get('monto_pendiente') or 0),
+                'monto_consumido': float(st.get('monto_consumido') or 0),
+                'oppen_ok': int(st.get('n_oppen_ok') or 0),
+                'oppen_error': int(st.get('n_oppen_error') or 0),
+            },
+        )
 
     except Exception as e:
         print("❌ ERROR listar_anticipos_recibidos:", e)
         import traceback
         traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos_recibidos/editar/<int:anticipo_id>', methods=['PUT'])
+@login_required
+def editar_anticipo_recibido(anticipo_id):
+    """
+    Edita un anticipo PENDIENTE (no consumido, no eliminado). Nivel >= 3.
+    Campos editables: fecha_pago, fecha_evento, cliente, importe, divisa,
+    cotizacion_divisa, medio_pago_id, numero_transaccion, observaciones.
+    Si el anticipo ya viajo a Oppen (tiene OnAccNr) NO se permite cambiar
+    importe/divisa/cotizacion/medio: en Oppen no hay PUT y desincronizaria.
+    """
+    user_level = get_user_level()
+    if user_level < 3:
+        return jsonify(success=False, msg="No tenés permisos para editar anticipos"), 403
+
+    data = request.get_json() or {}
+    usuario = session.get('username', 'sistema')
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("SELECT * FROM anticipos_recibidos WHERE id = %s", (anticipo_id,))
+        ant = cur.fetchone()
+        if not ant:
+            return jsonify(success=False, msg="Anticipo no encontrado"), 404
+        if not can_user_access_local_for_anticipos(ant['local']):
+            return jsonify(success=False, msg="No tenés permisos sobre el local de este anticipo"), 403
+        if ant['estado'] == 'eliminado_global':
+            return jsonify(success=False, msg="No se puede editar un anticipo eliminado"), 400
+        cur.execute("SELECT COUNT(*) AS n FROM anticipos_estados_caja WHERE anticipo_id=%s AND estado='consumido'", (anticipo_id,))
+        if (cur.fetchone() or {}).get('n', 0) > 0:
+            return jsonify(success=False, msg="No se puede editar un anticipo ya consumido en una caja"), 400
+
+        from decimal import Decimal, InvalidOperation
+        en_oppen = bool(ant.get('oppen_onaccnr')) if 'oppen_onaccnr' in ant else False
+        sets, vals, cambios = [], [], {}
+
+        def _set(col, val):
+            sets.append(f"{col}=%s"); vals.append(val); cambios[col] = val
+
+        if data.get('fecha_pago'):
+            _set('fecha_pago', _normalize_fecha(data['fecha_pago']))
+        if data.get('fecha_evento'):
+            _set('fecha_evento', _normalize_fecha(data['fecha_evento']))
+        if data.get('cliente') is not None and data['cliente'].strip():
+            _set('cliente', data['cliente'].strip())
+        if 'numero_transaccion' in data:
+            _set('numero_transaccion', (data.get('numero_transaccion') or '').strip() or None)
+        if 'observaciones' in data:
+            _set('observaciones', (data.get('observaciones') or '').strip() or None)
+
+        campos_monto = {}
+        if data.get('importe') not in (None, ''):
+            try:
+                imp = Decimal(str(data['importe']))
+            except (InvalidOperation, ValueError):
+                return jsonify(success=False, msg="El importe debe ser un número válido"), 400
+            if imp <= 0:
+                return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400
+            campos_monto['importe'] = imp
+        if data.get('divisa'):
+            campos_monto['divisa'] = data['divisa'].strip().upper()
+        if data.get('cotizacion_divisa') not in (None, ''):
+            try:
+                campos_monto['cotizacion_divisa'] = Decimal(str(data['cotizacion_divisa']))
+            except (InvalidOperation, ValueError):
+                return jsonify(success=False, msg="La cotización debe ser un número válido"), 400
+        if data.get('medio_pago_id'):
+            campos_monto['medio_pago_id'] = int(data['medio_pago_id'])
+
+        if campos_monto:
+            cambio_real = any(str(ant.get(k)) != str(v) for k, v in campos_monto.items())
+            if en_oppen and cambio_real:
+                return jsonify(success=False,
+                               msg=f"Este anticipo ya está en Oppen (N° {ant['oppen_onaccnr']}): no se puede cambiar importe, "
+                                   f"divisa, cotización ni medio de pago. Corregilo en Oppen con un contra-recibo."), 409
+            if cambio_real:
+                cur.execute("SELECT id FROM remesas_trns WHERE origen_anticipo_id = %s LIMIT 1", (anticipo_id,))
+                if cur.fetchone():
+                    return jsonify(success=False,
+                                   msg="Este anticipo en efectivo tiene una remesa espejo en la caja: no se puede cambiar "
+                                       "importe, divisa, cotización ni medio de pago. Eliminalo y volvé a crearlo."), 409
+            for k, v in campos_monto.items():
+                _set(k, v)
+            if 'medio_pago_id' in campos_monto:
+                cur.execute("SELECT nombre FROM medios_anticipos WHERE id=%s", (campos_monto['medio_pago_id'],))
+                mp = cur.fetchone()
+                _set('medio_pago', mp['nombre'] if mp else None)
+
+        adjunto_gcs_path = (data.get('adjunto_gcs_path') or '').strip() or None
+        temp_entity_id = (data.get('temp_entity_id') or '').strip() or None
+        delete_adjunto = bool(data.get('delete_adjunto')) or bool(adjunto_gcs_path)
+
+        if not sets and not delete_adjunto:
+            return jsonify(success=False, msg="Sin cambios"), 400
+
+        if sets:
+            sets.append("updated_by=%s"); vals.append(usuario)
+            sets.append("updated_at=NOW()")
+            vals.append(anticipo_id)
+            cur.execute(f"UPDATE anticipos_recibidos SET {', '.join(sets)} WHERE id=%s", vals)
+
+        if delete_adjunto:
+            cur.execute("""UPDATE imagenes_adjuntos SET estado='deleted'
+                           WHERE entity_type='anticipo_recibido' AND entity_id=%s AND estado='active'""",
+                        (anticipo_id,))
+            cambios['adjunto'] = 'reemplazado' if adjunto_gcs_path else 'eliminado'
+        if adjunto_gcs_path:
+            if temp_entity_id:
+                cur.execute("""UPDATE imagenes_adjuntos SET entity_type='anticipo_recibido', entity_id=%s
+                               WHERE gcs_path=%s AND entity_type='anticipo_recibido_temp' AND entity_id=%s AND estado='active'""",
+                            (anticipo_id, adjunto_gcs_path, temp_entity_id))
+            else:
+                cur.execute("""UPDATE imagenes_adjuntos SET entity_type='anticipo_recibido', entity_id=%s
+                               WHERE gcs_path=%s AND entity_type='anticipo_recibido_temp' AND estado='active'""",
+                            (anticipo_id, adjunto_gcs_path))
+        conn.commit()
+
+        from modules.tabla_auditoria import registrar_auditoria
+        registrar_auditoria(
+            conn=conn, accion='UPDATE', tabla='anticipos_recibidos', registro_id=anticipo_id,
+            datos_anteriores={k: (str(ant.get(k)) if ant.get(k) is not None else None) for k in cambios},
+            datos_nuevos={k: (str(v) if v is not None else None) for k, v in cambios.items()},
+            descripcion=f"Anticipo editado: {ant['cliente']} ({', '.join(cambios.keys())})",
+        )
+        return jsonify(success=True, msg="Anticipo actualizado")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/medios_anticipos/<int:medio_id>/paymode_oppen', methods=['PUT'])
+@login_required
+def api_medio_anticipo_paymode(medio_id):
+    """Edita el codigo PayMode de Oppen de un medio de pago de anticipos. Nivel >= 3."""
+    if get_user_level() < 3:
+        return jsonify(success=False, msg="No tenés permisos"), 403
+    data = request.get_json() or {}
+    paymode = (data.get('paymode_oppen') or '').strip().upper()
+    if not paymode or len(paymode) > 30:
+        return jsonify(success=False, msg="PayMode inválido (1-30 caracteres)"), 400
+    conn = get_db_connection()
+    try:
+        from modules.oppen_integration import _ensure_anticipos_oppen_columns
+        _ensure_anticipos_oppen_columns(conn)
+        cur = conn.cursor()
+        cur.execute("UPDATE medios_anticipos SET paymode_oppen=%s WHERE id=%s", (paymode, medio_id))
+        conn.commit()
+        ok = cur.rowcount > 0
+        cur.close()
+        if not ok:
+            return jsonify(success=False, msg="Medio de pago no encontrado"), 404
+        return jsonify(success=True, msg=f"PayMode actualizado a {paymode}", paymode_oppen=paymode)
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: conn.close()
+        except Exception: pass
 
 
 @app.route('/api/anticipos_recibidos/<int:anticipo_id>/adjunto', methods=['GET'])
@@ -11857,12 +12100,15 @@ def api_medios_anticipos_listar():
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
+        from modules.oppen_integration import _ensure_anticipos_oppen_columns
+        _ensure_anticipos_oppen_columns(conn)
         cur.execute("""
             SELECT
                 id,
                 nombre,
                 activo,
                 es_efectivo,
+                paymode_oppen,
                 created_at,
                 updated_at
             FROM medios_anticipos
@@ -12018,11 +12264,14 @@ def api_medios_anticipos_activos():
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
+        from modules.oppen_integration import _ensure_anticipos_oppen_columns
+        _ensure_anticipos_oppen_columns(conn)
         cur.execute("""
             SELECT
                 id,
                 nombre,
-                es_efectivo
+                es_efectivo,
+                paymode_oppen
             FROM medios_anticipos
             WHERE activo = 1
             ORDER BY

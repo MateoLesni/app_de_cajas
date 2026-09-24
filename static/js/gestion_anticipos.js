@@ -1,1169 +1,838 @@
 // static/js/gestion_anticipos.js
-(function() {
+// Vista unica de anticipos (auditor / anticipos / admin_anticipos):
+// paginado y filtros server-side, visor de comprobantes inline, estado Oppen.
+(function () {
   'use strict';
 
   const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  const fmt = new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const money = (v) => '$' + fmt.format(Number(v ?? 0));
-
-  let localesDisponibles = [];
-  let anticiposData = [];
-  let mediosPagoDisponibles = [];
-  let localTieneMultiplesTurnos = false;  // Se actualiza al cargar cajas del local
-  let userProfile = {
-    level: 0,
-    allowed_locales: [],
-    can_edit: false,
-    can_delete: false,
-    has_full_access: false
+  const fmtNum = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = (v, divisa = 'ARS') => {
+    const n = Number(v ?? 0);
+    const s = fmtNum.format(Math.abs(n));
+    const sym = divisa === 'ARS' || !divisa ? '$' : divisa + ' ';
+    return (n < 0 ? '-' : '') + sym + s;
+  };
+  const moneyShort = (v) => {
+    const n = Number(v ?? 0);
+    if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(1).replace('.', ',') + ' M';
+    if (Math.abs(n) >= 1e3) return '$' + Math.round(n / 1e3) + ' k';
+    return money(n);
   };
 
-  // ===== INICIALIZACIÓN =====
-  document.addEventListener('DOMContentLoaded', async () => {
-    // No setear filtros por defecto - mostrar todos los anticipos
-    // Los usuarios pueden filtrar manualmente según necesiten
+  const DIVISAS_NOMBRE = { ARS: 'ARS', USD: 'USD', EUR: 'EUR', BRL: 'BRL', CLP: 'CLP', UYU: 'UYU' };
 
-    await loadUserProfile();
-    await loadLocales();
-    await loadMediosPago();
+  // ===== estado =====
+  const state = {
+    page: 1,
+    perPage: 25,
+    sort: 'fecha_evento',
+    dir: 'desc',
+    filters: {},
+    total: 0,
+    pages: 1,
+  };
+  let profile = { level: 0, allowed_locales: [], can_delete: false, can_consume: false, has_full_access: false };
+  let locales = [];
+  let medios = [];
+  let rows = [];
+  let localTieneMultiplesTurnos = false;
+  let reqSeq = 0;
+
+  // ===== helpers =====
+  function esc(t) {
+    return String(t ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+  }
+  function fmtDate(s) {
+    if (!s) return '–';
+    const d = String(s).slice(0, 10).split('-');
+    return d.length === 3 ? `${d[2]}/${d[1]}/${d[0]}` : String(s);
+  }
+  function fmtDateTime(s) {
+    if (!s) return '–';
+    const str = String(s);
+    const m = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+    const d = new Date(str);
+    return isNaN(d) ? str : d.toLocaleString('es-AR');
+  }
+  function debounce(fn, ms) {
+    let t;
+    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  }
+  async function api(url, opts = {}) {
+    const o = { credentials: 'same-origin', ...opts };
+    if (o.json !== undefined) {
+      o.method = o.method || 'POST';
+      o.headers = { 'Content-Type': 'application/json', ...(o.headers || {}) };
+      o.body = JSON.stringify(o.json);
+      delete o.json;
+    }
+    const r = await fetch(url, o);
+    let data = null;
+    try { data = await r.json(); } catch (_) { data = null; }
+    if (!data) throw new Error(`Respuesta inválida del servidor (HTTP ${r.status})`);
+    if (!r.ok && data.success === undefined) throw new Error(data.msg || `HTTP ${r.status}`);
+    return data;
+  }
+  function toast(msg, type = '', ms = 4500) {
+    const box = $('#antToasts');
+    if (!box) { alert(msg); return; }
+    const el = document.createElement('div');
+    el.className = 'ant-toast ' + type;
+    el.textContent = msg;
+    box.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 320); }, ms);
+  }
+  function viewUrl(a) { return a.adjunto_url || (a.adjunto_path ? `/files/view?id=${encodeURIComponent(a.adjunto_path)}` : null); }
+  function downloadUrl(a) { return a.adjunto_path ? `/files/download?id=${encodeURIComponent(a.adjunto_path)}` : null; }
+  function isPdf(a) {
+    const m = (a.adjunto_mime || '').toLowerCase();
+    return m === 'application/pdf' || (a.adjunto_path || '').toLowerCase().endsWith('.pdf');
+  }
+  function importeArs(a) {
+    if (a.importe_ars !== undefined && a.importe_ars !== null) return Number(a.importe_ars);
+    if (a.divisa && a.divisa !== 'ARS' && a.cotizacion_divisa) return Number(a.importe) * Number(a.cotizacion_divisa);
+    return Number(a.importe);
+  }
+
+  // ===== init =====
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadProfile();
+    await Promise.all([loadLocales(), loadMedios()]);
+    bindUI();
     await loadAnticipos();
-    setupEventListeners();
   });
 
-  async function loadUserProfile() {
+  async function loadProfile() {
     try {
-      const response = await fetch('/api/mi_perfil_anticipos');
-      const data = await response.json();
-      if (data.success) {
-        userProfile = data;
-        console.log('Perfil de usuario cargado:', userProfile);
+      const d = await api('/api/mi_perfil_anticipos');
+      if (d.success) profile = d;
+    } catch (e) { console.error('perfil', e); }
 
-        // Si es admin_anticipos (nivel 6), agregar links de Gestión de Usuarios
-        if (userProfile.level >= 6) {
-          const sidebarNav = $('#sidebarNav');
-          if (sidebarNav) {
-            // Link de Gestión de Usuarios de Anticipos
-            const gestionUsuariosLink = document.createElement('a');
-            gestionUsuariosLink.className = 'nav-item';
-            gestionUsuariosLink.href = '/gestion-usuarios';
-            gestionUsuariosLink.innerHTML = '<span class="nav-dot"></span>Gestión de Usuarios';
-            sidebarNav.appendChild(gestionUsuariosLink);
-
-            // Link de Gestión de Usuarios de Tesorería
-            const gestionTesoreriaLink = document.createElement('a');
-            gestionTesoreriaLink.className = 'nav-item';
-            gestionTesoreriaLink.href = '/gestion-usuarios-tesoreria';
-            gestionTesoreriaLink.innerHTML = '<span class="nav-dot"></span>Usuarios de Tesorería';
-            sidebarNav.appendChild(gestionTesoreriaLink);
-          }
-        }
+    if (profile.level >= 6) {
+      const nav = $('#sidebarNav');
+      if (nav) {
+        nav.insertAdjacentHTML('beforeend',
+          '<a class="nav-item" href="/gestion-usuarios"><span class="nav-dot"></span>Gestión de Usuarios</a>' +
+          '<a class="nav-item" href="/gestion-usuarios-tesoreria"><span class="nav-dot"></span>Usuarios de Tesorería</a>');
       }
-    } catch (error) {
-      console.error('Error al cargar perfil de usuario:', error);
+    }
+    if (profile.level >= 3) {
+      const b = $('#btnPaymodes');
+      if (b) b.style.display = '';
     }
   }
 
   async function loadLocales() {
     try {
-      console.log('🔍 Cargando locales...');
-      const response = await fetch('/api/locales');
-      console.log('📡 Response status:', response.status, response.statusText);
+      const d = await api('/api/locales');
+      const raw = d.locales || [];
+      const all = raw.map((l) => (typeof l === 'string' ? l : (l?.nombre || l?.local || String(l))));
+      if (profile.has_full_access || (profile.level >= 3 && profile.level !== 4)) locales = all;
+      else if (profile.allowed_locales?.length) locales = all.filter((l) => profile.allowed_locales.includes(l));
+      else locales = [];
+      locales.sort((a, b) => a.localeCompare(b, 'es'));
 
-      const data = await response.json();
-      console.log('📦 Data recibida:', data);
-
-      let localesRaw = data.locales || [];
-
-      // Normalizar: si son objetos {nombre: "..."}, extraer el nombre
-      let todosLocales = localesRaw.map(l => {
-        if (typeof l === 'string') {
-          return l;
-        } else if (l && l.nombre) {
-          return l.nombre;
-        } else if (l && l.local) {
-          return l.local;
-        } else {
-          return String(l);
-        }
-      });
-
-      console.log('🏢 Todos los locales:', todosLocales);
-      console.log('👤 User profile:', userProfile);
-
-      // Filtrar locales según permisos del usuario
-      if (userProfile.has_full_access) {
-        // Admin ve todos los locales
-        localesDisponibles = todosLocales;
-        console.log('✅ Admin - mostrando todos los locales');
-      } else if (userProfile.allowed_locales && userProfile.allowed_locales.length > 0) {
-        // Usuario con permisos limitados: solo ve sus locales asignados
-        localesDisponibles = todosLocales.filter(l => {
-          return userProfile.allowed_locales.includes(l);
-        });
-        console.log('🔒 Usuario limitado - locales filtrados:', localesDisponibles);
-      } else {
-        // Sin permisos: no ve ningún local
-        localesDisponibles = [];
-        console.log('❌ Sin permisos - sin locales');
-      }
-
-      console.log('📋 Locales disponibles finales:', localesDisponibles);
-
-      // Llenar select de filtro
-      const filtroLocal = $('#filtroLocal');
-      if (filtroLocal) {
-        // Limpiar opciones existentes excepto la primera (placeholder)
-        while (filtroLocal.options.length > 1) {
-          filtroLocal.remove(1);
-        }
-        localesDisponibles.forEach(localNombre => {
-          const option = document.createElement('option');
-          option.value = localNombre;
-          option.textContent = localNombre;
-          filtroLocal.appendChild(option);
-        });
-        console.log('✅ Select de filtro actualizado con', localesDisponibles.length, 'locales');
-      }
-
-      // Llenar select del modal (solo locales permitidos para crear)
-      const localSelect = $('#local');
-      if (localSelect) {
-        // Limpiar opciones existentes excepto la primera (placeholder)
-        while (localSelect.options.length > 1) {
-          localSelect.remove(1);
-        }
-        localesDisponibles.forEach(localNombre => {
-          const option = document.createElement('option');
-          option.value = localNombre;
-          option.textContent = localNombre;
-          localSelect.appendChild(option);
-        });
-        console.log('✅ Select del modal actualizado con', localesDisponibles.length, 'locales');
-      }
-
-    } catch (error) {
-      console.error('❌ Error al cargar locales:', error);
-      localesDisponibles = [];
-    }
+      const fill = (sel, placeholder) => {
+        if (!sel) return;
+        sel.innerHTML = `<option value="">${placeholder}</option>` + locales.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+      };
+      fill($('#fLocal'), 'Todos');
+      fill($('#local'), 'Seleccione un local');
+    } catch (e) { console.error('locales', e); }
   }
 
-  async function loadMediosPago() {
+  async function loadMedios() {
     try {
-      console.log('🔍 Cargando medios de pago...');
-      const response = await fetch('/api/medios_anticipos/activos');
-      const data = await response.json();
-
-      if (data.success) {
-        mediosPagoDisponibles = data.medios || [];
-        console.log('✅ Medios de pago cargados:', mediosPagoDisponibles);
-
-        // Llenar select del modal
-        const medioPagoSelect = $('#medioPagoId');
-        if (medioPagoSelect) {
-          // Limpiar opciones existentes
-          medioPagoSelect.innerHTML = '<option value="">-- Seleccionar medio de pago --</option>';
-
-          mediosPagoDisponibles.forEach(medio => {
-            const option = document.createElement('option');
-            option.value = medio.id;
-            option.textContent = medio.nombre;
-            medioPagoSelect.appendChild(option);
-          });
-          console.log('✅ Select de medio de pago actualizado con', mediosPagoDisponibles.length, 'medios');
-        }
-      } else {
-        console.error('❌ Error al cargar medios de pago:', data.msg);
-        mediosPagoDisponibles = [];
-      }
-    } catch (error) {
-      console.error('❌ Error al cargar medios de pago:', error);
-      mediosPagoDisponibles = [];
-    }
+      const d = await api('/api/medios_anticipos/activos');
+      medios = d.medios || [];
+      const opts = medios.map((m) => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+      const fm = $('#fMedio'); if (fm) fm.innerHTML = '<option value="">Todos</option>' + opts;
+      const mp = $('#medioPagoId'); if (mp) mp.innerHTML = '<option value="">Seleccione un medio</option>' + opts;
+    } catch (e) { console.error('medios', e); }
   }
 
-  function setupEventListeners() {
+  // ===== UI bindings =====
+  function bindUI() {
+    const reload = () => { state.page = 1; loadAnticipos(); };
+    const reloadDeb = debounce(reload, 350);
+    $$('[data-filter]').forEach((el) => {
+      const key = el.dataset.filter;
+      const handler = () => {
+        const v = (el.value || '').trim();
+        if (v) state.filters[key] = v; else delete state.filters[key];
+        (el.tagName === 'INPUT' && el.type !== 'date') ? reloadDeb() : reload();
+      };
+      el.addEventListener('input', handler);
+      el.addEventListener('change', handler);
+    });
+    $('#btnLimpiar')?.addEventListener('click', () => {
+      state.filters = {};
+      $$('[data-filter]').forEach((el) => { el.value = ''; });
+      reload();
+    });
+    $('#btnMasFiltros')?.addEventListener('click', () => {
+      const ex = $('#filtrosExtra');
+      ex.classList.toggle('is-hidden');
+      $('#btnMasFiltros').textContent = ex.classList.contains('is-hidden') ? 'Más filtros ▾' : 'Menos filtros ▴';
+    });
+    $('#btnRecargar')?.addEventListener('click', () => loadAnticipos());
     $('#btnNuevoAnticipo')?.addEventListener('click', () => abrirModal());
+    $('#btnPaymodes')?.addEventListener('click', abrirPaymodes);
+    $('#pagPerPage')?.addEventListener('change', (e) => { state.perPage = parseInt(e.target.value) || 25; state.page = 1; loadAnticipos(); });
 
-    // Filtros con debounce para los inputs de texto
-    let debounceTimer;
-    const debounceFilter = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => loadAnticipos(), 300);
-    };
-
-    $('#filtroEstado')?.addEventListener('change', () => loadAnticipos());
-    $('#filtroLocal')?.addEventListener('change', () => loadAnticipos());
-    $('#filtroDivisa')?.addEventListener('change', () => loadAnticipos());
-    $('#filtroFechaDesde')?.addEventListener('change', () => loadAnticipos());
-    $('#filtroFechaHasta')?.addEventListener('change', () => loadAnticipos());
-    $('#filtroCliente')?.addEventListener('input', debounceFilter);
-    $('#filtroUsuario')?.addEventListener('input', debounceFilter);
-
-    // Mostrar/ocultar campos de cotización para divisas extranjeras
-    $('#divisa')?.addEventListener('change', function(e) {
-      const camposCotizacion = $('#camposUSD'); // Mantener ID por compatibilidad
-      const cotizacionInput = $('#cotizacionUSD');
-
-      if (e.target.value !== 'ARS') {
-        camposCotizacion.style.display = 'block';
-        cotizacionInput.required = true;
-        calcularEquivalencia();
-      } else {
-        camposCotizacion.style.display = 'none';
-        cotizacionInput.required = false;
-        $('#equivalenciaPesos').style.display = 'none';
-      }
+    $$('.ant-stat[data-stat-estado], .ant-stat[data-stat-oppen]').forEach((card) => {
+      card.addEventListener('click', () => {
+        const key = card.dataset.statEstado ? 'estado' : 'oppen';
+        const val = card.dataset.statEstado || card.dataset.statOppen;
+        const el = $(`[data-filter="${key}"]`);
+        const isSame = state.filters[key] === val;
+        if (isSame) { delete state.filters[key]; if (el) el.value = ''; }
+        else { state.filters[key] = val; if (el) el.value = val; }
+        reload();
+      });
     });
 
-    // Calcular equivalencia cuando cambian importe o cotización
-    $('#importe')?.addEventListener('input', calcularEquivalencia);
-    $('#cotizacionUSD')?.addEventListener('input', calcularEquivalencia);
-
-    // Mostrar/ocultar campo caja según medio de pago
-    $('#medioPagoId')?.addEventListener('change', function(e) {
-      toggleCajaField();
+    $$('#antTable th.sortable').forEach((th) => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (state.sort === col) state.dir = state.dir === 'asc' ? 'desc' : 'asc';
+        else { state.sort = col; state.dir = col === 'cliente' || col === 'local' ? 'asc' : 'desc'; }
+        loadAnticipos();
+      });
     });
 
-    // Cargar cajas cuando cambia el local
-    $('#local')?.addEventListener('change', function(e) {
-      loadCajasForLocal(e.target.value);
+    // formulario
+    $('#divisa')?.addEventListener('change', toggleDivisa);
+    $('#importe')?.addEventListener('input', calcEquivalencia);
+    $('#cotizacionUSD')?.addEventListener('input', calcEquivalencia);
+    $('#medioPagoId')?.addEventListener('change', toggleCajaFields);
+    $('#local')?.addEventListener('change', async () => { await loadCajasForLocal($('#local').value); toggleCajaFields(); });
+    $('#adjunto')?.addEventListener('change', previewNuevoAdjunto);
+
+    ['#modalAnticipo', '#modalDetalle', '#modalVisor', '#modalPaymodes'].forEach((id) => {
+      $(id)?.addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); });
     });
-
-    // Preview de imagen al seleccionar archivo
-    $('#adjunto')?.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      const preview = $('#adjuntoPreview');
-      if (!preview) return;
-
-      // Limpiar el preview y recrear estructura
-      preview.innerHTML = '';
-      preview.style.display = 'block';
-
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          // Crear nueva imagen
-          const img = document.createElement('img');
-          img.src = event.target.result;
-          img.style.cssText = 'max-width: 200px; max-height: 200px; border-radius: 8px; display: block;';
-          img.alt = 'Preview del comprobante';
-
-          preview.innerHTML = '';
-          preview.appendChild(img);
-
-          // Mensaje informativo
-          const infoMsg = document.createElement('div');
-          infoMsg.style.cssText = 'font-size: 12px; color: #2563eb; margin-top: 8px;';
-          infoMsg.textContent = '📎 Nuevo comprobante seleccionado';
-          preview.appendChild(infoMsg);
-        };
-        reader.readAsDataURL(file);
-      } else if (file && file.type === 'application/pdf') {
-        // Si es PDF, mostrar ícono
-        preview.innerHTML = `
-          <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; text-align: center;">
-            <div style="font-size: 48px;">📄</div>
-            <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">${file.name}</div>
-            <div style="margin-top: 4px; font-size: 12px; color: #2563eb;">Nuevo PDF seleccionado</div>
-          </div>
-        `;
-      } else {
-        preview.style.display = 'none';
-      }
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if ($('#modalVisor')?.classList.contains('active')) return cerrarVisor();
+      if ($('#modalDetalle')?.classList.contains('active')) return cerrarDetalle();
+      if ($('#modalPaymodes')?.classList.contains('active')) return cerrarPaymodes();
     });
   }
 
-  function calcularEquivalencia() {
-    const divisa = $('#divisa')?.value;
-    const importe = parseFloat($('#importe')?.value || 0);
-    const cotizacion = parseFloat($('#cotizacionUSD')?.value || 0);
-
-    if (divisa !== 'ARS' && importe > 0 && cotizacion > 0) {
-      const equivalente = importe * cotizacion;
-      $('#montoCalculado').textContent = money(equivalente);
-      $('#equivalenciaPesos').style.display = 'block';
-    } else {
-      $('#equivalenciaPesos').style.display = 'none';
-    }
-  }
-
-  // Mostrar/ocultar campo caja y turno según si el medio de pago es "Efectivo"
-  function toggleCajaField() {
-    const medioPagoId = $('#medioPagoId')?.value;
-    const cajaGroup = $('#cajaGroup');
-    const cajaSelect = $('#caja');
-    const turnoGroup = $('#turnoGroup');
-    const turnoSelect = $('#turno');
-
-    if (!medioPagoId || !cajaGroup || !cajaSelect) return;
-
-    // Buscar el medio de pago seleccionado
-    const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == medioPagoId);
-
-    const nroRemesaGroup = $('#nroRemesaGroup');
-    const precintoGroup = $('#precintoGroup');
-    const nroRemesaInput = $('#nroRemesa');
-    const precintoInput = $('#precinto');
-
-    if (medioSeleccionado && medioSeleccionado.es_efectivo === 1) {
-      // Mostrar campo caja y hacerlo obligatorio
-      cajaGroup.style.display = 'block';
-      cajaSelect.required = true;
-
-      // Mostrar campo turno SOLO si el local tiene múltiples turnos
-      if (localTieneMultiplesTurnos && turnoGroup && turnoSelect) {
-        turnoGroup.style.display = 'block';
-        turnoSelect.required = true;
-      }
-
-      // Mostrar campos de remesa
-      if (nroRemesaGroup) { nroRemesaGroup.style.display = 'block'; }
-      if (nroRemesaInput) { nroRemesaInput.required = true; }
-      if (precintoGroup) { precintoGroup.style.display = 'block'; }
-      if (precintoInput) { precintoInput.required = true; }
-    } else {
-      // Ocultar campo caja y quitar obligatoriedad
-      cajaGroup.style.display = 'none';
-      cajaSelect.required = false;
-      cajaSelect.value = '';
-
-      // Ocultar campo turno
-      if (turnoGroup && turnoSelect) {
-        turnoGroup.style.display = 'none';
-        turnoSelect.required = false;
-        turnoSelect.value = '';
-      }
-
-      // Ocultar campos de remesa
-      if (nroRemesaGroup) { nroRemesaGroup.style.display = 'none'; }
-      if (nroRemesaInput) { nroRemesaInput.required = false; nroRemesaInput.value = ''; }
-      if (precintoGroup) { precintoGroup.style.display = 'none'; }
-      if (precintoInput) { precintoInput.required = false; precintoInput.value = ''; }
-    }
-  }
-
-  // Cargar cajas y turnos disponibles para un local
-  async function loadCajasForLocal(local) {
-    const cajaSelect = $('#caja');
-    const turnoSelect = $('#turno');
-    const cajaGroup = $('#cajaGroup');
-    const turnoGroup = $('#turnoGroup');
-
-    // Si no hay local seleccionado, limpiar y ocultar campos
-    if (!cajaSelect || !local) {
-      if (cajaGroup) cajaGroup.style.display = 'none';
-      if (turnoGroup) turnoGroup.style.display = 'none';
-      if (cajaSelect) cajaSelect.innerHTML = '<option value="">Seleccione una caja</option>';
-      if (turnoSelect) turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
-      localTieneMultiplesTurnos = false;
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/locales/${encodeURIComponent(local)}/cajas`);
-      const data = await response.json();
-
-      if (data.success && data.cajas) {
-        // Limpiar opciones actuales de cajas
-        cajaSelect.innerHTML = '<option value="">Seleccione una caja</option>';
-
-        // Agregar cajas del local
-        data.cajas.forEach(caja => {
-          const option = document.createElement('option');
-          option.value = caja;
-          option.textContent = caja;
-          cajaSelect.appendChild(option);
-        });
-
-        // Guardar si el local tiene múltiples turnos
-        localTieneMultiplesTurnos = data.tiene_multiples_turnos || false;
-
-        // Cargar opciones de turnos
-        if (turnoSelect) {
-          turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
-
-          if (localTieneMultiplesTurnos && data.turnos) {
-            data.turnos.forEach(turno => {
-              const option = document.createElement('option');
-              option.value = turno;
-              option.textContent = turno;
-              turnoSelect.appendChild(option);
-            });
-          }
-        }
-
-        // Actualizar visibilidad de campos según medio de pago ya seleccionado
-        // (solo mostrar si ya tienen Efectivo seleccionado)
-        toggleCajaField();
-      } else {
-        console.error('Error al cargar cajas:', data.msg);
-        cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
-        if (cajaGroup) cajaGroup.style.display = 'none';
-        if (turnoGroup) turnoGroup.style.display = 'none';
-        localTieneMultiplesTurnos = false;
-      }
-    } catch (error) {
-      console.error('Error al cargar cajas del local:', error);
-      cajaSelect.innerHTML = '<option value="">Error al cargar cajas</option>';
-      if (cajaGroup) cajaGroup.style.display = 'none';
-      if (turnoGroup) turnoGroup.style.display = 'none';
-      localTieneMultiplesTurnos = false;
-    }
-  }
-
-  // ===== CARGAR ANTICIPOS =====
+  // ===== listado =====
   async function loadAnticipos() {
     const tbody = $('#anticiposTableBody');
     if (!tbody) return;
+    const seq = ++reqSeq;
+    tbody.innerHTML = '<tr><td colspan="12"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>';
+
+    const p = new URLSearchParams({ page: state.page, per_page: state.perPage, sort: state.sort, dir: state.dir });
+    Object.entries(state.filters).forEach(([k, v]) => p.append(k, v));
 
     try {
-      // Obtener filtros del servidor (backend)
-      const estado = $('#filtroEstado')?.value || '';
-      const local = $('#filtroLocal')?.value || '';
-      const fechaDesde = $('#filtroFechaDesde')?.value || '';
-      const fechaHasta = $('#filtroFechaHasta')?.value || '';
-
-      // Construir URL con filtros del servidor
-      let url = '/api/anticipos_recibidos/listar?';
-      if (estado) url += `estado=${encodeURIComponent(estado)}&`;
-      if (local) url += `local=${encodeURIComponent(local)}&`;
-      if (fechaDesde) url += `fecha_desde=${encodeURIComponent(fechaDesde)}&`;
-      if (fechaHasta) url += `fecha_hasta=${encodeURIComponent(fechaHasta)}&`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (!data.success) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: #ef4444;">Error al cargar anticipos</td></tr>';
-        return;
-      }
-
-      anticiposData = data.anticipos || [];
-
-      // Filtros adicionales del lado del cliente
-      const filtroCliente = ($('#filtroCliente')?.value || '').toLowerCase();
-      const filtroDivisa = $('#filtroDivisa')?.value || '';
-      const filtroUsuario = ($('#filtroUsuario')?.value || '').toLowerCase();
-
-      let anticiposFiltrados = anticiposData;
-
-      // Aplicar filtros del cliente
-      if (filtroCliente) {
-        anticiposFiltrados = anticiposFiltrados.filter(a =>
-          (a.cliente || '').toLowerCase().includes(filtroCliente)
-        );
-      }
-
-      if (filtroDivisa) {
-        anticiposFiltrados = anticiposFiltrados.filter(a =>
-          (a.divisa || 'ARS') === filtroDivisa
-        );
-      }
-
-      if (filtroUsuario) {
-        anticiposFiltrados = anticiposFiltrados.filter(a =>
-          (a.created_by || '').toLowerCase().includes(filtroUsuario)
-        );
-      }
-
-      // Actualizar estadísticas con datos filtrados
-      updateStats(anticiposFiltrados);
-
-      if (anticiposFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: #6b7280;">No hay anticipos para mostrar</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = anticiposFiltrados.map(a => {
-        const badgeClass = `badge-${a.estado}`;
-        const estadoText = {
-          'pendiente': 'Pendiente',
-          'consumido': 'Consumido',
-          'eliminado_global': 'Eliminado'
-        }[a.estado] || a.estado;
-
-        // Determinar si puede eliminar según permisos del usuario y estado del anticipo
-        const puedeEliminar = a.estado === 'pendiente' && userProfile.can_delete;
-
-        return `
-          <tr>
-            <td>${formatDate(a.fecha_pago)}</td>
-            <td>${formatDate(a.fecha_evento)}</td>
-            <td>${a.cliente}</td>
-            <td>${a.local}</td>
-            <td style="text-align:right; font-weight:600;">
-              ${a.divisa !== 'ARS' && a.cotizacion_divisa ? `
-                <div style="font-size:13px; color:#059669;">${a.divisa} ${fmt.format(a.importe)}</div>
-                <div style="font-size:11px; color:#6b7280;">Tomado: $${fmt.format(a.cotizacion_divisa)}</div>
-                <div style="font-size:12px; color:#374151;">${money(a.importe * a.cotizacion_divisa)}</div>
-              ` : `
-                <span style="font-size:11px; color:#6b7280; display:block;">${a.divisa || 'ARS'}</span>
-                ${money(a.importe)}
-              `}
-            </td>
-            <td>${a.medio_pago || '-'}</td>
-            <td>${a.created_by || '-'}</td>
-            <td><span class="badge ${badgeClass}">${estadoText}</span></td>
-            <td>
-              ${a.tiene_adjunto ? `<button class="btn-edit" onclick="verAdjunto(${a.id})" title="Ver comprobante">📎</button>` : ''}
-              ${puedeEliminar ? `<button class="btn-delete" onclick="eliminarAnticipo(${a.id}, '${a.cliente}')" title="Eliminar">🗑️</button>` : ''}
-              <button class="btn-edit" onclick="verDetalles(${a.id})" title="Ver detalles">👁️</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-    } catch (error) {
-      console.error('Error al cargar anticipos:', error);
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color: #ef4444;">Error de red</td></tr>';
+      const d = await api('/api/anticipos_recibidos/listar?' + p.toString());
+      if (seq !== reqSeq) return;
+      if (!d.success) throw new Error(d.msg || 'Error al cargar');
+      rows = d.anticipos || [];
+      state.total = d.total ?? rows.length;
+      state.pages = d.pages ?? 1;
+      state.page = d.page ?? state.page;
+      renderStats(d.stats || {});
+      renderTable();
+      renderPagination();
+      renderChips();
+      renderSortHeaders();
+    } catch (e) {
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="12"><div class="ant-empty"><h3>No se pudieron cargar los anticipos</h3><p>${esc(e.message)}</p></div></td></tr>`;
     }
   }
 
-  function updateStats(anticipos) {
-    const pendientes = anticipos.filter(a => a.estado === 'pendiente');
-    const consumidos = anticipos.filter(a => a.estado === 'consumido');
-    const eliminados = anticipos.filter(a => a.estado === 'eliminado_global');
-
-    // Calcular monto pendiente: divisas extranjeras usan cotización, ARS usa importe directo
-    const montoPendiente = pendientes.reduce((sum, a) => {
-      const importe = parseFloat(a.importe || 0);
-      if (a.divisa !== 'ARS' && a.cotizacion_divisa) {
-        return sum + (importe * parseFloat(a.cotizacion_divisa));
-      }
-      return sum + importe;
-    }, 0);
-
-    $('#statPendientes').textContent = pendientes.length;
-    $('#statConsumidos').textContent = consumidos.length;
-    $('#statEliminados').textContent = eliminados.length;
-    $('#statMontoPendiente').textContent = money(montoPendiente);
+  function renderStats(s) {
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+    set('#statPendientes', s.pendientes ?? '–');
+    set('#statConsumidos', s.consumidos ?? '–');
+    set('#statEliminados', s.eliminados ?? '–');
+    set('#statOppenOk', s.oppen_ok ?? '–');
+    set('#statOppenError', s.oppen_error ?? '–');
+    set('#statMontoPendiente', s.monto_pendiente !== undefined ? money(s.monto_pendiente) + ' en ARS' : '');
+    set('#statMontoConsumido', s.monto_consumido !== undefined ? money(s.monto_consumido) + ' en ARS' : '');
+    $$('.ant-stat').forEach((c) => {
+      const active = (c.dataset.statEstado && state.filters.estado === c.dataset.statEstado) ||
+                     (c.dataset.statOppen && state.filters.oppen === c.dataset.statOppen);
+      c.classList.toggle('is-active', !!active);
+    });
   }
 
-  function toInputDateFormat(dateString) {
-    // Convierte cualquier formato de fecha a YYYY-MM-DD para <input type="date">
-    if (!dateString || dateString === 'null' || dateString === 'undefined') return '';
-    try {
-      let dateStr = String(dateString);
-
-      // Si viene con 'T', extraer solo la parte de fecha
-      if (dateStr.includes('T')) {
-        dateStr = dateStr.split('T')[0];
-      }
-
-      // Si viene con espacios, extraer solo la parte de fecha
-      if (dateStr.includes(' ')) {
-        dateStr = dateStr.split(' ')[0];
-      }
-
-      // Verificar que sea un formato válido YYYY-MM-DD
-      const parts = dateStr.split('-');
-      if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
-        return dateStr; // Ya está en formato correcto
-      }
-
-      return '';
-    } catch {
-      return '';
-    }
+  function estadoBadge(a) {
+    const map = {
+      pendiente: '<span class="badge badge-pendiente">Pendiente</span>',
+      consumido: '<span class="badge badge-consumido">Consumido</span>',
+      eliminado_global: '<span class="badge badge-eliminado">Eliminado</span>',
+    };
+    return map[a.estado] || `<span class="badge badge-oppen-none">${esc(a.estado)}</span>`;
   }
-
-  function formatDate(dateString) {
-    if (!dateString || dateString === 'null' || dateString === 'undefined') return '-';
-    try {
-      // Manejar diferentes formatos de fecha
-      let dateStr = String(dateString);
-
-      // Si viene con 'T', extraer solo la parte de fecha
-      if (dateStr.includes('T')) {
-        dateStr = dateStr.split('T')[0];
-      }
-
-      // Si viene con espacios, extraer solo la parte de fecha
-      if (dateStr.includes(' ')) {
-        dateStr = dateStr.split(' ')[0];
-      }
-
-      // Verificar que tengamos una fecha válida en formato YYYY-MM-DD
-      const parts = dateStr.split('-');
-      if (parts.length !== 3) return '-';
-
-      const [year, month, day] = parts;
-
-      // Validar que las partes sean números válidos
-      if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
-        return '-';
-      }
-
-      return `${day}/${month}/${year}`;
-    } catch {
-      return '-';
-    }
+  function oppenBadge(a) {
+    if (a.oppen_onaccnr) return `<span class="badge badge-oppen-ok" title="Recibo Oppen ${esc(a.oppen_sernr || '')}">N° ${esc(a.oppen_onaccnr)}</span>`;
+    if (a.estado === 'eliminado_global') return '<span class="badge badge-oppen-none">–</span>';
+    if (a.oppen_estado === 'error') return `<span class="badge badge-oppen-err" title="${esc(a.oppen_error || 'Error al enviar')}">⚠ Error</span>`;
+    return '<span class="badge badge-oppen-none">Sin enviar</span>';
   }
-
-  // ===== MODAL =====
-  window.abrirModal = function(anticipoId = null) {
-    const modal = $('#modalAnticipo');
-    const title = $('#modalTitle');
-
-    // Limpiar formulario
-    $('#anticipoId').value = '';
-    $('#fechaPago').value = '';
-    $('#fechaEvento').value = '';
-    $('#cliente').value = '';
-    $('#local').value = '';
-    $('#caja').value = '';
-    $('#importe').value = '';
-    $('#numeroTransaccion').value = '';
-    $('#observaciones').value = '';
-    $('#divisa').value = 'ARS';
-
-    // Resetear medio de pago (dejar en placeholder)
-    const medioPagoSelect = $('#medioPagoId');
-    if (medioPagoSelect) {
-      medioPagoSelect.selectedIndex = 0; // Selecciona "-- Seleccionar medio de pago --"
-    }
-
-    // Ocultar campo caja inicialmente (se mostrará si selecciona Efectivo)
-    const cajaGroup = $('#cajaGroup');
-    if (cajaGroup) cajaGroup.style.display = 'none';
-
-    // Ocultar campo turno inicialmente y limpiar
-    const turnoGroup = $('#turnoGroup');
-    const turnoSelect = $('#turno');
-    if (turnoGroup) turnoGroup.style.display = 'none';
-    if (turnoSelect) {
-      turnoSelect.value = '';
-      turnoSelect.required = false;
-    }
-
-    // Limpiar preview de adjunto
-    const adjuntoInput = $('#adjunto');
-    if (adjuntoInput) adjuntoInput.value = '';
-    const preview = $('#adjuntoPreview');
-    if (preview) preview.style.display = 'none';
-
-    if (anticipoId) {
-      title.textContent = 'Editar Anticipo';
-      loadAnticipoData(anticipoId);
-    } else {
-      title.textContent = 'Nuevo Anticipo';
-      // Setear fecha de pago a hoy por defecto
-      const today = new Date().toISOString().split('T')[0];
-      $('#fechaPago').value = today;
-    }
-
-    modal.classList.add('active');
+  function thumbCell(a) {
+    if (!a.tiene_adjunto) return '<span class="ant-muted">–</span>';
+    if (isPdf(a)) return `<div class="ant-thumb-pdf" onclick="verComprobante(${a.id})" title="Ver PDF">PDF</div>`;
+    return `<img class="ant-thumb" loading="lazy" src="${esc(viewUrl(a))}" alt="Comprobante" onclick="verComprobante(${a.id})" onerror="antThumbErr(this, ${a.id})">`;
+  }
+  window.antThumbErr = function (img, id) {
+    const d = document.createElement('div');
+    d.className = 'ant-thumb-pdf';
+    d.title = 'Ver comprobante';
+    d.textContent = 'IMG';
+    d.onclick = () => verComprobante(id);
+    img.replaceWith(d);
   };
-
-  async function loadAnticipoData(anticipoId) {
-    const anticipo = anticiposData.find(a => a.id === anticipoId);
-    if (!anticipo) return;
-
-    $('#anticipoId').value = anticipo.id;
-    // Formatear fechas para input type="date" (requiere YYYY-MM-DD)
-    $('#fechaPago').value = toInputDateFormat(anticipo.fecha_pago);
-    $('#fechaEvento').value = toInputDateFormat(anticipo.fecha_evento);
-    $('#cliente').value = anticipo.cliente;
-    $('#local').value = anticipo.local;
-    $('#importe').value = anticipo.importe;
-    $('#divisa').value = anticipo.divisa || 'ARS';
-    $('#medioPagoId').value = anticipo.medio_pago_id || '';
-    $('#numeroTransaccion').value = anticipo.numero_transaccion || '';
-    $('#observaciones').value = anticipo.observaciones || '';
-
-    // Cargar cajas del local y setear el valor después
-    await loadCajasForLocal(anticipo.local);
-    $('#caja').value = anticipo.caja || '';
-
-    // Mostrar/ocultar campo caja según el medio de pago
-    toggleCajaField();
-
-    // Manejar el adjuntador en modo edición
-    const adjuntoInput = $('#adjunto');
-    const adjuntoGroup = adjuntoInput?.closest('.form-group');
-
-    if (adjuntoGroup && adjuntoInput) {
-      // Siempre quitar required en modo edición
-      adjuntoInput.required = false;
-
-      // Si el anticipo está pendiente, mostrar el adjuntador con la imagen actual
-      if (anticipo.estado === 'pendiente') {
-        adjuntoGroup.style.display = '';
-
-        // Crear preview del adjunto actual
-        const labelAdjunto = adjuntoGroup.querySelector('label');
-        if (labelAdjunto) {
-          labelAdjunto.innerHTML = 'Comprobante (imagen/PDF) - <small style="color:#059669;">Actual: puedes cambiarlo</small>';
-        }
-
-        // Mostrar la imagen actual si existe
-        if (anticipo.tiene_adjunto) {
-          mostrarPreviewAdjuntoActual(anticipo.id);
-        }
-      } else {
-        // Si no está pendiente, ocultar el adjuntador (no se puede cambiar)
-        adjuntoGroup.style.display = 'none';
-      }
-    }
+  function perms(a) {
+    const lvl = profile.level || 0;
+    const activo = a.estado !== 'eliminado_global';
+    return {
+      edit: lvl >= 3 && a.estado === 'pendiente',
+      del: !!profile.can_delete && activo && (a.estado === 'pendiente' || lvl >= 6),
+      oppen: lvl >= 3 && activo && !a.oppen_onaccnr,
+    };
   }
 
-  window.cerrarModal = function() {
-    const modal = $('#modalAnticipo');
-    modal?.classList.remove('active');
-
-    // Mostrar el input de adjunto y restaurar required
-    const adjuntoInput = $('#adjunto');
-    const adjuntoGroup = adjuntoInput?.closest('.form-group');
-    if (adjuntoGroup) adjuntoGroup.style.display = '';
-    if (adjuntoInput) adjuntoInput.required = true; // Restaurar required para próximo uso
-  };
-
-  // ===== GUARDAR ANTICIPO =====
-  window.guardarAnticipo = async function(event) {
-    event.preventDefault();
-
-    const anticipoId = $('#anticipoId').value;
-    const isEdit = !!anticipoId;
-
-    // Manejar adjunto: en creación es obligatorio, en edición es opcional (solo si hay un nuevo archivo)
-    let adjuntoPath = null;
-    const adjuntoFile = $('#adjunto')?.files?.[0];
-
-    // Verificar si se debe subir un nuevo adjunto
-    const shouldUploadNew = !isEdit ? true : (adjuntoFile ? true : false);
-
-    if (!isEdit && !adjuntoFile) {
-      // Creación requiere adjunto
-      alert('⚠️  Debés subir un comprobante del anticipo');
+  function renderTable() {
+    const tbody = $('#anticiposTableBody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="12"><div class="ant-empty"><div style="font-size:30px">🗂️</div><h3>Sin anticipos</h3><p>No hay anticipos que coincidan con los filtros aplicados.</p></div></td></tr>';
       return;
     }
+    tbody.innerHTML = rows.map((a) => {
+      const pm = perms(a);
+      const divisa = a.divisa || 'ARS';
+      const importeHtml = divisa === 'ARS'
+        ? `<strong>${money(a.importe)}</strong>`
+        : `<strong>${money(a.importe, divisa)}</strong><span class="badge badge-divisa">${esc(divisa)}</span><div class="ant-muted">≈ ${money(importeArs(a))}</div>`;
+      return `
+        <tr class="${a.estado === 'eliminado_global' ? 'is-eliminado' : ''}" data-id="${a.id}">
+          <td class="nowrap">${fmtDate(a.fecha_pago)}</td>
+          <td class="nowrap">${fmtDate(a.fecha_evento)}</td>
+          <td><div class="ant-cliente" title="${esc(a.cliente)}">${esc(a.cliente)}</div><div class="ant-muted">ID ${a.id}${a.caja ? ' · ' + esc(a.caja) : ''}${a.turno ? ' · ' + esc(a.turno) : ''}</div></td>
+          <td>${esc(a.local)}</td>
+          <td class="num">${importeHtml}</td>
+          <td class="nowrap">${esc(a.medio_pago || '–')}</td>
+          <td class="mono" title="${esc(a.numero_transaccion || '')}">${a.numero_transaccion ? esc(a.numero_transaccion) : '<span class="ant-muted">–</span>'}</td>
+          <td>${oppenBadge(a)}</td>
+          <td>${estadoBadge(a)}</td>
+          <td class="nowrap"><span title="${esc(fmtDateTime(a.created_at))}">${esc(a.created_by || '–')}</span></td>
+          <td>${thumbCell(a)}</td>
+          <td>
+            <div class="ant-actions">
+              <button class="ant-ico" title="Ver detalle" onclick="verDetalle(${a.id})">👁</button>
+              ${pm.edit ? `<button class="ant-ico" title="Editar" onclick="editarAnticipo(${a.id})">✏️</button>` : ''}
+              ${pm.oppen ? `<button class="ant-ico" title="${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}" onclick="enviarOppen(${a.id})">🔁</button>` : ''}
+              ${pm.del ? `<button class="ant-ico danger" title="Eliminar" onclick="eliminarAnticipo(${a.id})">🗑</button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
 
-    if (shouldUploadNew && adjuntoFile) {
+  function renderPagination() {
+    const info = $('#pagInfo');
+    const pager = $('#pager');
+    if (!info || !pager) return;
+    const from = state.total ? (state.page - 1) * state.perPage + 1 : 0;
+    const to = Math.min(state.page * state.perPage, state.total);
+    info.textContent = state.total ? `Mostrando ${from}–${to} de ${state.total} anticipos` : 'Sin resultados';
+    $('#pagPerPage').value = String(state.perPage);
 
-      // Subir adjunto
-      try {
-        // IMPORTANTE: Generar ID temporal único para evitar colisiones
-        // Usamos timestamp + random para garantizar unicidad entre usuarios concurrentes
-        const tempEntityId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const pages = [];
+    const P = state.pages, c = state.page;
+    const push = (n) => { if (!pages.includes(n) && n >= 1 && n <= P) pages.push(n); };
+    push(1); push(2); push(c - 1); push(c); push(c + 1); push(P - 1); push(P);
+    pages.sort((a, b) => a - b);
+    let html = `<button ${c <= 1 ? 'disabled' : ''} onclick="irPagina(${c - 1})" title="Anterior">‹</button>`;
+    let prev = 0;
+    pages.forEach((n) => {
+      if (n - prev > 1) html += '<span style="padding:0 4px;color:#9ca3af">…</span>';
+      html += `<button class="${n === c ? 'is-current' : ''}" onclick="irPagina(${n})">${n}</button>`;
+      prev = n;
+    });
+    html += `<button ${c >= P ? 'disabled' : ''} onclick="irPagina(${c + 1})" title="Siguiente">›</button>`;
+    pager.innerHTML = html;
+  }
+  window.irPagina = function (n) {
+    if (n < 1 || n > state.pages || n === state.page) return;
+    state.page = n;
+    loadAnticipos();
+    $('.ant-table-wrap')?.scrollTo({ top: 0 });
+  };
 
-        const formData = new FormData();
-        formData.append('files[]', adjuntoFile);
-        formData.append('tab', 'anticipos');
-        formData.append('local', $('#local').value);
-        formData.append('caja', 'admin');
-        formData.append('turno', 'dia');
-        formData.append('fecha', $('#fechaPago').value);
-        formData.append('entity_type', 'anticipo_recibido_temp'); // marcamos como temporal
-        formData.append('entity_id', tempEntityId); // ID único temporal
+  const FILTER_LABELS = {
+    q: 'Buscar', estado: 'Estado', oppen: 'Oppen', local: 'Local', medio_pago_id: 'Medio', cliente: 'Cliente',
+    nro_transaccion: 'N° trans.', nro_anticipo: 'N° Oppen', usuario: 'Usuario', divisa: 'Divisa', fecha_desde: 'Desde', fecha_hasta: 'Hasta',
+  };
+  function renderChips() {
+    const box = $('#chipsFiltros');
+    if (!box) return;
+    box.innerHTML = Object.entries(state.filters).map(([k, v]) => {
+      let label = v;
+      if (k === 'medio_pago_id') label = medios.find((m) => String(m.id) === String(v))?.nombre || v;
+      if (k === 'estado') label = { pendiente: 'Pendiente', consumido: 'Consumido', eliminado_global: 'Eliminado' }[v] || v;
+      if (k === 'oppen') label = { creado: 'Creado', pendiente: 'Sin enviar', error: 'Con error' }[v] || v;
+      if (k.startsWith('fecha')) label = fmtDate(v);
+      return `<span class="ant-chip">${esc(FILTER_LABELS[k] || k)}: ${esc(label)} <button title="Quitar" onclick="quitarFiltro('${k}')">×</button></span>`;
+    }).join('');
+  }
+  window.quitarFiltro = function (k) {
+    delete state.filters[k];
+    const el = $(`[data-filter="${k}"]`); if (el) el.value = '';
+    state.page = 1;
+    loadAnticipos();
+  };
+  function renderSortHeaders() {
+    $$('#antTable th.sortable').forEach((th) => {
+      const on = th.dataset.sort === state.sort;
+      th.classList.toggle('sorted', on);
+      th.dataset.arrow = on ? (state.dir === 'asc' ? '▲' : '▼') : '';
+    });
+  }
 
-        const uploadRes = await fetch('/files/upload', {
-          method: 'POST',
-          body: formData
-        });
+  // ===== detalle =====
+  window.verDetalle = function (id) {
+    const a = rows.find((r) => r.id === id);
+    if (!a) return;
+    const divisa = a.divisa || 'ARS';
+    const item = (l, v, full = false) => `<div class="detail-item${full ? ' full' : ''}"><span class="detail-label">${l}</span><span class="detail-value">${v}</span></div>`;
 
-        const uploadData = await uploadRes.json();
-        if (!uploadData.success) {
-          alert('❌ Error subiendo comprobante: ' + uploadData.msg);
-          return;
-        }
-
-        console.log('[DEBUG UPLOAD] uploadData:', uploadData);
-        console.log('[DEBUG UPLOAD] uploadData.items[0]:', uploadData.items[0]);
-
-        // IMPORTANTE: El endpoint devuelve gcs_path, no path
-        adjuntoPath = uploadData.items[0].gcs_path || uploadData.items[0].path;
-
-        console.log('[DEBUG UPLOAD] adjuntoPath asignado:', adjuntoPath);
-
-        // Guardar el tempEntityId para vinculación posterior (se usará después al crear el objeto data)
-        window._tempEntityIdForAnticipo = tempEntityId;
-      } catch (error) {
-        console.error('Error al subir adjunto:', error);
-        alert('❌ Error al subir el comprobante');
-        return;
-      }
+    let oppenHtml;
+    if (a.oppen_onaccnr) {
+      oppenHtml = item('N° anticipo (OnAccNr)', `<span class="badge badge-oppen-ok">N° ${esc(a.oppen_onaccnr)}</span>`) +
+        item('Recibo Oppen', esc(a.oppen_sernr || '–')) +
+        item('Enviado', esc(fmtDateTime(a.oppen_enviado_at))) +
+        (a.oppen_consumo_sernr ? item('Consumido en recibo Oppen', esc(a.oppen_consumo_sernr)) : item('Consumo en Oppen', a.estado === 'consumido' ? 'Pendiente de auditar la caja' : '–'));
+    } else if (a.oppen_estado === 'error') {
+      oppenHtml = item('Estado', '<span class="badge badge-oppen-err">⚠ Error al enviar</span>') +
+        item('Último intento', esc(fmtDateTime(a.oppen_enviado_at))) +
+        item('Detalle del error', `<span style="color:#991b1b">${esc(a.oppen_error || '–')}</span>`, true);
+    } else {
+      oppenHtml = item('Estado', '<span class="badge badge-oppen-none">Sin enviar</span>') +
+        item('Nota', a.estado === 'eliminado_global' ? 'Anticipo eliminado, no se envía.' : 'Se crea en Oppen al dar de alta el anticipo. Podés enviarlo manualmente con “Enviar a Oppen”.', true);
     }
 
-    const data = {
-      fecha_pago: $('#fechaPago')?.value || '',
-      fecha_evento: $('#fechaEvento')?.value || '',
-      cliente: $('#cliente')?.value || '',
-      local: $('#local')?.value || '',
-      importe: $('#importe')?.value || '',  // Enviar como string para evitar pérdida de precisión
-      divisa: $('#divisa')?.value || 'ARS',
-      medio_pago_id: parseInt($('#medioPagoId')?.value) || null,
-      numero_transaccion: $('#numeroTransaccion')?.value?.trim() || null,
-      observaciones: $('#observaciones')?.value?.trim() || null,
-      nro_remesa: $('#nroRemesa')?.value?.trim() || null,
-      precinto: $('#precinto')?.value?.trim() || null
+    const hasAdj = !!a.tiene_adjunto;
+    $('#detalleTitulo').textContent = `Anticipo ID ${a.id} · ${a.cliente}`;
+    $('#detalleBody').innerHTML = `
+      <div class="detail-layout">
+        <div>
+          <div class="detail-grid">
+            ${item('Estado', estadoBadge(a))}
+            ${item('Local', esc(a.local))}
+            ${item('Cliente', esc(a.cliente))}
+            ${item('Fecha de pago', fmtDate(a.fecha_pago))}
+            ${item('Fecha del evento', fmtDate(a.fecha_evento))}
+            ${item('Importe', `${money(a.importe, divisa)}${divisa !== 'ARS' ? ` <span class="badge badge-divisa">${esc(divisa)}</span>` : ''}`)}
+            ${divisa !== 'ARS' ? item('Cotización', `${money(a.cotizacion_divisa)} por ${esc(divisa)}`) + item('Equivalente en ARS', `<b style="color:#059669">${money(importeArs(a))}</b>`) : ''}
+            ${item('Medio de pago', esc(a.medio_pago || '–'))}
+            ${item('N° transacción', `<span class="mono">${esc(a.numero_transaccion || '–')}</span>`)}
+            ${a.caja ? item('Caja / turno', `${esc(a.caja)}${a.turno ? ' · ' + esc(a.turno) : ''}`) : ''}
+            ${item('Cargado por', `${esc(a.created_by || '–')}<div class="ant-muted">${esc(fmtDateTime(a.created_at))}</div>`)}
+            ${a.updated_by ? item('Última edición', `${esc(a.updated_by)}<div class="ant-muted">${esc(fmtDateTime(a.updated_at))}</div>`) : ''}
+            ${a.observaciones ? item('Observaciones', esc(a.observaciones), true) : ''}
+          </div>
+
+          ${a.estado === 'consumido' ? `
+          <div class="detail-section"><h3>Consumo en caja</h3><div class="detail-grid">
+            ${item('Fecha', fmtDate(a.fecha_consumo))}
+            ${item('Caja', esc(a.caja_consumo || '–'))}
+            ${item('Veces consumido', esc(a.n_consumos || 1))}
+          </div></div>` : ''}
+
+          ${a.estado === 'eliminado_global' ? `
+          <div class="detail-section"><h3>Eliminación</h3><div class="detail-grid">
+            ${item('Eliminado por', esc(a.deleted_by || '–'))}
+            ${item('Fecha', esc(fmtDateTime(a.deleted_at)))}
+            ${item('Motivo', `<span style="color:#991b1b;font-weight:600">${esc(a.motivo_eliminacion || '–')}</span>`, true)}
+          </div></div>` : ''}
+
+          <div class="detail-section"><h3>Oppen</h3><div class="detail-grid">${oppenHtml}</div></div>
+        </div>
+        <div>
+          <div class="detail-label" style="margin-bottom:6px">Comprobante</div>
+          <div class="ant-preview" id="detallePreview">${hasAdj ? '<div class="ant-loading"><div class="ant-spinner"></div></div>' : '<span class="ant-muted">Sin comprobante adjunto</span>'}</div>
+          ${hasAdj ? `<div class="ant-preview-actions">
+            <button class="ant-btn ant-btn-ghost ant-btn-sm" onclick="verComprobante(${a.id})">🔍 Ampliar</button>
+            <a class="ant-btn ant-btn-ghost ant-btn-sm" href="${esc(viewUrl(a))}" target="_blank" rel="noopener">↗ Abrir</a>
+            <a class="ant-btn ant-btn-ghost ant-btn-sm" href="${esc(downloadUrl(a))}">⬇ Descargar</a>
+          </div>` : ''}
+        </div>
+      </div>`;
+
+    const pm = perms(a);
+    $('#detalleFooter').innerHTML = `
+      ${pm.oppen ? `<button class="ant-btn ant-btn-ghost" onclick="enviarOppen(${a.id}, true)">🔁 ${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}</button>` : ''}
+      ${pm.edit ? `<button class="ant-btn ant-btn-ghost" onclick="cerrarDetalle(); editarAnticipo(${a.id})">✏️ Editar</button>` : ''}
+      ${pm.del ? `<button class="ant-btn ant-btn-danger" onclick="eliminarAnticipo(${a.id})">🗑 Eliminar</button>` : ''}
+      <button class="ant-btn ant-btn-primary" onclick="cerrarDetalle()">Cerrar</button>`;
+    $('#modalDetalle').classList.add('active');
+
+    if (hasAdj) renderAttachment($('#detallePreview'), a, { compact: true });
+  };
+  window.cerrarDetalle = function () { $('#modalDetalle')?.classList.remove('active'); };
+
+  // ===== comprobante: render robusto (imagen / PDF / fallback) =====
+  // Carga el archivo via fetch para conocer el content-type real; si el navegador no
+  // puede mostrarlo (p.ej. HEIC) ofrece abrir/descargar en vez de un icono roto.
+  const objectUrls = new Set();
+  function revokeObjectUrls() { objectUrls.forEach((u) => URL.revokeObjectURL(u)); objectUrls.clear(); }
+
+  async function renderAttachment(container, a, { compact = false } = {}) {
+    const url = viewUrl(a);
+    const dl = downloadUrl(a);
+    if (!container || !url) return;
+    const fallback = (msg) => {
+      container.innerHTML = `<div class="${compact ? '' : 'ant-visor-fallback'}" style="text-align:center;padding:20px;color:${compact ? '#6b7280' : '#e5e7eb'}">
+        <div style="font-size:36px">📎</div>
+        <div style="margin:8px 0 12px">${esc(msg)}</div>
+        <a class="ant-btn ant-btn-ghost ant-btn-sm" href="${esc(url)}" target="_blank" rel="noopener">↗ Abrir en pestaña</a>
+        <a class="ant-btn ant-btn-primary ant-btn-sm" href="${esc(dl)}">⬇ Descargar</a>
+      </div>`;
+    };
+    const showImg = (src) => {
+      const img = document.createElement('img');
+      img.alt = 'Comprobante';
+      img.src = src;
+      if (compact) img.onclick = () => verComprobante(a.id);
+      img.onerror = () => fallback('El navegador no puede mostrar este formato de imagen (por ejemplo HEIC de iPhone).');
+      container.innerHTML = '';
+      container.appendChild(img);
+    };
+    const showPdf = (src) => {
+      container.innerHTML = `<iframe src="${esc(src)}#toolbar=1" title="Comprobante PDF"></iframe>`;
     };
 
-    // DEBUG: Log en modo edición para diagnosticar
-    if (isEdit) {
-      console.log('=== DEBUG EDICIÓN ===');
-      console.log('Anticipo ID:', anticipoId);
-      console.log('Valores capturados:', data);
-      console.log('Fecha Pago input:', $('#fechaPago'));
-      console.log('Fecha Pago value:', $('#fechaPago')?.value);
+    try {
+      const r = await fetch(url, { credentials: 'same-origin' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      const blob = await r.blob();
+      const type = (blob.type || ct).toLowerCase();
+      const obj = URL.createObjectURL(blob);
+      objectUrls.add(obj);
+      if (type.startsWith('image/')) return showImg(obj);
+      if (type === 'application/pdf' || isPdf(a)) return showPdf(obj);
+      // tipo desconocido: probar como imagen igual (octet-stream de JPG mal tipado)
+      const probe = new Image();
+      probe.onload = () => showImg(obj);
+      probe.onerror = () => fallback('No se puede previsualizar este archivo.');
+      probe.src = obj;
+    } catch (e) {
+      // CORS / redirect a URL firmada: dejar que el navegador lo cargue directo
+      console.warn('fetch comprobante falló, fallback directo', e);
+      if (isPdf(a)) showPdf(url); else showImg(url);
     }
+  }
 
-    // Agregar caja solo si hay un valor seleccionado
-    const cajaValue = $('#caja').value;
-    if (cajaValue) {
-      data.caja = cajaValue;
+  window.verComprobante = function (id) {
+    const a = rows.find((r) => r.id === id);
+    if (!a || !a.tiene_adjunto) { toast('Este anticipo no tiene comprobante adjunto', 'warn'); return; }
+    $('#visorTitulo').textContent = `Comprobante · ${a.cliente} · ${fmtDate(a.fecha_pago)}`;
+    $('#visorAbrir').href = viewUrl(a);
+    $('#visorDescargar').href = downloadUrl(a);
+    const body = $('#visorBody');
+    body.innerHTML = '<div class="ant-loading" style="color:#e5e7eb"><div class="ant-spinner"></div></div>';
+    $('#modalVisor').classList.add('active');
+    renderAttachment(body, a, { compact: false });
+  };
+  window.cerrarVisor = function () {
+    $('#modalVisor')?.classList.remove('active');
+    const body = $('#visorBody'); if (body) body.innerHTML = '';
+  };
+
+  // ===== Oppen =====
+  window.enviarOppen = async function (id, fromDetalle = false) {
+    const a = rows.find((r) => r.id === id);
+    if (!a) return;
+    if (!confirm(`¿Enviar el anticipo de "${a.cliente}" (${money(importeArs(a))}) a Oppen?\n\nSe crea un recibo de anticipo (OnAccount). No se puede editar después: solo corregir con contra-recibo.`)) return;
+    try {
+      const d = await api(`/api/anticipos/${id}/enviar_oppen`, { json: {} });
+      if (d.success) toast(d.already ? `Ya estaba en Oppen: N° ${d.onaccnr}` : `✅ Creado en Oppen: anticipo N° ${d.onaccnr} (recibo ${d.sernr})`, 'ok', 7000);
+      else toast(`⚠️ ${d.msg || 'No se pudo enviar a Oppen'}`, d.skipped ? 'warn' : 'err', 8000);
+    } catch (e) {
+      toast('❌ ' + e.message, 'err');
     }
+    if (fromDetalle) cerrarDetalle();
+    await loadAnticipos();
+  };
 
-    // Agregar turno solo si hay un valor seleccionado
-    const turnoValue = $('#turno').value;
-    if (turnoValue) {
-      data.turno = turnoValue;
-    }
+  // ===== PayModes =====
+  async function abrirPaymodes() {
+    await loadMedios();
+    const tb = $('#paymodesBody');
+    tb.innerHTML = medios.map((m) => `
+      <tr>
+        <td><b>${esc(m.nombre)}</b>${m.es_efectivo ? ' <span class="ant-muted">(efectivo)</span>' : ''}</td>
+        <td><input type="text" id="pm_${m.id}" value="${esc(m.paymode_oppen || 'INTERC')}" maxlength="30"></td>
+        <td><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="guardarPaymode(${m.id})">Guardar</button></td>
+      </tr>`).join('') || '<tr><td colspan="3" class="ant-muted">Sin medios activos</td></tr>';
+    $('#modalPaymodes').classList.add('active');
+  }
+  window.cerrarPaymodes = function () { $('#modalPaymodes')?.classList.remove('active'); };
+  window.guardarPaymode = async function (id) {
+    const v = ($(`#pm_${id}`)?.value || '').trim().toUpperCase();
+    if (!v) { toast('Ingresá un código', 'warn'); return; }
+    try {
+      const d = await api(`/api/medios_anticipos/${id}/paymode_oppen`, { method: 'PUT', json: { paymode_oppen: v } });
+      if (d.success) { toast(d.msg || 'Guardado', 'ok'); const m = medios.find((x) => x.id === id); if (m) m.paymode_oppen = v; }
+      else toast('❌ ' + (d.msg || 'No se pudo guardar'), 'err');
+    } catch (e) { toast('❌ ' + e.message, 'err'); }
+  };
 
-    // Vincular tempEntityId si existe (para vinculación precisa de imagen)
-    if (window._tempEntityIdForAnticipo) {
-      data.temp_entity_id = window._tempEntityIdForAnticipo;
-      delete window._tempEntityIdForAnticipo; // limpiar para próximo uso
-    }
+  // ===== formulario crear / editar =====
+  function setNota(html, cls = 'info') { $('#modalNota').innerHTML = html ? `<div class="ant-note ${cls}">${html}</div>` : ''; }
 
-    // Agregar cotización de divisa si no es ARS
-    if ($('#divisa').value !== 'ARS') {
-      const cotizacionStr = $('#cotizacionUSD').value;
-      const cotizacion = parseFloat(cotizacionStr);
-      if (!cotizacion || cotizacion <= 0) {
-        alert('⚠️  Debés ingresar la cotización de la divisa');
-        return;
+  function toggleDivisa() {
+    const esArs = ($('#divisa').value || 'ARS') === 'ARS';
+    $('#camposUSD').style.display = esArs ? 'none' : 'block';
+    $('#cotizacionUSD').required = !esArs;
+    if (esArs) $('#cotizacionUSD').value = '';
+    calcEquivalencia();
+  }
+  function calcEquivalencia() {
+    const divisa = $('#divisa').value || 'ARS';
+    const imp = parseFloat($('#importe').value) || 0;
+    const cot = parseFloat($('#cotizacionUSD').value) || 0;
+    $('#montoCalculado').textContent = divisa !== 'ARS' && imp > 0 && cot > 0 ? money(imp * cot) : '–';
+  }
+  function medioSeleccionadoEsEfectivo() {
+    const m = medios.find((x) => String(x.id) === String($('#medioPagoId').value));
+    return !!(m && Number(m.es_efectivo) === 1);
+  }
+  function toggleCajaFields() {
+    const isEdit = !!$('#anticipoId').value;
+    const ef = medioSeleccionadoEsEfectivo() && !isEdit;
+    const show = (id, on, req) => {
+      const g = $(id); if (!g) return;
+      g.style.display = on ? '' : 'none';
+      const input = g.querySelector('input, select');
+      if (input) { input.required = !!(on && req); if (!on) input.value = ''; }
+    };
+    show('#cajaGroup', ef, true);
+    show('#turnoGroup', ef && localTieneMultiplesTurnos, true);
+    show('#nroRemesaGroup', ef, true);
+    show('#precintoGroup', ef, true);
+  }
+  async function loadCajasForLocal(local) {
+    const cajaSel = $('#caja'), turnoSel = $('#turno');
+    cajaSel.innerHTML = '<option value="">Seleccione una caja</option>';
+    turnoSel.innerHTML = '<option value="">Seleccione un turno</option>';
+    localTieneMultiplesTurnos = false;
+    if (!local) return;
+    try {
+      const d = await api(`/api/locales/${encodeURIComponent(local)}/cajas`);
+      if (d.success && d.cajas) {
+        cajaSel.innerHTML += d.cajas.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        localTieneMultiplesTurnos = !!d.tiene_multiples_turnos;
+        if (localTieneMultiplesTurnos && d.turnos) turnoSel.innerHTML += d.turnos.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
       }
-      data.cotizacion_divisa = cotizacionStr;  // Enviar como string para evitar pérdida de precisión
+    } catch (e) { console.error('cajas', e); }
+  }
+  function previewNuevoAdjunto() {
+    const f = $('#adjunto').files?.[0];
+    const box = $('#adjuntoPreview');
+    if (!f) { if (!$('#anticipoId').value) { box.style.display = 'none'; box.innerHTML = ''; } return; }
+    box.style.display = 'block';
+    if (f.type.startsWith('image/') && !/heic|heif/i.test(f.type + f.name)) {
+      const u = URL.createObjectURL(f);
+      box.innerHTML = `<img src="${u}" style="max-width:220px;max-height:220px;border-radius:8px;border:1px solid #e5e7eb" alt="Vista previa"><div class="ant-muted">${esc(f.name)} · ${(f.size / 1024).toFixed(0)} KB</div>`;
+    } else {
+      box.innerHTML = `<div class="ant-note info" style="margin:0">📎 ${esc(f.name)} · ${(f.size / 1024).toFixed(0)} KB</div>`;
+    }
+  }
+
+  window.abrirModal = async function (id = null) {
+    const form = $('#formAnticipo');
+    form.reset();
+    $('#anticipoId').value = id || '';
+    $('#adjuntoPreview').innerHTML = ''; $('#adjuntoPreview').style.display = 'none';
+    setNota('');
+    delete window._deleteCurrentAdjunto;
+    const adjInput = $('#adjunto');
+    const isEdit = !!id;
+
+    $('#modalTitle').textContent = isEdit ? `Editar anticipo ID ${id}` : 'Nuevo anticipo';
+    adjInput.required = !isEdit;
+    ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId', '#local'].forEach((s) => { $(s).disabled = false; });
+
+    if (!isEdit) {
+      const hoy = new Date();
+      $('#fechaPago').value = hoy.toISOString().slice(0, 10);
+      $('#divisa').value = 'ARS';
+      if (locales.length === 1) { $('#local').value = locales[0]; await loadCajasForLocal(locales[0]); }
+      if (profile.level >= 3) setNota('Al guardar, el anticipo se envía a <b>Oppen</b> y se guarda su N° de anticipo. Si Oppen falla, queda igual cargado acá y se puede reintentar.', 'info');
+    } else {
+      const a = rows.find((r) => r.id === id);
+      if (!a) return;
+      $('#fechaPago').value = (a.fecha_pago || '').slice(0, 10);
+      $('#fechaEvento').value = (a.fecha_evento || '').slice(0, 10);
+      $('#cliente').value = a.cliente || '';
+      $('#local').value = a.local || '';
+      $('#medioPagoId').value = a.medio_pago_id || '';
+      $('#importe').value = a.importe ?? '';
+      $('#divisa').value = a.divisa || 'ARS';
+      $('#cotizacionUSD').value = a.cotizacion_divisa ?? '';
+      $('#numeroTransaccion').value = a.numero_transaccion || '';
+      $('#observaciones').value = a.observaciones || '';
+      $('#local').disabled = true;
+      const bloqueaMonto = !!a.oppen_onaccnr || Number(a.es_efectivo) === 1;
+      if (bloqueaMonto) {
+        ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId'].forEach((s) => { $(s).disabled = true; });
+        setNota(a.oppen_onaccnr
+          ? `Este anticipo ya está en Oppen (N° ${esc(a.oppen_onaccnr)}): no se puede cambiar importe, divisa, cotización ni medio de pago. Solo datos descriptivos y comprobante.`
+          : 'Anticipo en efectivo con remesa espejo en la caja: no se puede cambiar importe, divisa ni medio de pago. Solo datos descriptivos y comprobante.', 'warn');
+      }
+      if (a.tiene_adjunto) mostrarAdjuntoActual(a);
+    }
+    toggleDivisa();
+    toggleCajaFields();
+    $('#modalAnticipo').classList.add('active');
+    setTimeout(() => $('#cliente')?.focus(), 50);
+  };
+  window.cerrarModal = function () {
+    $('#modalAnticipo')?.classList.remove('active');
+    ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId', '#local'].forEach((s) => { $(s).disabled = false; });
+  };
+  window.editarAnticipo = function (id) { abrirModal(id); };
+
+  function mostrarAdjuntoActual(a) {
+    const box = $('#adjuntoPreview');
+    box.style.display = 'block';
+    const thumb = isPdf(a) ? '<div class="ant-thumb-pdf" style="width:64px;height:64px;font-size:12px">PDF</div>'
+      : `<img src="${esc(viewUrl(a))}" style="max-width:160px;max-height:160px;border-radius:8px;border:1px solid #e5e7eb" alt="Comprobante actual" onerror="this.style.display='none'">`;
+    box.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="cursor:zoom-in" onclick="verComprobante(${a.id})">${thumb}</div>
+        <div>
+          <div style="font-size:13px;color:#059669;font-weight:600">📎 Comprobante actual</div>
+          <div class="ant-muted" style="margin:4px 0 8px">Subí otro archivo arriba para reemplazarlo.</div>
+          <button type="button" class="ant-btn ant-btn-danger ant-btn-sm" id="btnQuitarAdjunto">🗑 Quitar comprobante</button>
+        </div>
+      </div>`;
+    $('#btnQuitarAdjunto').onclick = () => {
+      if (!confirm('¿Quitar el comprobante actual? Tendrás que subir uno nuevo antes de guardar.')) return;
+      window._deleteCurrentAdjunto = true;
+      $('#adjunto').required = true;
+      box.innerHTML = '<div class="ant-note warn" style="margin:0">⚠️ El comprobante actual se quitará al guardar. Subí uno nuevo.</div>';
+    };
+  }
+
+  async function subirAdjunto(file) {
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    const fd = new FormData();
+    fd.append('files[]', file);
+    fd.append('tab', 'anticipos');
+    fd.append('local', $('#local').value);
+    fd.append('caja', 'admin');
+    fd.append('turno', 'dia');
+    fd.append('fecha', $('#fechaPago').value);
+    fd.append('entity_type', 'anticipo_recibido_temp');
+    fd.append('entity_id', tempId);
+    const r = await fetch('/files/upload', { method: 'POST', body: fd, credentials: 'same-origin' });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.msg || 'Error subiendo comprobante');
+    const it = (d.items || [])[0] || {};
+    return { path: it.gcs_path || it.path, tempId };
+  }
+
+  window.guardarAnticipo = async function (ev) {
+    ev.preventDefault();
+    const id = $('#anticipoId').value;
+    const isEdit = !!id;
+    const btn = $('#btnGuardar');
+    const file = $('#adjunto').files?.[0];
+
+    const data = {
+      fecha_pago: $('#fechaPago').value,
+      fecha_evento: $('#fechaEvento').value,
+      cliente: $('#cliente').value.trim(),
+      local: $('#local').value,
+      importe: $('#importe').value,
+      divisa: $('#divisa').value || 'ARS',
+      medio_pago_id: parseInt($('#medioPagoId').value) || null,
+      numero_transaccion: $('#numeroTransaccion').value.trim() || null,
+      observaciones: $('#observaciones').value.trim() || null,
+    };
+    if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.importe) { toast('Completá los campos obligatorios', 'warn'); return; }
+    if (!(parseFloat(data.importe) > 0)) { toast('El importe debe ser mayor a cero', 'warn'); return; }
+    if (data.divisa !== 'ARS') {
+      const cot = parseFloat($('#cotizacionUSD').value);
+      if (!(cot > 0)) { toast('Ingresá la cotización de la divisa', 'warn'); return; }
+      data.cotizacion_divisa = $('#cotizacionUSD').value;
+    }
+    if (!isEdit) {
+      if (!data.medio_pago_id) { toast('Seleccioná el medio de pago', 'warn'); return; }
+      if (!file) { toast('Subí el comprobante del anticipo', 'warn'); return; }
+      if (medioSeleccionadoEsEfectivo()) {
+        data.caja = $('#caja').value; data.nro_remesa = $('#nroRemesa').value.trim(); data.precinto = $('#precinto').value.trim();
+        if (localTieneMultiplesTurnos) data.turno = $('#turno').value;
+        if (!data.caja) { toast('Seleccioná la caja que recibió el efectivo', 'warn'); return; }
+        if (localTieneMultiplesTurnos && !data.turno) { toast('Seleccioná el turno', 'warn'); return; }
+        if (!data.nro_remesa || !data.precinto) { toast('Ingresá N° de remesa y N° de precinto', 'warn'); return; }
+      }
+    } else {
+      if (window._deleteCurrentAdjunto && !file) { toast('Quitaste el comprobante: subí uno nuevo antes de guardar', 'warn'); return; }
+      if (window._deleteCurrentAdjunto) data.delete_adjunto = true;
+      ['importe', 'divisa', 'medio_pago_id', 'cotizacion_divisa'].forEach((k) => { if ($('#importe').disabled) delete data[k]; });
     }
 
-    // Agregar adjunto si existe
-    if (adjuntoPath) {
-      data.adjunto_gcs_path = adjuntoPath;
-    }
-
-    // En modo edición, verificar si se marcó para eliminar el adjunto actual
-    if (isEdit && window._deleteCurrentAdjunto) {
-      data.delete_adjunto = true;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      if (file) {
+        btn.textContent = 'Subiendo comprobante…';
+        const up = await subirAdjunto(file);
+        data.adjunto_gcs_path = up.path;
+        data.temp_entity_id = up.tempId;
+        btn.textContent = 'Guardando…';
+      }
+      const d = isEdit
+        ? await api(`/api/anticipos_recibidos/editar/${id}`, { method: 'PUT', json: data })
+        : await api('/api/anticipos_recibidos/crear', { json: data });
+      if (!d.success) { toast('❌ ' + (d.msg || 'No se pudo guardar'), 'err', 8000); return; }
+      if (!isEdit && d.oppen && !d.oppen.skipped) {
+        if (d.oppen.success) toast(`✅ Anticipo creado. Oppen: N° ${d.oppen.onaccnr} (recibo ${d.oppen.sernr})`, 'ok', 8000);
+        else toast(`Anticipo creado, pero no se pudo enviar a Oppen: ${d.oppen.message}. Podés reintentar desde el listado.`, 'warn', 10000);
+      } else {
+        toast('✅ ' + (d.msg || 'Guardado'), 'ok');
+      }
       delete window._deleteCurrentAdjunto;
-      console.log('[DEBUG] Marcado para eliminar adjunto actual');
+      cerrarModal();
+      await loadAnticipos();
+    } catch (e) {
+      toast('❌ ' + e.message, 'err', 8000);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Guardar';
     }
+  };
 
-    // DEBUG: Mostrar datos de adjunto en modo edición
-    if (isEdit) {
-      console.log('[DEBUG EDICIÓN - ADJUNTOS]', {
-        delete_adjunto: data.delete_adjunto,
-        temp_entity_id: data.temp_entity_id,
-        adjunto_gcs_path: data.adjunto_gcs_path,
-        hay_archivo_nuevo: !!adjuntoFile
-      });
-    }
-
-    // Validaciones básicas
-    if (!data.fecha_pago || !data.fecha_evento || !data.cliente || !data.local || !data.importe) {
-      console.error('Validación fallida:', {
-        fecha_pago: data.fecha_pago,
-        fecha_evento: data.fecha_evento,
-        cliente: data.cliente,
-        local: data.local,
-        importe: data.importe
-      });
-      alert('Por favor completá todos los campos requeridos. Verificá la consola para más detalles.');
-      return;
-    }
-
-    // Validar caja y datos de remesa solo si el medio de pago es efectivo
-    const medioSeleccionado = mediosPagoDisponibles.find(m => m.id == data.medio_pago_id);
-    if (medioSeleccionado && medioSeleccionado.es_efectivo === 1) {
-      if (!data.caja) {
-        alert('⚠️  Debes seleccionar la caja que recibio el efectivo');
-        return;
-      }
-      if (!data.nro_remesa) {
-        alert('⚠️  Debes ingresar el N° de Remesa');
-        return;
-      }
-      if (!data.precinto) {
-        alert('⚠️  Debes ingresar el N° de Precinto');
-        return;
-      }
-    }
-
-    // Validar turno solo si el campo turno está visible y es requerido
-    const turnoGroup = $('#turnoGroup');
-    const turnoSelect = $('#turno');
-    if (turnoGroup && turnoGroup.style.display !== 'none' && turnoSelect.required && !data.turno) {
-      alert('⚠️  Debés seleccionar el turno en que se recibió el anticipo');
-      return;
-    }
-
-    // Validar que el importe sea un número válido mayor a cero
-    const importeNum = parseFloat(data.importe);
-    if (isNaN(importeNum) || importeNum <= 0) {
-      alert('El importe debe ser mayor a cero');
-      return;
-    }
-
+  // ===== eliminar =====
+  window.eliminarAnticipo = async function (id) {
+    const a = rows.find((r) => r.id === id);
+    if (!a) return;
+    const extra = a.oppen_onaccnr ? `\n\nATENCIÓN: ya está en Oppen (N° ${a.oppen_onaccnr}). Eliminarlo acá NO lo anula en Oppen: hay que hacer un contra-recibo.` : '';
+    const motivo = prompt(`Motivo para eliminar el anticipo de "${a.cliente}" (${money(importeArs(a))}):${extra}`);
+    if (motivo === null) return;
+    if (motivo.trim().length < 5) { toast('El motivo debe tener al menos 5 caracteres', 'warn'); return; }
     try {
-      let url, method;
-      if (isEdit) {
-        url = `/api/anticipos_recibidos/editar/${anticipoId}`;
-        method = 'PUT';
-        // ✅ AHORA SE PERMITE EDITAR TODOS LOS CAMPOS (excepto adjunto)
-        delete data.adjunto_gcs_path;  // Solo excluir el adjunto
-      } else {
-        url = '/api/anticipos_recibidos/crear';
-        method = 'POST';
-      }
-
-      const response = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert(`✅ ${result.msg}`);
-        cerrarModal();
-        await loadAnticipos();
-      } else {
-        alert(`❌ Error: ${result.msg || 'No se pudo guardar el anticipo'}`);
-      }
-    } catch (error) {
-      console.error('Error al guardar anticipo:', error);
-      alert('❌ Error de red al guardar anticipo');
-    }
+      const d = await api(`/api/anticipos_recibidos/eliminar/${id}`, { method: 'DELETE', json: { motivo: motivo.trim() } });
+      if (d.success) { toast('🗑 ' + (d.msg || 'Anticipo eliminado'), 'ok'); cerrarDetalle(); await loadAnticipos(); }
+      else toast('❌ ' + (d.msg || 'No se pudo eliminar'), 'err', 8000);
+    } catch (e) { toast('❌ ' + e.message, 'err'); }
   };
 
-  // ===== EDITAR ANTICIPO =====
-  window.editarAnticipo = function(anticipoId) {
-    abrirModal(anticipoId);
-  };
-
-  // ===== ELIMINAR ANTICIPO =====
-  window.eliminarAnticipo = async function(anticipoId, cliente) {
-    const motivo = prompt(`⚠️ ¿Por qué querés eliminar el anticipo de "${cliente}"?\n\nEscribí el motivo de la eliminación (obligatorio):`);
-
-    if (!motivo) {
-      alert('❌ Cancelado. El motivo es obligatorio para eliminar un anticipo.');
-      return;
-    }
-
-    if (motivo.trim().length < 5) {
-      alert('❌ El motivo debe tener al menos 5 caracteres.');
-      return;
-    }
-
-    const confirmacion = confirm(`⚠️ ATENCIÓN: Esta acción NO SE PUEDE DESHACER.\n\nMotivo: ${motivo}\n\n¿Confirmas que querés eliminar definitivamente este anticipo?`);
-    if (!confirmacion) return;
-
-    try {
-      const response = await fetch(`/api/anticipos_recibidos/eliminar/${anticipoId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ motivo: motivo.trim() })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert(`✅ ${data.msg}`);
-        await loadAnticipos();
-      } else {
-        alert(`❌ Error: ${data.msg || 'No se pudo eliminar el anticipo'}`);
-      }
-    } catch (error) {
-      console.error('Error al eliminar anticipo:', error);
-      alert('❌ Error de red al eliminar anticipo');
-    }
-  };
-
-  // ===== VER DETALLES =====
-  window.verDetalles = function(anticipoId) {
-    const anticipo = anticiposData.find(a => a.id === anticipoId);
-    if (!anticipo) return;
-
-    const detalles = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 DETALLES DEL ANTICIPO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Cliente: ${anticipo.cliente}
-Local: ${anticipo.local}
-Importe: ${money(anticipo.importe)}
-
-Fecha de Pago: ${formatDate(anticipo.fecha_pago)}
-Fecha de Evento: ${formatDate(anticipo.fecha_evento)}
-
-Medio de Pago: ${anticipo.medio_pago || '-'}
-Nº Transacción: ${anticipo.numero_transaccion || '-'}
-
-Estado: ${anticipo.estado}
-
-Observaciones:
-${anticipo.observaciones || 'Sin observaciones'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Creado por: ${anticipo.created_by}
-Fecha creación: ${formatDateTime(anticipo.created_at)}
-${anticipo.updated_by ? `\nÚltima actualización: ${formatDateTime(anticipo.updated_at)} por ${anticipo.updated_by}` : ''}
-${anticipo.deleted_by ? `\nEliminado: ${formatDateTime(anticipo.deleted_at)} por ${anticipo.deleted_by}` : ''}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `;
-
-    alert(detalles);
-  };
-
-  function formatDateTime(dateString) {
-    if (!dateString) return '-';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('es-AR');
-    } catch {
-      return dateString;
-    }
-  }
-
-  // ===== MOSTRAR PREVIEW DEL ADJUNTO ACTUAL EN MODO EDICIÓN =====
-  async function mostrarPreviewAdjuntoActual(anticipoId) {
-    try {
-      const response = await fetch(`/api/anticipos_recibidos/${anticipoId}/adjunto`);
-      const data = await response.json();
-
-      if (data.success && data.adjunto) {
-        const adjunto = data.adjunto;
-        const isPDF = adjunto.mime === 'application/pdf' || adjunto.original_name?.toLowerCase().endsWith('.pdf');
-
-        const preview = $('#adjuntoPreview');
-        if (!preview) return;
-
-        // Limpiar preview anterior para evitar duplicados
-        preview.innerHTML = '';
-        preview.style.display = 'block';
-
-        // Crear contenedor para la imagen/PDF
-        const previewContent = document.createElement('div');
-        previewContent.style.cssText = 'margin-bottom: 8px;';
-
-        if (!isPDF) {
-          // Mostrar miniatura de imagen
-          const img = document.createElement('img');
-          img.src = adjunto.view_url;
-          img.style.cssText = 'max-width: 200px; max-height: 200px; border-radius: 8px; display: block;';
-          img.alt = 'Comprobante actual';
-          previewContent.appendChild(img);
-        } else {
-          // Para PDF, mostrar icono
-          previewContent.innerHTML = `
-            <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; text-align: center;">
-              <div style="font-size: 48px;">📄</div>
-              <div style="margin-top: 8px; font-size: 13px; color: #6b7280;">${adjunto.original_name}</div>
-              <button type="button" class="btn-secondary" onclick="verAdjunto(${anticipoId})" style="margin-top: 8px; font-size: 12px; padding: 6px 12px;">
-                Ver PDF
-              </button>
-            </div>
-          `;
-        }
-
-        preview.appendChild(previewContent);
-
-        // Mensaje informativo
-        const infoMsg = document.createElement('div');
-        infoMsg.style.cssText = 'font-size: 12px; color: #059669; margin-bottom: 8px;';
-        infoMsg.textContent = '📎 Comprobante actual. Podés eliminarlo y subir uno nuevo.';
-        preview.appendChild(infoMsg);
-
-        // Agregar botón para eliminar el adjunto actual
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.className = 'btn-delete-adjunto';
-        deleteBtn.style.cssText = 'display: block; width: 100%; padding: 8px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;';
-        deleteBtn.textContent = '🗑️ Eliminar comprobante actual';
-        deleteBtn.onclick = function() {
-          if (confirm('¿Estás seguro de eliminar el comprobante actual? Deberás subir uno nuevo.')) {
-            // Marcar para eliminar el adjunto
-            window._deleteCurrentAdjunto = true;
-            // Limpiar el preview y mostrar mensaje
-            preview.innerHTML = `
-              <div style="padding: 12px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; color: #92400e; font-size: 13px;">
-                ⚠️ El comprobante actual será eliminado al guardar. Subí un nuevo comprobante antes de guardar.
-              </div>
-            `;
-          }
-        };
-        preview.appendChild(deleteBtn);
-      }
-    } catch (error) {
-      console.error('Error al cargar preview del adjunto:', error);
-    }
-  }
-
-  // ===== VER ADJUNTO =====
-  window.verAdjunto = async function(anticipoId) {
-    const anticipo = anticiposData.find(a => a.id === anticipoId);
-    if (!anticipo) return;
-
-    if (!anticipo.tiene_adjunto) {
-      alert('Este anticipo no tiene comprobante adjunto');
-      return;
-    }
-
-    // Abrir modal visor
-    const modal = $('#modalVisorAdjunto');
-    const visorImagen = $('#visorImagen');
-    const visorPDF = $('#visorPDF');
-    const visorLoading = $('#visorLoading');
-    const visorTitulo = $('#visorTitulo');
-
-    // Resetear estados
-    visorImagen.style.display = 'none';
-    visorPDF.style.display = 'none';
-    visorLoading.style.display = 'block';
-    visorImagen.src = '';
-    visorPDF.src = '';
-
-    modal.style.display = 'flex';
-    visorTitulo.textContent = `Comprobante - ${anticipo.cliente}`;
-
-    try {
-      // CRÍTICO: Obtener el adjunto ESPECÍFICO de este anticipo usando el nuevo endpoint
-      const response = await fetch(`/api/anticipos_recibidos/${anticipoId}/adjunto`);
-      const data = await response.json();
-
-      if (data.success && data.adjunto) {
-        const adjunto = data.adjunto;
-        const isPDF = adjunto.mime === 'application/pdf' || adjunto.original_name?.toLowerCase().endsWith('.pdf');
-
-        visorLoading.style.display = 'none';
-
-        if (isPDF) {
-          // Mostrar PDF en iframe
-          visorPDF.src = adjunto.view_url;
-          visorPDF.style.display = 'block';
-        } else {
-          // Mostrar imagen
-          visorImagen.src = adjunto.view_url;
-          visorImagen.style.display = 'block';
-        }
-      } else {
-        visorLoading.innerHTML = '<div style="color: #ef4444;">❌ No se pudo encontrar el comprobante</div>';
-      }
-    } catch (error) {
-      console.error('Error al obtener adjunto:', error);
-      visorLoading.innerHTML = '<div style="color: #ef4444;">❌ Error al cargar el comprobante</div>';
-    }
-  };
-
-  window.cerrarVisorAdjunto = function() {
-    const modal = $('#modalVisorAdjunto');
-    modal.style.display = 'none';
-
-    // Limpiar contenido
-    $('#visorImagen').src = '';
-    $('#visorPDF').src = '';
-  };
-
+  window.addEventListener('beforeunload', revokeObjectUrls);
 })();

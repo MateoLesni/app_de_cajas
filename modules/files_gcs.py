@@ -122,13 +122,24 @@ def _prefix(ctx: dict, scope: str = "day") -> str:
         base += "/"
     return base
 
+_SIGNING_UNAVAILABLE = False
+
 def _signed_get(blob, filename):
-    return blob.generate_signed_url(
-        version="v4",
-        expiration=dt.timedelta(seconds=SIGNED_TTL),
-        method="GET",
-        response_disposition=f'inline; filename="{filename}"',
-    )
+    # En Cloud Run la SA no tiene clave privada: la firma falla siempre con
+    # AttributeError. Se recuerda para no reintentar (ni loguear) en cada vista.
+    global _SIGNING_UNAVAILABLE
+    if _SIGNING_UNAVAILABLE:
+        raise RuntimeError("signing unavailable (no private key)")
+    try:
+        return blob.generate_signed_url(
+            version="v4",
+            expiration=dt.timedelta(seconds=SIGNED_TTL),
+            method="GET",
+            response_disposition=f'inline; filename="{filename}"',
+        )
+    except AttributeError:
+        _SIGNING_UNAVAILABLE = True
+        raise
 
 def _make_view_fields(blob, orig_filename: str):
     """Devuelve view_path (siempre utilizable) y view_url (best-effort firmado)."""

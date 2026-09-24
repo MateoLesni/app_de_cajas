@@ -861,8 +861,15 @@ def _get_label_oppen(cur, local: str) -> str:
     return label
 
 
+_ANTICIPOS_OPPEN_COLS_OK = False
+
+
 def _ensure_anticipos_oppen_columns(conn) -> None:
-    """Auto-migracion inline (patron del proyecto) de las columnas de migrations/15."""
+    """Auto-migracion inline (patron del proyecto) de las columnas de migrations/15.
+    Se verifica una sola vez por proceso: despues es no-op."""
+    global _ANTICIPOS_OPPEN_COLS_OK
+    if _ANTICIPOS_OPPEN_COLS_OK:
+        return
     cur = conn.cursor()
     try:
         def _has(table, col):
@@ -891,6 +898,7 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
                     cur.execute("UPDATE medios_anticipos SET paymode_oppen = %s WHERE paymode_oppen IS NULL",
                                 (ANTICIPOS_PAYMODE_DEFAULT,))
                     conn.commit()
+        _ANTICIPOS_OPPEN_COLS_OK = True
     except Exception as e:
         print(f"[MIGRATE] ⚠️ _ensure_anticipos_oppen_columns: {e}")
     finally:

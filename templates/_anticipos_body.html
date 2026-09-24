@@ -1,0 +1,304 @@
+<div class="ant-page">
+  <div class="ant-header">
+    <div>
+      <h1>💳 Anticipos recibidos</h1>
+      <p class="ant-sub">Alta, consulta y seguimiento de anticipos (señas) y de su envío a Oppen.</p>
+    </div>
+    <div class="ant-header-actions">
+      <button id="btnPaymodes" class="ant-btn ant-btn-ghost" style="display:none" title="Código PayMode de Oppen por medio de pago">⚙ PayModes Oppen</button>
+      <button id="btnRecargar" class="ant-btn ant-btn-ghost" title="Actualizar listado">↻ Actualizar</button>
+      <button id="btnNuevoAnticipo" class="ant-btn ant-btn-primary">+ Nuevo anticipo</button>
+    </div>
+  </div>
+
+  <div class="ant-stats">
+    <div class="ant-stat c-pend" data-stat-estado="pendiente" title="Filtrar pendientes">
+      <div class="l">Pendientes</div>
+      <div class="v" id="statPendientes">–</div>
+      <div class="s" id="statMontoPendiente">&nbsp;</div>
+    </div>
+    <div class="ant-stat c-cons" data-stat-estado="consumido" title="Filtrar consumidos">
+      <div class="l">Consumidos</div>
+      <div class="v" id="statConsumidos">–</div>
+      <div class="s" id="statMontoConsumido">&nbsp;</div>
+    </div>
+    <div class="ant-stat c-elim" data-stat-estado="eliminado_global" title="Filtrar eliminados">
+      <div class="l">Eliminados</div>
+      <div class="v" id="statEliminados">–</div>
+      <div class="s">&nbsp;</div>
+    </div>
+    <div class="ant-stat c-oppen" data-stat-oppen="creado" title="Filtrar anticipos ya creados en Oppen">
+      <div class="l">En Oppen</div>
+      <div class="v" id="statOppenOk">–</div>
+      <div class="s">con N° de anticipo</div>
+    </div>
+    <div class="ant-stat c-err" data-stat-oppen="error" title="Filtrar anticipos con error al enviar a Oppen">
+      <div class="l">Error Oppen</div>
+      <div class="v" id="statOppenError">–</div>
+      <div class="s">para reintentar</div>
+    </div>
+  </div>
+
+  <div class="ant-filters">
+    <div class="ant-filters-row">
+      <div class="ant-f wide">
+        <label for="fQ">Buscar</label>
+        <input type="search" id="fQ" data-filter="q" placeholder="Cliente, N° transacción, N° anticipo Oppen, observaciones o ID…">
+      </div>
+      <div class="ant-f">
+        <label for="fEstado">Estado</label>
+        <select id="fEstado" data-filter="estado">
+          <option value="">Todos</option>
+          <option value="pendiente">Pendiente (sin consumir)</option>
+          <option value="consumido">Consumido en caja</option>
+          <option value="eliminado_global">Eliminado</option>
+        </select>
+      </div>
+      <div class="ant-f">
+        <label for="fOppen">Oppen</label>
+        <select id="fOppen" data-filter="oppen">
+          <option value="">Todos</option>
+          <option value="creado">Creado (con N° anticipo)</option>
+          <option value="pendiente">Sin enviar</option>
+          <option value="error">Con error</option>
+        </select>
+      </div>
+      <div class="ant-f">
+        <label for="fLocal">Local</label>
+        <select id="fLocal" data-filter="local"><option value="">Todos</option></select>
+      </div>
+      <div class="ant-f">
+        <label for="fMedio">Medio de pago</label>
+        <select id="fMedio" data-filter="medio_pago_id"><option value="">Todos</option></select>
+      </div>
+    </div>
+    <div class="ant-filters-row is-hidden" id="filtrosExtra">
+      <div class="ant-f">
+        <label for="fCliente">Cliente</label>
+        <input type="text" id="fCliente" data-filter="cliente" placeholder="Nombre del cliente">
+      </div>
+      <div class="ant-f">
+        <label for="fNroTrans">N° transacción</label>
+        <input type="text" id="fNroTrans" data-filter="nro_transaccion" placeholder="Ref. de pago">
+      </div>
+      <div class="ant-f">
+        <label for="fNroOppen">N° anticipo Oppen</label>
+        <input type="text" id="fNroOppen" data-filter="nro_anticipo" placeholder="OnAccNr" inputmode="numeric">
+      </div>
+      <div class="ant-f">
+        <label for="fUsuario">Cargado por</label>
+        <input type="text" id="fUsuario" data-filter="usuario" placeholder="Usuario">
+      </div>
+      <div class="ant-f">
+        <label for="fDivisa">Divisa</label>
+        <select id="fDivisa" data-filter="divisa">
+          <option value="">Todas</option>
+          <option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="BRL">BRL</option><option value="CLP">CLP</option><option value="UYU">UYU</option>
+        </select>
+      </div>
+      <div class="ant-f">
+        <label for="fDesde">Evento desde</label>
+        <input type="date" id="fDesde" data-filter="fecha_desde">
+      </div>
+      <div class="ant-f">
+        <label for="fHasta">Evento hasta</label>
+        <input type="date" id="fHasta" data-filter="fecha_hasta">
+      </div>
+    </div>
+    <div class="ant-filters-actions">
+      <div class="ant-chips" id="chipsFiltros"></div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="ant-btn ant-btn-ghost ant-btn-sm" id="btnMasFiltros">Más filtros ▾</button>
+        <button type="button" class="ant-btn ant-btn-ghost ant-btn-sm" id="btnLimpiar">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ant-table-card">
+    <div class="ant-table-wrap">
+      <table class="ant-table" id="antTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="fecha_pago">Fecha pago</th>
+            <th class="sortable" data-sort="fecha_evento">Fecha evento</th>
+            <th class="sortable" data-sort="cliente">Cliente</th>
+            <th class="sortable" data-sort="local">Local</th>
+            <th class="sortable" data-sort="importe" style="text-align:right">Importe</th>
+            <th>Medio</th>
+            <th>N° transacción</th>
+            <th class="sortable" data-sort="nro_anticipo">N° anticipo Oppen</th>
+            <th>Estado</th>
+            <th>Cargado por</th>
+            <th>Comp.</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="anticiposTableBody">
+          <tr><td colspan="12"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ant-pagination">
+      <div id="pagInfo">–</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <label style="font-size:12px; color:#6b7280;">Por página
+          <select id="pagPerPage">
+            <option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="200">200</option>
+          </select>
+        </label>
+        <div class="ant-pager" id="pager"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear / editar -->
+<div id="modalAnticipo" class="modal-overlay">
+  <div class="modal-content modal-lg">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nuevo anticipo</h2>
+      <button class="btn-close" type="button" onclick="cerrarModal()" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="modalNota"></div>
+    <form id="formAnticipo" onsubmit="guardarAnticipo(event)">
+      <input type="hidden" id="anticipoId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="fechaPago">Fecha de pago *</label>
+          <input type="date" id="fechaPago" required>
+          <small>Día en que el cliente pagó</small>
+        </div>
+        <div class="form-group">
+          <label for="fechaEvento">Fecha del evento *</label>
+          <input type="date" id="fechaEvento" required>
+          <small>Día en que se consumirá en la caja</small>
+        </div>
+        <div class="form-group">
+          <label for="cliente">Cliente *</label>
+          <input type="text" id="cliente" required placeholder="Nombre del cliente" maxlength="150">
+        </div>
+        <div class="form-group">
+          <label for="local">Local *</label>
+          <select id="local" required><option value="">Seleccione un local</option></select>
+        </div>
+        <div class="form-group">
+          <label for="medioPagoId">Medio de pago *</label>
+          <select id="medioPagoId" required><option value="">Cargando…</option></select>
+        </div>
+        <div class="form-group">
+          <label for="numeroTransaccion">N° de transacción</label>
+          <input type="text" id="numeroTransaccion" placeholder="Referencia del pago / comprobante" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label for="importe">Importe *</label>
+          <input type="number" id="importe" step="0.01" min="0.01" required placeholder="0.00" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label for="divisa">Divisa *</label>
+          <select id="divisa" required>
+            <option value="ARS" selected>ARS - Peso argentino</option>
+            <option value="USD">USD - Dólar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="BRL">BRL - Real</option>
+            <option value="CLP">CLP - Peso chileno</option>
+            <option value="UYU">UYU - Peso uruguayo</option>
+          </select>
+        </div>
+        <div id="camposUSD" class="full" style="display:none;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cotizacionUSD">Cotización (tomado a) *</label>
+              <input type="number" id="cotizacionUSD" step="0.01" min="0" placeholder="1500.00" inputmode="decimal">
+              <small>Pesos por unidad de la divisa</small>
+            </div>
+            <div class="form-group">
+              <label>Equivalencia en pesos</label>
+              <div id="montoCalculado" style="padding:9px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; font-weight:700; color:#059669;">–</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" id="cajaGroup" style="display:none;">
+          <label for="caja">Caja que recibió el efectivo *</label>
+          <select id="caja"><option value="">Seleccione una caja</option></select>
+        </div>
+        <div class="form-group" id="turnoGroup" style="display:none;">
+          <label for="turno">Turno *</label>
+          <select id="turno"><option value="">Seleccione un turno</option></select>
+        </div>
+        <div class="form-group" id="nroRemesaGroup" style="display:none;">
+          <label for="nroRemesa">N° de remesa *</label>
+          <input type="text" id="nroRemesa" placeholder="Número de remesa">
+        </div>
+        <div class="form-group" id="precintoGroup" style="display:none;">
+          <label for="precinto">N° de precinto *</label>
+          <input type="text" id="precinto" placeholder="Número de precinto">
+        </div>
+
+        <div class="form-group full" id="adjuntoGroup">
+          <label for="adjunto">Comprobante (imagen o PDF) *</label>
+          <input type="file" id="adjunto" accept="image/*,application/pdf" required>
+          <small>Obligatorio al crear. Al editar, subí uno nuevo solo si querés reemplazarlo.</small>
+          <div id="adjuntoPreview" style="display:none; margin-top:8px;"></div>
+        </div>
+
+        <div class="form-group full">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" placeholder="Notas adicionales"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="ant-btn ant-btn-ghost" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="ant-btn ant-btn-primary" id="btnGuardar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal detalle -->
+<div id="modalDetalle" class="modal-overlay">
+  <div class="modal-content modal-xl">
+    <div class="modal-header">
+      <h2 id="detalleTitulo">Detalle del anticipo</h2>
+      <button class="btn-close" type="button" onclick="cerrarDetalle()" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="detalleBody"></div>
+    <div class="modal-footer" id="detalleFooter"></div>
+  </div>
+</div>
+
+<!-- Visor comprobante -->
+<div id="modalVisor" class="modal-overlay">
+  <div class="modal-content ant-visor">
+    <div class="modal-header" style="margin-bottom:10px;">
+      <h2 id="visorTitulo" style="font-size:15px;">Comprobante</h2>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <a id="visorAbrir" class="ant-btn ant-btn-ghost ant-btn-sm" href="#" target="_blank" rel="noopener">↗ Abrir en pestaña</a>
+        <a id="visorDescargar" class="ant-btn ant-btn-primary ant-btn-sm" href="#">⬇ Descargar</a>
+        <button class="btn-close" type="button" onclick="cerrarVisor()" aria-label="Cerrar">&times;</button>
+      </div>
+    </div>
+    <div class="ant-visor-body" id="visorBody"></div>
+  </div>
+</div>
+
+<!-- Modal PayModes Oppen -->
+<div id="modalPaymodes" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>PayModes de Oppen por medio de pago</h2>
+      <button class="btn-close" type="button" onclick="cerrarPaymodes()" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="ant-note info">Es el código de forma de pago que viaja a Oppen cuando se crea el anticipo. Si un código no existe en Oppen, el envío falla con <b>LINKTOINVALIDVALUEERR</b> y queda para reintentar.</div>
+    <table class="ant-pm-table">
+      <thead><tr><th>Medio</th><th>PayMode Oppen</th><th></th></tr></thead>
+      <tbody id="paymodesBody"></tbody>
+    </table>
+    <div class="modal-footer">
+      <button type="button" class="ant-btn ant-btn-ghost" onclick="cerrarPaymodes()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ant-toasts" id="antToasts"></div>
