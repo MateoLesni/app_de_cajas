@@ -543,6 +543,7 @@ def login_required(view):
             'editar_anticipo_recibido',
             'api_anticipo_enviar_oppen',  # reintento de envio a Oppen (OnAccNr)
             'api_medio_anticipo_paymode',
+            'api_medios_anticipos_paymodes',
             'files.view_item',
             'files.download_item',
             'files.upload',
@@ -3533,28 +3534,107 @@ def editar_anticipo_recibido(anticipo_id):
         except Exception: pass
 
 
+@app.route('/api/medios_anticipos/paymodes', methods=['GET'])
+@login_required
+def api_medios_anticipos_paymodes():
+    """
+    PayModes de Oppen para anticipos. Nivel >= 3.
+    Sin ?local: cada medio activo con su PayMode default y en cuantos locales tiene override.
+    Con ?local=X: ademas el override de ese local (paymode_local, NULL si usa el default).
+    """
+    if get_user_level() < 3:
+        return jsonify(success=False, msg="No tenés permisos"), 403
+    local = (request.args.get('local') or '').strip()
+    conn = get_db_connection()
+    try:
+        from modules.oppen_integration import _ensure_anticipos_oppen_columns, ANTICIPOS_PAYMODE_DEFAULT
+        _ensure_anticipos_oppen_columns(conn)
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""
+            SELECT m.id, m.nombre, m.es_efectivo, m.paymode_oppen,
+                   (SELECT COUNT(*) FROM anticipos_paymode_local pl WHERE pl.medio_pago_id = m.id) AS n_overrides,
+                   (SELECT pl.paymode_oppen FROM anticipos_paymode_local pl
+                     WHERE pl.medio_pago_id = m.id AND pl.local = %s LIMIT 1) AS paymode_local
+            FROM medios_anticipos m
+            WHERE m.activo = 1
+            ORDER BY CASE m.nombre WHEN 'Efectivo' THEN 1 ELSE 2 END, m.nombre
+        """, (local or '',))
+        medios = cur.fetchall() or []
+        cur.execute("""
+            SELECT pl.local, m.nombre AS medio, pl.paymode_oppen, pl.updated_by, pl.updated_at
+            FROM anticipos_paymode_local pl JOIN medios_anticipos m ON m.id = pl.medio_pago_id
+            ORDER BY pl.local, m.nombre
+        """)
+        overrides = cur.fetchall() or []
+        for o in overrides:
+            if o.get('updated_at') is not None:
+                o['updated_at'] = o['updated_at'].isoformat() if hasattr(o['updated_at'], 'isoformat') else str(o['updated_at'])
+        cur.close()
+        return jsonify(success=True, medios=medios, overrides=overrides, default_global=ANTICIPOS_PAYMODE_DEFAULT, local=local)
+    except Exception as e:
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: conn.close()
+        except Exception: pass
+
+
 @app.route('/api/medios_anticipos/<int:medio_id>/paymode_oppen', methods=['PUT'])
 @login_required
 def api_medio_anticipo_paymode(medio_id):
-    """Edita el codigo PayMode de Oppen de un medio de pago de anticipos. Nivel >= 3."""
+    """
+    Edita el PayMode de Oppen de un medio de pago de anticipos. Nivel >= 3.
+    Body: {paymode_oppen, local?}
+      - sin local: cambia el default del medio (medios_anticipos.paymode_oppen).
+      - con local: crea/actualiza el override para ese local; paymode vacio lo borra
+        (vuelve a usar el default).
+    """
     if get_user_level() < 3:
         return jsonify(success=False, msg="No tenés permisos"), 403
     data = request.get_json() or {}
     paymode = (data.get('paymode_oppen') or '').strip().upper()
-    if not paymode or len(paymode) > 30:
-        return jsonify(success=False, msg="PayMode inválido (1-30 caracteres)"), 400
+    local = (data.get('local') or '').strip()
+    if len(paymode) > 30:
+        return jsonify(success=False, msg="PayMode inválido (máximo 30 caracteres)"), 400
+    if not local and not paymode:
+        return jsonify(success=False, msg="PayMode requerido"), 400
+    usuario = session.get('username', 'sistema')
     conn = get_db_connection()
     try:
         from modules.oppen_integration import _ensure_anticipos_oppen_columns
         _ensure_anticipos_oppen_columns(conn)
         cur = conn.cursor()
-        cur.execute("UPDATE medios_anticipos SET paymode_oppen=%s WHERE id=%s", (paymode, medio_id))
-        conn.commit()
-        ok = cur.rowcount > 0
-        cur.close()
-        if not ok:
+        cur.execute("SELECT nombre FROM medios_anticipos WHERE id=%s", (medio_id,))
+        r = cur.fetchone()
+        if not r:
             return jsonify(success=False, msg="Medio de pago no encontrado"), 404
-        return jsonify(success=True, msg=f"PayMode actualizado a {paymode}", paymode_oppen=paymode)
+        medio_nombre = r[0]
+
+        if not local:
+            cur.execute("UPDATE medios_anticipos SET paymode_oppen=%s WHERE id=%s", (paymode, medio_id))
+            conn.commit()
+            msg = f"PayMode default de {medio_nombre}: {paymode}"
+        elif paymode:
+            cur.execute("""
+                INSERT INTO anticipos_paymode_local (local, medio_pago_id, paymode_oppen, updated_by, updated_at)
+                VALUES (%s, %s, %s, %s, NOW())
+                ON DUPLICATE KEY UPDATE paymode_oppen=VALUES(paymode_oppen), updated_by=VALUES(updated_by), updated_at=NOW()
+            """, (local, medio_id, paymode, usuario))
+            conn.commit()
+            msg = f"{local} · {medio_nombre}: {paymode}"
+        else:
+            cur.execute("DELETE FROM anticipos_paymode_local WHERE local=%s AND medio_pago_id=%s", (local, medio_id))
+            conn.commit()
+            msg = f"{local} · {medio_nombre}: vuelve a usar el default"
+        cur.close()
+        try:
+            from modules.tabla_auditoria import registrar_auditoria
+            registrar_auditoria(conn=conn, accion='UPDATE', tabla='anticipos_paymode_local' if local else 'medios_anticipos',
+                                registro_id=medio_id,
+                                datos_nuevos={'local': local or None, 'medio': medio_nombre, 'paymode_oppen': paymode or None},
+                                descripcion=f"PayMode Oppen anticipos: {msg}")
+        except Exception as e_aud:
+            print(f"⚠️ auditoria paymode: {e_aud}")
+        return jsonify(success=True, msg=msg, paymode_oppen=paymode or None, local=local or None)
     except Exception as e:
         return jsonify(success=False, msg=str(e)), 500
     finally:

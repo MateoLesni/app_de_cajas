@@ -898,12 +898,43 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
                     cur.execute("UPDATE medios_anticipos SET paymode_oppen = %s WHERE paymode_oppen IS NULL",
                                 (ANTICIPOS_PAYMODE_DEFAULT,))
                     conn.commit()
+        # PayMode por local + medio (override del default de medios_anticipos.paymode_oppen)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS anticipos_paymode_local (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                local VARCHAR(100) NOT NULL,
+                medio_pago_id INT NOT NULL,
+                paymode_oppen VARCHAR(30) NOT NULL,
+                updated_by VARCHAR(100) NULL,
+                updated_at DATETIME NULL,
+                UNIQUE KEY uq_local_medio (local, medio_pago_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        """)
+        conn.commit()
         _ANTICIPOS_OPPEN_COLS_OK = True
     except Exception as e:
         print(f"[MIGRATE] ⚠️ _ensure_anticipos_oppen_columns: {e}")
     finally:
         try: cur.close()
         except Exception: pass
+
+
+def resolver_paymode_anticipo(cur, local: str, medio_pago_id, paymode_default: Optional[str]) -> str:
+    """PayMode efectivo: override por local+medio > default del medio > INTERC."""
+    if local and medio_pago_id:
+        try:
+            cur.execute("""
+                SELECT paymode_oppen FROM anticipos_paymode_local
+                WHERE local = %s AND medio_pago_id = %s LIMIT 1
+            """, (local, medio_pago_id))
+            r = cur.fetchone()
+            if r:
+                v = r['paymode_oppen'] if isinstance(r, dict) else r[0]
+                if v and str(v).strip():
+                    return str(v).strip()
+        except Exception as e:
+            print(f"[ANTICIPO-OPPEN] ⚠️ no se pudo leer paymode por local: {e}")
+    return (paymode_default or ANTICIPOS_PAYMODE_DEFAULT).strip()
 
 
 def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = None) -> Dict[str, Any]:
@@ -964,7 +995,7 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
         if monto <= 0:
             return {'success': False, 'message': 'El monto del anticipo debe ser mayor a cero'}
 
-        paymode = (a['paymode_oppen'] or ANTICIPOS_PAYMODE_DEFAULT).strip()
+        paymode = resolver_paymode_anticipo(cur, a['local'], a['medio_pago_id'], a['paymode_oppen'])
         label = _get_label_oppen(cur, a['local'])
         fecha_pago = a['fecha_pago'].isoformat() if hasattr(a['fecha_pago'], 'isoformat') else str(a['fecha_pago'])
         fecha_evento = a['fecha_evento'].isoformat() if hasattr(a['fecha_evento'], 'isoformat') else str(a['fecha_evento'])

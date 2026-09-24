@@ -228,7 +228,7 @@
     const tbody = $('#anticiposTableBody');
     if (!tbody) return;
     const seq = ++reqSeq;
-    tbody.innerHTML = '<tr><td colspan="12"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>';
 
     const p = new URLSearchParams({ page: state.page, per_page: state.perPage, sort: state.sort, dir: state.dir });
     Object.entries(state.filters).forEach(([k, v]) => p.append(k, v));
@@ -248,7 +248,7 @@
       renderSortHeaders();
     } catch (e) {
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="12"><div class="ant-empty"><h3>No se pudieron cargar los anticipos</h3><p>${esc(e.message)}</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10"><div class="ant-empty"><h3>No se pudieron cargar los anticipos</h3><p>${esc(e.message)}</p></div></td></tr>`;
     }
   }
 
@@ -308,7 +308,7 @@
   function renderTable() {
     const tbody = $('#anticiposTableBody');
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="12"><div class="ant-empty"><div style="font-size:30px">🗂️</div><h3>Sin anticipos</h3><p>No hay anticipos que coincidan con los filtros aplicados.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10"><div class="ant-empty"><div style="font-size:30px">🗂️</div><h3>Sin anticipos</h3><p>No hay anticipos que coincidan con los filtros aplicados.</p></div></td></tr>';
       return;
     }
     tbody.innerHTML = rows.map((a) => {
@@ -317,24 +317,23 @@
       const importeHtml = divisa === 'ARS'
         ? `<strong>${money(a.importe)}</strong>`
         : `<strong>${money(a.importe, divisa)}</strong><span class="badge badge-divisa">${esc(divisa)}</span><div class="ant-muted">≈ ${money(importeArs(a))}</div>`;
+      const sub = [`ID ${a.id}`, a.created_by ? `por ${a.created_by}` : '', a.caja ? a.caja + (a.turno ? ' · ' + a.turno : '') : ''].filter(Boolean).join(' · ');
       return `
         <tr class="${a.estado === 'eliminado_global' ? 'is-eliminado' : ''}" data-id="${a.id}">
-          <td class="nowrap">${fmtDate(a.fecha_pago)}</td>
-          <td class="nowrap">${fmtDate(a.fecha_evento)}</td>
-          <td><div class="ant-cliente" title="${esc(a.cliente)}">${esc(a.cliente)}</div><div class="ant-muted">ID ${a.id}${a.caja ? ' · ' + esc(a.caja) : ''}${a.turno ? ' · ' + esc(a.turno) : ''}</div></td>
+          <td class="ant-fecha" title="Evento: ${fmtDate(a.fecha_evento)} · Pago: ${fmtDate(a.fecha_pago)}">${fmtDate(a.fecha_evento)}<small>pago ${fmtDate(a.fecha_pago)}</small></td>
+          <td><div class="ant-cliente" title="${esc(a.cliente)}">${esc(a.cliente)}</div><div class="ant-muted" title="${esc(fmtDateTime(a.created_at))}">${esc(sub)}</div></td>
           <td>${esc(a.local)}</td>
           <td class="num">${importeHtml}</td>
-          <td class="nowrap">${esc(a.medio_pago || '–')}</td>
+          <td>${esc(a.medio_pago || '–')}</td>
           <td class="mono" title="${esc(a.numero_transaccion || '')}">${a.numero_transaccion ? esc(a.numero_transaccion) : '<span class="ant-muted">–</span>'}</td>
           <td>${oppenBadge(a)}</td>
           <td>${estadoBadge(a)}</td>
-          <td class="nowrap"><span title="${esc(fmtDateTime(a.created_at))}">${esc(a.created_by || '–')}</span></td>
           <td>${thumbCell(a)}</td>
-          <td>
+          <td class="col-acciones">
             <div class="ant-actions">
               <button class="ant-ico" title="Ver detalle" onclick="verDetalle(${a.id})">👁</button>
               ${pm.edit ? `<button class="ant-ico" title="Editar" onclick="editarAnticipo(${a.id})">✏️</button>` : ''}
-              ${pm.oppen ? `<button class="ant-ico" title="${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}" onclick="enviarOppen(${a.id})">🔁</button>` : ''}
+              ${pm.oppen ? `<button class="ant-ico oppen" title="${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}" onclick="enviarOppen(${a.id})">${a.oppen_estado === 'error' ? '↻ Oppen' : '→ Oppen'}</button>` : ''}
               ${pm.del ? `<button class="ant-ico danger" title="Eliminar" onclick="eliminarAnticipo(${a.id})">🗑</button>` : ''}
             </div>
           </td>
@@ -570,26 +569,75 @@
     await loadAnticipos();
   };
 
-  // ===== PayModes =====
+  // ===== PayModes (default por medio + override por local) =====
+  let pmLocalActual = '';
   async function abrirPaymodes() {
-    await loadMedios();
-    const tb = $('#paymodesBody');
-    tb.innerHTML = medios.map((m) => `
-      <tr>
-        <td><b>${esc(m.nombre)}</b>${m.es_efectivo ? ' <span class="ant-muted">(efectivo)</span>' : ''}</td>
-        <td><input type="text" id="pm_${m.id}" value="${esc(m.paymode_oppen || 'INTERC')}" maxlength="30"></td>
-        <td><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="guardarPaymode(${m.id})">Guardar</button></td>
-      </tr>`).join('') || '<tr><td colspan="3" class="ant-muted">Sin medios activos</td></tr>';
+    const sel = $('#pmLocal');
+    if (sel.options.length <= 1) {
+      sel.innerHTML = '<option value="">Default (todos los locales)</option>' + locales.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+      sel.addEventListener('change', () => { pmLocalActual = sel.value; renderPaymodes(); });
+    }
+    sel.value = pmLocalActual;
     $('#modalPaymodes').classList.add('active');
+    await renderPaymodes();
+  }
+  async function renderPaymodes() {
+    const head = $('#paymodesHead'), tb = $('#paymodesBody'), res = $('#paymodesResumen');
+    tb.innerHTML = '<tr><td colspan="4"><div class="ant-loading"><div class="ant-spinner"></div></div></td></tr>';
+    let d;
+    try {
+      d = await api('/api/medios_anticipos/paymodes?local=' + encodeURIComponent(pmLocalActual));
+      if (!d.success) throw new Error(d.msg);
+    } catch (e) { tb.innerHTML = `<tr><td colspan="4" style="color:#991b1b">${esc(e.message)}</td></tr>`; return; }
+    const ms = d.medios || [];
+    const porLocal = !!pmLocalActual;
+    head.innerHTML = porLocal
+      ? `<tr><th>Medio</th><th>Default</th><th>Código para ${esc(pmLocalActual)}</th><th></th></tr>`
+      : '<tr><th>Medio</th><th>PayMode default</th><th>Locales con código propio</th><th></th></tr>';
+    tb.innerHTML = ms.map((m) => {
+      const def = m.paymode_oppen || d.default_global || 'INTERC';
+      if (!porLocal) {
+        return `<tr>
+          <td><b>${esc(m.nombre)}</b>${Number(m.es_efectivo) === 1 ? ' <span class="ant-muted">(efectivo)</span>' : ''}</td>
+          <td><input type="text" id="pm_${m.id}" value="${esc(def)}" maxlength="30"></td>
+          <td class="ant-muted">${m.n_overrides ? `${m.n_overrides} local(es)` : '–'}</td>
+          <td><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="guardarPaymode(${m.id})">Guardar</button></td>
+        </tr>`;
+      }
+      const ov = m.paymode_local || '';
+      return `<tr>
+        <td><b>${esc(m.nombre)}</b></td>
+        <td class="ant-pm-default">${esc(def)}</td>
+        <td><input type="text" id="pm_${m.id}" class="${ov ? 'is-override' : ''}" value="${esc(ov)}" placeholder="usa default" maxlength="30"></td>
+        <td style="white-space:nowrap">
+          <button class="ant-btn ant-btn-primary ant-btn-sm" onclick="guardarPaymode(${m.id})">Guardar</button>
+          ${ov ? `<button class="ant-btn ant-btn-ghost ant-btn-sm" title="Volver al default" onclick="quitarPaymodeLocal(${m.id})">Quitar</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" class="ant-muted">Sin medios activos</td></tr>';
+
+    const ovs = d.overrides || [];
+    res.innerHTML = ovs.length
+      ? '<b>Códigos por local configurados:</b> ' + ovs.map((o) => `${esc(o.local)} · ${esc(o.medio)} → <b>${esc(o.paymode_oppen)}</b>`).join(' &nbsp;|&nbsp; ')
+      : 'Ningún local tiene códigos propios: todos usan el default de cada medio.';
   }
   window.cerrarPaymodes = function () { $('#modalPaymodes')?.classList.remove('active'); };
   window.guardarPaymode = async function (id) {
     const v = ($(`#pm_${id}`)?.value || '').trim().toUpperCase();
-    if (!v) { toast('Ingresá un código', 'warn'); return; }
+    if (!v && !pmLocalActual) { toast('Ingresá un código', 'warn'); return; }
+    if (!v && pmLocalActual) return quitarPaymodeLocal(id);
     try {
-      const d = await api(`/api/medios_anticipos/${id}/paymode_oppen`, { method: 'PUT', json: { paymode_oppen: v } });
-      if (d.success) { toast(d.msg || 'Guardado', 'ok'); const m = medios.find((x) => x.id === id); if (m) m.paymode_oppen = v; }
+      const d = await api(`/api/medios_anticipos/${id}/paymode_oppen`, { method: 'PUT', json: { paymode_oppen: v, local: pmLocalActual || null } });
+      if (d.success) { toast('✅ ' + (d.msg || 'Guardado'), 'ok'); await renderPaymodes(); await loadMedios(); }
       else toast('❌ ' + (d.msg || 'No se pudo guardar'), 'err');
+    } catch (e) { toast('❌ ' + e.message, 'err'); }
+  };
+  window.quitarPaymodeLocal = async function (id) {
+    if (!pmLocalActual) return;
+    try {
+      const d = await api(`/api/medios_anticipos/${id}/paymode_oppen`, { method: 'PUT', json: { paymode_oppen: '', local: pmLocalActual } });
+      if (d.success) { toast(d.msg || 'Quitado', 'ok'); await renderPaymodes(); }
+      else toast('❌ ' + (d.msg || 'No se pudo quitar'), 'err');
     } catch (e) { toast('❌ ' + e.message, 'err'); }
   };
 

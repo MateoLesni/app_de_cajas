@@ -120,22 +120,20 @@
       <table class="ant-table" id="antTable">
         <thead>
           <tr>
-            <th class="sortable" data-sort="fecha_pago">Fecha pago</th>
-            <th class="sortable" data-sort="fecha_evento">Fecha evento</th>
+            <th class="sortable" data-sort="fecha_evento" title="Evento (arriba) y pago (abajo)">Evento / pago</th>
             <th class="sortable" data-sort="cliente">Cliente</th>
             <th class="sortable" data-sort="local">Local</th>
             <th class="sortable" data-sort="importe" style="text-align:right">Importe</th>
             <th>Medio</th>
             <th>N° transacción</th>
-            <th class="sortable" data-sort="nro_anticipo">N° anticipo Oppen</th>
+            <th class="sortable" data-sort="nro_anticipo">N° Oppen</th>
             <th>Estado</th>
-            <th>Cargado por</th>
             <th>Comp.</th>
-            <th>Acciones</th>
+            <th class="col-acciones">Acciones</th>
           </tr>
         </thead>
         <tbody id="anticiposTableBody">
-          <tr><td colspan="12"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>
+          <tr><td colspan="10"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -290,11 +288,18 @@
       <h2>PayModes de Oppen por medio de pago</h2>
       <button class="btn-close" type="button" onclick="cerrarPaymodes()" aria-label="Cerrar">&times;</button>
     </div>
-    <div class="ant-note info">Es el código de forma de pago que viaja a Oppen cuando se crea el anticipo. Si un código no existe en Oppen, el envío falla con <b>LINKTOINVALIDVALUEERR</b> y queda para reintentar.</div>
+    <div class="ant-note info">Es el código de forma de pago (cuenta) que viaja a Oppen al crear el anticipo. Primero se usa el código del <b>local</b>; si el local no tiene uno, se usa el <b>default</b> del medio. Un código inexistente en Oppen hace fallar el envío con <b>LINKTOINVALIDVALUEERR</b>.</div>
+    <div class="ant-pm-tools">
+      <div class="ant-f">
+        <label for="pmLocal">Local</label>
+        <select id="pmLocal"><option value="">Default (todos los locales)</option></select>
+      </div>
+    </div>
     <table class="ant-pm-table">
-      <thead><tr><th>Medio</th><th>PayMode Oppen</th><th></th></tr></thead>
+      <thead id="paymodesHead"></thead>
       <tbody id="paymodesBody"></tbody>
     </table>
+    <div class="ant-pm-resumen" id="paymodesResumen"></div>
     <div class="modal-footer">
       <button type="button" class="ant-btn ant-btn-ghost" onclick="cerrarPaymodes()">Cerrar</button>
     </div>
