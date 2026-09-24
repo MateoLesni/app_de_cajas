@@ -374,7 +374,8 @@
 
   const FILTER_LABELS = {
     q: 'Buscar', estado: 'Estado', oppen: 'Oppen', local: 'Local', medio_pago_id: 'Medio', cliente: 'Cliente',
-    nro_transaccion: 'N° trans.', nro_anticipo: 'N° Oppen', usuario: 'Usuario', divisa: 'Divisa', fecha_desde: 'Desde', fecha_hasta: 'Hasta',
+    nro_transaccion: 'N° trans.', nro_anticipo: 'N° Oppen', usuario: 'Usuario', divisa: 'Divisa',
+    fecha_desde: 'Evento desde', fecha_hasta: 'Evento hasta', pago_desde: 'Pago desde', pago_hasta: 'Pago hasta',
   };
   function renderChips() {
     const box = $('#chipsFiltros');
@@ -384,7 +385,7 @@
       if (k === 'medio_pago_id') label = medios.find((m) => String(m.id) === String(v))?.nombre || v;
       if (k === 'estado') label = { pendiente: 'Pendiente', consumido: 'Consumido', eliminado_global: 'Eliminado' }[v] || v;
       if (k === 'oppen') label = { creado: 'Creado', pendiente: 'Sin enviar', error: 'Con error' }[v] || v;
-      if (k.startsWith('fecha')) label = fmtDate(v);
+      if (k.startsWith('fecha') || k.startsWith('pago_')) label = fmtDate(v);
       return `<span class="ant-chip">${esc(FILTER_LABELS[k] || k)}: ${esc(label)} <button title="Quitar" onclick="quitarFiltro('${k}')">×</button></span>`;
     }).join('');
   }

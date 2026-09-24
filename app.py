@@ -3211,6 +3211,8 @@ def listar_anticipos_recibidos():
     local        = a.get('local', '').strip()
     fecha_desde  = a.get('fecha_desde', '').strip()
     fecha_hasta  = a.get('fecha_hasta', '').strip()
+    pago_desde   = a.get('pago_desde', '').strip()
+    pago_hasta   = a.get('pago_hasta', '').strip()
     cliente      = a.get('cliente', '').strip()
     usuario_f    = a.get('usuario', '').strip()
     divisa       = a.get('divisa', '').strip().upper()
@@ -3282,6 +3284,10 @@ def listar_anticipos_recibidos():
             where += " AND ar.fecha_evento >= %s"; params.append(_normalize_fecha(fecha_desde))
         if fecha_hasta:
             where += " AND ar.fecha_evento <= %s"; params.append(_normalize_fecha(fecha_hasta))
+        if pago_desde:
+            where += " AND ar.fecha_pago >= %s"; params.append(_normalize_fecha(pago_desde))
+        if pago_hasta:
+            where += " AND ar.fecha_pago <= %s"; params.append(_normalize_fecha(pago_hasta))
         if cliente:
             where += " AND ar.cliente LIKE %s"; params.append(f"%{cliente}%")
         if usuario_f:
