@@ -886,6 +886,7 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
             ('anticipos_recibidos', 'oppen_estado',     "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_estado VARCHAR(20) NULL"),
             ('anticipos_recibidos', 'oppen_error',      "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_error TEXT NULL"),
             ('anticipos_recibidos', 'oppen_enviado_at', "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_enviado_at DATETIME NULL"),
+            ('anticipos_recibidos', 'oppen_url',        "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_url VARCHAR(120) NULL"),
             ('medios_anticipos',    'paymode_oppen',    "ALTER TABLE medios_anticipos ADD COLUMN paymode_oppen VARCHAR(30) NULL"),
             ('anticipos_estados_caja', 'oppen_consumo_sernr', "ALTER TABLE anticipos_estados_caja ADD COLUMN oppen_consumo_sernr BIGINT NULL"),
         ]
@@ -1034,9 +1035,9 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
             cur_u.execute("""
                 UPDATE anticipos_recibidos
                 SET oppen_sernr = %s, oppen_onaccnr = %s, oppen_estado = 'creado',
-                    oppen_error = NULL, oppen_enviado_at = NOW()
+                    oppen_error = NULL, oppen_enviado_at = NOW(), oppen_url = %s
                 WHERE id = %s
-            """, (sernr, onaccnr, a['id']))
+            """, (sernr, onaccnr, client.BASE_URL.rstrip('/'), a['id']))
             conn.commit()
             cur_u.close()
             log_sync_attempt(
@@ -1559,12 +1560,14 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         total_anticipos_oppen = 0.0
         anticipos_oppen_rows = []      # [{onaccnr, monto, anticipo_ids:[..]}]
         anticipos_sin_oppen = []       # ids consumidos localmente pero sin OnAccNr (aviso)
+        anticipos_otro_ambiente = []   # ids con OnAccNr de OTRO Oppen (ej. ngprueba): NUNCA se consumen aca
+        recibo_url = OppenClient.BASE_URL.rstrip('/')
         try:
             _ensure_anticipos_oppen_columns(conn)
             cur_ant = conn.cursor(dictionary=True)
             cur_ant.execute("""
                 SELECT aec.id AS aec_id, aec.anticipo_id, aec.importe_consumido,
-                       ar.oppen_onaccnr, ar.cliente
+                       ar.oppen_onaccnr, ar.oppen_url, ar.cliente
                 FROM anticipos_estados_caja aec
                 JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
                 WHERE aec.local = %s
@@ -1580,6 +1583,11 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 if not r['oppen_onaccnr']:
                     anticipos_sin_oppen.append(int(r['anticipo_id']))
                     continue
+                # Los numeros de anticipo se solapan entre ngprueba y produccion: un OnAccNr
+                # creado en otro ambiente podria consumir el anticipo de OTRO cliente.
+                if (r.get('oppen_url') or '').rstrip('/') != recibo_url:
+                    anticipos_otro_ambiente.append((int(r['anticipo_id']), int(r['oppen_onaccnr']), r.get('oppen_url')))
+                    continue
                 k = int(r['oppen_onaccnr'])
                 g = por_onacc.setdefault(k, {'onaccnr': k, 'monto': 0.0, 'aec_ids': [], 'cliente': r['cliente']})
                 g['monto'] = round(g['monto'] + monto_c, 2)
@@ -1592,6 +1600,8 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 print(f"[RECIBO]   ANTICIPO OnAccNr={g['onaccnr']} ({g['cliente']}) consume -{g['monto']}")
             if anticipos_sin_oppen:
                 print(f"[RECIBO] ⚠️ Anticipos consumidos SIN OnAccNr (no van a Oppen, se absorben en DIFERENCIA): {anticipos_sin_oppen}")
+            if anticipos_otro_ambiente:
+                print(f"[RECIBO] ⚠️ Anticipos con OnAccNr de OTRO Oppen (recibo va a {recibo_url}); se saltean y se absorben en DIFERENCIA: {anticipos_otro_ambiente}")
         except Exception as e_ant:
             print(f"[RECIBO] ⚠️ No se pudieron cargar anticipos para el recibo: {e_ant}")
         print(f"[RECIBO] Total anticipos consumidos via Oppen: {total_anticipos_oppen}")

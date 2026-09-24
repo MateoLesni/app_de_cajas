@@ -3342,7 +3342,7 @@ def listar_anticipos_recibidos():
                 ar.observaciones, ar.local, ar.caja, ar.turno,
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
                 ar.deleted_by, ar.deleted_at,
-                ar.oppen_sernr, ar.oppen_onaccnr, ar.oppen_estado, ar.oppen_error, ar.oppen_enviado_at,
+                ar.oppen_sernr, ar.oppen_onaccnr, ar.oppen_estado, ar.oppen_error, ar.oppen_enviado_at, ar.oppen_url,
                 ({estado_real_expr}) AS estado,
                 ({importe_ars_expr}) AS importe_ars,
                 COALESCE(ec.n_consumos,0) AS n_consumos,

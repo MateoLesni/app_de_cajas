@@ -276,8 +276,16 @@
     };
     return map[a.estado] || `<span class="badge badge-oppen-none">${esc(a.estado)}</span>`;
   }
+  function oppenEnv(a) {
+    const u = (a.oppen_url || '').toLowerCase();
+    if (!u) return '';
+    return u.includes('ngprueba') ? 'PRUEBA' : (u.includes('ng.oppen') ? '' : u.replace(/^https?:\/\//, ''));
+  }
   function oppenBadge(a) {
-    if (a.oppen_onaccnr) return `<span class="badge badge-oppen-ok" title="Recibo Oppen ${esc(a.oppen_sernr || '')}">N° ${esc(a.oppen_onaccnr)}</span>`;
+    if (a.oppen_onaccnr) {
+      const env = oppenEnv(a);
+      return `<span class="badge badge-oppen-ok" title="Recibo Oppen ${esc(a.oppen_sernr || '')} · ${esc(a.oppen_url || 'ambiente desconocido')}">N° ${esc(a.oppen_onaccnr)}${env ? ` <small style="opacity:.75">${esc(env)}</small>` : ''}</span>`;
+    }
     if (a.estado === 'eliminado_global') return '<span class="badge badge-oppen-none">–</span>';
     if (a.oppen_estado === 'error') return `<span class="badge badge-oppen-err" title="${esc(a.oppen_error || 'Error al enviar')}">⚠ Error</span>`;
     return '<span class="badge badge-oppen-none">Sin enviar</span>';
@@ -414,6 +422,7 @@
     if (a.oppen_onaccnr) {
       oppenHtml = item('N° anticipo (OnAccNr)', `<span class="badge badge-oppen-ok">N° ${esc(a.oppen_onaccnr)}</span>`) +
         item('Recibo Oppen', esc(a.oppen_sernr || '–')) +
+        item('Ambiente', a.oppen_url ? `${esc(a.oppen_url)}${oppenEnv(a) === 'PRUEBA' ? ' <span class="badge badge-pendiente">PRUEBA</span>' : ''}` : '<span class="ant-muted">desconocido (anterior al registro de ambiente)</span>') +
         item('Enviado', esc(fmtDateTime(a.oppen_enviado_at))) +
         (a.oppen_consumo_sernr ? item('Consumido en recibo Oppen', esc(a.oppen_consumo_sernr)) : item('Consumo en Oppen', a.estado === 'consumido' ? 'Pendiente de auditar la caja' : '–'));
     } else if (a.oppen_estado === 'error') {
