@@ -899,6 +899,22 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
                     cur.execute("UPDATE medios_anticipos SET paymode_oppen = %s WHERE paymode_oppen IS NULL",
                                 (ANTICIPOS_PAYMODE_DEFAULT,))
                     conn.commit()
+        # oppen_sync_log.sync_type es ENUM: sin 'anticipo' el log de envios de anticipos
+        # fallaba en silencio (Data truncated) y no quedaba rastro.
+        try:
+            cur.execute("""
+                SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'oppen_sync_log' AND COLUMN_NAME = 'sync_type'
+            """)
+            r = cur.fetchone()
+            ctype = (r[0] if isinstance(r, tuple) else list(r.values())[0]) if r else ''
+            if ctype and 'anticipo' not in str(ctype):
+                cur.execute("""ALTER TABLE oppen_sync_log
+                               MODIFY sync_type ENUM('factura','cuenta_corriente','recibo','anticipo') NOT NULL""")
+                conn.commit()
+                print("[MIGRATE] oppen_sync_log.sync_type += 'anticipo'")
+        except Exception as e_enum:
+            print(f"[MIGRATE] ⚠️ oppen_sync_log.sync_type: {e_enum}")
         # PayMode por local + medio (override del default de medios_anticipos.paymode_oppen)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS anticipos_paymode_local (

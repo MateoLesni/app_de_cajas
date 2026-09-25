@@ -147,7 +147,8 @@ def _make_view_fields(blob, orig_filename: str):
     try:
         view_url = _signed_get(blob, orig_filename)
     except Exception:
-        current_app.logger.exception("No se pudo firmar URL para %s", blob.name)
+        if not _SIGNING_UNAVAILABLE:
+            current_app.logger.exception("No se pudo firmar URL para %s", blob.name)
         view_url = view_path  # fallback seguro (redirige/ sirve el binario)
     return view_path, view_url
 
@@ -370,7 +371,8 @@ def view_item():
             url = _signed_get(blob, filename)
             return redirect(url, code=302)
         except Exception:
-            current_app.logger.exception("No se pudo firmar; sirviendo binario directo %s", blob.name)
+            if not _SIGNING_UNAVAILABLE:
+                current_app.logger.exception("No se pudo firmar; sirviendo binario directo %s", blob.name)
 
         # 2) Fallback: servir binario directo con MIME robusto
         data = blob.download_as_bytes()
