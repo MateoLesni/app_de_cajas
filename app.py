@@ -445,9 +445,13 @@ def get_local_param():
 def read_scope_sql(alias: str = 't') -> str:
     """
     Qué filas puede VER cada rol en endpoints de lectura (SELECT):
-      - Nivel 1 (cajero): sin filtro extra → ve todo lo suyo.
-      - Nivel 2 (encargado): SOLO cajas cerradas → AND CLOSED_BOX_SUBQUERY.
+      - Nivel 1 (cajero) y 2 (encargado/administrativo): sin filtro extra → ven también
+        las cajas abiertas (antes el encargado solo veia cajas cerradas; se saco a pedido
+        operativo: ya podia EDITAR cajas abiertas pero no verlas). Solo afecta LECTURA:
+        los permisos de escritura siguen en can_edit / require_edit_ctx, y el cierre de
+        local sigue exigiendo todas las cajas cerradas.
       - Nivel 3 (auditor): SOLO locales cerrados → AND CLOSED_LOCAL_SUBQUERY.
+    (CLOSED_BOX_SUBQUERY queda definido por si hay que volver atras.)
     """
     lvl = get_user_level()
     # Soporte: ve TODO sin restricciones
@@ -456,10 +460,7 @@ def read_scope_sql(alias: str = 't') -> str:
     if lvl >= 3:
         # Auditor: solo locales cerrados
         return f" AND {CLOSED_LOCAL_SUBQUERY.format(a=alias)}"
-    if lvl >= 2:
-        # Encargado/Administrativo: solo cajas cerradas
-        return f" AND {CLOSED_BOX_SUBQUERY.format(a=alias)}"
-    # Cajero: sin filtro adicional de lectura
+    # Cajero y encargado: sin filtro adicional de lectura
     return ""
 
 def with_read_scope(alias='t'):
