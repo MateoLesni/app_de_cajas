@@ -307,10 +307,10 @@
     const lvl = profile.level || 0;
     const activo = a.estado !== 'eliminado_global';
     return {
-      edit: lvl >= 3 && a.estado === 'pendiente',
+      // Pendiente: cualquiera con acceso. Consumido: solo auditores (corrigen medio y datos descriptivos).
+      edit: lvl >= 3 && (a.estado === 'pendiente' || (a.estado === 'consumido' && lvl !== 4)),
       del: !!profile.can_delete && activo && (a.estado === 'pendiente' || lvl >= 6),
       oppen: !!profile.can_send_oppen && activo && !a.oppen_onaccnr,
-      medio: lvl >= 3 && lvl !== 4 && activo && !a.oppen_onaccnr,
     };
   }
 
@@ -344,7 +344,6 @@
             <div class="ant-actions">
               <button class="ant-ico" title="Ver detalle" onclick="verDetalle(${a.id})">👁</button>
               ${pm.edit ? `<button class="ant-ico" title="Editar" onclick="editarAnticipo(${a.id})">✏️</button>` : ''}
-              ${pm.medio ? `<button class="ant-ico" title="Cambiar medio de pago" onclick="cambiarMedio(${a.id})">💳</button>` : ''}
               ${pm.oppen ? `<button class="ant-ico oppen" title="${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}" onclick="enviarOppen(${a.id})">${a.oppen_estado === 'error' ? '↻ Oppen' : '→ Oppen'}</button>` : ''}
               ${pm.del ? `<button class="ant-ico danger" title="Eliminar" onclick="eliminarAnticipo(${a.id})">🗑</button>` : ''}
             </div>
@@ -491,7 +490,6 @@
     $('#detalleFooter').innerHTML = `
       ${pm.oppen ? `<button class="ant-btn ant-btn-ghost" onclick="enviarOppen(${a.id}, true)">🔁 ${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}</button>` : ''}
       ${pm.edit ? `<button class="ant-btn ant-btn-ghost" onclick="cerrarDetalle(); editarAnticipo(${a.id})">✏️ Editar</button>` : ''}
-      ${pm.medio ? `<button class="ant-btn ant-btn-ghost" onclick="cambiarMedio(${a.id})">💳 Cambiar medio de pago</button>` : ''}
       ${pm.del ? `<button class="ant-btn ant-btn-danger" onclick="eliminarAnticipo(${a.id})">🗑 Eliminar</button>` : ''}
       <button class="ant-btn ant-btn-primary" onclick="cerrarDetalle()">Cerrar</button>`;
     $('#modalDetalle').classList.add('active');
@@ -570,36 +568,6 @@
   };
 
   // ===== Oppen =====
-  // ===== cambiar medio de pago (auditor) =====
-  window.cambiarMedio = function (id) {
-    const a = rows.find((r) => r.id === id);
-    if (!a) return;
-    const efectivo = Number(a.es_efectivo) === 1;
-    const opciones = medios.filter((m) => (Number(m.es_efectivo) === 1) === efectivo && m.id !== a.medio_pago_id);
-    if (!opciones.length) { toast('No hay otro medio compatible para cambiar', 'warn'); return; }
-    $('#medioTexto').innerHTML = `Anticipo de <b>${esc(a.cliente)}</b> (${esc(a.local)}) por <b>${money(importeArs(a))}</b>.<br>Medio actual: <b>${esc(a.medio_pago || '–')}</b>` +
-      (efectivo ? '<br><span class="ant-muted">Es efectivo: solo se puede cambiar entre medios en efectivo.</span>' : '');
-    $('#medioNuevo').innerHTML = '<option value="">Elegí el nuevo medio</option>' + opciones.map((m) => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
-    $('#medioMotivo').value = '';
-    const modal = $('#modalMedio');
-    $('#medioCancelar').onclick = () => modal.classList.remove('active');
-    modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
-    $('#medioGuardar').onclick = async () => {
-      const nuevo = parseInt($('#medioNuevo').value);
-      if (!nuevo) { toast('Elegí el nuevo medio de pago', 'warn'); return; }
-      try {
-        const d = await api(`/api/anticipos_recibidos/${id}/medio_pago`, { method: 'PUT', json: { medio_pago_id: nuevo, motivo: $('#medioMotivo').value.trim() } });
-        if (d.success) {
-          toast('✅ ' + d.msg, 'ok');
-          modal.classList.remove('active');
-          cerrarDetalle();
-          await loadAnticipos();
-        } else toast('❌ ' + (d.msg || 'No se pudo cambiar'), 'err', 8000);
-      } catch (e) { toast('❌ ' + e.message, 'err'); }
-    };
-    modal.classList.add('active');
-  };
-
   // ===== cliente de Oppen por local =====
   function custcodeOpciones(local) { return (profile.oppen_custcode_opciones || {})[local] || null; }
   function custcodeDe(local) {
@@ -796,7 +764,8 @@
 
     $('#modalTitle').textContent = isEdit ? `Editar anticipo ID ${id}` : 'Nuevo anticipo';
     adjInput.required = !isEdit;
-    ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId', '#local'].forEach((s) => { $(s).disabled = false; });
+    ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId', '#local', '#fechaEvento'].forEach((s) => { $(s).disabled = false; });
+    llenarMedios();
 
     if (!isEdit) {
       const hoy = new Date();
@@ -819,12 +788,22 @@
       $('#numeroTransaccion').value = a.numero_transaccion || '';
       $('#observaciones').value = a.observaciones || '';
       $('#local').disabled = true;
-      const bloqueaMonto = !!a.oppen_onaccnr || Number(a.es_efectivo) === 1;
-      if (bloqueaMonto) {
-        ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId'].forEach((s) => { $(s).disabled = true; });
-        setNota(a.oppen_onaccnr
-          ? `Este anticipo ya está en Oppen (N° ${esc(a.oppen_onaccnr)}): no se puede cambiar importe, divisa, cotización ni medio de pago. Solo datos descriptivos y comprobante.`
-          : 'Anticipo en efectivo con remesa espejo en la caja: no se puede cambiar importe, divisa ni medio de pago. Solo datos descriptivos y comprobante.', 'warn');
+      const efectivo = Number(a.es_efectivo) === 1;
+      const consumido = a.estado === 'consumido';
+      const monto = ['#importe', '#divisa', '#cotizacionUSD'];
+      if (a.oppen_onaccnr) {
+        [...monto, '#medioPagoId'].forEach((s) => { $(s).disabled = true; });
+        setNota(`Este anticipo ya está en Oppen (N° ${esc(a.oppen_onaccnr)}): no se puede cambiar importe, divisa, cotización ni medio de pago (se corrige en Oppen con contra-recibo). Solo datos descriptivos y comprobante.`, 'warn');
+      } else if (efectivo) {
+        [...monto, '#medioPagoId'].forEach((s) => { $(s).disabled = true; });
+        setNota('Anticipo en <b>Efectivo</b> con remesa espejo en la caja: no se puede cambiar importe, divisa ni medio de pago. Para pasarlo a otro medio hay que eliminarlo y volver a cargarlo.', 'warn');
+      } else {
+        // Medio editable: solo entre medios que no son efectivo
+        llenarMedios((m) => Number(m.es_efectivo) !== 1, a.medio_pago_id);
+        if (consumido) {
+          [...monto, '#fechaEvento'].forEach((s) => { $(s).disabled = true; });
+          setNota('Ya se consumió en una caja: podés corregir el <b>medio de pago</b> y los datos descriptivos. Importe, divisa y fecha del evento quedan fijos.', 'info');
+        }
       }
       if (a.tiene_adjunto) mostrarAdjuntoActual(a);
     }
@@ -835,9 +814,17 @@
   };
   window.cerrarModal = function () {
     $('#modalAnticipo')?.classList.remove('active');
-    ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId', '#local'].forEach((s) => { $(s).disabled = false; });
+    ['#importe', '#divisa', '#cotizacionUSD', '#medioPagoId', '#local', '#fechaEvento'].forEach((s) => { $(s).disabled = false; });
   };
   window.editarAnticipo = function (id) { abrirModal(id); };
+
+  // Opciones del select de medio del formulario (todas, o filtradas en edicion)
+  function llenarMedios(filtro = null, seleccionado = null) {
+    const sel = $('#medioPagoId');
+    const lista = filtro ? medios.filter(filtro) : medios;
+    sel.innerHTML = '<option value="">Seleccione un medio</option>' + lista.map((m) => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+    if (seleccionado) sel.value = String(seleccionado);
+  }
 
   function mostrarAdjuntoActual(a) {
     const box = $('#adjuntoPreview');
@@ -917,7 +904,9 @@
     } else {
       if (window._deleteCurrentAdjunto && !file) { toast('Quitaste el comprobante: subí uno nuevo antes de guardar', 'warn'); return; }
       if (window._deleteCurrentAdjunto) data.delete_adjunto = true;
-      ['importe', 'divisa', 'medio_pago_id', 'cotizacion_divisa'].forEach((k) => { if ($('#importe').disabled) delete data[k]; });
+      if ($('#importe').disabled) ['importe', 'divisa', 'cotizacion_divisa'].forEach((k) => delete data[k]);
+      if ($('#medioPagoId').disabled) delete data.medio_pago_id;
+      if ($('#fechaEvento').disabled) delete data.fecha_evento;
     }
 
     if (!isEdit && profile.can_send_oppen && custcodeOpciones(data.local)) {

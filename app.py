@@ -3424,11 +3424,13 @@ def listar_anticipos_recibidos():
 @login_required
 def editar_anticipo_recibido(anticipo_id):
     """
-    Edita un anticipo PENDIENTE (no consumido, no eliminado). Nivel >= 3.
-    Campos editables: fecha_pago, fecha_evento, cliente, importe, divisa,
-    cotizacion_divisa, medio_pago_id, numero_transaccion, observaciones.
-    Si el anticipo ya viajo a Oppen (tiene OnAccNr) NO se permite cambiar
-    importe/divisa/cotizacion/medio: en Oppen no hay PUT y desincronizaria.
+    Edita un anticipo no eliminado. Nivel >= 3.
+    - Pendiente: todos los campos (salvo restricciones de abajo).
+    - Consumido en caja: solo auditores (no el rol anticipos) y solo medio de pago
+      y datos descriptivos (cliente, fecha de pago, N transaccion, observaciones);
+      importe, divisa, cotizacion y fecha de evento quedan fijos.
+    - Ya en Oppen (OnAccNr): no cambia importe/divisa/cotizacion/medio (sin PUT alla).
+    - Medio de pago: no se puede pasar de/a Efectivo (remesa espejo de la caja).
     """
     user_level = get_user_level()
     if user_level < 3:
@@ -3448,20 +3450,40 @@ def editar_anticipo_recibido(anticipo_id):
         if ant['estado'] == 'eliminado_global':
             return jsonify(success=False, msg="No se puede editar un anticipo eliminado"), 400
         cur.execute("SELECT COUNT(*) AS n FROM anticipos_estados_caja WHERE anticipo_id=%s AND estado='consumido'", (anticipo_id,))
-        if (cur.fetchone() or {}).get('n', 0) > 0:
-            return jsonify(success=False, msg="No se puede editar un anticipo ya consumido en una caja"), 400
+        consumido = (cur.fetchone() or {}).get('n', 0) > 0
+        if consumido and user_level == 4:
+            return jsonify(success=False, msg="El anticipo ya se consumió en una caja: solo un auditor puede corregirlo"), 403
 
         from decimal import Decimal, InvalidOperation
-        en_oppen = bool(ant.get('oppen_onaccnr')) if 'oppen_onaccnr' in ant else False
+        en_oppen = bool(ant.get('oppen_onaccnr'))
         sets, vals, cambios = [], [], {}
 
         def _set(col, val):
             sets.append(f"{col}=%s"); vals.append(val); cambios[col] = val
 
+        def _dec(v):
+            try:
+                return Decimal(str(v))
+            except (InvalidOperation, ValueError, TypeError):
+                return None
+
+        def _fecha_txt(v):
+            # _normalize_fecha puede devolver date o str segun la definicion vigente: comparar como YYYY-MM-DD
+            if v is None or v == '':
+                return None
+            n = _normalize_fecha(v)
+            return str(n)[:10] if n else None
+
         if data.get('fecha_pago'):
-            _set('fecha_pago', _normalize_fecha(data['fecha_pago']))
+            fp = _normalize_fecha(data['fecha_pago'])
+            if _fecha_txt(fp) != _fecha_txt(ant.get('fecha_pago')):
+                _set('fecha_pago', fp)
         if data.get('fecha_evento'):
-            _set('fecha_evento', _normalize_fecha(data['fecha_evento']))
+            fe = _normalize_fecha(data['fecha_evento'])
+            if _fecha_txt(fe) != _fecha_txt(ant.get('fecha_evento')):
+                if consumido:
+                    return jsonify(success=False, msg="Ya se consumió en una caja: no se puede cambiar la fecha del evento"), 409
+                _set('fecha_evento', fe)
         if data.get('cliente') is not None and data['cliente'].strip():
             _set('cliente', data['cliente'].strip())
         if 'numero_transaccion' in data:
@@ -3469,43 +3491,61 @@ def editar_anticipo_recibido(anticipo_id):
         if 'observaciones' in data:
             _set('observaciones', (data.get('observaciones') or '').strip() or None)
 
+        # Importe / divisa / cotizacion (se comparan como numero, no como texto)
         campos_monto = {}
         if data.get('importe') not in (None, ''):
-            try:
-                imp = Decimal(str(data['importe']))
-            except (InvalidOperation, ValueError):
+            imp = _dec(data['importe'])
+            if imp is None:
                 return jsonify(success=False, msg="El importe debe ser un número válido"), 400
             if imp <= 0:
                 return jsonify(success=False, msg="El importe debe ser mayor a cero"), 400
-            campos_monto['importe'] = imp
+            if imp != _dec(ant.get('importe')):
+                campos_monto['importe'] = imp
         if data.get('divisa'):
-            campos_monto['divisa'] = data['divisa'].strip().upper()
+            dv = data['divisa'].strip().upper()
+            if dv != (ant.get('divisa') or 'ARS'):
+                campos_monto['divisa'] = dv
         if data.get('cotizacion_divisa') not in (None, ''):
-            try:
-                campos_monto['cotizacion_divisa'] = Decimal(str(data['cotizacion_divisa']))
-            except (InvalidOperation, ValueError):
+            cot = _dec(data['cotizacion_divisa'])
+            if cot is None:
                 return jsonify(success=False, msg="La cotización debe ser un número válido"), 400
-        if data.get('medio_pago_id'):
-            campos_monto['medio_pago_id'] = int(data['medio_pago_id'])
-
+            if cot != _dec(ant.get('cotizacion_divisa')):
+                campos_monto['cotizacion_divisa'] = cot
         if campos_monto:
-            cambio_real = any(str(ant.get(k)) != str(v) for k, v in campos_monto.items())
-            if en_oppen and cambio_real:
+            if en_oppen:
                 return jsonify(success=False,
                                msg=f"Este anticipo ya está en Oppen (N° {ant['oppen_onaccnr']}): no se puede cambiar importe, "
-                                   f"divisa, cotización ni medio de pago. Corregilo en Oppen con un contra-recibo."), 409
-            if cambio_real:
-                cur.execute("SELECT id FROM remesas_trns WHERE origen_anticipo_id = %s LIMIT 1", (anticipo_id,))
-                if cur.fetchone():
-                    return jsonify(success=False,
-                                   msg="Este anticipo en efectivo tiene una remesa espejo en la caja: no se puede cambiar "
-                                       "importe, divisa, cotización ni medio de pago. Eliminalo y volvé a crearlo."), 409
+                                   f"divisa ni cotización. Se corrige en Oppen con un contra-recibo."), 409
+            if consumido:
+                return jsonify(success=False, msg="Ya se consumió en una caja: no se puede cambiar importe, divisa ni cotización"), 409
+            cur.execute("SELECT id FROM remesas_trns WHERE origen_anticipo_id = %s LIMIT 1", (anticipo_id,))
+            if cur.fetchone():
+                return jsonify(success=False,
+                               msg="Este anticipo en efectivo tiene una remesa espejo en la caja: no se puede cambiar "
+                                   "importe, divisa ni cotización. Eliminalo y volvé a crearlo."), 409
             for k, v in campos_monto.items():
                 _set(k, v)
-            if 'medio_pago_id' in campos_monto:
-                cur.execute("SELECT nombre FROM medios_anticipos WHERE id=%s", (campos_monto['medio_pago_id'],))
-                mp = cur.fetchone()
-                _set('medio_pago', mp['nombre'] if mp else None)
+
+        # Medio de pago
+        if data.get('medio_pago_id'):
+            nuevo_medio = int(data['medio_pago_id'])
+            if nuevo_medio != (ant.get('medio_pago_id') or 0):
+                if en_oppen:
+                    return jsonify(success=False,
+                                   msg=f"Este anticipo ya está en Oppen (N° {ant['oppen_onaccnr']}): el medio de pago quedó fijo allá. "
+                                       f"Se corrige en Oppen con un contra-recibo."), 409
+                cur.execute("SELECT id, nombre, COALESCE(es_efectivo,0) AS es_efectivo, activo FROM medios_anticipos WHERE id IN (%s, %s)",
+                            (nuevo_medio, ant.get('medio_pago_id') or 0))
+                ms = {r['id']: r for r in cur.fetchall() or []}
+                nuevo = ms.get(nuevo_medio)
+                if not nuevo or not nuevo['activo']:
+                    return jsonify(success=False, msg="Medio de pago inválido o inactivo"), 400
+                viejo_ef = int((ms.get(ant.get('medio_pago_id')) or {}).get('es_efectivo') or 0)
+                if viejo_ef or int(nuevo['es_efectivo']):
+                    return jsonify(success=False,
+                                   msg="No se puede pasar de/a Efectivo: cambia la remesa de la caja. Eliminá el anticipo y volvé a cargarlo."), 409
+                _set('medio_pago_id', nuevo_medio)
+                _set('medio_pago', nuevo['nombre'])
 
         adjunto_gcs_path = (data.get('adjunto_gcs_path') or '').strip() or None
         temp_entity_id = (data.get('temp_entity_id') or '').strip() or None
