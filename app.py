@@ -3130,7 +3130,7 @@ def crear_anticipo_recibido():
         if data.get('enviar_oppen', True):
             try:
                 from modules.oppen_integration import crear_anticipo_en_oppen
-                oppen = crear_anticipo_en_oppen(conn, anticipo_id, usuario)
+                oppen = crear_anticipo_en_oppen(conn, anticipo_id, usuario, cust_code=data.get('oppen_custcode'))
             except Exception as e_op:
                 print(f"⚠️ Error enviando anticipo {anticipo_id} a Oppen: {e_op}")
                 oppen = {'success': False, 'message': str(e_op)}
@@ -3143,7 +3143,9 @@ def crear_anticipo_recibido():
             msg += f". Remesa N° {nro_remesa} creada automaticamente."
         if oppen and not oppen.get('skipped'):
             if oppen.get('success'):
-                msg += f". Oppen: anticipo N° {oppen.get('onaccnr')} (recibo {oppen.get('sernr')})."
+                msg += f". Oppen: anticipo N° {oppen.get('onaccnr')} (recibo {oppen.get('sernr')}, cliente {oppen.get('cust_code')})."
+            elif oppen.get('needs_custcode'):
+                msg += ". Quedó SIN enviar a Oppen: falta elegir el cliente (usá '→ Oppen' en el listado)."
             else:
                 msg += f". ⚠️ No se pudo enviar a Oppen: {oppen.get('message')}"
         return jsonify(success=True, msg=msg, anticipo_id=anticipo_id, remesa_id=remesa_id, oppen=oppen)
@@ -3168,14 +3170,18 @@ def api_anticipo_enviar_oppen(anticipo_id):
     conn = get_db_connection()
     try:
         from modules.oppen_integration import crear_anticipo_en_oppen
-        r = crear_anticipo_en_oppen(conn, anticipo_id, session.get('username'))
+        body = request.get_json(silent=True) or {}
+        r = crear_anticipo_en_oppen(conn, anticipo_id, session.get('username'), cust_code=body.get('cust_code'))
         ok = bool(r.get('success'))
-        code = 200 if ok else (409 if r.get('skipped') else 502)
+        code = 200 if ok else (400 if r.get('needs_custcode') else (409 if r.get('skipped') else 502))
         return jsonify(
             success=ok,
             msg=r.get('message'),
             onaccnr=r.get('onaccnr'),
             sernr=r.get('sernr'),
+            cust_code=r.get('cust_code'),
+            needs_custcode=bool(r.get('needs_custcode')),
+            opciones=r.get('opciones'),
             already=bool(r.get('already')),
             skipped=bool(r.get('skipped')),
         ), code
@@ -3343,6 +3349,7 @@ def listar_anticipos_recibidos():
                 ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
                 ar.deleted_by, ar.deleted_at,
                 ar.oppen_sernr, ar.oppen_onaccnr, ar.oppen_estado, ar.oppen_error, ar.oppen_enviado_at, ar.oppen_url,
+                ar.oppen_custcode,
                 ({estado_real_expr}) AS estado,
                 ({importe_ars_expr}) AS importe_ars,
                 COALESCE(ec.n_consumos,0) AS n_consumos,
@@ -11335,8 +11342,16 @@ def api_mi_perfil_anticipos():
         allowed_locales=allowed_locales,
         can_delete=(user_level >= 4),  # Nivel 4 (anticipos) y superiores pueden eliminar
         can_consume=(user_level >= 3),  # Auditores pueden consumir/desconsumir si local no está auditado
-        has_full_access=(user_level >= 6)  # Admin tiene acceso total
+        has_full_access=(user_level >= 6),  # Admin tiene acceso total
+        oppen_custcode_opciones=_anticipos_custcode_cfg()[0],
+        oppen_custcode_fijo=_anticipos_custcode_cfg()[1],
+        oppen_custcode_default=_anticipos_custcode_cfg()[2],
     )
+
+
+def _anticipos_custcode_cfg():
+    from modules.oppen_integration import ANTICIPOS_CUSTCODE_OPCIONES, ANTICIPOS_CUSTCODE_FIJO, OppenClient
+    return ANTICIPOS_CUSTCODE_OPCIONES, ANTICIPOS_CUSTCODE_FIJO, OppenClient.DEFAULT_CUSTOMER
 
 
 @app.route('/api/usuarios/listar', methods=['GET'])

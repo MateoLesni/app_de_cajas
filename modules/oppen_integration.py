@@ -795,6 +795,10 @@ class OppenClient:
             if comment:
                 pm["Comment"] = comment
 
+            fila = {"DebtType": 1, "InvoiceAmount": amount, "Amount": amount}
+            downpay = (anticipo_data.get("DownpayComment") or "").strip()
+            if downpay:
+                fila["DownpayComment"] = downpay
             payload = {
                 "Office": self.DEFAULT_OFFICE,
                 "CustCode": anticipo_data.get("CustCode", self.DEFAULT_CUSTOMER),
@@ -803,7 +807,7 @@ class OppenClient:
                 "RefStr": anticipo_data.get("RefStr", ""),
                 "createUser": "API",
                 "Status": 1,
-                "Invoices": [{"DebtType": 1, "InvoiceAmount": amount, "Amount": amount}],
+                "Invoices": [fila],
                 "PayModes": [pm],
             }
 
@@ -850,6 +854,38 @@ ANTICIPOS_OPPEN_URL = (os.getenv("ANTICIPOS_OPPEN_URL") or "").strip()
 # PayMode generico hasta que el sector confirme la lista (editable por medio en BD).
 ANTICIPOS_PAYMODE_DEFAULT = "INTERC"
 
+# Cliente (CustCode) de los recibos de caja por local: mismo mapeo para facturas y recibo.
+RECIBO_CUSTCODE_LOCAL = {'Tostado': 'CUIT0', 'Milvidas': 'ZT11111'}
+
+# Cliente de los ANTICIPOS por local. Ojo: Oppen solo deja consumir un anticipo en un
+# recibo del MISMO cliente (ONACCOUNTWRONGCUSTOMERSUPPLIER), por eso el recibo de caja
+# solo consume los anticipos cuyo cliente coincide con el suyo.
+ANTICIPOS_CUSTCODE_FIJO = {'Cruza Polo': 'ZT11111', 'Cruza Recoleta': 'CUIT0'}
+ANTICIPOS_CUSTCODE_OPCIONES = {'Costa7070': ['ZT11111', 'C00001']}
+
+# Tarjetas que acepta la caja, como medios de pago de anticipos: (nombre visible, clave FP_CODE_MAP).
+TARJETAS_ANTICIPOS = [
+    ('VISA', 'VISA'), ('VISA DEBITO', 'VISA DEBITO'), ('VISA PREPAGO', 'VISA PREPAGO'),
+    ('MASTERCARD', 'MASTERCARD'), ('MASTERCARD DEBITO', 'MASTERCARD DEBITO'), ('MASTERCARD PREPAGO', 'MASTERCARD PREPAGO'),
+    ('CABAL', 'CABAL'), ('CABAL DEBITO', 'CABAL DEBITO'), ('AMEX', 'AMEX'), ('MAESTRO', 'MAESTRO'),
+    ('NARANJA', 'NARANJA'), ('MAS DELIVERY', 'MAS DELIVERY'), ('DINERS (DISCOVER)', 'DINERS'),
+    ('PAGOS INMEDIATOS', 'PAGOS INMEDIATOS'),
+]
+_TARJETA_KEY_POR_NOMBRE = {n.upper(): k for n, k in TARJETAS_ANTICIPOS}
+
+
+def custcode_recibo(local: str) -> str:
+    return RECIBO_CUSTCODE_LOCAL.get(local, OppenClient.DEFAULT_CUSTOMER)
+
+
+def custcode_anticipo(local: str, elegido: Optional[str] = None) -> Tuple[Optional[str], Optional[List[str]]]:
+    """(cust_code, opciones). Si el local exige elegir y `elegido` no es valido, cust_code=None."""
+    opciones = ANTICIPOS_CUSTCODE_OPCIONES.get(local)
+    if opciones:
+        e = (elegido or '').strip().upper()
+        return (e if e in opciones else None), opciones
+    return ANTICIPOS_CUSTCODE_FIJO.get(local, OppenClient.DEFAULT_CUSTOMER), None
+
 
 def _get_label_oppen(cur, local: str) -> str:
     """cod_oppen del local (sin razon social); si no hay, el nombre del local."""
@@ -887,6 +923,7 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
             ('anticipos_recibidos', 'oppen_error',      "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_error TEXT NULL"),
             ('anticipos_recibidos', 'oppen_enviado_at', "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_enviado_at DATETIME NULL"),
             ('anticipos_recibidos', 'oppen_url',        "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_url VARCHAR(120) NULL"),
+            ('anticipos_recibidos', 'oppen_custcode',   "ALTER TABLE anticipos_recibidos ADD COLUMN oppen_custcode VARCHAR(20) NULL"),
             ('medios_anticipos',    'paymode_oppen',    "ALTER TABLE medios_anticipos ADD COLUMN paymode_oppen VARCHAR(30) NULL"),
             ('anticipos_estados_caja', 'oppen_consumo_sernr', "ALTER TABLE anticipos_estados_caja ADD COLUMN oppen_consumo_sernr BIGINT NULL"),
         ]
@@ -915,6 +952,24 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
                 print("[MIGRATE] oppen_sync_log.sync_type += 'anticipo'")
         except Exception as e_enum:
             print(f"[MIGRATE] ⚠️ oppen_sync_log.sync_type: {e_enum}")
+        # Tarjetas como medios de anticipo (y baja de Lemon / Passline). Solo la primera vez:
+        # si ya existe alguna tarjeta no se toca el catalogo (respeta cambios manuales).
+        try:
+            cur.execute("SELECT COUNT(*) FROM medios_anticipos WHERE nombre = 'VISA'")
+            r = cur.fetchone()
+            if (r[0] if isinstance(r, tuple) else list(r.values())[0]) == 0:
+                try:
+                    from modules.auditoria import FP_CODE_MAP
+                except Exception:
+                    FP_CODE_MAP = {}
+                for nombre, key in TARJETAS_ANTICIPOS:
+                    cur.execute("""INSERT IGNORE INTO medios_anticipos (nombre, activo, es_efectivo, paymode_oppen)
+                                   VALUES (%s, 1, 0, %s)""", (nombre, FP_CODE_MAP.get(key, ANTICIPOS_PAYMODE_DEFAULT)))
+                cur.execute("UPDATE medios_anticipos SET activo = 0 WHERE nombre IN ('Lemon', 'Passline')")
+                conn.commit()
+                print("[MIGRATE] medios_anticipos: tarjetas agregadas, Lemon/Passline desactivados")
+        except Exception as e_med:
+            print(f"[MIGRATE] ⚠️ medios_anticipos tarjetas: {e_med}")
         # PayMode por local + medio (override del default de medios_anticipos.paymode_oppen)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS anticipos_paymode_local (
@@ -936,25 +991,44 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
         except Exception: pass
 
 
-def resolver_paymode_anticipo(cur, local: str, medio_pago_id, paymode_default: Optional[str]) -> str:
-    """PayMode efectivo: override por local+medio > default del medio > INTERC."""
+def resolver_paymode_anticipo(cur, local: str, medio_pago_id, paymode_default: Optional[str],
+                              medio_nombre: Optional[str] = None) -> str:
+    """
+    PayMode efectivo:
+      1. override por local+medio (anticipos_paymode_local)
+      2. si el medio es una tarjeta y el local tiene terminales BK: codigo BK (FP_CODE_MAP_BK)
+      3. default del medio (medios_anticipos.paymode_oppen) > INTERC
+    """
+    def _v(r):
+        return (r['paymode_oppen'] if isinstance(r, dict) else r[0]) if r else None
     if local and medio_pago_id:
         try:
             cur.execute("""
                 SELECT paymode_oppen FROM anticipos_paymode_local
                 WHERE local = %s AND medio_pago_id = %s LIMIT 1
             """, (local, medio_pago_id))
-            r = cur.fetchone()
-            if r:
-                v = r['paymode_oppen'] if isinstance(r, dict) else r[0]
-                if v and str(v).strip():
-                    return str(v).strip()
+            v = _v(cur.fetchone())
+            if v and str(v).strip():
+                return str(v).strip()
         except Exception as e:
             print(f"[ANTICIPO-OPPEN] ⚠️ no se pudo leer paymode por local: {e}")
+    key = _TARJETA_KEY_POR_NOMBRE.get((medio_nombre or '').strip().upper())
+    if key and local:
+        try:
+            from modules.auditoria import FP_CODE_MAP_BK
+            if key in FP_CODE_MAP_BK:
+                cur.execute("SELECT COUNT(*) AS n FROM terminales WHERE local = %s AND bk = 1", (local,))
+                r = cur.fetchone()
+                n = (r['n'] if isinstance(r, dict) else r[0]) if r else 0
+                if n:
+                    return FP_CODE_MAP_BK[key]
+        except Exception as e:
+            print(f"[ANTICIPO-OPPEN] ⚠️ no se pudo resolver tarjeta BK: {e}")
     return (paymode_default or ANTICIPOS_PAYMODE_DEFAULT).strip()
 
 
-def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = None) -> Dict[str, Any]:
+def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = None,
+                            cust_code: Optional[str] = None) -> Dict[str, Any]:
     """
     Envia a Oppen un anticipo ya guardado en anticipos_recibidos y persiste
     SerNr + OnAccNr. Idempotente: si ya tiene OnAccNr no reenvia.
@@ -964,9 +1038,10 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
         contra-recibos, NO editando -> validar todo ANTES de mandar.
       - El monto va en ARS: si el anticipo es en otra divisa se convierte con
         cotizacion_divisa (obligatoria en ese caso).
-      - PayMode: medios_anticipos.paymode_oppen (editable), default INTERC.
-      - CustCode: Consumidor Final (decision actual).
-      - RefStr: "<fecha evento> <local>" ; Comment: N transaccion + cliente.
+      - PayMode: resolver_paymode_anticipo (local+medio > tarjeta BK > medio > INTERC).
+      - CustCode: custcode_anticipo(local): fijo por local, a eleccion (Costa7070) o C00001.
+      - RefStr: cliente + evento (+ observaciones).
+      - Descripcion (PayMode.Comment y DownpayComment): N remesa (si efectivo) y N transaccion.
     """
     if not ANTICIPOS_OPPEN_ENABLED:
         return {
@@ -980,8 +1055,8 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
         cur.execute("""
             SELECT a.id, a.local, a.fecha_pago, a.fecha_evento, a.importe, a.divisa,
                    a.cotizacion_divisa, a.cliente, a.numero_transaccion, a.medio_pago_id,
-                   a.estado, a.oppen_sernr, a.oppen_onaccnr,
-                   m.paymode_oppen, m.nombre AS medio_nombre
+                   a.observaciones, a.estado, a.oppen_sernr, a.oppen_onaccnr,
+                   m.paymode_oppen, m.nombre AS medio_nombre, m.es_efectivo
             FROM anticipos_recibidos a
             LEFT JOIN medios_anticipos m ON m.id = a.medio_pago_id
             WHERE a.id = %s
@@ -998,6 +1073,11 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
                 'message': f"El anticipo ya está en Oppen (N {a['oppen_onaccnr']}, recibo {a['oppen_sernr']})"
             }
 
+        cust, opciones = custcode_anticipo(a['local'], cust_code)
+        if not cust:
+            return {'success': False, 'needs_custcode': True, 'opciones': opciones,
+                    'message': f"Elegí a qué cliente de Oppen va el anticipo ({' / '.join(opciones)})"}
+
         # Monto en ARS
         divisa = (a['divisa'] or 'ARS').strip().upper()
         importe = float(a['importe'] or 0)
@@ -1012,28 +1092,44 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
         if monto <= 0:
             return {'success': False, 'message': 'El monto del anticipo debe ser mayor a cero'}
 
-        paymode = resolver_paymode_anticipo(cur, a['local'], a['medio_pago_id'], a['paymode_oppen'])
+        paymode = resolver_paymode_anticipo(cur, a['local'], a['medio_pago_id'], a['paymode_oppen'], a['medio_nombre'])
         label = _get_label_oppen(cur, a['local'])
         fecha_pago = a['fecha_pago'].isoformat() if hasattr(a['fecha_pago'], 'isoformat') else str(a['fecha_pago'])
-        fecha_evento = a['fecha_evento'].isoformat() if hasattr(a['fecha_evento'], 'isoformat') else str(a['fecha_evento'])
+        fe = a['fecha_evento']
+        fecha_evento_txt = fe.strftime('%d/%m/%Y') if hasattr(fe, 'strftime') else str(fe)
 
-        comment = (a['numero_transaccion'] or f"Anticipo #{a['id']}").strip()
-        comment = f"{comment} - {a['cliente']}"[:120]
+        nro_remesa = None
+        if a.get('es_efectivo'):
+            cur.execute("SELECT nro_remesa FROM remesas_trns WHERE origen_anticipo_id = %s ORDER BY id DESC LIMIT 1", (a['id'],))
+            rr = cur.fetchone()
+            nro_remesa = (rr or {}).get('nro_remesa')
+        partes = []
+        if nro_remesa:
+            partes.append(f"Remesa {str(nro_remesa).strip()}")
+        if (a['numero_transaccion'] or '').strip():
+            partes.append(f"Trx {a['numero_transaccion'].strip()}")
+        descripcion = (" - ".join(partes) or f"Anticipo #{a['id']}")[:120]
+
+        referencia = f"{(a['cliente'] or '').strip()} - evento {fecha_evento_txt}"
+        if (a.get('observaciones') or '').strip():
+            referencia += f" - {a['observaciones'].strip()}"
+        referencia = referencia[:60]   # Oppen guarda RefStr hasta 60 caracteres
 
         anticipo_data = {
             "TransDate": fecha_pago,
-            "CustCode": OppenClient.DEFAULT_CUSTOMER,
+            "CustCode": cust,
             "Labels": label,
-            "RefStr": f"{fecha_evento} {a['local']}",
+            "RefStr": referencia,
             "Amount": monto,
             "PayMode": paymode,
-            "Comment": comment,
+            "Comment": descripcion,
+            "DownpayComment": descripcion,
         }
 
         client = OppenClient()
         if ANTICIPOS_OPPEN_URL:
             client.BASE_URL = ANTICIPOS_OPPEN_URL.rstrip('/')
-        print(f"[ANTICIPO-OPPEN] anticipo {a['id']} ({a['local']}, {divisa} {importe} -> ARS {monto}, PayMode {paymode}) via {client.BASE_URL}")
+        print(f"[ANTICIPO-OPPEN] anticipo {a['id']} ({a['local']}, {divisa} {importe} -> ARS {monto}, PayMode {paymode}, cliente {cust}) via {client.BASE_URL}")
 
         try:
             client.authenticate()
@@ -1051,9 +1147,9 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
             cur_u.execute("""
                 UPDATE anticipos_recibidos
                 SET oppen_sernr = %s, oppen_onaccnr = %s, oppen_estado = 'creado',
-                    oppen_error = NULL, oppen_enviado_at = NOW(), oppen_url = %s
+                    oppen_error = NULL, oppen_enviado_at = NOW(), oppen_url = %s, oppen_custcode = %s
                 WHERE id = %s
-            """, (sernr, onaccnr, client.BASE_URL.rstrip('/'), a['id']))
+            """, (sernr, onaccnr, client.BASE_URL.rstrip('/'), cust, a['id']))
             conn.commit()
             cur_u.close()
             log_sync_attempt(
@@ -1063,7 +1159,7 @@ def crear_anticipo_en_oppen(conn, anticipo_id: int, usuario: Optional[str] = Non
                 request_payload=anticipo_data,
                 response_payload={'SerNr': sernr, 'OnAccNr': onaccnr},
             )
-            return {'success': True, 'onaccnr': onaccnr, 'sernr': sernr, 'message': msg}
+            return {'success': True, 'onaccnr': onaccnr, 'sernr': sernr, 'cust_code': cust, 'message': msg}
 
         _marcar_anticipo_oppen_error(conn, a['id'], msg)
         log_sync_attempt(
@@ -1177,9 +1273,7 @@ def sync_facturas_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             }
 
         # 3. Agregar label de Oppen y CustCode a cada factura
-        # Clientes especiales por local
-        LOCALES_CUSTCODE = {'Tostado': 'CUIT0', 'Milvidas': 'ZT11111'}
-        cust_code = LOCALES_CUSTCODE.get(local, 'C00001')
+        cust_code = custcode_recibo(local)
         for factura in facturas:
             factura['label_oppen'] = label_oppen
             factura['cust_code'] = cust_code
@@ -1577,13 +1671,15 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         anticipos_oppen_rows = []      # [{onaccnr, monto, anticipo_ids:[..]}]
         anticipos_sin_oppen = []       # ids consumidos localmente pero sin OnAccNr (aviso)
         anticipos_otro_ambiente = []   # ids con OnAccNr de OTRO Oppen (ej. ngprueba): NUNCA se consumen aca
+        anticipos_otro_cliente = []    # ids de otro CustCode: Oppen rechazaria el recibo entero
         recibo_url = OppenClient.BASE_URL.rstrip('/')
+        recibo_cust = custcode_recibo(local)
         try:
             _ensure_anticipos_oppen_columns(conn)
             cur_ant = conn.cursor(dictionary=True)
             cur_ant.execute("""
                 SELECT aec.id AS aec_id, aec.anticipo_id, aec.importe_consumido,
-                       ar.oppen_onaccnr, ar.oppen_url, ar.cliente
+                       ar.oppen_onaccnr, ar.oppen_url, ar.oppen_custcode, ar.cliente
                 FROM anticipos_estados_caja aec
                 JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
                 WHERE aec.local = %s
@@ -1604,6 +1700,11 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 if (r.get('oppen_url') or '').rstrip('/') != recibo_url:
                     anticipos_otro_ambiente.append((int(r['anticipo_id']), int(r['oppen_onaccnr']), r.get('oppen_url')))
                     continue
+                # Un anticipo solo se consume en un recibo del mismo cliente (ONACCOUNTWRONGCUSTOMERSUPPLIER).
+                # Los creados antes de guardar el cliente fueron todos a C00001.
+                if (r.get('oppen_custcode') or OppenClient.DEFAULT_CUSTOMER) != recibo_cust:
+                    anticipos_otro_cliente.append((int(r['anticipo_id']), int(r['oppen_onaccnr']), r.get('oppen_custcode')))
+                    continue
                 k = int(r['oppen_onaccnr'])
                 g = por_onacc.setdefault(k, {'onaccnr': k, 'monto': 0.0, 'aec_ids': [], 'cliente': r['cliente']})
                 g['monto'] = round(g['monto'] + monto_c, 2)
@@ -1618,6 +1719,8 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 print(f"[RECIBO] ⚠️ Anticipos consumidos SIN OnAccNr (no van a Oppen, se absorben en DIFERENCIA): {anticipos_sin_oppen}")
             if anticipos_otro_ambiente:
                 print(f"[RECIBO] ⚠️ Anticipos con OnAccNr de OTRO Oppen (recibo va a {recibo_url}); se saltean y se absorben en DIFERENCIA: {anticipos_otro_ambiente}")
+            if anticipos_otro_cliente:
+                print(f"[RECIBO] ⚠️ Anticipos de OTRO cliente (recibo {recibo_cust}); se saltean, se absorben en DIFERENCIA y se aplican a mano: {anticipos_otro_cliente}")
         except Exception as e_ant:
             print(f"[RECIBO] ⚠️ No se pudieron cargar anticipos para el recibo: {e_ant}")
         print(f"[RECIBO] Total anticipos consumidos via Oppen: {total_anticipos_oppen}")
@@ -1961,9 +2064,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         print(f"[RECIBO]   Diferencia neto vs facturas: {round(total_facturas - sum_neto, 2)}")
 
         # 6. Crear recibo
-        # Clientes especiales por local
-        LOCALES_CUSTCODE = {'Tostado': 'CUIT0', 'Milvidas': 'ZT11111'}
-        cust_code = LOCALES_CUSTCODE.get(local, 'C00001')
+        cust_code = custcode_recibo(local)
         recibo_data = {
             "TransDate": fecha,
             "CustCode": cust_code,

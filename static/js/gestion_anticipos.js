@@ -284,7 +284,7 @@
   function oppenBadge(a) {
     if (a.oppen_onaccnr) {
       const env = oppenEnv(a);
-      return `<span class="badge badge-oppen-ok" title="Recibo Oppen ${esc(a.oppen_sernr || '')} · ${esc(a.oppen_url || 'ambiente desconocido')}">N° ${esc(a.oppen_onaccnr)}${env ? ` <small style="opacity:.75">${esc(env)}</small>` : ''}</span>`;
+      return `<span class="badge badge-oppen-ok" title="Recibo Oppen ${esc(a.oppen_sernr || '')} · cliente ${esc(a.oppen_custcode || 'C00001')} · ${esc(a.oppen_url || 'ambiente desconocido')}">N° ${esc(a.oppen_onaccnr)}${env ? ` <small style="opacity:.75">${esc(env)}</small>` : ''}</span>`;
     }
     if (a.estado === 'eliminado_global') return '<span class="badge badge-oppen-none">–</span>';
     if (a.oppen_estado === 'error') return `<span class="badge badge-oppen-err" title="${esc(a.oppen_error || 'Error al enviar')}">⚠ Error</span>`;
@@ -424,6 +424,7 @@
     if (a.oppen_onaccnr) {
       oppenHtml = item('N° anticipo (OnAccNr)', `<span class="badge badge-oppen-ok">N° ${esc(a.oppen_onaccnr)}</span>`) +
         item('Recibo Oppen', esc(a.oppen_sernr || '–')) +
+        item('Cliente Oppen', `<span class="mono">${esc(a.oppen_custcode || 'C00001')}</span>`) +
         item('Ambiente', a.oppen_url ? `${esc(a.oppen_url)}${oppenEnv(a) === 'PRUEBA' ? ' <span class="badge badge-pendiente">PRUEBA</span>' : ''}` : '<span class="ant-muted">desconocido (anterior al registro de ambiente)</span>') +
         item('Enviado', esc(fmtDateTime(a.oppen_enviado_at))) +
         (a.oppen_consumo_sernr ? item('Consumido en recibo Oppen', esc(a.oppen_consumo_sernr)) : item('Consumo en Oppen', a.estado === 'consumido' ? 'Pendiente de auditar la caja' : '–'));
@@ -566,13 +567,48 @@
   };
 
   // ===== Oppen =====
+  // ===== cliente de Oppen por local =====
+  function custcodeOpciones(local) { return (profile.oppen_custcode_opciones || {})[local] || null; }
+  function custcodeDe(local) {
+    return (profile.oppen_custcode_fijo || {})[local] || profile.oppen_custcode_default || 'C00001';
+  }
+  // Devuelve el cliente elegido, o null si cancelan. Solo muestra el selector si el local tiene opciones.
+  function elegirCustcode(local, texto) {
+    const opciones = custcodeOpciones(local);
+    if (!opciones) return Promise.resolve(undefined);
+    return new Promise((resolve) => {
+      const modal = $('#modalCustcode');
+      $('#custcodeTexto').innerHTML = texto;
+      const box = $('#custcodeOpciones');
+      box.innerHTML = '';
+      const cerrar = (v) => { modal.classList.remove('active'); resolve(v); };
+      opciones.forEach((op) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ant-btn ant-btn-primary';
+        b.style.cssText = 'flex:1; justify-content:center; font-family:ui-monospace,monospace; font-size:15px; padding:14px';
+        b.textContent = op;
+        b.onclick = () => cerrar(op);
+        box.appendChild(b);
+      });
+      $('#custcodeCancelar').onclick = () => cerrar(null);
+      modal.onclick = (e) => { if (e.target === modal) cerrar(null); };
+      modal.classList.add('active');
+    });
+  }
+
   window.enviarOppen = async function (id, fromDetalle = false) {
     const a = rows.find((r) => r.id === id);
     if (!a) return;
-    if (!confirm(`¿Enviar el anticipo de "${a.cliente}" (${money(importeArs(a))}) a Oppen?\n\nSe crea un recibo de anticipo (OnAccount). No se puede editar después: solo corregir con contra-recibo.`)) return;
+    let cust = await elegirCustcode(a.local, `Anticipo de <b>${esc(a.cliente)}</b> por <b>${money(importeArs(a))}</b> (${esc(a.local)}).<br>Se crea en Oppen a nombre del cliente que elijas y no se puede editar después.`);
+    if (cust === null) return;
+    if (cust === undefined) {
+      if (!confirm(`¿Enviar el anticipo de "${a.cliente}" (${money(importeArs(a))}) a Oppen, cliente ${custcodeDe(a.local)}?\n\nSe crea un recibo de anticipo (OnAccount). No se puede editar después: solo corregir con contra-recibo.`)) return;
+      cust = null;
+    }
     try {
-      const d = await api(`/api/anticipos/${id}/enviar_oppen`, { json: {} });
-      if (d.success) toast(d.already ? `Ya estaba en Oppen: N° ${d.onaccnr}` : `✅ Creado en Oppen: anticipo N° ${d.onaccnr} (recibo ${d.sernr})`, 'ok', 7000);
+      const d = await api(`/api/anticipos/${id}/enviar_oppen`, { json: cust ? { cust_code: cust } : {} });
+      if (d.success) toast(d.already ? `Ya estaba en Oppen: N° ${d.onaccnr}` : `✅ Creado en Oppen: anticipo N° ${d.onaccnr} (recibo ${d.sernr}, cliente ${d.cust_code || ''})`, 'ok', 7000);
       else toast(`⚠️ ${d.msg || 'No se pudo enviar a Oppen'}`, d.skipped ? 'warn' : 'err', 8000);
     } catch (e) {
       toast('❌ ' + e.message, 'err');
@@ -848,6 +884,12 @@
       if (window._deleteCurrentAdjunto && !file) { toast('Quitaste el comprobante: subí uno nuevo antes de guardar', 'warn'); return; }
       if (window._deleteCurrentAdjunto) data.delete_adjunto = true;
       ['importe', 'divisa', 'medio_pago_id', 'cotizacion_divisa'].forEach((k) => { if ($('#importe').disabled) delete data[k]; });
+    }
+
+    if (!isEdit && custcodeOpciones(data.local)) {
+      const cust = await elegirCustcode(data.local, `Anticipo de <b>${esc(data.cliente)}</b> en <b>${esc(data.local)}</b>.<br>Elegí a qué cliente de Oppen va. Con <b>Cancelar</b> no se guarda nada.`);
+      if (!cust) return;
+      data.oppen_custcode = cust;
     }
 
     btn.disabled = true; btn.textContent = 'Guardando…';
