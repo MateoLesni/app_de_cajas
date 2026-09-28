@@ -3251,6 +3251,9 @@ def listar_anticipos_recibidos():
         'created_at': 'ar.created_at', 'nro_anticipo': 'ar.oppen_onaccnr', 'id': 'ar.id',
     }
     order_col = SORT_COLS.get(sort, 'ar.fecha_evento')
+    # El desempate va como expresion (ar.id + 0): con MySQL 8.0.41, ORDER BY fecha_evento DESC, id DESC
+    # + LIMIT usa "Backward index scan" sobre idx_local_fecha y devuelve la 1ra pagina en orden
+    # ascendente (se repetian filas entre paginas). La expresion fuerza un filesort correcto.
 
     try:
         conn = get_db_connection()
@@ -3370,7 +3373,7 @@ def listar_anticipos_recibidos():
                   WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
                   ORDER BY ia.id DESC LIMIT 1) AS adjunto_mime
             {base_from}{where}
-            ORDER BY {order_col} {direccion}, ar.id DESC
+            ORDER BY {order_col} {direccion}, (ar.id + 0) DESC
             LIMIT %s OFFSET %s
         """, params + [per_page, offset])
         rows = cur.fetchall() or []
