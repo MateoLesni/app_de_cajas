@@ -856,12 +856,13 @@ ANTICIPOS_PAYMODE_DEFAULT = "INTERC"
 
 # Cliente (CustCode) de los recibos de caja por local: mismo mapeo para facturas y recibo.
 RECIBO_CUSTCODE_LOCAL = {'Tostado': 'CUIT0', 'Milvidas': 'ZT11111',
-                         'Cruza Polo': 'ZT11111', 'Cruza Recoleta': 'CUIT0'}
+                         'Cruza Polo': 'ZT11111', 'Cruza Recoleta': 'CUIT0',
+                         'Alma Esmeralda': 'CUIT0'}
 
 # Cliente de los ANTICIPOS por local. Ojo: Oppen solo deja consumir un anticipo en un
 # recibo del MISMO cliente (ONACCOUNTWRONGCUSTOMERSUPPLIER), por eso el recibo de caja
 # solo consume los anticipos cuyo cliente coincide con el suyo.
-ANTICIPOS_CUSTCODE_FIJO = {'Cruza Polo': 'ZT11111', 'Cruza Recoleta': 'CUIT0'}
+ANTICIPOS_CUSTCODE_FIJO = {'Cruza Polo': 'ZT11111', 'Cruza Recoleta': 'CUIT0', 'Alma Esmeralda': 'CUIT0'}
 ANTICIPOS_CUSTCODE_OPCIONES = {'Costa7070': ['ZT11111', 'C00001']}
 
 # Tarjetas que acepta la caja, como medios de pago de anticipos: (nombre visible, clave FP_CODE_MAP).
