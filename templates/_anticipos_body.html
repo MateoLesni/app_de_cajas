@@ -315,6 +315,28 @@
   </div>
 </div>
 
+<!-- Cambiar medio de pago (auditor) -->
+<div id="modalMedio" class="modal-overlay">
+  <div class="modal-content" style="max-width:480px">
+    <div class="modal-header">
+      <h2>Cambiar medio de pago</h2>
+    </div>
+    <div id="medioTexto" class="ant-note info"></div>
+    <div class="form-group">
+      <label for="medioNuevo">Nuevo medio de pago</label>
+      <select id="medioNuevo"></select>
+    </div>
+    <div class="form-group">
+      <label for="medioMotivo">Motivo (opcional)</label>
+      <input type="text" id="medioMotivo" maxlength="200" placeholder="Ej: lo cargaron como transferencia y fue MercadoPago">
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="ant-btn ant-btn-ghost" id="medioCancelar">Cancelar</button>
+      <button type="button" class="ant-btn ant-btn-primary" id="medioGuardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Elegir cliente de Oppen (locales con mas de un cliente posible, ej. Costa7070) -->
 <div id="modalCustcode" class="modal-overlay">
   <div class="modal-content" style="max-width:460px">

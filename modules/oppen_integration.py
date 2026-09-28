@@ -971,6 +971,14 @@ def _ensure_anticipos_oppen_columns(conn) -> None:
                 print("[MIGRATE] medios_anticipos: tarjetas agregadas, Lemon/Passline desactivados")
         except Exception as e_med:
             print(f"[MIGRATE] ⚠️ medios_anticipos tarjetas: {e_med}")
+        try:
+            cur.execute("""INSERT IGNORE INTO medios_anticipos (nombre, activo, es_efectivo, paymode_oppen)
+                           VALUES ('Transferencia MP', 1, 0, %s)""", (ANTICIPOS_PAYMODE_DEFAULT,))
+            if cur.rowcount:
+                print("[MIGRATE] medios_anticipos: 'Transferencia MP' agregado")
+            conn.commit()
+        except Exception as e_tmp:
+            print(f"[MIGRATE] ⚠️ medios_anticipos Transferencia MP: {e_tmp}")
         # PayMode por local + medio (override del default de medios_anticipos.paymode_oppen)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS anticipos_paymode_local (

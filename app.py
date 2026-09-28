@@ -544,6 +544,7 @@ def login_required(view):
             'api_anticipo_enviar_oppen',  # reintento de envio a Oppen (OnAccNr)
             'api_medio_anticipo_paymode',
             'api_medios_anticipos_paymodes',
+            'api_anticipo_cambiar_medio',
             'files.view_item',
             'files.download_item',
             'files.upload',
@@ -3537,6 +3538,79 @@ def editar_anticipo_recibido(anticipo_id):
             descripcion=f"Anticipo editado: {ant['cliente']} ({', '.join(cambios.keys())})",
         )
         return jsonify(success=True, msg="Anticipo actualizado")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/anticipos_recibidos/<int:anticipo_id>/medio_pago', methods=['PUT'])
+@login_required
+def api_anticipo_cambiar_medio(anticipo_id):
+    """
+    Corrige el medio de pago de un anticipo (auditores: nivel 3, 5 y 6+; no el rol anticipos).
+    Vale aunque ya este consumido, mientras NO haya viajado a Oppen (el recibo de
+    anticipo no se puede editar alla). No permite pasar de/a Efectivo: eso crea o
+    borra la remesa espejo de la caja (hay que eliminar y volver a cargar).
+    Body: {medio_pago_id, motivo?}
+    """
+    lvl = get_user_level()
+    if lvl < 3 or lvl == 4:
+        return jsonify(success=False, msg="Solo auditores pueden cambiar el medio de pago"), 403
+    data = request.get_json() or {}
+    try:
+        nuevo_id = int(data.get('medio_pago_id') or 0)
+    except (TypeError, ValueError):
+        nuevo_id = 0
+    if not nuevo_id:
+        return jsonify(success=False, msg="Elegí el nuevo medio de pago"), 400
+    motivo = (data.get('motivo') or '').strip()[:200]
+    usuario = session.get('username', 'sistema')
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""
+            SELECT a.id, a.local, a.cliente, a.estado, a.medio_pago_id, a.oppen_onaccnr,
+                   m.nombre AS medio_nombre, COALESCE(m.es_efectivo, 0) AS es_efectivo
+            FROM anticipos_recibidos a LEFT JOIN medios_anticipos m ON m.id = a.medio_pago_id
+            WHERE a.id = %s
+        """, (anticipo_id,))
+        a = cur.fetchone()
+        if not a:
+            return jsonify(success=False, msg="Anticipo no encontrado"), 404
+        if a['estado'] == 'eliminado_global':
+            return jsonify(success=False, msg="El anticipo está eliminado"), 400
+        if a.get('oppen_onaccnr'):
+            return jsonify(success=False,
+                           msg=f"Ya está en Oppen (N° {a['oppen_onaccnr']}): el medio quedó fijo allá. "
+                               f"Se corrige en Oppen con un contra-recibo."), 409
+        cur.execute("SELECT id, nombre, COALESCE(es_efectivo, 0) AS es_efectivo, activo FROM medios_anticipos WHERE id = %s", (nuevo_id,))
+        nuevo = cur.fetchone()
+        if not nuevo or not nuevo['activo']:
+            return jsonify(success=False, msg="Medio de pago inválido o inactivo"), 400
+        if int(nuevo['es_efectivo']) != int(a['es_efectivo']):
+            return jsonify(success=False,
+                           msg="No se puede pasar de/a Efectivo: cambia la remesa de la caja. Eliminá el anticipo y volvé a cargarlo."), 409
+        if nuevo_id == a['medio_pago_id']:
+            return jsonify(success=False, msg="Es el mismo medio de pago"), 400
+
+        cur.execute("""UPDATE anticipos_recibidos SET medio_pago_id = %s, medio_pago = %s, updated_by = %s, updated_at = NOW()
+                       WHERE id = %s""", (nuevo_id, nuevo['nombre'], usuario, anticipo_id))
+        conn.commit()
+        try:
+            from modules.tabla_auditoria import registrar_auditoria
+            registrar_auditoria(conn=conn, accion='UPDATE', tabla='anticipos_recibidos', registro_id=anticipo_id,
+                                datos_anteriores={'medio_pago_id': a['medio_pago_id'], 'medio_pago': a['medio_nombre']},
+                                datos_nuevos={'medio_pago_id': nuevo_id, 'medio_pago': nuevo['nombre'], 'motivo': motivo or None},
+                                descripcion=f"Cambio de medio de pago del anticipo de {a['cliente']}: {a['medio_nombre']} -> {nuevo['nombre']}")
+        except Exception as e_aud:
+            print(f"⚠️ auditoria cambio medio: {e_aud}")
+        return jsonify(success=True, msg=f"Medio de pago cambiado: {a['medio_nombre'] or '-'} → {nuevo['nombre']}")
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500

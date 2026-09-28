@@ -310,6 +310,7 @@
       edit: lvl >= 3 && a.estado === 'pendiente',
       del: !!profile.can_delete && activo && (a.estado === 'pendiente' || lvl >= 6),
       oppen: lvl >= 3 && activo && !a.oppen_onaccnr,
+      medio: lvl >= 3 && lvl !== 4 && activo && !a.oppen_onaccnr,
     };
   }
 
@@ -343,6 +344,7 @@
             <div class="ant-actions">
               <button class="ant-ico" title="Ver detalle" onclick="verDetalle(${a.id})">👁</button>
               ${pm.edit ? `<button class="ant-ico" title="Editar" onclick="editarAnticipo(${a.id})">✏️</button>` : ''}
+              ${pm.medio ? `<button class="ant-ico" title="Cambiar medio de pago" onclick="cambiarMedio(${a.id})">💳</button>` : ''}
               ${pm.oppen ? `<button class="ant-ico oppen" title="${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}" onclick="enviarOppen(${a.id})">${a.oppen_estado === 'error' ? '↻ Oppen' : '→ Oppen'}</button>` : ''}
               ${pm.del ? `<button class="ant-ico danger" title="Eliminar" onclick="eliminarAnticipo(${a.id})">🗑</button>` : ''}
             </div>
@@ -489,6 +491,7 @@
     $('#detalleFooter').innerHTML = `
       ${pm.oppen ? `<button class="ant-btn ant-btn-ghost" onclick="enviarOppen(${a.id}, true)">🔁 ${a.oppen_estado === 'error' ? 'Reintentar envío a Oppen' : 'Enviar a Oppen'}</button>` : ''}
       ${pm.edit ? `<button class="ant-btn ant-btn-ghost" onclick="cerrarDetalle(); editarAnticipo(${a.id})">✏️ Editar</button>` : ''}
+      ${pm.medio ? `<button class="ant-btn ant-btn-ghost" onclick="cambiarMedio(${a.id})">💳 Cambiar medio de pago</button>` : ''}
       ${pm.del ? `<button class="ant-btn ant-btn-danger" onclick="eliminarAnticipo(${a.id})">🗑 Eliminar</button>` : ''}
       <button class="ant-btn ant-btn-primary" onclick="cerrarDetalle()">Cerrar</button>`;
     $('#modalDetalle').classList.add('active');
@@ -567,6 +570,36 @@
   };
 
   // ===== Oppen =====
+  // ===== cambiar medio de pago (auditor) =====
+  window.cambiarMedio = function (id) {
+    const a = rows.find((r) => r.id === id);
+    if (!a) return;
+    const efectivo = Number(a.es_efectivo) === 1;
+    const opciones = medios.filter((m) => (Number(m.es_efectivo) === 1) === efectivo && m.id !== a.medio_pago_id);
+    if (!opciones.length) { toast('No hay otro medio compatible para cambiar', 'warn'); return; }
+    $('#medioTexto').innerHTML = `Anticipo de <b>${esc(a.cliente)}</b> (${esc(a.local)}) por <b>${money(importeArs(a))}</b>.<br>Medio actual: <b>${esc(a.medio_pago || '–')}</b>` +
+      (efectivo ? '<br><span class="ant-muted">Es efectivo: solo se puede cambiar entre medios en efectivo.</span>' : '');
+    $('#medioNuevo').innerHTML = '<option value="">Elegí el nuevo medio</option>' + opciones.map((m) => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+    $('#medioMotivo').value = '';
+    const modal = $('#modalMedio');
+    $('#medioCancelar').onclick = () => modal.classList.remove('active');
+    modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+    $('#medioGuardar').onclick = async () => {
+      const nuevo = parseInt($('#medioNuevo').value);
+      if (!nuevo) { toast('Elegí el nuevo medio de pago', 'warn'); return; }
+      try {
+        const d = await api(`/api/anticipos_recibidos/${id}/medio_pago`, { method: 'PUT', json: { medio_pago_id: nuevo, motivo: $('#medioMotivo').value.trim() } });
+        if (d.success) {
+          toast('✅ ' + d.msg, 'ok');
+          modal.classList.remove('active');
+          cerrarDetalle();
+          await loadAnticipos();
+        } else toast('❌ ' + (d.msg || 'No se pudo cambiar'), 'err', 8000);
+      } catch (e) { toast('❌ ' + e.message, 'err'); }
+    };
+    modal.classList.add('active');
+  };
+
   // ===== cliente de Oppen por local =====
   function custcodeOpciones(local) { return (profile.oppen_custcode_opciones || {})[local] || null; }
   function custcodeDe(local) {
