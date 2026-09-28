@@ -201,7 +201,8 @@ Cuando JS recibe un DATETIME del backend, viene como `"2026-06-04 01:17:47"` (si
 - Solo `Costa7070` se excluye de la sincronización automática (lista `LOCALES_SIN_OPPEN`)
 - Cuando se audita un local: se crean facturas A/B/Z → CC → recibo
 - **El recibo NO se puede vincular a facturas creadas DESPUÉS** (caso reportado: auditor marcó auditado y después cargó una factura más → quedó suelta en Oppen)
-- Clientes especiales: Tostado → `CUIT0`, Milvidas → `ZT11111`, resto → `C00001`
+- Clientes especiales (facturas + recibo, `RECIBO_CUSTCODE_LOCAL`): Tostado → `CUIT0`, Milvidas → `ZT11111`, Cruza Polo → `ZT11111`, Cruza Recoleta → `CUIT0`, resto → `C00001`
+- Anticipos: el cliente del anticipo debe ser el MISMO que el del recibo de caja que lo consume (si no, Oppen rechaza con `ONACCOUNTWRONGCUSTOMERSUPPLIER`). Fijos: Cruza Polo `ZT11111`, Cruza Recoleta `CUIT0`; Costa7070 elige `ZT11111`/`C00001` al crear; resto `C00001`
 - Discovery se ajusta automáticamente para que el balance del recibo cierre exacto al centavo
 
 ---
