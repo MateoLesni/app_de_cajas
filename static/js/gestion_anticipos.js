@@ -228,7 +228,7 @@
     const tbody = $('#anticiposTableBody');
     if (!tbody) return;
     const seq = ++reqSeq;
-    tbody.innerHTML = '<tr><td colspan="10"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11"><div class="ant-loading"><div class="ant-spinner"></div><div>Cargando anticipos…</div></div></td></tr>';
 
     const p = new URLSearchParams({ page: state.page, per_page: state.perPage, sort: state.sort, dir: state.dir });
     Object.entries(state.filters).forEach(([k, v]) => p.append(k, v));
@@ -248,7 +248,7 @@
       renderSortHeaders();
     } catch (e) {
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="10"><div class="ant-empty"><h3>No se pudieron cargar los anticipos</h3><p>${esc(e.message)}</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11"><div class="ant-empty"><h3>No se pudieron cargar los anticipos</h3><p>${esc(e.message)}</p></div></td></tr>`;
     }
   }
 
@@ -316,7 +316,7 @@
   function renderTable() {
     const tbody = $('#anticiposTableBody');
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="10"><div class="ant-empty"><div style="font-size:30px">🗂️</div><h3>Sin anticipos</h3><p>No hay anticipos que coincidan con los filtros aplicados.</p></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11"><div class="ant-empty"><div style="font-size:30px">🗂️</div><h3>Sin anticipos</h3><p>No hay anticipos que coincidan con los filtros aplicados.</p></div></td></tr>';
       return;
     }
     tbody.innerHTML = rows.map((a) => {
@@ -325,11 +325,13 @@
       const importeHtml = divisa === 'ARS'
         ? `<strong>${money(a.importe)}</strong>`
         : `<strong>${money(a.importe, divisa)}</strong><span class="badge badge-divisa">${esc(divisa)}</span><div class="ant-muted">≈ ${money(importeArs(a))}</div>`;
-      const sub = [`ID ${a.id}`, a.created_by ? `por ${a.created_by}` : '', a.caja ? a.caja + (a.turno ? ' · ' + a.turno : '') : ''].filter(Boolean).join(' · ');
+      const sub = [`ID ${a.id}`, a.caja ? a.caja + (a.turno ? ' · ' + a.turno : '') : ''].filter(Boolean).join(' · ');
+      const creado = fmtDateTime(a.created_at);
       return `
         <tr class="${a.estado === 'eliminado_global' ? 'is-eliminado' : ''}" data-id="${a.id}">
+          <td class="ant-fecha" title="Cargado por ${esc(a.created_by || '–')}">${esc(creado.slice(0, 10))}<small>${esc(creado.slice(11))} · ${esc(a.created_by || '–')}</small></td>
           <td class="ant-fecha" title="Evento: ${fmtDate(a.fecha_evento)} · Pago: ${fmtDate(a.fecha_pago)}">${fmtDate(a.fecha_evento)}<small>pago ${fmtDate(a.fecha_pago)}</small></td>
-          <td><div class="ant-cliente" title="${esc(a.cliente)}">${esc(a.cliente)}</div><div class="ant-muted" title="${esc(fmtDateTime(a.created_at))}">${esc(sub)}</div></td>
+          <td><div class="ant-cliente" title="${esc(a.cliente)}">${esc(a.cliente)}</div><div class="ant-muted">${esc(sub)}</div></td>
           <td>${esc(a.local)}</td>
           <td class="num">${importeHtml}</td>
           <td>${esc(a.medio_pago || '–')}</td>
