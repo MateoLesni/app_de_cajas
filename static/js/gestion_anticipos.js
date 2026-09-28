@@ -309,7 +309,7 @@
     return {
       edit: lvl >= 3 && a.estado === 'pendiente',
       del: !!profile.can_delete && activo && (a.estado === 'pendiente' || lvl >= 6),
-      oppen: lvl >= 3 && activo && !a.oppen_onaccnr,
+      oppen: !!profile.can_send_oppen && activo && !a.oppen_onaccnr,
       medio: lvl >= 3 && lvl !== 4 && activo && !a.oppen_onaccnr,
     };
   }
@@ -803,7 +803,8 @@
       $('#fechaPago').value = hoy.toISOString().slice(0, 10);
       $('#divisa').value = 'ARS';
       if (locales.length === 1) { $('#local').value = locales[0]; await loadCajasForLocal(locales[0]); }
-      if (profile.level >= 3) setNota('Al guardar, el anticipo se envía a <b>Oppen</b> y se guarda su N° de anticipo. Si Oppen falla, queda igual cargado acá y se puede reintentar.', 'info');
+      if (profile.can_send_oppen) setNota('Al guardar, el anticipo se envía a <b>Oppen</b> y se guarda su N° de anticipo. Si Oppen falla, queda igual cargado acá y se puede reintentar.', 'info');
+      else setNota('El anticipo queda cargado en la app como <b>Sin enviar</b>. Lo envía a Oppen un auditor.', 'info');
     } else {
       const a = rows.find((r) => r.id === id);
       if (!a) return;
@@ -919,7 +920,7 @@
       ['importe', 'divisa', 'medio_pago_id', 'cotizacion_divisa'].forEach((k) => { if ($('#importe').disabled) delete data[k]; });
     }
 
-    if (!isEdit && custcodeOpciones(data.local)) {
+    if (!isEdit && profile.can_send_oppen && custcodeOpciones(data.local)) {
       const cust = await elegirCustcode(data.local, `Anticipo de <b>${esc(data.cliente)}</b> en <b>${esc(data.local)}</b>.<br>Elegí a qué cliente de Oppen va. Con <b>Cancelar</b> no se guarda nada.`);
       if (!cust) return;
       data.oppen_custcode = cust;

@@ -3128,7 +3128,7 @@ def crear_anticipo_recibido():
         # falla queda oppen_estado='error' y se reintenta con /api/anticipos/<id>/enviar_oppen.
         # Con ANTICIPOS_OPPEN_ENABLED != 1 devuelve skipped y no envia nada.
         oppen = None
-        if data.get('enviar_oppen', True):
+        if data.get('enviar_oppen', True) and puede_enviar_anticipos_oppen(user_level):
             try:
                 from modules.oppen_integration import crear_anticipo_en_oppen
                 oppen = crear_anticipo_en_oppen(conn, anticipo_id, usuario, cust_code=data.get('oppen_custcode'))
@@ -3158,15 +3158,21 @@ def crear_anticipo_recibido():
         return jsonify(success=False, msg=str(e)), 500
 
 
+def puede_enviar_anticipos_oppen(lvl: int) -> bool:
+    """Solo auditores (3), jefe de auditoria (5) y soporte (10+) cargan anticipos en Oppen.
+    Los roles de anticipos (4 y 6) cargan en la app y el anticipo queda 'Sin enviar'."""
+    return lvl in (3, 5) or lvl >= 10
+
+
 @app.route('/api/anticipos/<int:anticipo_id>/enviar_oppen', methods=['POST'])
 @login_required
 def api_anticipo_enviar_oppen(anticipo_id):
     """
     Envia (o reintenta) un anticipo ya creado a Oppen y guarda su OnAccNr.
-    Idempotente: si ya tiene OnAccNr no reenvia. Nivel >= 3 (auditor).
+    Idempotente: si ya tiene OnAccNr no reenvia. Solo auditores (puede_enviar_anticipos_oppen).
     """
-    if get_user_level() < 3:
-        return jsonify(success=False, msg="No tenés permisos para enviar anticipos a Oppen"), 403
+    if not puede_enviar_anticipos_oppen(get_user_level()):
+        return jsonify(success=False, msg="Solo los auditores pueden enviar anticipos a Oppen"), 403
 
     conn = get_db_connection()
     try:
@@ -11420,6 +11426,7 @@ def api_mi_perfil_anticipos():
         oppen_custcode_opciones=_anticipos_custcode_cfg()[0],
         oppen_custcode_fijo=_anticipos_custcode_cfg()[1],
         oppen_custcode_default=_anticipos_custcode_cfg()[2],
+        can_send_oppen=puede_enviar_anticipos_oppen(user_level),
     )
 
 
