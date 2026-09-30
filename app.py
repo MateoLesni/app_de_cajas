@@ -510,11 +510,20 @@ def require_edit_ctx(fn):
             if is_local_auditado(conn, ctx['local'], ctx['fecha']) and lvl < 10:
                 return jsonify(success=False, msg='❌ El local está AUDITADO para esta fecha. No se pueden realizar más modificaciones.'), 403
             ok = can_edit(conn, ctx['local'], ctx['caja'], ctx['turno'], ctx['fecha'], lvl)
+            motivo = None
+            if not ok:
+                if lvl < 3 and is_local_closed(conn, ctx['local'], ctx['fecha']):
+                    motivo = (f"🔒 El local {ctx['local']} está CERRADO para el {ctx['fecha']}. "
+                              f"No se puede cargar ni modificar nada de esa fecha. Si es un error, pedile a un auditor que lo reabra.")
+                elif lvl == 1:
+                    motivo = f"🔒 La caja {ctx['caja']} ({ctx['turno']}) está CERRADA para el {ctx['fecha']}. Solo el encargado puede modificarla."
+                elif lvl >= 3:
+                    motivo = f"El local {ctx['local']} todavía está ABIERTO para el {ctx['fecha']}: el auditor solo puede modificar locales cerrados."
         finally:
             conn.close()
         if not ok:
             # 409 = conflicto por estado/rol (no permitido)
-            return jsonify(success=False, msg='No permitido para tu rol/estado'), 409
+            return jsonify(success=False, msg=motivo or 'No permitido para tu rol/estado'), 409
         g.ctx = ctx
         return fn(*a, **k)
     return wrapper

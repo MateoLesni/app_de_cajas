@@ -400,7 +400,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         if (!r.ok) {
           const txt = await r.text();
-          if (r.status === 409) mostrarAlerta("No tenés permisos (caja/local cerrados para tu rol).");
+          if (r.status === 409) mostrarAlerta(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "No tenés permisos (caja/local cerrados para tu rol).");
           else mostrarAlerta("Error al actualizar: " + (txt || r.status));
           return;
         }
@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const r = await fetch(`/gastos/${id}`, { method: "DELETE" });
         if (!r.ok) {
           const txt = await r.text();
-          if (r.status === 409) mostrarAlerta("No tenés permisos (caja/local cerrados para tu rol).");
+          if (r.status === 409) mostrarAlerta(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "No tenés permisos (caja/local cerrados para tu rol).");
           else mostrarAlerta("Error al borrar: " + (txt || r.status));
           return;
         }

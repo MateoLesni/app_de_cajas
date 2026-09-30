@@ -398,7 +398,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         if (!r.ok) {
           const txt = await r.text();
-          if (r.status === 409) mostrarAlerta("No tenés permisos para actualizar.");
+          if (r.status === 409) mostrarAlerta(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "No tenés permisos para actualizar.");
           else mostrarAlerta("Error al actualizar: " + (txt || r.status));
           return;
         }
@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const r = await fetch(`/mercadopago/${id}`, { method: "DELETE" });
         if (!r.ok) {
           const txt = await r.text();
-          if (r.status === 409) mostrarAlerta("No tenés permisos para borrar.");
+          if (r.status === 409) mostrarAlerta(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "No tenés permisos para borrar.");
           else mostrarAlerta("Error al borrar: " + (txt || r.status));
           return;
         }

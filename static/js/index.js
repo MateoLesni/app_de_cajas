@@ -496,7 +496,7 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(async r => {
         if (!r.ok) {
           const txt = await r.text();
-          if (r.status === 409) alert("Caja/Local cerrados para tu rol: no se puede borrar.");
+          if (r.status === 409) alert(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "Caja/Local cerrados para tu rol: no se puede borrar.");
           else alert("Error al borrar: " + (txt || r.status));
           return null;
         }

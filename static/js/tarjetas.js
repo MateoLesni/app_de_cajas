@@ -547,7 +547,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       fetch(`/tarjetas/${id}`, { method:"DELETE" })
         .then(async r => {
-          if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido."); else alert("Error al borrar: "+(txt||r.status)); return null; }
+          if (!r.ok) { const txt = await r.text(); if (r.status===409) alert(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "No permitido."); else alert("Error al borrar: "+(txt||r.status)); return null; }
           return r.json();
         })
         .then(async data => {
@@ -618,7 +618,7 @@ document.addEventListener("DOMContentLoaded", function () {
           body: JSON.stringify(body)
         })
         .then(async r => {
-          if (!r.ok) { const txt = await r.text(); if (r.status===409) alert("No permitido."); else alert("Error al actualizar: "+(txt||r.status)); return null; }
+          if (!r.ok) { const txt = await r.text(); if (r.status===409) alert(((() => { try { return JSON.parse(txt).msg; } catch (e) { return null; } })()) || "No permitido."); else alert("Error al actualizar: "+(txt||r.status)); return null; }
           return r.json();
         })
         .then(async data => {
