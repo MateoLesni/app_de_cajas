@@ -10646,12 +10646,18 @@ def api_actualizar_observacion_diferencia():
 @role_min_required(2)  # mínimo L2
 def api_cierre_local():
     data  = request.get_json() or {}
-    # Para auditores: usar local del body, sino usar get_local_param()
-    local = data.get('local') or get_local_param()
+    local = (data.get('local') or '').strip() or get_local_param()
     fecha = data.get('fecha')
 
     if not (local and fecha):
         return jsonify(success=False, msg='falta local/fecha'), 400
+
+    # Un encargado solo puede cerrar sus locales asignados (el body no es confiable).
+    lvl = get_user_level()
+    if lvl < 3:
+        permitidos = session.get('available_locales') or [session.get('local')]
+        if local not in permitidos:
+            return jsonify(success=False, msg=f"No tenés permisos sobre el local {local}"), 403
 
     f = _normalize_fecha(fecha)
     if not f:
@@ -10660,6 +10666,13 @@ def api_cierre_local():
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
+        # (0) Un local auditado es inmutable; y uno ya cerrado no se vuelve a cerrar
+        #     (re-cerrar pisaba closed_by/closed_at y regeneraba los snapshots).
+        if is_local_auditado(conn, local, f):
+            return jsonify(success=False, msg=f"El local {local} ya está AUDITADO para el {f}: no se puede volver a cerrar."), 409
+        if is_local_closed(conn, local, f):
+            return jsonify(success=False, msg=f"El local {local} ya está cerrado para el {f}."), 409
+
         # (1) PRIMERO: Validar que existan imágenes para cada pestaña con datos
         ok_imgs, msg_imgs, faltantes_imgs = _validar_imagenes_antes_cierre_local(conn, local, fecha)
         if not ok_imgs:
@@ -10762,7 +10775,8 @@ def api_cierre_local():
         create_snapshot_for_local_by_day(conn, local, f, made_by=session.get('username'))
 
         conn.commit()
-        return jsonify(success=True, msg="Cierre del local confirmado y snapshots por turno creados")
+        return jsonify(success=True, local=local, fecha=str(f),
+                       msg=f"Cierre del local {local} ({f}) confirmado y snapshots por turno creados")
     except Exception as e:
         conn.rollback()
         print("❌ cierre_local:", e)

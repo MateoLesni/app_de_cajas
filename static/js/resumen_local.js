@@ -673,14 +673,19 @@
 
   async function cerrarLocal() {
     const fecha = $("#rl-fecha")?.value;
+    // El local que se ve en pantalla (select para multi-local, display para el resto).
+    // Va SIEMPRE en el body: si no, el servidor usa el local de la sesion, que en un
+    // encargado multi-local puede ser otro (paso: cerro Cochinchina creyendo cerrar Costa7070).
+    const local = ($("#rl-local-select")?.value || $("#rl-local-display")?.textContent || "").trim();
     if (!fecha) { alert("Seleccioná una fecha."); return; }
-    if (!confirm(`Esto cerrará el LOCAL para ${fecha}.\n- Bloquea edición para nivel 2.\n- Genera el snapshot para auditoría.\n\n¿Confirmás?`)) return;
+    if (!local) { alert("No se pudo determinar el local a cerrar."); return; }
+    if (!confirm(`Esto cerrará el LOCAL ${local} para el ${fecha}.\n- Bloquea edición para nivel 2.\n- Genera el snapshot para auditoría.\n\n¿Confirmás?`)) return;
     const btn = $("#rl-cerrar-local");
     const oldTxt = btn ? btn.textContent : "";
     try {
       if (btn) { btn.disabled = true; btn.textContent = "Cerrando…"; }
       const r = await fetch("/api/cierre_local", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fecha })
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ local, fecha })
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || !data?.success) {
@@ -688,7 +693,7 @@
         else alert(`Error al cerrar el local: ${data?.msg || r.status}`);
         return;
       }
-      alert("✅ Local cerrado y snapshot creado.");
+      alert(`✅ Local ${data.local || local} cerrado para el ${data.fecha || fecha} y snapshot creado.`);
       await updateResumen(); await refreshEstadoLocalBadge();
     } catch { alert("❌ Error de red."); }
     finally { if (btn) btn.textContent = oldTxt; }

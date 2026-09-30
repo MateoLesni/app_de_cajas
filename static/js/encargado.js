@@ -87,7 +87,7 @@
         const r = await fetch('/api/cierre_local', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ fecha, turno })
+          body: JSON.stringify({ local, fecha, turno })
         });
         const data = await r.json();
         if (data.success){
