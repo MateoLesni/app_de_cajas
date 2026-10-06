@@ -59,8 +59,13 @@
   <div class="rb-wrap">
     <div class="rb-header">
       <div>
+        {% if es_gestion_ng %}
+        <h1>Reportería de Locales</h1>
+        <div style="font-size:12px; color:#888; margin-top:4px;">Ventas, facturas y medios de cobro por fecha</div>
+        {% else %}
         <h1>Reporte de Acreditación Qantara</h1>
         <div style="font-size:12px; color:#888; margin-top:4px;">Terminales BK — tarjetas y QR</div>
+        {% endif %}
       </div>
       <div class="rb-user">
         Hola, <strong>{{ session.get('username','') }}</strong>
@@ -78,9 +83,12 @@
           <label>Hasta</label>
           <input type="date" id="f-hasta">
         </div>
+        {% if not es_gestion_ng %}
         <button class="btn btn-primary" id="btn-generar">Generar reporte</button>
-        <button class="btn btn-success" id="btn-excel">Descargar Excel (medios de cobro)</button>
+        {% endif %}
         <button class="btn btn-success" id="btn-excel-ventas">Exportar Ventas</button>
+        <button class="btn btn-success" id="btn-excel-facturas">Exportar Facturas</button>
+        <button class="btn btn-success" id="btn-excel">Exportar Medios de cobro</button>
       </div>
 
       <div class="locales-box">
@@ -96,7 +104,7 @@
     </div>
 
     <div id="reporte-container">
-      <div class="rb-card"><div class="empty">Elegí el rango y presioná "Generar reporte".</div></div>
+      <div class="rb-card"><div class="empty">{% if es_gestion_ng %}Elegí el rango y los locales, y descargá el Excel que necesites.{% else %}Elegí el rango y presioná "Generar reporte".{% endif %}</div></div>
     </div>
   </div>
 

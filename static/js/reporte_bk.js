@@ -155,14 +155,23 @@
     window.location = '/api/reporte-bk/export-ventas?' + params.toString();
   }
 
+  // ── Excel de facturas (facturas_trns + cuentas corrientes) ──
+  function descargarExcelFacturas() {
+    if (!$('f-desde').value || !$('f-hasta').value) { toast('Elegí el rango de fechas', 'err'); return; }
+    const { params, locs } = buildParams();
+    if (locs.length === 0) { toast('Seleccioná al menos un local', 'err'); return; }
+    window.location = '/api/reporte-bk/export-facturas?' + params.toString();
+  }
+
   // ── Init ──
   document.addEventListener('DOMContentLoaded', function () {
     $('f-desde').value = daysAgoISO(6);
     $('f-hasta').value = todayISO();
 
-    $('btn-generar').addEventListener('click', generar);
+    $('btn-generar')?.addEventListener('click', generar);   // no existe para el rol gestion_ng
     $('btn-excel').addEventListener('click', descargarExcel);
     $('btn-excel-ventas').addEventListener('click', descargarExcelVentas);
+    $('btn-excel-facturas')?.addEventListener('click', descargarExcelFacturas);
     $('btn-all').addEventListener('click', () => { document.querySelectorAll('.loc-cb').forEach(cb => cb.checked = true); });
     $('btn-none').addEventListener('click', () => { document.querySelectorAll('.loc-cb').forEach(cb => cb.checked = false); });
 

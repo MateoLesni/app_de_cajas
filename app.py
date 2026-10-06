@@ -630,17 +630,20 @@ def login_required(view):
                 return redirect(url_for('dashboard_ribs_page'))
             return jsonify(success=False, msg='No tenés acceso a esta sección'), 403
 
-        # Rutas permitidas para usuario reporte_bk (rol 'reporte_bk', nivel 8)
+        # Rutas permitidas para los roles de reporteria de nivel 8 que usan /reporte-bk:
+        # 'reporte_bk' (Luis, terminales BK) y 'gestion_ng' (Juan Cruz, todos los locales
+        # menos los excluidos; sin reporte Qantara, con export de facturas).
         allowed_endpoints_reporte_bk = [
             'reporte_bk_page',
             'api_reporte_bk_locales',
             'api_reporte_bk_data',
             'api_reporte_bk_export',
             'api_reporte_bk_export_ventas',
+            'api_reporte_bk_export_facturas',
             'logout',
             'static',
         ]
-        if user_role == 'reporte_bk' and current_endpoint not in allowed_endpoints_reporte_bk:
+        if user_role in ('reporte_bk', 'gestion_ng') and current_endpoint not in allowed_endpoints_reporte_bk:
             is_api_request = (
                 request.path.startswith('/api/') or
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
@@ -726,8 +729,8 @@ def route_for_current_role() -> str:
     if (session.get('role') or '').lower() == 'dueno_ribs':
         return url_for('dashboard_ribs_page')
 
-    # Rol 'reporte_bk' (nivel 8) siempre va a /reporte-bk
-    if (session.get('role') or '').lower() == 'reporte_bk':
+    # Roles 'reporte_bk' y 'gestion_ng' (nivel 8) siempre van a /reporte-bk
+    if (session.get('role') or '').lower() in ('reporte_bk', 'gestion_ng'):
         return url_for('reporte_bk_page')
 
     # Rol 'reporte_fabric' (nivel 8) siempre va a /reporte-fabric
@@ -788,8 +791,8 @@ def redirect_after_login():
     if (session.get('role') or '').lower() == 'dueno_ribs':
         return redirect(url_for('dashboard_ribs_page'))
 
-    # Usuario con rol 'reporte_bk' (nivel 8) siempre va a /reporte-bk
-    if (session.get('role') or '').lower() == 'reporte_bk':
+    # Usuarios con rol 'reporte_bk' o 'gestion_ng' (nivel 8) siempre van a /reporte-bk
+    if (session.get('role') or '').lower() in ('reporte_bk', 'gestion_ng'):
         return redirect(url_for('reporte_bk_page'))
 
     # Usuario con rol 'reporte_fabric' (nivel 8) siempre va a /reporte-fabric
@@ -14921,10 +14924,43 @@ def _reporte_bk_rango(req):
     return fecha_desde, fecha_hasta, None
 
 
+# Locales que el rol 'gestion_ng' NO ve (el resto de los locales si).
+GESTION_NG_LOCALES_EXCLUIDOS = {'Alma Esmeralda', 'Alma Cerrito', 'Tostado', 'Local_Test'}
+
+
+def _reporte_bk_es_gestion_ng():
+    return (session.get('role') or '').lower() == 'gestion_ng'
+
+
+def _reporte_bk_locales_permitidos(cur):
+    """Locales que puede ver el usuario actual. None = sin restriccion (reporte_bk)."""
+    if not _reporte_bk_es_gestion_ng():
+        return None
+    cur.execute("SELECT DISTINCT local FROM locales WHERE local IS NOT NULL AND local <> '' ORDER BY local")
+    return [r['local'] for r in cur.fetchall() if r.get('local') and r['local'] not in GESTION_NG_LOCALES_EXCLUIDOS]
+
+
 def _reporte_bk_locales_param(req):
-    """Lista de locales pedidos (?local=A&local=B). Vacio = todos."""
-    locales = req.args.getlist('local')
-    return [l.strip() for l in locales if l and l.strip()]
+    """
+    Lista de locales pedidos (?local=A&local=B). Vacio = todos.
+    Para 'gestion_ng' la lista se recorta SIEMPRE a sus locales permitidos (y si no pide
+    ninguno, se devuelven todos los permitidos), asi el filtro queda aplicado en el SQL.
+    """
+    locales = [l.strip() for l in req.args.getlist('local') if l and l.strip()]
+    if not _reporte_bk_es_gestion_ng():
+        return locales
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        permitidos = _reporte_bk_locales_permitidos(cur) or []
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+    if locales:
+        return [l for l in locales if l in permitidos] or ['__ninguno__']
+    return permitidos or ['__ninguno__']
 
 
 def _reporte_bk_normalizar_tarjeta(nombre):
@@ -14945,17 +14981,20 @@ def _reporte_bk_normalizar_tarjeta(nombre):
 @login_required
 @role_min_required(8)
 def reporte_bk_page():
-    return render_template('reporte_bk.html')
+    return render_template('reporte_bk.html', es_gestion_ng=_reporte_bk_es_gestion_ng())
 
 
 @app.route('/api/reporte-bk/locales', methods=['GET'])
 @login_required
 @role_min_required(8)
 def api_reporte_bk_locales():
-    """Todos los locales con tarjetas_trns (para el selector de filtros)."""
+    """Locales para el selector de filtros. gestion_ng: solo sus locales permitidos."""
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
     try:
+        permitidos = _reporte_bk_locales_permitidos(cur)
+        if permitidos is not None:
+            return jsonify(success=True, locales=permitidos)
         cur.execute("SELECT DISTINCT local FROM tarjetas_trns WHERE local IS NOT NULL AND local <> '' ORDER BY local")
         locales = [r['local'] for r in cur.fetchall() if r.get('local')]
         return jsonify(success=True, locales=locales)
@@ -15386,6 +15425,112 @@ def api_reporte_bk_export_ventas():
         wb.save(bio)
         bio.seek(0)
         filename = "ventas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
+        return Response(
+            bio.read(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': 'attachment; filename="' + filename + '"'}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/reporte-bk/export-facturas', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_bk_export_facturas():
+    """
+    Excel de facturas del rango + locales elegidos, una fila por comprobante:
+    hoja "Facturas" (facturas_trns: Z/A/B/CC viejas) y hoja "Cuentas Corrientes"
+    (cuentas_corrientes_trns con el cliente). Excluye eliminadas.
+    """
+    from io import BytesIO
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    fecha_desde, fecha_hasta, err = _reporte_bk_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    locales_filtro = _reporte_bk_locales_param(request)
+
+    def _filtro_local(sql, params, col):
+        if locales_filtro:
+            ph = ','.join(['%s'] * len(locales_filtro))
+            sql += " AND " + col + " IN (" + ph + ")"
+            params.extend(locales_filtro)
+        return sql
+
+    def _hoja(ws, headers, filas, col_monto):
+        ws.append(headers)
+        hfont = Font(bold=True, color="FFFFFF")
+        hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        for ci in range(1, len(headers) + 1):
+            c = ws.cell(row=1, column=ci)
+            c.font = hfont; c.fill = hfill; c.alignment = Alignment(horizontal='center')
+        total = 0.0
+        for f in filas:
+            ws.append(f)
+            total += float(f[col_monto] or 0)
+        if filas:
+            fila_total = [""] * len(headers)
+            fila_total[0] = "TOTAL"
+            fila_total[col_monto] = round(total, 2)
+            ws.append(fila_total)
+            for ci in range(1, len(headers) + 1):
+                ws.cell(row=ws.max_row, column=ci).font = Font(bold=True)
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 45)
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT f.local, DATE(f.fecha) AS fecha, f.caja, f.turno, f.tipo, f.punto_venta, f.nro_factura,
+                   f.monto, f.estado, f.sernr_oppen, f.comentario
+            FROM facturas_trns f
+            WHERE DATE(f.fecha) BETWEEN %s AND %s
+              AND COALESCE(f.estado, 'ok') <> 'eliminado'
+        """
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'f.local')
+        sql += " ORDER BY f.local, DATE(f.fecha), f.caja, f.turno, f.tipo, f.punto_venta, f.nro_factura"
+        cur.execute(sql, tuple(params))
+        facturas = [[r['local'], r['fecha'].isoformat(), r['caja'], r['turno'], r['tipo'], r['punto_venta'], r['nro_factura'],
+                     float(r['monto'] or 0), r['estado'], r['sernr_oppen'], r['comentario'] or ''] for r in cur.fetchall() or []]
+
+        sql = """
+            SELECT cc.local, DATE(cc.fecha) AS fecha, cc.caja, cc.turno, cli.nombre_cliente, cli.codigo_oppen,
+                   cc.punto_venta, cc.nro_comanda, cc.monto, cc.estado, cc.sernr_oppen
+            FROM cuentas_corrientes_trns cc
+            LEFT JOIN clientes_cta_cte cli ON cli.id = cc.cliente_id
+            WHERE DATE(cc.fecha) BETWEEN %s AND %s
+              AND COALESCE(cc.estado, 'ok') <> 'eliminado'
+        """
+        params = [fecha_desde, fecha_hasta]
+        sql = _filtro_local(sql, params, 'cc.local')
+        sql += " ORDER BY cc.local, DATE(cc.fecha), cc.caja, cc.turno, cli.nombre_cliente"
+        cur.execute(sql, tuple(params))
+        ctas = [[r['local'], r['fecha'].isoformat(), r['caja'], r['turno'], r['nombre_cliente'] or '', r['codigo_oppen'] or '',
+                 r['punto_venta'] or '', r['nro_comanda'] or '', float(r['monto'] or 0), r['estado'], r['sernr_oppen']] for r in cur.fetchall() or []]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Facturas"
+        _hoja(ws, ["Local", "Fecha", "Caja", "Turno", "Tipo", "Punto de venta", "N° factura", "Monto", "Estado", "SerNr Oppen", "Comentario"], facturas, 7)
+        ws2 = wb.create_sheet("Cuentas Corrientes")
+        _hoja(ws2, ["Local", "Fecha", "Caja", "Turno", "Cliente", "Código Oppen", "Punto de venta", "N° comanda", "Monto", "Estado", "SerNr Oppen"], ctas, 8)
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        filename = "facturas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
         return Response(
             bio.read(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
