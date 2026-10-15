@@ -890,6 +890,8 @@ from modules.terminales import terminales_bp
 app.register_blueprint(terminales_bp)
 from modules.tabla_auditoria import tabla_auditoria_bp, registrar_auditoria, obtener_registro_anterior
 app.register_blueprint(tabla_auditoria_bp)
+from modules.api_externa import api_externa_bp   # API de solo lectura por API key (otras apps)
+app.register_blueprint(api_externa_bp)
 
 
 app.secret_key = '8V#n*aQHYUt@7MdGBY0wE8f'  # Cambiar en producción

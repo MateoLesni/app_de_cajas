@@ -66,6 +66,10 @@ lvl >= 3                             → /auditor
 default                              → / (cajero)
 ```
 
+### API externa (otras apps del grupo)
+
+`modules/api_externa.py` — blueprint `/api/externa/*`, solo lectura, **sin sesión**: autentica con la API key del env `CAJAS_API_KEY` (secret `cajas-api-key` en Secret Manager) en el header `X-API-Key` o `Authorization: Bearer`. Si la env no está, responde 503. Endpoints: `/api/externa/locales` y `/api/externa/ventas?fecha=` o `?fecha_desde=&fecha_hasta=` (+ `local=` repetible) → venta Z por local y día (`venta_total`), `ventas_extras`, `total`, `local_cerrado`, `auditado`. Rango máximo 366 días.
+
 ### Allowlists en `login_required`
 
 - **Anticipos (nivel 4 y 6)**: solo pueden acceder a una lista hardcodeada de endpoints (`/gestion-anticipos`, `/api/anticipos_recibidos/*`, etc.)
