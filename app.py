@@ -10668,6 +10668,13 @@ def api_cierre_local():
     if not f:
         return jsonify(success=False, msg='fecha inválida'), 400
 
+    # No se puede cerrar un día que todavía no llegó (hora de Argentina). El cierre
+    # de la madrugada corresponde al día anterior, así que fecha <= hoy siempre es válida.
+    hoy_ar = datetime.now(pytz.timezone('America/Argentina/Buenos_Aires')).date().isoformat()
+    if str(f)[:10] > hoy_ar:
+        return jsonify(success=False,
+                       msg=f"No se puede cerrar el local para el {str(f)[:10]}: es una fecha futura. Solo se pueden cerrar días hasta hoy ({hoy_ar})."), 400
+
     conn = get_db_connection()
     cur  = conn.cursor(dictionary=True)
     try:
