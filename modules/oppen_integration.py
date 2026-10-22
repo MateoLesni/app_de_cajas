@@ -137,6 +137,11 @@ class OppenAPIError(Exception):
     pass
 
 
+# Campo de la fila de PayModes donde Oppen guarda el N de cheque (Pagos Inmediatos).
+# Vacio = no se envia (evita un 422 en el recibo si el nombre no es el correcto).
+OPPEN_CHEQUE_FIELD = (os.getenv("OPPEN_CHEQUE_FIELD") or "").strip()
+
+
 class OppenClient:
     """Cliente para interactuar con la API de Oppen"""
 
@@ -729,6 +734,10 @@ class OppenClient:
                 # Solo agregar Comment si no está vacío
                 if pm.get("Comment", "").strip():
                     pm_entry["Comment"] = pm["Comment"]
+                # N de cheque de los Pagos Inmediatos (consecutivo por recibo). El nombre del
+                # campo en Oppen va por env OPPEN_CHEQUE_FIELD: si no esta definido no se envia.
+                if pm.get("_cheque_nr") is not None and OPPEN_CHEQUE_FIELD:
+                    pm_entry[OPPEN_CHEQUE_FIELD] = str(pm["_cheque_nr"])
                 paymodes_cleaned.append(pm_entry)
 
             payload = {
@@ -1995,6 +2004,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
         }
 
         pay_modes = []
+        nro_cheque_pi = 0   # N de cheque de los Pagos Inmediatos: 1, 2, 3... en cada recibo
         for row in rows:
             forma_pago_original = row.get('forma_pago', '')
             descripcion = row.get('descripcion', '')
@@ -2024,11 +2034,17 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                 amount = 0.0
 
             if amount != 0:
-                pay_modes.append({
+                pm_row = {
                     "PayMode": forma_pago_codigo,
                     "Comment": descripcion,
                     "Amount": amount,
-                })
+                }
+                # Pagos Inmediatos (PAGOINMED, o PGI-QT en terminales BK): cada fila lleva
+                # un N de cheque consecutivo, aunque sean de terminales distintas.
+                if forma_pago_key == 'PAGOS INMEDIATOS':
+                    nro_cheque_pi += 1
+                    pm_row["_cheque_nr"] = nro_cheque_pi
+                pay_modes.append(pm_row)
 
         # Ajustar DISCOVERY para que la suma neta de PayModes sea EXACTAMENTE igual al
         # neto de Invoices: total_facturas (total_oppen) MENOS los anticipos consumidos

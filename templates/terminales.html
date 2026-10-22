@@ -36,7 +36,7 @@
     }
     .toolbar {
       display: grid;
-      grid-template-columns: 1fr 1fr auto;
+      grid-template-columns: 1fr 1fr auto auto auto;
       gap: 12px;
       margin-bottom: 14px;
       align-items: end;
@@ -108,6 +108,32 @@
       background: #072210 !important; border-bottom: 1px solid #14532d !important;
     }
     .hint { color: var(--muted); font-size: 12px; margin-top: 6px;}
+    .btn-exp {
+      background: #0a1326; color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; width: 30px; height: 30px; cursor: pointer; line-height: 1;
+      transition: transform .15s;
+    }
+    .btn-exp.open { transform: rotate(90deg); border-color: var(--focus); }
+    .btn-exp[disabled] { opacity: .35; cursor: default; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag {
+      font-size: 12px; padding: 2px 8px; border-radius: 999px;
+      background: #0b1b34; border: 1px solid var(--border); color: var(--text);
+    }
+    .tag.none { color: var(--muted); border-style: dashed; }
+    tbody tr.detail-row, tbody tr.detail-row:nth-child(odd), tbody tr.detail-row:nth-child(even) {
+      background: #081020;
+    }
+    tbody tr.detail-row > td { padding: 0 12px 14px 54px; }
+    .detail-box { border: 1px solid var(--border); border-radius: 12px; overflow: auto; background: #0a1326; }
+    .detail-title { font-size: 12px; color: var(--muted); padding: 10px 12px 0; }
+    .detail-box table { font-size: 13px; }
+    .detail-box thead th { position: static; padding: 8px 10px; }
+    .detail-box tbody td { padding: 8px 10px; }
+    .detail-box tbody tr:nth-child(odd), .detail-box tbody tr:nth-child(even) { background: transparent; }
+    .st-ok { color: #86efac; }
+    .st-warn { color: #fde68a; }
+    .mono { font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -116,9 +142,9 @@
   <div class="card">
     <div class="toolbar">
       <div class="group">
-        <label>Buscar (terminal o local)</label>
-        <input id="q" type="text" placeholder="Ej: POS-ALMA-01, 1653D333, Fabric Sushi..." />
-        <div class="hint">Búsqueda contiene. Se combina con el filtro por Local.</div>
+        <label>Buscar</label>
+        <input id="q" type="text" placeholder="Ej: 16792107, N° de establecimiento, razón social, banco, local..." />
+        <div class="hint">Busca por terminal, local, N° de establecimiento, CUIT, razón social o banco. Se combina con el filtro por Local.</div>
       </div>
       <div class="group">
         <label>Filtrar por Local</label>
@@ -126,6 +152,8 @@
       </div>
       <div>
         <button id="btnReload" class="btn secondary" title="Recargar">🔄 Recargar</button>
+        <button id="btnExpandAll" class="btn secondary" title="Expandir todas las terminales">▾ Expandir todo</button>
+        <button id="btnCollapseAll" class="btn secondary" title="Contraer todas las terminales">▴ Contraer todo</button>
       </div>
     </div>
 
@@ -143,12 +171,15 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 14%">Local</th>
-            <th style="width: 18%">Terminal</th>
-            <th style="width: 7%; text-align:center;" title="Marcar terminal como BK">BK</th>
-            <th style="width: 16%">Creada por</th>
-            <th style="width: 16%">Fecha creación</th>
-            <th style="width: 29%">Acciones</th>
+            <th style="width: 3%"></th>
+            <th style="width: 11%">Local</th>
+            <th style="width: 12%">Terminal</th>
+            <th style="width: 9%">Banco</th>
+            <th style="width: 16%">Razón social</th>
+            <th style="width: 5%; text-align:center;" title="Marcar terminal como BK">BK</th>
+            <th style="width: 11%">Creada por</th>
+            <th style="width: 12%">Fecha creación</th>
+            <th style="width: 21%">Acciones</th>
           </tr>
         </thead>
         <tbody id="tbodyTerm">
@@ -173,6 +204,7 @@
 
       let lastQuery = { q: "", local: "" };
       let rows = [];
+      const expanded = new Set();   // ids de terminales expandidas (se conserva al re-renderizar)
 
       // Debounce simple
       let t;
@@ -201,7 +233,7 @@
         if (!rows || rows.length === 0) {
           const tr = document.createElement("tr");
           const td = document.createElement("td");
-          td.colSpan = 6;
+          td.colSpan = 9;
           td.className = "empty";
           td.textContent = "No hay terminales para los filtros aplicados.";
           tr.appendChild(td);
@@ -212,6 +244,24 @@
         rows.forEach(r => {
           const tr = document.createElement("tr");
           tr.dataset.id = r.id;
+
+          // Expandir / contraer (detalle del Maestro de Terminales)
+          const det = r.establecimientos || [];
+          const tdExp = document.createElement("td");
+          const abierta = expanded.has(r.id) && det.length > 0;
+          const tituloExp = det.length
+            ? (abierta ? "Contraer" : "Expandir") + " (" + det.length + " establecimientos)"
+            : "Sin datos en el maestro de terminales";
+          tdExp.innerHTML = `
+            <button class="btn-exp ${abierta ? "open" : ""}" ${det.length ? "" : "disabled"}
+                    title="${tituloExp}" aria-expanded="${abierta}">▶</button>
+          `;
+
+          // Banco y Razón social (resumen de la terminal)
+          const tdBanco = document.createElement("td");
+          tdBanco.innerHTML = tagsHtml(r.bancos);
+          const tdRazon = document.createElement("td");
+          tdRazon.innerHTML = tagsHtml(r.razones_sociales);
 
           // Local (editable inline)
           const tdLocal = document.createElement("td");
@@ -254,14 +304,62 @@
             <button class="icon-btn danger btn-del" title="Borrar">🗑️ Borrar</button>
           `;
 
+          tr.appendChild(tdExp);
           tr.appendChild(tdLocal);
           tr.appendChild(tdTerm);
+          tr.appendChild(tdBanco);
+          tr.appendChild(tdRazon);
           tr.appendChild(tdBk);
           tr.appendChild(tdUser);
           tr.appendChild(tdDate);
           tr.appendChild(tdActions);
           tbody.appendChild(tr);
+
+          if (abierta) tbody.appendChild(detailRow(r, det));
         });
+      }
+
+      function tagsHtml(lista) {
+        if (!lista || lista.length === 0) return `<span class="tag none" title="Sin datos en el maestro de terminales">—</span>`;
+        return `<div class="tags">` + lista.map(x => `<span class="tag">${escapeHtml(x)}</span>`).join("") + `</div>`;
+      }
+
+      function estadoCls(e) {
+        const v = String(e || "").toUpperCase();
+        return (v === "OPERATIVO" || v === "ACTIVO") ? "st-ok" : "st-warn";
+      }
+
+      // Fila desplegable: una línea por medio de cobro, con su N° de establecimiento y toda la info del maestro.
+      function detailRow(r, det) {
+        const tr = document.createElement("tr");
+        tr.className = "detail-row";
+        const td = document.createElement("td");
+        td.colSpan = 9;
+        const filas = det.map(f => `
+          <tr>
+            <td><strong>${escapeHtml(f.tipo_medio)}</strong></td>
+            <td class="mono">${escapeHtml(f.establecimiento)}</td>
+            <td class="mono">${escapeHtml(f.cuit)}</td>
+            <td>${escapeHtml(f.razon_social)}</td>
+            <td>${escapeHtml(f.banco)}</td>
+            <td>${escapeHtml(f.lugar)}</td>
+            <td class="${estadoCls(f.estado)}">${escapeHtml(f.estado)}</td>
+            <td>${escapeHtml(f.procesador)}</td>
+            <td>${escapeHtml(f.local_maestro)}</td>
+          </tr>`).join("");
+        td.innerHTML = `
+          <div class="detail-box">
+            <div class="detail-title">Terminal ${escapeHtml(r.terminal)}: ${det.length} medios de cobro, cada uno con su N° de establecimiento</div>
+            <table>
+              <thead><tr>
+                <th>Medio de cobro</th><th>N° establecimiento</th><th>CUIT</th><th>Razón social</th>
+                <th>Banco</th><th>Lugar</th><th>Estado</th><th>Procesador</th><th>Local (maestro)</th>
+              </tr></thead>
+              <tbody>${filas}</tbody>
+            </table>
+          </div>`;
+        tr.appendChild(td);
+        return tr;
       }
 
       function escapeHtml(s) {
@@ -394,6 +492,11 @@
 
       // Listeners
       btnReload.addEventListener("click", () => loadData({force:true}));
+      $("#btnExpandAll").addEventListener("click", () => {
+        rows.forEach(r => { if ((r.establecimientos || []).length) expanded.add(r.id); });
+        render();
+      });
+      $("#btnCollapseAll").addEventListener("click", () => { expanded.clear(); render(); });
       btnCreate.addEventListener("click", createRow);
 
       q.addEventListener("input", debounce(() => loadData(), 300));
@@ -406,6 +509,12 @@
         const id = parseInt(tr?.dataset?.id || "0", 10);
         if (!id) return;
 
+        if (btn.classList.contains("btn-exp")) {
+          if (btn.disabled) return;
+          if (expanded.has(id)) expanded.delete(id); else expanded.add(id);
+          render();
+          return;
+        }
         if (btn.classList.contains("btn-save")) {
           const newL = tr.querySelector(".ed-local")?.value?.trim() || "";
           const newT = tr.querySelector(".ed-terminal")?.value?.trim() || "";

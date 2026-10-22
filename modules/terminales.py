@@ -24,6 +24,55 @@ def _norm(s):
         return ""
     return str(s).strip()
 
+def _clave_local(s):
+    """Para comparar el local de la app con el del maestro de terminales: sin tildes,
+    mayusculas ni separadores ('Coffee & Polo' ~ 'COFFE & POLO' no coincide, pero
+    'Cruza Polo' ~ 'CRUZA POLO' si)."""
+    import unicodedata
+    base = unicodedata.normalize("NFD", _norm(s).lower())
+    base = "".join(c for c in base if unicodedata.category(c) != "Mn")
+    return "".join(c for c in base if c.isalnum())
+
+
+_DETALLE_COLS = ("establecimiento", "tipo_medio", "cuit", "razon_social", "local_maestro",
+                 "banco", "lugar", "estado", "procesador")
+
+
+def _cargar_establecimientos(conn):
+    """{terminal: [filas del maestro]}. Si la tabla aun no existe (migracion 22 sin correr) -> {}."""
+    out = {}
+    try:
+        with conn.cursor(dictionary=True) as cur:
+            cur.execute("SELECT terminal, " + ", ".join(_DETALLE_COLS) +
+                        " FROM terminales_establecimientos ORDER BY terminal, tipo_medio, establecimiento")
+            for r in cur.fetchall():
+                out.setdefault(str(r["terminal"]).strip(), []).append({k: r[k] for k in _DETALLE_COLS})
+    except mysql.connector.Error:
+        return {}
+    return out
+
+
+def _detalle_de(terminal, local, por_terminal):
+    """Filas del maestro de una terminal. Si el mismo N de terminal figura a nombre de mas
+    de un local del maestro, se queda con las del local de la app (si ninguna coincide, todas)."""
+    filas = por_terminal.get(_norm(terminal), [])
+    if len({_clave_local(f["local_maestro"]) for f in filas}) > 1:
+        propia = [f for f in filas if _clave_local(f["local_maestro"]) == _clave_local(local)]
+        if propia:
+            return propia
+    return filas
+
+
+def _unicos(valores):
+    vistos, out = set(), []
+    for v in valores:
+        v = _norm(v)
+        if v and v.lower() not in vistos:
+            vistos.add(v.lower())
+            out.append(v)
+    return out
+
+
 # ------------------------- API ------------------------------
 
 @terminales_bp.get("/api/terminales")
@@ -45,7 +94,10 @@ def api_list_terminales():
         where.append("local = %s")
         args.append(local)
 
-    if q:
+    # Nivel 3: la busqueda tambien mira el maestro (establecimiento, razon social, banco),
+    # asi que se filtra despues en Python. Para el resto, solo terminal o local.
+    buscar_en_maestro = bool(q) and _require_level(3)
+    if q and not buscar_en_maestro:
         where.append("(terminal LIKE %s OR local LIKE %s)")
         like = f"%{q}%"
         args.extend([like, like])
@@ -60,6 +112,24 @@ def api_list_terminales():
         with conn.cursor(dictionary=True) as cur:
             cur.execute(query, tuple(args))
             rows = cur.fetchall()
+
+        # Datos del Maestro de Terminales (banco, razon social y un N de establecimiento por
+        # medio de cobro). Solo nivel 3: incluye CUIT y razones sociales.
+        if _require_level(3):
+            por_terminal = _cargar_establecimientos(conn)
+            for r in rows:
+                det = _detalle_de(r["terminal"], r["local"], por_terminal)
+                r["bancos"] = _unicos(f["banco"] for f in det)
+                r["razones_sociales"] = _unicos(f["razon_social"] for f in det)
+                r["establecimientos"] = det
+            if buscar_en_maestro:
+                needle = q.lower()
+                def _coincide(r):
+                    campos = [r["terminal"], r["local"]] + r["razones_sociales"] + r["bancos"]
+                    campos += [f["establecimiento"] for f in r["establecimientos"]]
+                    campos += [f["cuit"] for f in r["establecimientos"]]
+                    return any(needle in _norm(c).lower() for c in campos)
+                rows = [r for r in rows if _coincide(r)]
         return jsonify({"success": True, "items": rows})
     finally:
         try: conn.close()
