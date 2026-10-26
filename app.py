@@ -640,6 +640,7 @@ def login_required(view):
             'api_reporte_bk_export',
             'api_reporte_bk_export_ventas',
             'api_reporte_bk_export_facturas',
+            'api_reporte_bk_export_venta_fiscal',   # solo reporte_bk (el endpoint lo valida)
             'logout',
             'static',
         ]
@@ -15540,6 +15541,88 @@ def api_reporte_bk_export_facturas():
         wb.save(bio)
         bio.seek(0)
         filename = "facturas_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
+        return Response(
+            bio.read(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': 'attachment; filename="' + filename + '"'}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+@app.route('/api/reporte-bk/export-venta-fiscal', methods=['GET'])
+@login_required
+@role_min_required(8)
+def api_reporte_bk_export_venta_fiscal():
+    """
+    Excel de la venta fiscal (facturas A, B y Z) de los locales elegidos en el rango:
+    fecha, local, monto, tipo y N de factura, una fila por comprobante, fecha descendente.
+    Solo para el rol reporte_bk (y soporte). Excluye comprobantes eliminados.
+    """
+    from io import BytesIO
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    if (session.get('role') or '').lower() != 'reporte_bk' and get_user_level() < 10:
+        return jsonify(success=False, msg='Este reporte es solo para el usuario de reporte BK'), 403
+
+    fecha_desde, fecha_hasta, err = _reporte_bk_rango(request)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    locales_filtro = _reporte_bk_locales_param(request)
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = """
+            SELECT f.fecha, f.local, f.monto, f.tipo, f.nro_factura
+            FROM facturas_trns f
+            WHERE f.tipo IN ('A', 'B', 'Z')
+              AND DATE(f.fecha) BETWEEN %s AND %s
+              AND COALESCE(f.estado, 'ok') <> 'eliminado'
+        """
+        params = [fecha_desde, fecha_hasta]
+        if locales_filtro:
+            ph = ','.join(['%s'] * len(locales_filtro))
+            sql += " AND f.local IN (" + ph + ")"
+            params.extend(locales_filtro)
+        sql += " ORDER BY f.fecha DESC, f.local, f.tipo, f.nro_factura"
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall() or []
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Venta fiscal"
+        headers = ["Fecha", "Local", "Monto", "Tipo", "N° factura"]
+        ws.append(headers)
+        hfont = Font(bold=True, color="FFFFFF")
+        hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        for ci in range(1, len(headers) + 1):
+            c = ws.cell(row=1, column=ci)
+            c.font = hfont; c.fill = hfill; c.alignment = Alignment(horizontal='center')
+        for r in rows:
+            f = r['fecha']
+            f = f.date() if hasattr(f, 'date') else f
+            ws.append([f, r['local'], float(r['monto'] or 0), r['tipo'], r['nro_factura']])
+            ws.cell(row=ws.max_row, column=1).number_format = 'DD/MM/YYYY'
+            ws.cell(row=ws.max_row, column=3).number_format = '#,##0.00'
+        ws.freeze_panes = 'A2'
+        ws.auto_filter.ref = ws.dimensions
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 45)
+
+        bio = BytesIO()
+        wb.save(bio)
+        bio.seek(0)
+        filename = "venta_fiscal_" + fecha_desde.isoformat() + "_a_" + fecha_hasta.isoformat() + ".xlsx"
         return Response(
             bio.read(),
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

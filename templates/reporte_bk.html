@@ -83,8 +83,18 @@
           <label>Hasta</label>
           <input type="date" id="f-hasta">
         </div>
+        <div class="field">
+          <label>Atajos</label>
+          <div>
+            <button class="link-btn" id="btn-mes-actual" type="button">Mes actual</button>
+            <button class="link-btn" id="btn-mes-anterior" type="button">Mes anterior</button>
+          </div>
+        </div>
         {% if not es_gestion_ng %}
         <button class="btn btn-primary" id="btn-generar">Generar reporte</button>
+        {% endif %}
+        {% if not es_gestion_ng %}
+        <button class="btn btn-success" id="btn-excel-venta-fiscal" title="Facturas A, B y Z: fecha, local, monto, tipo y N° de factura">Exportar Venta Fiscal</button>
         {% endif %}
         <button class="btn btn-success" id="btn-excel-ventas">Exportar Ventas</button>
         <button class="btn btn-success" id="btn-excel-facturas">Exportar Facturas</button>

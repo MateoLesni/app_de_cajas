@@ -155,6 +155,26 @@
     window.location = '/api/reporte-bk/export-ventas?' + params.toString();
   }
 
+  // ── Excel de venta fiscal (facturas A, B y Z) ──
+  function descargarExcelVentaFiscal() {
+    if (!$('f-desde').value || !$('f-hasta').value) { toast('Elegí el rango de fechas', 'err'); return; }
+    const { params, locs } = buildParams();
+    if (locs.length === 0) { toast('Seleccioná al menos un local', 'err'); return; }
+    window.location = '/api/reporte-bk/export-venta-fiscal?' + params.toString();
+  }
+
+  // ── Atajos de fechas: mes calendario completo (el actual llega hasta hoy) ──
+  function isoLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function setMes(offset) {
+    const hoy = new Date();
+    const desde = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1);
+    const hasta = offset === 0 ? hoy : new Date(hoy.getFullYear(), hoy.getMonth() + offset + 1, 0);
+    $('f-desde').value = isoLocal(desde);
+    $('f-hasta').value = isoLocal(hasta);
+  }
+
   // ── Excel de facturas (facturas_trns + cuentas corrientes) ──
   function descargarExcelFacturas() {
     if (!$('f-desde').value || !$('f-hasta').value) { toast('Elegí el rango de fechas', 'err'); return; }
@@ -172,6 +192,9 @@
     $('btn-excel').addEventListener('click', descargarExcel);
     $('btn-excel-ventas').addEventListener('click', descargarExcelVentas);
     $('btn-excel-facturas')?.addEventListener('click', descargarExcelFacturas);
+    $('btn-excel-venta-fiscal')?.addEventListener('click', descargarExcelVentaFiscal);
+    $('btn-mes-actual')?.addEventListener('click', () => setMes(0));
+    $('btn-mes-anterior')?.addEventListener('click', () => setMes(-1));
     $('btn-all').addEventListener('click', () => { document.querySelectorAll('.loc-cb').forEach(cb => cb.checked = true); });
     $('btn-none').addEventListener('click', () => { document.querySelectorAll('.loc-cb').forEach(cb => cb.checked = false); });
 
