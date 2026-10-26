@@ -137,9 +137,10 @@ class OppenAPIError(Exception):
     pass
 
 
-# Campo de la fila de PayModes donde Oppen guarda el N de cheque (Pagos Inmediatos).
-# Vacio = no se envia (evita un 422 en el recibo si el nombre no es el correcto).
-OPPEN_CHEQUE_FIELD = (os.getenv("OPPEN_CHEQUE_FIELD") or "").strip()
+# Campo de la fila de PayModes donde Oppen guarda el N de cheque (Pagos Inmediatos):
+# Receipt.PayModes[].ChequeNr, texto de hasta 60 caracteres (OpenAPI de Oppen y probado en
+# ngprueba). Con OPPEN_CHEQUE_FIELD="" en el entorno se deja de enviar.
+OPPEN_CHEQUE_FIELD = os.getenv("OPPEN_CHEQUE_FIELD", "ChequeNr").strip()
 
 
 class OppenClient:
@@ -735,7 +736,7 @@ class OppenClient:
                 if pm.get("Comment", "").strip():
                     pm_entry["Comment"] = pm["Comment"]
                 # N de cheque de los Pagos Inmediatos (consecutivo por recibo). El nombre del
-                # campo en Oppen va por env OPPEN_CHEQUE_FIELD: si no esta definido no se envia.
+                # campo en Oppen es ChequeNr (ver OPPEN_CHEQUE_FIELD).
                 if pm.get("_cheque_nr") is not None and OPPEN_CHEQUE_FIELD:
                     pm_entry[OPPEN_CHEQUE_FIELD] = str(pm["_cheque_nr"])
                 paymodes_cleaned.append(pm_entry)
