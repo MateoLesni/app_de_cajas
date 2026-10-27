@@ -899,6 +899,61 @@ def custcode_anticipo(local: str, elegido: Optional[str] = None) -> Tuple[Option
     return ANTICIPOS_CUSTCODE_FIJO.get(local, OppenClient.DEFAULT_CUSTOMER), None
 
 
+def _onaccnr_de_recibo(client, sernr) -> Optional[int]:
+    """OnAccNr (N de anticipo) que Oppen tiene HOY en el recibo del anticipo, o None si no hay
+    exactamente una fila de anticipo (DebtType=1) con numero."""
+    r = client.session.get(f"{client.BASE_URL}/genericapi/ApiNg/Receipt/{int(sernr)}", timeout=30)
+    if r.status_code != 200:
+        return None
+    filas = [x.get("OnAccNr") for x in (r.json().get("Invoices") or [])
+             if x.get("DebtType") == 1 and x.get("OnAccNr")]
+    return int(filas[0]) if len(filas) == 1 else None
+
+
+def _onaccnr_vigentes(conn, filas_ant, recibo_url: str, recibo_cust: str) -> Dict[int, int]:
+    """{anticipo_id: OnAccNr vigente en Oppen} solo para los anticipos cuyo numero cambio, que
+    ademas se corrigen en anticipos_recibidos. Mira solo los que este recibo va a consumir
+    (mismo Oppen y mismo cliente). Ante cualquier falla devuelve lo que pudo sin cortar el recibo."""
+    out: Dict[int, int] = {}
+    candidatos = [r for r in filas_ant
+                  if r.get('oppen_onaccnr') and r.get('oppen_sernr')
+                  and (r.get('oppen_url') or '').rstrip('/') == recibo_url
+                  and (r.get('oppen_custcode') or OppenClient.DEFAULT_CUSTOMER) == recibo_cust]
+    if not candidatos:
+        return out
+    try:
+        client = OppenClient()
+        client.authenticate()
+    except Exception as e:
+        print(f"[RECIBO] ⚠️ No se pudo verificar el N de anticipo vigente en Oppen: {e}")
+        return out
+    por_recibo: Dict[int, Optional[int]] = {}
+    for r in candidatos:
+        sernr = int(r['oppen_sernr'])
+        try:
+            if sernr not in por_recibo:
+                por_recibo[sernr] = _onaccnr_de_recibo(client, sernr)
+            vigente = por_recibo[sernr]
+        except Exception as e:
+            print(f"[RECIBO] ⚠️ No se pudo leer el recibo {sernr} del anticipo {r['anticipo_id']}: {e}")
+            continue
+        if vigente is None:
+            print(f"[RECIBO] ⚠️ Anticipo {r['anticipo_id']}: el recibo {sernr} no tiene una fila de anticipo con numero en Oppen; se usa el guardado ({r['oppen_onaccnr']})")
+            continue
+        if vigente != int(r['oppen_onaccnr']):
+            try:
+                cur_u = conn.cursor()
+                cur_u.execute("UPDATE anticipos_recibidos SET oppen_onaccnr = %s WHERE id = %s",
+                              (vigente, r['anticipo_id']))
+                conn.commit()
+                cur_u.close()
+            except Exception as e:
+                print(f"[RECIBO] ⚠️ No se pudo guardar el N de anticipo corregido ({r['anticipo_id']}): {e}")
+            print(f"[RECIBO] 🔧 Anticipo {r['anticipo_id']}: OnAccNr {r['oppen_onaccnr']} -> {vigente} (cambio en Oppen)")
+            out[r['anticipo_id']] = vigente
+    return out
+
+
 def _get_label_oppen(cur, local: str) -> str:
     """cod_oppen del local (sin razon social); si no hay, el nombre del local."""
     cur.execute("SELECT cod_oppen FROM labels_oppen WHERE local = %s LIMIT 1", (local,))
@@ -1699,7 +1754,7 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
             cur_ant = conn.cursor(dictionary=True)
             cur_ant.execute("""
                 SELECT aec.id AS aec_id, aec.anticipo_id, aec.importe_consumido,
-                       ar.oppen_onaccnr, ar.oppen_url, ar.oppen_custcode, ar.cliente
+                       ar.oppen_onaccnr, ar.oppen_sernr, ar.oppen_url, ar.oppen_custcode, ar.cliente
                 FROM anticipos_estados_caja aec
                 JOIN anticipos_recibidos ar ON ar.id = aec.anticipo_id
                 WHERE aec.local = %s
@@ -1707,8 +1762,17 @@ def sync_recibo_to_oppen(conn, local: str, fecha: str) -> Dict[str, Any]:
                   AND aec.estado = 'consumido'
                   AND aec.oppen_consumo_sernr IS NULL
             """, (local, fecha))
+            filas_ant = cur_ant.fetchall() or []
+            # Si alguien abre y guarda el recibo del anticipo en Oppen, Oppen le reasigna el
+            # OnAccNr y el guardado aca queda viejo (ONLYPOSNRSERR "sin saldo"). Antes de armar
+            # el recibo se lee el N vigente y, si cambio, se corrige en la base.
+            _vigentes = _onaccnr_vigentes(conn, filas_ant, recibo_url, recibo_cust)
+            for r in filas_ant:
+                nuevo = _vigentes.get(r.get('anticipo_id'))
+                if nuevo and r.get('oppen_onaccnr') and int(nuevo) != int(r['oppen_onaccnr']):
+                    r['oppen_onaccnr'] = nuevo
             por_onacc = {}
-            for r in cur_ant.fetchall() or []:
+            for r in filas_ant:
                 monto_c = round(float(r['importe_consumido'] or 0), 2)
                 if monto_c <= 0:
                     continue
