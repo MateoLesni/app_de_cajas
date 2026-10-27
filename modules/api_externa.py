@@ -10,11 +10,15 @@ Endpoints:
   GET /api/externa/locales
   GET /api/externa/ventas?fecha=YYYY-MM-DD[&local=X&local=Y]
   GET /api/externa/ventas?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD[&local=X]
+  GET /api/externa/remesas[?fecha=YYYY-MM-DD | ?fecha_desde=...&fecha_hasta=...][&local=X&local=Y]
 """
 import os
 import hmac
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from decimal import Decimal
+
+import pytz
 
 from flask import Blueprint, request, jsonify
 
@@ -22,6 +26,8 @@ api_externa_bp = Blueprint("api_externa", __name__, url_prefix="/api/externa")
 
 LOCALES_OCULTOS = {"Local_Test"}
 MAX_DIAS_RANGO = 366
+MAX_DIAS_REMESAS = 93       # las remesas son una fila por remesa: se acota el rango
+TZ_AR = pytz.timezone("America/Argentina/Buenos_Aires")
 
 
 def _api_key() -> str:
@@ -52,10 +58,17 @@ def _parse_fecha(txt):
         return None
 
 
-def _rango_desde_request():
-    """(desde, hasta, error). Acepta ?fecha=D o ?fecha_desde=A&fecha_hasta=B."""
+def _ayer_ar():
+    return (datetime.now(TZ_AR) - timedelta(days=1)).date()
+
+
+def _rango_desde_request(max_dias=MAX_DIAS_RANGO, default_ayer=False):
+    """(desde, hasta, error). Acepta ?fecha=D o ?fecha_desde=A&fecha_hasta=B.
+    Con default_ayer=True, si no se manda ninguna fecha se usa el dia de ayer (hora de Argentina)."""
     fecha = request.args.get("fecha")
     desde_txt, hasta_txt = request.args.get("fecha_desde"), request.args.get("fecha_hasta")
+    if default_ayer and not (fecha or desde_txt or hasta_txt):
+        return _ayer_ar(), _ayer_ar(), None
     if fecha:
         d = _parse_fecha(fecha)
         if not d:
@@ -68,8 +81,8 @@ def _rango_desde_request():
         return None, None, "fecha_desde / fecha_hasta inválidas (formato YYYY-MM-DD)"
     if desde > hasta:
         return None, None, "fecha_desde debe ser menor o igual a fecha_hasta"
-    if (hasta - desde).days > MAX_DIAS_RANGO:
-        return None, None, f"El rango no puede superar {MAX_DIAS_RANGO} días"
+    if (hasta - desde).days > max_dias:
+        return None, None, f"El rango no puede superar {max_dias} días"
     return desde, hasta, None
 
 
@@ -182,6 +195,89 @@ def api_externa_ventas():
         )
     except Exception as e:
         print("❌ api_externa_ventas:", e)
+        return jsonify(success=False, msg="Error interno"), 500
+    finally:
+        try: cur.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
+
+
+# Columnas de remesas_trns que expone la API (mismo orden que la consulta original).
+REMESAS_COLUMNAS = (
+    "id", "local", "caja", "turno", "usuario", "estado", "fecha", "fecha_retirada",
+    "fecha_marca_retirada", "nro_remesa", "precinto", "monto", "retirada", "retirada_por",
+    "estado_contable", "fecha_estado_local", "fecha_estado_tran", "fecha_estado_contabilizada",
+    "ult_mod", "fecha_creacion", "divisa", "monto_usd", "cotizacion_divisa", "total_conversion",
+    "origen_anticipo_id",
+)
+
+
+def _json_val(v):
+    if isinstance(v, datetime):
+        return v.isoformat(sep=" ")
+    if isinstance(v, date):
+        return v.isoformat()
+    if isinstance(v, Decimal):
+        return float(v)
+    return v
+
+
+@api_externa_bp.get("/remesas")
+@api_key_required
+def api_externa_remesas():
+    """
+    Remesas (remesas_trns) por local y fecha, una fila por remesa y con todas las columnas
+    de la tabla (ver REMESAS_COLUMNAS). Sin filtrar por estado: cada fila trae su `estado`
+    (y `estado_contable`) para que quien consume decida.
+
+    Parametros:
+      fecha=YYYY-MM-DD  |  fecha_desde=...&fecha_hasta=...   (si no se manda ninguna: ayer)
+      local=X           repetible; sin local = todos los locales. No distingue mayusculas.
+    Rango maximo: 93 dias.
+    """
+    desde, hasta, err = _rango_desde_request(max_dias=MAX_DIAS_REMESAS, default_ayer=True)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    pedidos = []
+    for l in request.args.getlist("local"):
+        l = (l or "").strip()
+        if l and l.lower() not in [p.lower() for p in pedidos]:
+            pedidos.append(l)
+
+    conn = _conn()
+    cur = conn.cursor(dictionary=True)
+    try:
+        existentes = _locales_existentes(cur)
+        por_minuscula = {e.lower(): e for e in existentes}
+        if pedidos:
+            desconocidos = [l for l in pedidos if l.lower() not in por_minuscula]
+            if desconocidos:
+                return jsonify(success=False, msg=f"Local(es) inexistente(s): {', '.join(desconocidos)}", locales_validos=existentes), 404
+            locales = [por_minuscula[l.lower()] for l in pedidos]
+        else:
+            locales = existentes
+        if not locales:
+            return jsonify(success=True, fecha_desde=desde.isoformat(), fecha_hasta=hasta.isoformat(), items=[], totales={})
+
+        ph = ",".join(["%s"] * len(locales))
+        cols = ", ".join(f"`{c}`" for c in REMESAS_COLUMNAS)
+        cur.execute(
+            f"SELECT {cols} FROM remesas_trns WHERE `fecha` BETWEEN %s AND %s AND `local` IN ({ph}) "
+            "ORDER BY `fecha` DESC, `id` ASC",
+            [desde, hasta] + locales,
+        )
+        items = [{c: _json_val(r.get(c)) for c in REMESAS_COLUMNAS} for r in cur.fetchall()]
+
+        return jsonify(
+            success=True,
+            fecha_desde=desde.isoformat(), fecha_hasta=hasta.isoformat(),
+            locales=locales if pedidos else None,
+            items=items,
+            totales={"remesas": len(items)},
+        )
+    except Exception as e:
+        print("❌ api_externa_remesas:", e)
         return jsonify(success=False, msg="Error interno"), 500
     finally:
         try: cur.close()
