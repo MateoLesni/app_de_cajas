@@ -284,3 +284,35 @@ def api_externa_remesas():
         except Exception: pass
         try: conn.close()
         except Exception: pass
+
+
+MAX_DIAS_REPORTE_MEDIOS = 31
+
+
+@api_externa_bp.get("/reporte-medios-cobro")
+@api_key_required
+def api_externa_reporte_medios_cobro():
+    """
+    Distribucion de la venta por medio de cobro (9 locales fijos), discriminando terminales BK
+    (Qantara) y con Plan Out como medio propio. Devuelve JSON y el HTML del mail ya armado.
+
+    Parametros: fecha=YYYY-MM-DD | fecha_desde=...&fecha_hasta=... (sin parametros: ayer). Maximo 31 dias.
+    formato=html devuelve solo el HTML (para previsualizar).
+    """
+    from modules import reporte_medios_cobro as rmc
+    desde, hasta, err = _rango_desde_request(max_dias=MAX_DIAS_REPORTE_MEDIOS, default_ayer=True)
+    if err:
+        return jsonify(success=False, msg=err), 400
+    conn = _conn()
+    try:
+        rep = rmc.armar_reporte(conn, desde.isoformat(), hasta.isoformat())
+        html = rmc.render_html(rep)
+        if request.args.get("formato") == "html":
+            return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+        return jsonify(success=True, **rep, html=html)
+    except Exception as e:
+        print("❌ api_externa_reporte_medios_cobro:", e)
+        return jsonify(success=False, msg="Error interno"), 500
+    finally:
+        try: conn.close()
+        except Exception: pass
