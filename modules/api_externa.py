@@ -306,7 +306,7 @@ def api_externa_reporte_medios_cobro():
     conn = _conn()
     try:
         rep = rmc.armar_reporte(conn, desde.isoformat(), hasta.isoformat())
-        html = rmc.render_html(rep)
+        html = rmc.render_html(rep, abierto=request.args.get("abierto") == "1")
         if request.args.get("formato") == "html":
             return html, 200, {"Content-Type": "text/html; charset=utf-8"}
         return jsonify(success=True, **rep, html=html)
