@@ -1,6 +1,6 @@
 """Reporte diario de distribucion de la venta por medio de cobro, con foco en terminales BK (Qantara).
 
-Un bloque por local + un consolidado. Los porcentajes son sobre lo cobrado (sin propinas, que se informan aparte).
+Un bloque por local + un consolidado. Los porcentajes son sobre lo cobrado (las propinas se informan como medios propios, Qantara y otras).
 "Plan Out" se detecta en comentarios de cuenta corriente 'Otro cliente' (CNGCC) y se informa como medio de cobro propio.
 Todo el resto de la cuenta corriente va en 'Cuenta corriente'.
 Cada medio trae su detalle en forma de arbol (marca > terminal, remesas, clientes, etc.) para poder expandirlo.
@@ -15,8 +15,10 @@ LOCALES_REPORTE = ['Cruza Recoleta', 'Cruza Polo', 'Cochinchina', 'Narda Sucre',
 MEDIOS = OrderedDict([
     ('tarjeta_qantara', 'Tarjetas Qantara'),
     ('qr_qantara', 'QR Qantara'),
+    ('propina_qantara', 'Propinas Qantara'),
     ('tarjeta_otras', 'Tarjetas (otras terminales)'),
     ('qr_otras', 'QR (otras terminales)'),
+    ('propina_otras', 'Propinas (otras terminales)'),
     ('efectivo', 'Efectivo'),
     ('mercadopago', 'MercadoPago'),
     ('rappi', 'Rappi'),
@@ -25,7 +27,7 @@ MEDIOS = OrderedDict([
     ('plan_out', 'Plan Out'),
     ('cuenta_corriente', 'Cuenta corriente'),
 ])
-GRUPO_QANTARA = ('tarjeta_qantara', 'qr_qantara')
+GRUPO_QANTARA = ('tarjeta_qantara', 'qr_qantara', 'propina_qantara')
 
 _RE_PLANOUT = re.compile(r'plan\W*(out|aut|ot)\b')
 
@@ -77,7 +79,6 @@ def armar_reporte(conn, desde, hasta=None, locales=None):
     rango = [desde, hasta] + locales
     cur = conn.cursor(dictionary=True)
     arb = {l: {k: _Arbol() for k in MEDIOS} for l in locales}
-    propinas = {l: {'qantara': 0.0, 'otras': 0.0} for l in locales}
 
     # Tarjetas y QR. Subconsulta de terminales para no duplicar filas si el maestro repite una terminal.
     cur.execute(f"""
@@ -95,7 +96,7 @@ def armar_reporte(conn, desde, hasta=None, locales=None):
         marca = _norm(r['tarjeta']).upper() or '(SIN TIPO)'
         es_qr = marca == 'PAGOS INMEDIATOS'
         sufijo = 'qantara' if bk else 'otras'
-        propinas[l][sufijo] += _f(r['propina'])
+        arb[l]['propina_' + sufijo].add((_term(r['terminal']),), _f(r['propina']))
         if es_qr:
             arb[l]['qr_' + sufijo].add((_term(r['terminal']),), _f(r['monto']))
         else:
@@ -122,7 +123,7 @@ def armar_reporte(conn, desde, hasta=None, locales=None):
     """, rango)
     for r in cur.fetchall() or []:
         if r['tipo'] == 'TIP':
-            propinas[r['local']]['otras'] += _f(r['m'])
+            arb[r['local']]['propina_otras'].add((_term(r['terminal']),), _f(r['m']))
         else:
             arb[r['local']]['mercadopago'].add((_term(r['terminal']),), _f(r['m']))
 
@@ -165,26 +166,24 @@ def armar_reporte(conn, desde, hasta=None, locales=None):
             arb[l]['cuenta_corriente'].add(((f"{cli}: {com}" if r['cod'] == 'CNGCC' and com else cli),), m)
     cur.close()
 
-    def _bloque(nombre, a, prop, estado=None):
+    def _bloque(nombre, a, estado=None):
         total = sum(a[k].total for k in MEDIOS)
         filas = [{'clave': k, 'medio': et, 'monto': round(a[k].total, 2),
                   'pct': round(a[k].total * 100.0 / total, 1) if total else 0.0,
                   'detalle': a[k].a_lista()} for k, et in MEDIOS.items()]
         qantara = sum(a[k].total for k in GRUPO_QANTARA)
         return {'local': nombre, 'estado': estado, 'total_cobrado': round(total, 2), 'medios': filas,
-                'qantara': {'monto': round(qantara, 2), 'pct': round(qantara * 100.0 / total, 1) if total else 0.0},
-                'propinas': {k: round(v, 2) for k, v in prop.items()}}
+                'qantara': {'monto': round(qantara, 2), 'pct': round(qantara * 100.0 / total, 1) if total else 0.0}}
 
-    bloques = [_bloque(l, arb[l], propinas[l],
+    bloques = [_bloque(l, arb[l],
                        (('auditado' if l in auditados else ('cerrado' if l in cerrados else 'abierto')) if desde == hasta else None))
                for l in locales]
     cons = {k: _Arbol() for k in MEDIOS}
     for l in locales:
         for k in MEDIOS:
             cons[k].merge(arb[l][k])
-    cons_prop = {k: sum(propinas[l][k] for l in locales) for k in ('qantara', 'otras')}
     return {'fecha_desde': desde, 'fecha_hasta': hasta, 'locales': bloques,
-            'consolidado': _bloque('TOTAL (9 locales)', cons, cons_prop)}
+            'consolidado': _bloque('TOTAL (9 locales)', cons)}
 
 
 def _ars(v):
@@ -259,12 +258,6 @@ def render_html(rep, abierto=False):
         filas.append(_fila('Subtotal Qantara', b['qantara']['monto'], _pct(b['qantara']['pct']), bg=qbg, bold=True))
         return ''.join(filas)
 
-    def nota(b):
-        p = b['propinas']
-        if not (p['qantara'] or p['otras']):
-            return ''
-        return f'<div style="font-size:12px;color:#666;margin-top:4px">Propinas (no incluidas): Qantara {_ars(p["qantara"])} · otras {_ars(p["otras"])}</div>'
-
     estado_txt = {'auditado': 'auditado', 'cerrado': 'cerrado', 'abierto': 'sin cerrar'}
     th = 'style="text-align:left;padding:6px 10px;background:#1F4E78;color:#fff;font-size:13px"'
     thr = 'style="text-align:right;padding:6px 10px;background:#1F4E78;color:#fff;font-size:13px"'
@@ -272,9 +265,7 @@ def render_html(rep, abierto=False):
     tdr = 'style="padding:5px 10px;border-bottom:1px solid #e5e5e5;font-size:13px;text-align:right"'
     cons = rep['consolidado']
     partes = [f'<div style="font-family:Arial,sans-serif;max-width:760px"><h2 style="color:#1F4E78">Distribución de la venta por medio de cobro — {_rango_txt(rep)}</h2>',
-              '<p style="font-size:12px;color:#666">Los medios se miden como % del total cobrado (sin propinas). Al desplegar un medio, el % de cada línea es sobre ese medio. '
-              'Qantara = terminales BK. Plan Out se informa como medio de cobro propio.</p>',
-              f'<h3 style="color:#1F4E78">{cons["local"]}</h3>', tabla(cons), nota(cons)]
+              f'<h3 style="color:#1F4E78">{cons["local"]}</h3>', tabla(cons)]
     filas = ''.join(f'<tr><td {td}>{b["local"]}</td><td {tdr}>{_ars(b["total_cobrado"])}</td><td {tdr}>{_ars(b["qantara"]["monto"])}</td><td {tdr}>{_pct(b["qantara"]["pct"])}</td></tr>'
                     for b in rep['locales'] if b['total_cobrado'])
     partes.append(f'<h3 style="color:#1F4E78">Qantara por local</h3><table cellspacing="0" style="width:100%;border-collapse:collapse"><tr><th {th}>Local</th><th {thr}>Cobrado</th><th {thr}>Qantara</th><th {thr}>% Qantara</th></tr>{filas}</table>')
@@ -283,6 +274,6 @@ def render_html(rep, abierto=False):
         est = f' ({estado_txt[b["estado"]]})' if b['estado'] else ''
         partes.append(f'<h3 style="color:#1F4E78;margin-bottom:4px">{b["local"]} <span style="font-weight:400;font-size:12px;color:#666">{est}</span>{sin}</h3>')
         if b['total_cobrado']:
-            partes.append(tabla(b) + nota(b))
+            partes.append(tabla(b))
     partes.append('</div>')
     return ''.join(partes)
