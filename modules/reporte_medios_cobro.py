@@ -272,8 +272,8 @@ def render_html(rep, abierto=False):
     tdr = 'style="padding:5px 10px;border-bottom:1px solid #e5e5e5;font-size:13px;text-align:right"'
     cons = rep['consolidado']
     partes = [f'<div style="font-family:Arial,sans-serif;max-width:760px"><h2 style="color:#1F4E78">Distribución de la venta por medio de cobro — {_rango_txt(rep)}</h2>',
-              '<p style="font-size:12px;color:#666">Porcentajes sobre lo cobrado (sin propinas). Qantara = terminales BK. Plan Out se informa como medio de cobro propio. '
-              'Tocá un medio para ver cómo se compone.</p>',
+              '<p style="font-size:12px;color:#666">Los medios se miden como % del total cobrado (sin propinas). Al desplegar un medio, el % de cada línea es sobre ese medio. '
+              'Qantara = terminales BK. Plan Out se informa como medio de cobro propio.</p>',
               f'<h3 style="color:#1F4E78">{cons["local"]}</h3>', tabla(cons), nota(cons)]
     filas = ''.join(f'<tr><td {td}>{b["local"]}</td><td {tdr}>{_ars(b["total_cobrado"])}</td><td {tdr}>{_ars(b["qantara"]["monto"])}</td><td {tdr}>{_pct(b["qantara"]["pct"])}</td></tr>'
                     for b in rep['locales'] if b['total_cobrado'])
