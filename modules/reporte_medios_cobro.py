@@ -223,8 +223,7 @@ def _fila(label, monto, pct_txt, nivel=0, bg='', bold=False, expandible=False):
 def _hijos_html(items, padre_total, nivel):
     out = []
     for it in items:
-        p = _pct(it['monto'] * 100.0 / padre_total) + ' del medio' if padre_total and nivel == 1 else (
-            _pct(it['monto'] * 100.0 / padre_total) if padre_total else '')
+        p = _pct(it['monto'] * 100.0 / padre_total) if padre_total else ''
         fila = _fila(it['label'], it['monto'], p, nivel=nivel)
         if it['hijos']:
             out.append(f'<details><summary style="cursor:pointer;list-style:none">{_fila(it["label"], it["monto"], p, nivel=nivel, expandible=True)}</summary>'
@@ -241,7 +240,7 @@ def render_html(rep, abierto=False):
     head = ('<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse"><tr>'
             '<th style="text-align:left;padding:6px 10px;background:#1F4E78;color:#fff;font-size:13px">Medio de cobro (clic para ver el detalle)</th>'
             '<th style="text-align:right;padding:6px 10px;background:#1F4E78;color:#fff;font-size:13px;width:130px">Monto</th>'
-            '<th style="text-align:right;padding:6px 10px;background:#1F4E78;color:#fff;font-size:13px;width:110px">% s/ cobrado</th></tr></table>')
+            '<th style="text-align:right;padding:6px 10px;background:#1F4E78;color:#fff;font-size:13px;width:110px">% del total cobrado</th></tr></table>')
     ab = ' open' if abierto else ''
 
     def tabla(b):
