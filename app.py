@@ -6425,7 +6425,7 @@ def editar_cta_cte(cc_id):
 
         # Obtener datos del registro
         cur.execute("""
-            SELECT id, local, caja, fecha, turno, cliente_id
+            SELECT id, local, caja, fecha, turno, cliente_id, sernr_oppen
             FROM cuentas_corrientes_trns
             WHERE id=%s
         """, (cc_id,))
@@ -6450,9 +6450,28 @@ def editar_cta_cte(cc_id):
             conn.close()
             return jsonify(success=False, msg="No tenés permisos para editar (caja/local cerrados para tu rol)."), 409
 
+        # Cambio de cliente (opcional)
+        nuevo_cliente_id = payload.get('cliente_id')
+        try:
+            nuevo_cliente_id = int(nuevo_cliente_id) if nuevo_cliente_id else None
+        except (TypeError, ValueError):
+            nuevo_cliente_id = None
+        cliente_id_final = row['cliente_id']
+        if nuevo_cliente_id and nuevo_cliente_id != row['cliente_id']:
+            if row.get('sernr_oppen'):
+                cur.close()
+                conn.close()
+                return jsonify(success=False, msg="Esta cuenta corriente ya fue enviada a Oppen; no se puede cambiar el cliente."), 400
+            cur.execute("SELECT id FROM clientes_cta_cte WHERE id=%s AND activo=1", (nuevo_cliente_id,))
+            if not cur.fetchone():
+                cur.close()
+                conn.close()
+                return jsonify(success=False, msg="Cliente inválido o inactivo"), 400
+            cliente_id_final = nuevo_cliente_id
+
         # Validar: si es CNGCC, comentario es obligatorio
         comentario = payload.get('comentario', '')
-        cur.execute("SELECT codigo_oppen FROM clientes_cta_cte WHERE id=%s", (row['cliente_id'],))
+        cur.execute("SELECT codigo_oppen FROM clientes_cta_cte WHERE id=%s", (cliente_id_final,))
         cliente_row = cur.fetchone()
         if cliente_row and cliente_row['codigo_oppen'] == 'CNGCC' and not comentario:
             cur.close()
@@ -6487,9 +6506,9 @@ def editar_cta_cte(cc_id):
 
         cur.execute("""
             UPDATE cuentas_corrientes_trns
-            SET monto=%s, comentario=%s, facturada=%s, punto_venta=%s, nro_comanda=%s
+            SET monto=%s, comentario=%s, facturada=%s, punto_venta=%s, nro_comanda=%s, cliente_id=%s
             WHERE id=%s
-        """, (monto, comentario, facturada, punto_venta, nro_comanda, cc_id))
+        """, (monto, comentario, facturada, punto_venta, nro_comanda, cliente_id_final, cc_id))
 
         conn.commit()
 

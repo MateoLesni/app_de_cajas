@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const sernrOppen = cc.sernr_oppen ? `<span style="color: #059669; font-weight: 600;">${cc.sernr_oppen}</span>` : '-';
 
       html += `<tr data-id="${cc.id}" class="row-cta-cte" style="background-color: #d4edda;">
-        <td class="td-cliente">${cc.nombre_cliente}</td>
+        <td class="td-cliente" data-value="${cc.cliente_id}">${cc.nombre_cliente}</td>
         <td class="td-comentario" data-value="${cc.comentario || ''}">${cc.comentario || '-'}</td>
         <td class="td-monto" data-value="${cc.monto}">${money(cc.monto)}</td>
         <td class="td-facturada" data-value="${cc.facturada ? 1 : 0}">${facturadaText}</td>
@@ -284,12 +284,21 @@ document.addEventListener("DOMContentLoaded", function () {
     filaEditando = row;
     row.classList.add('editing');
 
+    const tdCliente = row.querySelector('.td-cliente');
     const tdComentario = row.querySelector('.td-comentario');
     const tdMonto = row.querySelector('.td-monto');
     const tdFacturada = row.querySelector('.td-facturada');
     const tdPuntoVenta = row.querySelector('.td-punto-venta');
     const tdNroComanda = row.querySelector('.td-nro-comanda');
     const tdAcciones = row.querySelector('.td-acciones');
+
+    const ccActual = ctasCtesBD.find(c => c.id === parseInt(row.dataset.id));
+    if (ccActual && !ccActual.sernr_oppen) {
+      const opts = clientesCtaCte.map(cli =>
+        `<option value="${cli.id}" ${cli.id == tdCliente.dataset.value ? 'selected' : ''}>${cli.nombre_cliente}</option>`
+      ).join('');
+      tdCliente.innerHTML = `<select class="edit-cliente">${opts}</select>`;
+    }
 
     // Convertir celdas en inputs
     const comentarioVal = tdComentario.dataset.value || '';
@@ -323,6 +332,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     row.classList.remove('editing');
 
+    row.querySelector('.td-cliente').innerHTML = cc.nombre_cliente;
     const tdComentario = row.querySelector('.td-comentario');
     const tdMonto = row.querySelector('.td-monto');
     const tdFacturada = row.querySelector('.td-facturada');
@@ -367,6 +377,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const puntoVenta = puntoVentaVal ? parseInt(puntoVentaVal) : null;
     const nroComanda = parseInt(nroComandaVal);
+    const selCliente = row.querySelector('.edit-cliente');
+    const clienteId = selCliente ? parseInt(selCliente.value) : null;
 
     try {
       setLoading(true);
@@ -378,7 +390,8 @@ document.addEventListener("DOMContentLoaded", function () {
           comentario,
           punto_venta: puntoVenta,
           nro_comanda: nroComanda,
-          facturada
+          facturada,
+          cliente_id: clienteId
         })
       });
       const data = await res.json();
