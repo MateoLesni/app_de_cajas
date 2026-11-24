@@ -15316,6 +15316,7 @@ def api_reporte_bk_export():
                    SUM(monto) AS monto
             FROM cuentas_corrientes_trns
             WHERE DATE(fecha) BETWEEN %s AND %s
+              AND COALESCE(estado, 'ok') <> 'eliminado'
         """
         params = [fecha_desde, fecha_hasta]
         sql = _filtro_local(sql, params, 'local')
@@ -15901,6 +15902,7 @@ def api_reporte_fabric_export():
                    SUM(monto) AS monto
             FROM cuentas_corrientes_trns
             WHERE local = %s AND DATE(fecha) BETWEEN %s AND %s
+              AND COALESCE(estado, 'ok') <> 'eliminado'
             GROUP BY DATE(fecha), descripcion
         """, (local, fecha_desde, fecha_hasta))
         for r in cur.fetchall() or []:
