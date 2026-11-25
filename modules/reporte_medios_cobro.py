@@ -159,7 +159,9 @@ def armar_reporte(conn, desde, hasta=None, locales=None):
     for r in cur.fetchall() or []:
         l, m = r['local'], _f(r['monto'])
         com = (r['comentario'] or '').strip()
-        if r['cod'] == 'CNGCC' and es_plan_out(com):
+        if r['cod'] == 'PLANOUT':
+            arb[l]['plan_out'].add((com or 'PLANOUT',), m)
+        elif r['cod'] == 'CNGCC' and es_plan_out(com):
             arb[l]['plan_out'].add((com,), m)
         else:
             cli = (r['nombre_cliente'] or 'Cliente').strip()
