@@ -111,6 +111,14 @@
       if (d.success) profile = d;
     } catch (e) { console.error('perfil', e); }
 
+    if (profile.can_export) {
+      const b = $('#btnExportar');
+      if (b) b.style.display = '';
+    }
+    if (profile.solo_lectura) {
+      $('#btnNuevoAnticipo')?.remove();
+      return;
+    }
     if (profile.level >= 6) {
       const nav = $('#sidebarNav');
       if (nav) {
@@ -122,6 +130,39 @@
     if (profile.level >= 3) {
       const b = $('#btnPaymodes');
       if (b) b.style.display = '';
+    }
+  }
+
+  async function exportarExcel() {
+    const btn = $('#btnExportar');
+    const p = new URLSearchParams({ sort: state.sort, dir: state.dir });
+    Object.entries(state.filters).forEach(([k, v]) => p.append(k, v));
+    const txt = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generando…';
+    try {
+      const r = await fetch('/api/anticipos_recibidos/exportar?' + p.toString(), { credentials: 'same-origin' });
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      if (!r.ok || ct.includes('json')) {
+        let msg = `HTTP ${r.status}`;
+        try { msg = (await r.json()).msg || msg; } catch (_) {}
+        throw new Error(msg);
+      }
+      const blob = await r.blob();
+      const m = (r.headers.get('content-disposition') || '').match(/filename="?([^"]+)"?/);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = m ? m[1] : 'anticipos.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) {
+      toast('❌ No se pudo descargar: ' + e.message, 'err', 8000);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = txt;
     }
   }
 
@@ -179,6 +220,7 @@
       $('#btnMasFiltros').textContent = ex.classList.contains('is-hidden') ? 'Más filtros ▾' : 'Menos filtros ▴';
     });
     $('#btnRecargar')?.addEventListener('click', () => loadAnticipos());
+    $('#btnExportar')?.addEventListener('click', exportarExcel);
     $('#btnNuevoAnticipo')?.addEventListener('click', () => abrirModal());
     $('#btnPaymodes')?.addEventListener('click', abrirPaymodes);
     $('#pagPerPage')?.addEventListener('change', (e) => { state.perPage = parseInt(e.target.value) || 25; state.page = 1; loadAnticipos(); });
@@ -306,6 +348,7 @@
   function perms(a) {
     const lvl = profile.level || 0;
     const activo = a.estado !== 'eliminado_global';
+    if (profile.solo_lectura) return { edit: false, del: false, oppen: false };
     return {
       // Pendiente: cualquiera con acceso. Consumido: solo auditores (corrigen medio y datos descriptivos).
       edit: lvl >= 3 && (a.estado === 'pendiente' || (a.estado === 'consumido' && lvl !== 4)),

@@ -69,6 +69,7 @@
       </div>
       <div class="rb-user">
         Hola, <strong>{{ session.get('username','') }}</strong>
+        {% if puede_anticipos %}<a href="{{ url_for('gestion_anticipos_page') }}" style="color:#1e88e5;">Anticipos</a>{% endif %}
         <a href="{{ url_for('logout') }}">Cerrar sesión</a>
       </div>
     </div>

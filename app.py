@@ -644,7 +644,21 @@ def login_required(view):
             'logout',
             'static',
         ]
-        if user_role in ('reporte_bk', 'gestion_ng') and current_endpoint not in allowed_endpoints_reporte_bk:
+        # Anticipos en solo lectura + descarga, para los usuarios de ANTICIPOS_EXPORT_USUARIOS
+        allowed_endpoints_anticipos_lectura = [
+            'gestion_anticipos_page',
+            'api_mi_perfil_anticipos',
+            'listar_anticipos_recibidos',
+            'exportar_anticipos_recibidos',
+            'api_medios_anticipos_activos',
+            'api_locales',
+            'auditoria.auditoria_locales',
+            'files.view_item',
+            'files.download_item',
+        ]
+        if (user_role in ('reporte_bk', 'gestion_ng')
+                and current_endpoint not in allowed_endpoints_reporte_bk
+                and not (current_endpoint in allowed_endpoints_anticipos_lectura and _puede_exportar_anticipos())):
             is_api_request = (
                 request.path.startswith('/api/') or
                 request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
@@ -3217,6 +3231,146 @@ def api_anticipo_enviar_oppen(anticipo_id):
         except Exception: pass
 
 
+ANTICIPOS_EXPORT_USUARIOS = {'csanchez', 'luisbk'}
+
+
+def _puede_exportar_anticipos():
+    return ((session.get('username') or '').strip().lower() in ANTICIPOS_EXPORT_USUARIOS
+            or get_user_level() >= 10)
+
+
+def _anticipos_solo_lectura():
+    return (session.get('role') or '').lower() in ('reporte_bk', 'gestion_ng')
+
+
+def _anticipos_query(a, user_level):
+    """SELECT / FROM / WHERE / ORDER del listado de anticipos (listar y exportar). None = usuario sin locales."""
+    estado       = a.get('estado', '').strip()
+    local        = a.get('local', '').strip()
+    fecha_desde  = a.get('fecha_desde', '').strip()
+    fecha_hasta  = a.get('fecha_hasta', '').strip()
+    pago_desde   = a.get('pago_desde', '').strip()
+    pago_hasta   = a.get('pago_hasta', '').strip()
+    cliente      = a.get('cliente', '').strip()
+    usuario_f    = a.get('usuario', '').strip()
+    divisa       = a.get('divisa', '').strip().upper()
+    nro_trans    = a.get('nro_transaccion', '').strip()
+    nro_oppen    = a.get('nro_anticipo', '').strip()     # OnAccNr (N de anticipo Oppen)
+    oppen        = a.get('oppen', '').strip().lower()     # '', 'creado', 'error', 'pendiente'
+    medio_id     = a.get('medio_pago_id', '').strip()
+    busqueda     = a.get('q', '').strip()                 # texto libre: cliente / transaccion / observaciones / N oppen
+    sort = a.get('sort', 'fecha_evento').strip()
+    direccion = 'ASC' if a.get('dir', 'desc').lower() == 'asc' else 'DESC'
+    SORT_COLS = {
+        'fecha_evento': 'ar.fecha_evento', 'fecha_pago': 'ar.fecha_pago',
+        'importe': 'importe_ars', 'cliente': 'ar.cliente', 'local': 'ar.local',
+        'created_at': 'ar.created_at', 'nro_anticipo': 'ar.oppen_onaccnr', 'id': 'ar.id',
+    }
+    order_col = SORT_COLS.get(sort, 'ar.fecha_evento')
+    # El desempate va como expresion (ar.id + 0): con MySQL 8.0.41, ORDER BY fecha_evento DESC, id DESC
+    # + LIMIT usa "Backward index scan" sobre idx_local_fecha y devuelve la 1ra pagina en orden
+    # ascendente (se repetian filas entre paginas). La expresion fuerza un filesort correcto.
+
+    # estado_real: si tiene un consumo registrado en caja es 'consumido' aunque
+    # ar.estado diga otra cosa (misma logica que la version anterior, pero en SQL
+    # para poder filtrar y paginar server-side).
+    base_from = """
+        FROM anticipos_recibidos ar
+        LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
+        LEFT JOIN (
+            SELECT anticipo_id, COUNT(*) AS n_consumos, MAX(fecha) AS fecha_consumo,
+                   MAX(caja) AS caja_consumo, MAX(oppen_consumo_sernr) AS oppen_consumo_sernr
+            FROM anticipos_estados_caja
+            WHERE estado = 'consumido'
+            GROUP BY anticipo_id
+        ) ec ON ec.anticipo_id = ar.id
+    """
+    estado_real_expr = ("CASE WHEN ar.estado = 'eliminado_global' THEN 'eliminado_global' "
+                        "WHEN COALESCE(ec.n_consumos,0) > 0 THEN 'consumido' ELSE ar.estado END")
+    importe_ars_expr = """CASE WHEN ar.divisa IS NOT NULL AND ar.divisa <> 'ARS' AND ar.cotizacion_divisa IS NOT NULL
+                               THEN ar.importe * ar.cotizacion_divisa ELSE ar.importe END"""
+
+    where = " WHERE 1=1"
+    params = []
+
+    if user_level == 4:
+        allowed_locales = get_user_allowed_locales()
+        if not allowed_locales:
+            return None
+        ph = ','.join(['%s'] * len(allowed_locales))
+        where += f" AND ar.local IN ({ph})"
+        params.extend(allowed_locales)
+
+    if estado:
+        where += f" AND ({estado_real_expr}) = %s"
+        params.append(estado)
+    if local:
+        where += " AND ar.local = %s"; params.append(local)
+    if fecha_desde:
+        where += " AND ar.fecha_evento >= %s"; params.append(_normalize_fecha(fecha_desde))
+    if fecha_hasta:
+        where += " AND ar.fecha_evento <= %s"; params.append(_normalize_fecha(fecha_hasta))
+    if pago_desde:
+        where += " AND ar.fecha_pago >= %s"; params.append(_normalize_fecha(pago_desde))
+    if pago_hasta:
+        where += " AND ar.fecha_pago <= %s"; params.append(_normalize_fecha(pago_hasta))
+    if cliente:
+        where += " AND ar.cliente LIKE %s"; params.append(f"%{cliente}%")
+    if usuario_f:
+        where += " AND ar.created_by LIKE %s"; params.append(f"%{usuario_f}%")
+    if divisa:
+        where += " AND COALESCE(ar.divisa,'ARS') = %s"; params.append(divisa)
+    if nro_trans:
+        where += " AND ar.numero_transaccion LIKE %s"; params.append(f"%{nro_trans}%")
+    if nro_oppen:
+        where += " AND CAST(ar.oppen_onaccnr AS CHAR) LIKE %s"; params.append(f"%{nro_oppen}%")
+    if medio_id:
+        where += " AND ar.medio_pago_id = %s"; params.append(medio_id)
+    if oppen == 'creado':
+        where += " AND ar.oppen_onaccnr IS NOT NULL"
+    elif oppen == 'error':
+        where += " AND ar.oppen_onaccnr IS NULL AND ar.oppen_estado = 'error'"
+    elif oppen == 'pendiente':
+        where += " AND ar.oppen_onaccnr IS NULL AND (ar.oppen_estado IS NULL OR ar.oppen_estado <> 'error')"
+    if busqueda:
+        where += """ AND (ar.cliente LIKE %s OR ar.numero_transaccion LIKE %s
+                          OR ar.observaciones LIKE %s OR CAST(ar.oppen_onaccnr AS CHAR) LIKE %s
+                          OR CAST(ar.id AS CHAR) = %s)"""
+        like = f"%{busqueda}%"
+        params.extend([like, like, like, like, busqueda])
+
+    select_base = f"""
+            ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
+            ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
+            ar.numero_transaccion, ar.medio_pago_id,
+            COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
+            ma.es_efectivo,
+            ar.observaciones, ar.local, ar.caja, ar.turno,
+            ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
+            ar.deleted_by, ar.deleted_at,
+            ar.oppen_sernr, ar.oppen_onaccnr, ar.oppen_estado, ar.oppen_error, ar.oppen_enviado_at, ar.oppen_url,
+            ar.oppen_custcode,
+            ({estado_real_expr}) AS estado,
+            ({importe_ars_expr}) AS importe_ars,
+            COALESCE(ec.n_consumos,0) AS n_consumos,
+            ec.fecha_consumo, ec.caja_consumo, ec.oppen_consumo_sernr"""
+    select = select_base + """,
+            (SELECT ab.motivo_eliminacion FROM anticipos_borrados ab
+              WHERE ab.anticipo_id = ar.id ORDER BY ab.deleted_at DESC LIMIT 1) AS motivo_eliminacion,
+            (SELECT ia.gcs_path FROM imagenes_adjuntos ia
+              WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
+              ORDER BY ia.id DESC LIMIT 1) AS adjunto_path,
+            (SELECT ia.mime FROM imagenes_adjuntos ia
+              WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
+              ORDER BY ia.id DESC LIMIT 1) AS adjunto_mime
+    """
+    return {
+        'select': select, 'select_base': select_base, 'from': base_from, 'where': where, 'params': params,
+        'estado_real_expr': estado_real_expr, 'importe_ars_expr': importe_ars_expr,
+        'order': f"{order_col} {direccion}, (ar.id + 0) DESC",
+    }
+
+
 @app.route('/api/anticipos_recibidos/listar', methods=['GET'])
 @login_required
 def listar_anticipos_recibidos():
@@ -3236,20 +3390,6 @@ def listar_anticipos_recibidos():
         return jsonify(success=False, msg="No tenés permisos para ver anticipos recibidos"), 403
 
     a = request.args
-    estado       = a.get('estado', '').strip()
-    local        = a.get('local', '').strip()
-    fecha_desde  = a.get('fecha_desde', '').strip()
-    fecha_hasta  = a.get('fecha_hasta', '').strip()
-    pago_desde   = a.get('pago_desde', '').strip()
-    pago_hasta   = a.get('pago_hasta', '').strip()
-    cliente      = a.get('cliente', '').strip()
-    usuario_f    = a.get('usuario', '').strip()
-    divisa       = a.get('divisa', '').strip().upper()
-    nro_trans    = a.get('nro_transaccion', '').strip()
-    nro_oppen    = a.get('nro_anticipo', '').strip()     # OnAccNr (N de anticipo Oppen)
-    oppen        = a.get('oppen', '').strip().lower()     # '', 'creado', 'error', 'pendiente'
-    medio_id     = a.get('medio_pago_id', '').strip()
-    busqueda     = a.get('q', '').strip()                 # texto libre: cliente / transaccion / observaciones / N oppen
     try:
         page = max(1, int(a.get('page', 1)))
     except ValueError:
@@ -3259,17 +3399,6 @@ def listar_anticipos_recibidos():
     except ValueError:
         per_page = 25
     per_page = max(5, min(per_page, 200))
-    sort = a.get('sort', 'fecha_evento').strip()
-    direccion = 'ASC' if a.get('dir', 'desc').lower() == 'asc' else 'DESC'
-    SORT_COLS = {
-        'fecha_evento': 'ar.fecha_evento', 'fecha_pago': 'ar.fecha_pago',
-        'importe': 'importe_ars', 'cliente': 'ar.cliente', 'local': 'ar.local',
-        'created_at': 'ar.created_at', 'nro_anticipo': 'ar.oppen_onaccnr', 'id': 'ar.id',
-    }
-    order_col = SORT_COLS.get(sort, 'ar.fecha_evento')
-    # El desempate va como expresion (ar.id + 0): con MySQL 8.0.41, ORDER BY fecha_evento DESC, id DESC
-    # + LIMIT usa "Backward index scan" sobre idx_local_fecha y devuelve la 1ra pagina en orden
-    # ascendente (se repetian filas entre paginas). La expresion fuerza un filesort correcto.
 
     try:
         conn = get_db_connection()
@@ -3277,73 +3406,11 @@ def listar_anticipos_recibidos():
         _ensure_anticipos_oppen_columns(conn)
         cur = conn.cursor(dictionary=True)
 
-        # estado_real: si tiene un consumo registrado en caja es 'consumido' aunque
-        # ar.estado diga otra cosa (misma logica que la version anterior, pero en SQL
-        # para poder filtrar y paginar server-side).
-        base_from = """
-            FROM anticipos_recibidos ar
-            LEFT JOIN medios_anticipos ma ON ar.medio_pago_id = ma.id
-            LEFT JOIN (
-                SELECT anticipo_id, COUNT(*) AS n_consumos, MAX(fecha) AS fecha_consumo,
-                       MAX(caja) AS caja_consumo, MAX(oppen_consumo_sernr) AS oppen_consumo_sernr
-                FROM anticipos_estados_caja
-                WHERE estado = 'consumido'
-                GROUP BY anticipo_id
-            ) ec ON ec.anticipo_id = ar.id
-        """
-        estado_real_expr = ("CASE WHEN ar.estado = 'eliminado_global' THEN 'eliminado_global' "
-                            "WHEN COALESCE(ec.n_consumos,0) > 0 THEN 'consumido' ELSE ar.estado END")
-        importe_ars_expr = """CASE WHEN ar.divisa IS NOT NULL AND ar.divisa <> 'ARS' AND ar.cotizacion_divisa IS NOT NULL
-                                   THEN ar.importe * ar.cotizacion_divisa ELSE ar.importe END"""
-
-        where = " WHERE 1=1"
-        params = []
-
-        if user_level == 4:
-            allowed_locales = get_user_allowed_locales()
-            if not allowed_locales:
-                return jsonify(success=True, anticipos=[], total=0, page=1, per_page=per_page, pages=0, stats={})
-            ph = ','.join(['%s'] * len(allowed_locales))
-            where += f" AND ar.local IN ({ph})"
-            params.extend(allowed_locales)
-
-        if estado:
-            where += f" AND ({estado_real_expr}) = %s"
-            params.append(estado)
-        if local:
-            where += " AND ar.local = %s"; params.append(local)
-        if fecha_desde:
-            where += " AND ar.fecha_evento >= %s"; params.append(_normalize_fecha(fecha_desde))
-        if fecha_hasta:
-            where += " AND ar.fecha_evento <= %s"; params.append(_normalize_fecha(fecha_hasta))
-        if pago_desde:
-            where += " AND ar.fecha_pago >= %s"; params.append(_normalize_fecha(pago_desde))
-        if pago_hasta:
-            where += " AND ar.fecha_pago <= %s"; params.append(_normalize_fecha(pago_hasta))
-        if cliente:
-            where += " AND ar.cliente LIKE %s"; params.append(f"%{cliente}%")
-        if usuario_f:
-            where += " AND ar.created_by LIKE %s"; params.append(f"%{usuario_f}%")
-        if divisa:
-            where += " AND COALESCE(ar.divisa,'ARS') = %s"; params.append(divisa)
-        if nro_trans:
-            where += " AND ar.numero_transaccion LIKE %s"; params.append(f"%{nro_trans}%")
-        if nro_oppen:
-            where += " AND CAST(ar.oppen_onaccnr AS CHAR) LIKE %s"; params.append(f"%{nro_oppen}%")
-        if medio_id:
-            where += " AND ar.medio_pago_id = %s"; params.append(medio_id)
-        if oppen == 'creado':
-            where += " AND ar.oppen_onaccnr IS NOT NULL"
-        elif oppen == 'error':
-            where += " AND ar.oppen_onaccnr IS NULL AND ar.oppen_estado = 'error'"
-        elif oppen == 'pendiente':
-            where += " AND ar.oppen_onaccnr IS NULL AND (ar.oppen_estado IS NULL OR ar.oppen_estado <> 'error')"
-        if busqueda:
-            where += """ AND (ar.cliente LIKE %s OR ar.numero_transaccion LIKE %s
-                              OR ar.observaciones LIKE %s OR CAST(ar.oppen_onaccnr AS CHAR) LIKE %s
-                              OR CAST(ar.id AS CHAR) = %s)"""
-            like = f"%{busqueda}%"
-            params.extend([like, like, like, like, busqueda])
+        q = _anticipos_query(a, user_level)
+        if q is None:
+            return jsonify(success=True, anticipos=[], total=0, page=1, per_page=per_page, pages=0, stats={})
+        base_from, where, params = q['from'], q['where'], q['params']
+        estado_real_expr, importe_ars_expr = q['estado_real_expr'], q['importe_ars_expr']
 
         # Total + stats sobre el conjunto filtrado (sin paginar)
         cur.execute(f"""
@@ -3365,31 +3432,9 @@ def listar_anticipos_recibidos():
         offset = (page - 1) * per_page
 
         cur.execute(f"""
-            SELECT
-                ar.id, ar.fecha_pago, ar.fecha_evento, ar.importe, ar.divisa,
-                ar.tipo_cambio_fecha, ar.cotizacion_divisa, ar.cliente,
-                ar.numero_transaccion, ar.medio_pago_id,
-                COALESCE(ma.nombre, ar.medio_pago, '-') AS medio_pago,
-                ma.es_efectivo,
-                ar.observaciones, ar.local, ar.caja, ar.turno,
-                ar.created_by, ar.created_at, ar.updated_by, ar.updated_at,
-                ar.deleted_by, ar.deleted_at,
-                ar.oppen_sernr, ar.oppen_onaccnr, ar.oppen_estado, ar.oppen_error, ar.oppen_enviado_at, ar.oppen_url,
-                ar.oppen_custcode,
-                ({estado_real_expr}) AS estado,
-                ({importe_ars_expr}) AS importe_ars,
-                COALESCE(ec.n_consumos,0) AS n_consumos,
-                ec.fecha_consumo, ec.caja_consumo, ec.oppen_consumo_sernr,
-                (SELECT ab.motivo_eliminacion FROM anticipos_borrados ab
-                  WHERE ab.anticipo_id = ar.id ORDER BY ab.deleted_at DESC LIMIT 1) AS motivo_eliminacion,
-                (SELECT ia.gcs_path FROM imagenes_adjuntos ia
-                  WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
-                  ORDER BY ia.id DESC LIMIT 1) AS adjunto_path,
-                (SELECT ia.mime FROM imagenes_adjuntos ia
-                  WHERE ia.entity_type='anticipo_recibido' AND ia.entity_id=ar.id AND ia.estado='active'
-                  ORDER BY ia.id DESC LIMIT 1) AS adjunto_mime
+            SELECT {q['select']}
             {base_from}{where}
-            ORDER BY {order_col} {direccion}, (ar.id + 0) DESC
+            ORDER BY {q['order']}
             LIMIT %s OFFSET %s
         """, params + [per_page, offset])
         rows = cur.fetchall() or []
@@ -3437,6 +3482,127 @@ def listar_anticipos_recibidos():
         import traceback
         traceback.print_exc()
         return jsonify(success=False, msg=str(e)), 500
+
+
+@app.route('/api/anticipos_recibidos/exportar', methods=['GET'])
+@login_required
+def exportar_anticipos_recibidos():
+    """Excel con todos los anticipos que cumplen los filtros del listado (sin paginar)."""
+    if not _puede_exportar_anticipos():
+        return jsonify(success=False, msg="No tenés permiso para descargar anticipos"), 403
+
+    from io import BytesIO
+    from urllib.parse import quote as _q
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        from modules.oppen_integration import _ensure_anticipos_oppen_columns
+        _ensure_anticipos_oppen_columns(conn)
+        cur = conn.cursor(dictionary=True)
+        q = _anticipos_query(request.args, get_user_level())
+        rows, adjuntos, motivos = [], {}, {}
+        if q is not None:
+            cur.execute(f"SELECT {q['select_base']} {q['from']}{q['where']} ORDER BY {q['order']}", q['params'])
+            rows = cur.fetchall() or []
+            # Por separado: como subconsulta por fila tarda ~20ms c/u (no usa idx_entity)
+            cur.execute("""SELECT entity_id, gcs_path FROM imagenes_adjuntos
+                           WHERE entity_type = 'anticipo_recibido' AND estado = 'active' ORDER BY id""")
+            adjuntos = {str(x['entity_id']): x['gcs_path'] for x in cur.fetchall()}
+            cur.execute("SELECT anticipo_id, motivo_eliminacion FROM anticipos_borrados ORDER BY deleted_at, id")
+            motivos = {x['anticipo_id']: x['motivo_eliminacion'] for x in cur.fetchall()}
+        cur.close()
+    except Exception as e:
+        print("❌ ERROR exportar_anticipos_recibidos:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, msg=str(e)), 500
+    finally:
+        if conn:
+            conn.close()
+
+    ESTADOS = {'pendiente': 'Pendiente', 'consumido': 'Consumido', 'eliminado_global': 'Eliminado'}
+    num = lambda v: float(v) if v is not None else None
+    base_url = request.host_url.rstrip('/') if request.host.startswith(('localhost', '127.')) else f"https://{request.host}"
+
+    headers = [
+        "ID", "Estado", "Local", "Cliente", "Fecha de pago", "Fecha del evento",
+        "Importe", "Divisa", "Cotización", "Importe ARS", "Medio de pago", "N° transacción",
+        "Observaciones", "Caja", "Turno", "Cargado por", "Fecha de carga",
+        "Fecha de consumo", "Caja de consumo", "Oppen", "N° anticipo Oppen", "Recibo Oppen",
+        "Cliente Oppen", "Recibo de consumo Oppen", "Error Oppen",
+        "Editado por", "Fecha de edición", "Eliminado por", "Fecha de eliminación", "Motivo de eliminación",
+        "Comprobante",
+    ]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Anticipos"
+    ws.append(headers)
+    hfont = Font(bold=True, color="FFFFFF")
+    hfill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+    for ci in range(1, len(headers) + 1):
+        c = ws.cell(row=1, column=ci)
+        c.font = hfont
+        c.fill = hfill
+        c.alignment = Alignment(horizontal='center')
+
+    for r in rows:
+        estado = r.get('estado')
+        if r.get('oppen_onaccnr'):
+            oppen = 'Creado'
+        elif estado == 'eliminado_global':
+            oppen = ''
+        elif r.get('oppen_estado') == 'error':
+            oppen = 'Error'
+        else:
+            oppen = 'Sin enviar'
+        consumido = estado == 'consumido'
+        adjunto = adjuntos.get(str(r['id']))
+        ws.append([
+            r['id'], ESTADOS.get(estado, estado), r.get('local'), r.get('cliente'),
+            r.get('fecha_pago'), r.get('fecha_evento'),
+            num(r.get('importe')), r.get('divisa') or 'ARS', num(r.get('cotizacion_divisa')), num(r.get('importe_ars')),
+            r.get('medio_pago'), r.get('numero_transaccion'), r.get('observaciones'),
+            r.get('caja'), r.get('turno'), r.get('created_by'), r.get('created_at'),
+            r.get('fecha_consumo') if consumido else None, r.get('caja_consumo') if consumido else None,
+            oppen, r.get('oppen_onaccnr'), r.get('oppen_sernr'), r.get('oppen_custcode'), r.get('oppen_consumo_sernr'),
+            r.get('oppen_error') if oppen == 'Error' else None,
+            r.get('updated_by'), r.get('updated_at'),
+            r.get('deleted_by'), r.get('deleted_at'),
+            motivos.get(r['id']) if estado == 'eliminado_global' else None,
+            'Ver' if adjunto else None,
+        ])
+        if adjunto:
+            c = ws.cell(row=ws.max_row, column=len(headers))
+            c.hyperlink = f"{base_url}/files/view?id={_q(adjunto, safe='')}"
+            c.style = 'Hyperlink'
+
+    fechas = {5, 6, 18}
+    fechas_hora = {17, 27, 29}
+    montos = {7, 10}
+    for ci in range(1, len(headers) + 1):
+        fmt = ('DD/MM/YYYY' if ci in fechas else 'DD/MM/YYYY HH:MM' if ci in fechas_hora
+               else '#,##0.00' if ci in montos else '#,##0.0000' if ci == 9 else None)
+        if fmt:
+            for row in ws.iter_rows(min_row=2, min_col=ci, max_col=ci):
+                row[0].number_format = fmt
+    for col in ws.columns:
+        max_len = max((len(str(c.value)) for c in list(col)[:300] if c.value is not None), default=8)
+        ws.column_dimensions[col[0].column_letter].width = min(max(max_len, 10) + 2, 45)
+    ws.freeze_panes = 'A2'
+    ws.auto_filter.ref = ws.dimensions
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+    filename = "anticipos_" + datetime.now(pytz.timezone('America/Argentina/Buenos_Aires')).strftime('%Y-%m-%d_%H%M') + ".xlsx"
+    return Response(
+        bio.read(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename="' + filename + '"'}
+    )
 
 
 @app.route('/api/anticipos_recibidos/editar/<int:anticipo_id>', methods=['PUT'])
@@ -11515,6 +11681,13 @@ def api_mi_perfil_anticipos():
     if user_level >= 3 and user_level != 4:
         allowed_locales = []  # [] = acceso a todos los locales
 
+    if _anticipos_solo_lectura():
+        return jsonify(
+            success=True, level=user_level, allowed_locales=[],
+            can_delete=False, can_consume=False, has_full_access=False, can_send_oppen=False,
+            solo_lectura=True, can_export=_puede_exportar_anticipos(),
+        )
+
     return jsonify(
         success=True,
         level=user_level,
@@ -11526,6 +11699,7 @@ def api_mi_perfil_anticipos():
         oppen_custcode_fijo=_anticipos_custcode_cfg()[1],
         oppen_custcode_default=_anticipos_custcode_cfg()[2],
         can_send_oppen=puede_enviar_anticipos_oppen(user_level),
+        can_export=_puede_exportar_anticipos(),
     )
 
 
@@ -15010,7 +15184,8 @@ def _reporte_bk_normalizar_tarjeta(nombre):
 @login_required
 @role_min_required(8)
 def reporte_bk_page():
-    return render_template('reporte_bk.html', es_gestion_ng=_reporte_bk_es_gestion_ng())
+    return render_template('reporte_bk.html', es_gestion_ng=_reporte_bk_es_gestion_ng(),
+                           puede_anticipos=_puede_exportar_anticipos())
 
 
 @app.route('/api/reporte-bk/locales', methods=['GET'])
